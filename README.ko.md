@@ -96,16 +96,6 @@ npm install
 npm run dev
 ```
 
-## 배포
-
-Docker Compose를 사용한 배포:
-
-```bash
-docker-compose up -d
-```
-
-자세한 GCP 배포 가이드는 [deployment/README.md](deployment/README.md)를 참조하세요.
-
 ## 프로젝트 구조
 
 ```
@@ -129,9 +119,6 @@ docker-compose up -d
 │   │   ├── pages/
 │   │   └── styles/
 │   └── Dockerfile
-├── deployment/
-│   ├── k8s/
-│   └── terraform/
 └── docker-compose.yml
 ```
 

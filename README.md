@@ -96,14 +96,6 @@ npm install
 npm run dev
 ```
 
-## Deployment
-
-Deploy using Docker Compose:
-
-```bash
-docker-compose up -d
-```
-
 For detailed GCP deployment guide, refer to [deployment/README.md](deployment/README.md).
 
 ## Project Structure
@@ -129,9 +121,6 @@ For detailed GCP deployment guide, refer to [deployment/README.md](deployment/RE
 │   │   ├── pages/
 │   │   └── styles/
 │   └── Dockerfile
-├── deployment/
-│   ├── k8s/
-│   └── terraform/
 └── docker-compose.yml
 ```
 
