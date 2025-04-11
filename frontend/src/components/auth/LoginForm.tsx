@@ -9,6 +9,7 @@ import axios, { type AxiosError } from 'axios';
 import type { ApiErrorResponse } from '@/lib/types';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/alert';
+import Image from 'next/image';
 
 const LoginForm: React.FC = () => {
   const router = useRouter();
@@ -60,7 +61,7 @@ const LoginForm: React.FC = () => {
   return (
     <div className="mx-auto w-full max-w-md">
       {error && (
-        <Alert variant="error" className="mb-6">
+        <Alert variant="destructive" className="mb-6">
           <p>{error}</p>
         </Alert>
       )}
@@ -124,6 +125,31 @@ const LoginForm: React.FC = () => {
           {loading ? <Spinner size="sm" /> : 'Sign In'}
         </Button>
       </form>
+
+      {/* 구분선 추가 */}
+      <div className="relative my-8">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-[hsl(var(--border))]"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))]">
+            Or continue with
+          </span>
+        </div>
+      </div>
+
+      {/* Google 로그인 버튼 */}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full h-12 flex items-center justify-center gap-3 bg-white"
+        onClick={() => {
+          window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+        }}
+      >
+        <Image src="/google-logo.svg" alt="Google" width={20} height={20} />
+        Sign in with Google
+      </Button>
 
       <div className="mt-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
         <p>

@@ -60,6 +60,14 @@ func main() {
 		if err := godotenv.Load(); err != nil {
 			logger.Warn().Msg("No .env file found")
 		}
+		logger.Info().Msg("Loaded .env file")
+
+		// Google OAuth 환경변수 로깅
+		logger.Info().
+			Str("GOOGLE_CLIENT_ID", os.Getenv("GOOGLE_CLIENT_ID")).
+			Str("GOOGLE_REDIRECT_URL", os.Getenv("GOOGLE_REDIRECT_URL")).
+			Int("GOOGLE_CLIENT_SECRET_LENGTH", len(os.Getenv("GOOGLE_CLIENT_SECRET"))).
+			Msg("Google OAuth Environment Variables")
 	}
 
 	cfg := config.LoadConfig()

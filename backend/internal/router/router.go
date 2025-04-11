@@ -47,6 +47,8 @@ func Setup(
 		{
 			auth.POST("/register", authController.Register)
 			auth.POST("/login", authController.Login)
+			auth.GET("/google", authController.GoogleAuthHandler)       // Google 로그인 페이지로 리다이렉트
+			auth.GET("/google/callback", authController.GoogleCallback) // Google OAuth 콜백 처리
 		}
 
 		// 인증이 필요한 라우트

@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { useTheme } from 'next-themes';
 import Layout from '../components/layout/Layout';
 import RegisterForm from '../components/auth/RegisterForm';
 import Image from 'next/image';
 import { Alert } from '@/components/ui/alert';
 
 const RegisterPage: React.FC = () => {
-  const { theme } = useTheme();
   const [message] = useState<string | null>(null);
 
   return (
@@ -38,7 +36,7 @@ const RegisterPage: React.FC = () => {
         <div className="hidden md:block md:w-1/2 bg-[hsl(var(--card))]">
           <div className="relative h-full w-full">
             <Image
-              src={theme === 'dark' ? '/coderacer-dark.png' : '/coderacer.png'}
+              src={'/coderacer.png'}
               alt="Code Racer illustration"
               fill
               style={{ objectFit: 'contain' }}

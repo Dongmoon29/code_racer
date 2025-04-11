@@ -54,4 +54,7 @@ jobs:
             --set-env-vars="REDIS_PORT=${{ secrets.REDIS_PORT }}" \
             --set-env-vars="REDIS_USERNAME=${{ secrets.REDIS_USERNAME }}" \
             --set-env-vars="REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" \
-            --set-env-vars="JWT_SECRET=${{ secrets.JWT_SECRET }}"
+            --set-env-vars="JWT_SECRET=${{ secrets.JWT_SECRET }}" \
+            --set-env-vars="GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" \
+            --set-env-vars="GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" \
+            --set-env-vars="GOOGLE_REDIRECT_URL=${{ secrets.GOOGLE_REDIRECT_URL }}"

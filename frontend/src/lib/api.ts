@@ -94,6 +94,15 @@ export const authApi = {
   logout: () => {
     useAuthStore.getState().logout();
   },
+
+  // Google 로그인
+  loginWithGoogle: async (code: string) => {
+    const response = await api.post('/auth/google', { code });
+    useAuthStore
+      .getState()
+      .login(response.data.user, response.data.access_token);
+    return response.data;
+  },
 };
 
 // 게임 관련 API

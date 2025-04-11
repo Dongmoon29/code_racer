@@ -1,7 +1,11 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
@@ -10,6 +14,8 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 // JWTClaims JWT 토큰에 포함될 클레임
@@ -25,6 +31,7 @@ type AuthService interface {
 	Login(req *model.LoginRequest) (*model.LoginResponse, error)
 	ValidateToken(tokenString string) (*JWTClaims, error)
 	GetUserByID(id uuid.UUID) (*model.UserResponse, error)
+	LoginWithGoogle(code string) (*model.LoginResponse, error)
 }
 
 // authService AuthService 인터페이스 구현체
@@ -150,4 +157,74 @@ func (s *authService) generateToken(userID uuid.UUID, email string) (string, err
 	}
 
 	return signedToken, nil
+}
+
+func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error) {
+	// Google OAuth 토큰 교환
+	token, err := s.exchangeGoogleCode(code)
+	if err != nil {
+		return nil, err
+	}
+
+	// Google 사용자 정보 가져오기
+	googleUser, err := s.getGoogleUserInfo(token.AccessToken)
+	if err != nil {
+		return nil, err
+	}
+
+	// 기존 사용자 확인 또는 새 사용자 생성
+	user, err := s.userRepo.FindByEmail(googleUser.Email)
+	if err != nil {
+		// 새 사용자 생성
+		user = &model.User{
+			Email:         googleUser.Email,
+			Name:          googleUser.Name,
+			OAuthProvider: "google",
+			OAuthID:       googleUser.ID,
+		}
+		if err := s.userRepo.Create(user); err != nil {
+			return nil, err
+		}
+	}
+
+	// JWT 토큰 생성
+	jwtToken, err := s.generateToken(user.ID, user.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.LoginResponse{
+		User:        user.ToResponse(),
+		AccessToken: jwtToken,
+	}, nil
+}
+
+func (s *authService) exchangeGoogleCode(code string) (*oauth2.Token, error) {
+	config := &oauth2.Config{
+		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+		},
+		Endpoint: google.Endpoint,
+	}
+
+	return config.Exchange(context.Background(), code)
+}
+
+func (s *authService) getGoogleUserInfo(accessToken string) (*model.GoogleUser, error) {
+	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + accessToken)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var googleUser model.GoogleUser
+	if err := json.NewDecoder(resp.Body).Decode(&googleUser); err != nil {
+		return nil, err
+	}
+
+	return &googleUser, nil
 }
