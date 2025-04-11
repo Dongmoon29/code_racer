@@ -29,7 +29,9 @@ const Contributors = () => {
 
   return (
     <div className="flex flex-col items-center mt-4">
-      <h3 className="text-sm font-medium mb-2 text-gray-500">Contributors</h3>
+      <h3 className="text-sm font-medium mb-2 text-gray-500">
+        Made with ❤️ by these awesome contributors
+      </h3>
       <div className="flex flex-wrap justify-center gap-2">
         {contributors.map((contributor) => (
           <a
