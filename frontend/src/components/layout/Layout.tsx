@@ -2,6 +2,7 @@ import React, { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Header from './Header';
+import Contributors from './Contributors';
 
 interface LayoutProps {
   children: ReactNode;
@@ -71,8 +72,11 @@ const Layout: React.FC<LayoutProps> = ({
 
         {/* ✅ Footer는 항상 하단에 위치 */}
         <footer className="bg-white dark:bg-[color:hsl(var(--background))] py-6">
-          <div className="max-w-7xl mx-auto px-4 text-center text-gray-500">
-            <p>© {new Date().getFullYear()} Code Racer</p>
+          <div className="max-w-7xl mx-auto px-4 flex flex-col items-center">
+            <Contributors />
+            <p className="text-center text-gray-500 mt-4">
+              © {new Date().getFullYear()} Code Racer
+            </p>
           </div>
         </footer>
       </div>
