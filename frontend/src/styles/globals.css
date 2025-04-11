@@ -1,0 +1,179 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+
+  --card: 200 33% 98%;
+  --card-foreground: 0 0% 0%;
+
+  --header: 0 0% 97%;
+  --popover: 0 0% 95%;
+  --popover-foreground: 0 0% 0%;
+  --primary: 142 88% 22%;
+  --primary-hover: 142 44% 44%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 91%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 0 0% 91%;
+  --muted-foreground: 195 60% 36%;
+  --accent: 0 0% 91%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 100% 50%;
+  --border: 0 0% 88%;
+  --input: 0 0% 88%;
+  --ring: 195 60% 36%;
+  --radius: 0.625rem;
+
+  --neon-gradient: linear-gradient(
+    90deg,
+    rgba(56, 189, 248, 0.9) 0%,
+    rgba(67, 56, 202, 0.9) 50%,
+    rgba(147, 51, 234, 0.9) 100%
+  );
+  --neon-hover-gradient: linear-gradient(
+    90deg,
+    rgba(56, 189, 248, 1) 0%,
+    rgba(67, 56, 202, 1) 50%,
+    rgba(147, 51, 234, 1) 100%
+  );
+  --neon-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+
+  /* 라이트 테마용 새로운 그라데이션 */
+  --light-gradient: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+  --light-hover-gradient: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
+  --light-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
+
+  /* 테마 전환 애니메이션 */
+  --theme-transition-duration: 100ms;
+}
+
+.dark {
+  --background: 215 14% 16%;
+  --foreground: 210 18% 85%;
+  --muted-foreground: 215 14% 65%;
+
+  /* 카드 다크모드 색상 수정 */
+  --card: 215 25% 22%; /* 더 진한 네이비 블루 */
+  --card-foreground: 210 18% 85%;
+
+  /* 기존 다크모드 변수들... */
+  --header: 215 14% 19%;
+  --popover: 215 14% 21%;
+  --popover-foreground: 210 18% 85%;
+  --primary: 142 88% 22%;
+  --primary-hover: 142 44% 44%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 215 14% 21%;
+  --secondary-foreground: 210 18% 85%;
+  --muted: 215 14% 21%;
+  --accent: 215 14% 21%;
+  --accent-foreground: 210 18% 85%;
+  --destructive: 0 84% 62%;
+  --border: 215 14% 25%;
+  --input: 215 14% 25%;
+  --ring: 215 14% 65%;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+body {
+  background: var(--background);
+  color: #000000;
+  font-family: Arial, Helvetica, sans-serif;
+  transition: background-color var(--theme-transition-duration) ease,
+    color var(--theme-transition-duration) ease;
+}
+
+/* 트랜지션을 위한 추가 스타일 */
+.transition-all {
+  transition-property: all;
+}
+
+.duration-300 {
+  transition-duration: 300ms;
+}
+
+.ease-in-out {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 접힌 패널의 최소 너비 설정 */
+.col-span-1.overflow-hidden {
+  min-width: 40px;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+/* Neon 버튼 기본 스타일 - 다크 테마 */
+.dark .btn-neon {
+  background: var(--neon-gradient);
+  color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  box-shadow: var(--neon-shadow);
+  transition: all 0.3s ease;
+}
+
+.dark .btn-neon:hover {
+  background: var(--neon-hover-gradient);
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.8);
+  transform: translateY(-1px);
+}
+
+/* Neon 버튼 라이트 테마 스타일 */
+.btn-neon {
+  background: var(--light-gradient);
+  color: white;
+  box-shadow: var(--light-shadow);
+  transition: all 0.3s ease;
+}
+
+.btn-neon:hover {
+  background: var(--light-hover-gradient);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+  transform: translateY(-1px);
+}
+
+/* 테마 전환 아이콘 스타일 */
+.theme-icon {
+  transition: transform var(--theme-transition-duration) ease,
+    opacity var(--theme-transition-duration) ease;
+}
+
+.theme-icon-sun {
+  transform: scale(0) rotate(-90deg);
+  opacity: 0;
+}
+
+.theme-icon-moon {
+  transform: scale(0) rotate(90deg);
+  opacity: 0;
+}
+
+[data-theme='dark'] .theme-icon-sun,
+[data-theme='light'] .theme-icon-moon {
+  transform: scale(1) rotate(0);
+  opacity: 1;
+}
+
+.fixed-container {
+  width: 100% !important;
+  min-width: 1200px; /* 또는 적절한 최소 너비 */
+}
