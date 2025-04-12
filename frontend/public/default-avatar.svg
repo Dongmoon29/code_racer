@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- 배경 원 -->
+  <circle cx="64" cy="64" r="64" fill="#e0e0e0"/>
+  
+  <!-- 머리 부분 -->
+  <circle cx="64" cy="54" r="24" fill="#bdbdbd"/>
+  
+  <!-- 몸통 부분 -->
+  <path d="M64,84 C42,84 24,98 24,128 L104,128 C104,98 86,84 64,84 Z" fill="#bdbdbd"/>
+  
+  <!-- 그림자 효과 -->
+  <circle cx="64" cy="54" r="24" fill="#9e9e9e" opacity="0.3" transform="translate(4, 4)"/>
+  <path d="M64,84 C42,84 24,98 24,128 L104,128 C104,98 86,84 64,84 Z" fill="#9e9e9e" opacity="0.3" transform="translate(4, 0)"/>
+</svg>
