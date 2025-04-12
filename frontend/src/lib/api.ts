@@ -21,6 +21,15 @@ export interface LeetCodeDetail {
   cpp_template: string;
 }
 
+export interface UserProfile {
+  homepage?: string;
+  linkedin?: string;
+  github?: string;
+  company?: string;
+  job_title?: string;
+  fav_language?: string;
+}
+
 // API 클라이언트 기본 설정
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api',
@@ -188,6 +197,20 @@ export const getCodeTemplate = (
     default:
       return '';
   }
+};
+
+export const userApi = {
+  // 프로필 업데이트
+  updateProfile: async (profile: UserProfile) => {
+    const response = await api.put('/users/profile', profile);
+    return response.data;
+  },
+
+  // 프로필 조회
+  getProfile: async (userId: string) => {
+    const response = await api.get(`/users/${userId}/profile`);
+    return response.data;
+  },
 };
 
 export default api;
