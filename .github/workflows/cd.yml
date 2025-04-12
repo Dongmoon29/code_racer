@@ -58,6 +58,6 @@ jobs:
             --set-env-vars="GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" \
             --set-env-vars="GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" \
             --set-env-vars="GOOGLE_REDIRECT_URL=${{ secrets.GOOGLE_REDIRECT_URL }}" \
-            --set-env-vars="GITHUB_CLIENT_ID=${{ secrets.GITHUB_CLIENT_ID }}" \
-            --set-env-vars="GITHUB_CLIENT_SECRET=${{ secrets.GITHUB_CLIENT_SECRET }}" \
-            --set-env-vars="GITHUB_REDIRECT_URL=${{ secrets.GITHUB_REDIRECT_URL }}"
+            --set-env-vars="GH_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}" \
+            --set-env-vars="GH_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}" \
+            --set-env-vars="GH_REDIRECT_URL=${{ secrets.GH_REDIRECT_URL }}"

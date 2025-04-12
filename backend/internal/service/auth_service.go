@@ -281,9 +281,9 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 
 func (s *authService) exchangeGitHubCode(code string) (*oauth2.Token, error) {
 	config := &oauth2.Config{
-		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
-		ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("GITHUB_REDIRECT_URL"),
+		ClientID:     os.Getenv("GH_CLIENT_ID"),
+		ClientSecret: os.Getenv("GH_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("GH_REDIRECT_URL"),
 		Scopes:       []string{"user:email"},
 		Endpoint:     github.Endpoint,
 	}

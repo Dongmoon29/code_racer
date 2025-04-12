@@ -189,9 +189,9 @@ func (c *AuthController) GitHubAuthHandler(ctx *gin.Context) {
 	state := uuid.New().String()
 
 	config := &oauth2.Config{
-		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
-		ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("GITHUB_REDIRECT_URL"),
+		ClientID:     os.Getenv("GH_CLIENT_ID"),
+		ClientSecret: os.Getenv("GH_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("GH_REDIRECT_URL"),
 		Scopes: []string{
 			"user:email",
 			"read:user", // 사용자 정보 읽기 권한 추가
