@@ -137,3 +137,5 @@ For detailed GCP deployment guide, refer to [deployment/README.md](deployment/RE
 MIT License - see the [LICENSE](LICENSE) file for details.
 
 Project Link: [https://github.com/Dongmoon29/code_racer](https://github.com/Dongmoon29/code_racer)
+
+For detailed documentation on project code base, refer to [https://app.komment.ai/wiki/github/Dongmoon29/code_racer?branch=main&version=1](https://app.komment.ai/wiki/github/Dongmoon29/code_racer?branch=main&version=1).

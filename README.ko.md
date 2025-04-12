@@ -135,3 +135,5 @@ npm run dev
 MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
 프로젝트 링크: [https://github.com/Dongmoon29/code_racer](https://github.com/Dongmoon29/code_racer)
+
+프로젝트 상세 문서는 여기를 확인해주세요. [https://app.komment.ai/wiki/github/Dongmoon29/code_racer?branch=main&version=1](https://app.komment.ai/wiki/github/Dongmoon29/code_racer?branch=main&version=1).
