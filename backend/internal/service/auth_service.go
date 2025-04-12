@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
@@ -13,8 +15,10 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github" // GitHub OAuth2 엔드포인트용
 	"golang.org/x/oauth2/google"
 )
 
@@ -32,6 +36,7 @@ type AuthService interface {
 	ValidateToken(tokenString string) (*JWTClaims, error)
 	GetUserByID(id uuid.UUID) (*model.UserResponse, error)
 	LoginWithGoogle(code string) (*model.LoginResponse, error)
+	LoginWithGitHub(code string) (*model.LoginResponse, error)
 }
 
 // authService AuthService 인터페이스 구현체
@@ -227,4 +232,123 @@ func (s *authService) getGoogleUserInfo(accessToken string) (*model.GoogleUser, 
 	}
 
 	return &googleUser, nil
+}
+
+func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error) {
+	// GitHub OAuth 토큰 교환
+	token, err := s.exchangeGitHubCode(code)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to exchange GitHub code")
+		return nil, err
+	}
+
+	// GitHub 사용자 정보 가져오기
+	githubUser, err := s.getGitHubUserInfo(token.AccessToken)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to get GitHub user info")
+		return nil, err
+	}
+
+	// 기존 사용자 확인 또는 새 사용자 생성
+	user, err := s.userRepo.FindByEmail(githubUser.Email)
+	if err != nil {
+		// 새 사용자 생성
+		user = &model.User{
+			ID:            uuid.New(),
+			Email:         githubUser.Email,
+			Name:          githubUser.Name,
+			OAuthProvider: "github",
+			OAuthID:       githubUser.ID,
+		}
+		if err := s.userRepo.Create(user); err != nil {
+			s.logger.Error().Err(err).Msg("Failed to create new user")
+			return nil, err
+		}
+	}
+
+	// JWT 토큰 생성
+	jwtToken, err := s.generateToken(user.ID, user.Email)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to generate JWT token")
+		return nil, err
+	}
+
+	return &model.LoginResponse{
+		User:        user.ToResponse(),
+		AccessToken: jwtToken,
+	}, nil
+}
+
+func (s *authService) exchangeGitHubCode(code string) (*oauth2.Token, error) {
+	config := &oauth2.Config{
+		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
+		ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("GITHUB_REDIRECT_URL"),
+		Scopes:       []string{"user:email"},
+		Endpoint:     github.Endpoint,
+	}
+
+	return config.Exchange(context.Background(), code)
+}
+
+func (s *authService) getGitHubUserInfo(accessToken string) (*model.GitHubUser, error) {
+	httpClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: accessToken},
+	))
+
+	// 사용자 기본 정보 가져오기
+	userResp, err := httpClient.Get("https://api.github.com/user")
+	if err != nil {
+		return nil, fmt.Errorf("GitHub API error: %w", err)
+	}
+	defer userResp.Body.Close()
+
+	var githubUser struct {
+		ID    int64  `json:"id"`
+		Login string `json:"login"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(userResp.Body).Decode(&githubUser); err != nil {
+		return nil, fmt.Errorf("failed to decode GitHub user response: %w", err)
+	}
+
+	// 이름이 없는 경우 username 사용
+	name := githubUser.Name
+	if name == "" {
+		name = githubUser.Login
+	}
+
+	// 기본 정보에서 이메일을 가져올 수 있다면 바로 사용
+	if githubUser.Email != "" {
+		return &model.GitHubUser{
+			ID:    strconv.FormatInt(githubUser.ID, 10),
+			Email: githubUser.Email,
+			Name:  name,
+		}, nil
+	}
+
+	// 이메일이 없는 경우에만 별도로 이메일 정보 가져오기
+	emailResp, err := httpClient.Get("https://api.github.com/user/emails")
+	if err != nil {
+		return nil, fmt.Errorf("GitHub API email error: %w", err)
+	}
+	defer emailResp.Body.Close()
+
+	var emails []struct {
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(emailResp.Body).Decode(&emails); err != nil {
+		return nil, fmt.Errorf("failed to decode GitHub email response: %w", err)
+	}
+
+	if len(emails) == 0 {
+		return nil, fmt.Errorf("no email found")
+	}
+
+	return &model.GitHubUser{
+		ID:    strconv.FormatInt(githubUser.ID, 10),
+		Email: emails[0].Email,
+		Name:  name,
+	}, nil
 }

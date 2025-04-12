@@ -142,13 +142,26 @@ const LoginForm: React.FC = () => {
       <Button
         type="button"
         variant="outline"
-        className="w-full h-12 flex items-center justify-center gap-3 bg-white"
+        className="w-full h-12 flex items-center justify-center gap-3 bg-white mb-4"
         onClick={() => {
           window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
         }}
       >
         <Image src="/google-logo.svg" alt="Google" width={20} height={20} />
         Sign in with Google
+      </Button>
+
+      {/* GitHub 로그인 버튼 */}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full h-12 flex items-center justify-center gap-3 bg-white"
+        onClick={() => {
+          window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/github`;
+        }}
+      >
+        <Image src="/github-logo.svg" alt="GitHub" width={20} height={20} />
+        Sign in with GitHub
       </Button>
 
       <div className="mt-8 text-center text-sm text-[hsl(var(--muted-foreground))]">

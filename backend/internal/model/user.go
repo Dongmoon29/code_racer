@@ -93,3 +93,10 @@ type UpdateProfileRequest struct {
 	JobTitle    string `json:"job_title" binding:"omitempty,max=255"`
 	FavLanguage string `json:"fav_language" binding:"omitempty,oneof=javascript python go java cpp rust"`
 }
+
+// GitHubUser GitHub 사용자 정보
+type GitHubUser struct {
+	ID    string
+	Email string
+	Name  string
+}

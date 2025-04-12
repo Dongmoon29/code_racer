@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github"
 	"golang.org/x/oauth2/google"
 )
 
@@ -177,6 +178,63 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	}
 
 	// 프론트엔드로 리다이렉트 (토큰과 함께)
+	frontendURL := os.Getenv("FRONTEND_URL")
+	ctx.Redirect(http.StatusTemporaryRedirect,
+		fmt.Sprintf("%s/auth/callback?token=%s", frontendURL, response.AccessToken))
+}
+
+// GitHubAuthHandler GitHub 로그인 페이지로 리다이렉트
+func (c *AuthController) GitHubAuthHandler(ctx *gin.Context) {
+	// state 파라미터 추가 (CSRF 방지)
+	state := uuid.New().String()
+
+	config := &oauth2.Config{
+		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
+		ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("GITHUB_REDIRECT_URL"),
+		Scopes: []string{
+			"user:email",
+			"read:user", // 사용자 정보 읽기 권한 추가
+		},
+		Endpoint: github.Endpoint,
+	}
+
+	// 디버깅을 위한 로깅 추가
+	c.logger.Info().
+		Str("clientID", config.ClientID).
+		Str("redirectURL", config.RedirectURL).
+		Msg("GitHub OAuth configuration")
+
+	url := config.AuthCodeURL(state)
+
+	// 리다이렉트 전에 로깅
+	c.logger.Info().
+		Str("redirectURL", url).
+		Msg("Redirecting to GitHub OAuth page")
+
+	ctx.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+// GitHubCallback GitHub OAuth 콜백 처리
+func (c *AuthController) GitHubCallback(ctx *gin.Context) {
+	code := ctx.Query("code")
+	if code == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Authorization code not found",
+		})
+		return
+	}
+
+	response, err := c.authService.LoginWithGitHub(code)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
 	frontendURL := os.Getenv("FRONTEND_URL")
 	ctx.Redirect(http.StatusTemporaryRedirect,
 		fmt.Sprintf("%s/auth/callback?token=%s", frontendURL, response.AccessToken))
