@@ -14,6 +14,7 @@ import (
 func Setup(
 	authController *controller.AuthController,
 	gameController *controller.GameController,
+	userController *controller.UserController,
 	wsController *controller.WebSocketController,
 	authMiddleware *middleware.AuthMiddleware,
 	cfg *config.Config,
@@ -69,7 +70,9 @@ func Setup(
 			// 유저 관련 라우트
 			user := secured.Group("/users")
 			{
-				user.GET("/me", authController.GetCurrentUser)
+				user.GET("/me", userController.GetCurrentUser)
+				user.GET("/:userId/profile", userController.GetProfile)
+				user.PUT("/profile", userController.UpdateProfile)
 			}
 
 			// LeetCode 문제 관련 라우트

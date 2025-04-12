@@ -62,12 +62,6 @@ func main() {
 		}
 		logger.Info().Msg("Loaded .env file")
 
-		// Google OAuth 환경변수 로깅
-		logger.Info().
-			Str("GOOGLE_CLIENT_ID", os.Getenv("GOOGLE_CLIENT_ID")).
-			Str("GOOGLE_REDIRECT_URL", os.Getenv("GOOGLE_REDIRECT_URL")).
-			Int("GOOGLE_CLIENT_SECRET_LENGTH", len(os.Getenv("GOOGLE_CLIENT_SECRET"))).
-			Msg("Google OAuth Environment Variables")
 	}
 
 	cfg := config.LoadConfig()
@@ -89,6 +83,7 @@ func main() {
 	r := router.Setup(
 		deps.authController,
 		deps.gameController,
+		deps.userController,
 		deps.wsController,
 		deps.authMiddleware,
 		cfg,
@@ -126,12 +121,12 @@ func setupDatabase(db *gorm.DB) error {
 type dependencies struct {
 	authController *controller.AuthController
 	gameController *controller.GameController
+	userController *controller.UserController
 	wsController   *controller.WebSocketController
 	authMiddleware *middleware.AuthMiddleware
 }
 
 func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *dependencies {
-
 	// 레포지토리 초기화
 	userRepo := repository.NewUserRepository(db, appLogger)
 	gameRepo := repository.NewGameRepository(db, appLogger)
@@ -139,6 +134,7 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 
 	// 서비스 초기화
 	authService := service.NewAuthService(userRepo, cfg.JWTSecret, appLogger)
+	userService := service.NewUserService(userRepo, appLogger)
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger)
 	wsService := service.NewWebSocketService(rdb, appLogger)
 	gameService := service.NewGameService(gameRepo, leetCodeRepo, rdb, wsService, judgeService, appLogger)
@@ -151,6 +147,7 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 	return &dependencies{
 		authController: controller.NewAuthController(authService, appLogger),
 		gameController: controller.NewGameController(gameService, appLogger),
+		userController: controller.NewUserController(userService, appLogger),
 		wsController:   controller.NewWebSocketController(wsService, appLogger),
 		authMiddleware: middleware.NewAuthMiddleware(authService, appLogger),
 	}
