@@ -1,12 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Layout from '../components/layout/Layout';
 import RegisterForm from '../components/auth/RegisterForm';
 import Image from 'next/image';
-import { Alert } from '@/components/ui/alert';
 
 const RegisterPage: React.FC = () => {
-  const [message] = useState<string | null>(null);
-
   return (
     <Layout
       title="Register | Code Racer"
@@ -21,12 +18,6 @@ const RegisterPage: React.FC = () => {
                 Sign Up for CodeRacer
               </h1>
             </div>
-
-            {message && (
-              <Alert variant="success" className="mb-6">
-                <p>{message}</p>
-              </Alert>
-            )}
 
             <RegisterForm />
           </div>
