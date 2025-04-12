@@ -69,6 +69,13 @@ SERVER_PORT=8080
 JUDGE0_API_KEY=your_judge0_api_key
 JUDGE0_API_ENDPOINT=https://judge0-ce.p.rapidapi.com
 
+# Google OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URL=http://localhost:8080/api/auth/google/callback
+
+# Github OAuth
+
 # frontend/.env
 NEXT_PUBLIC_API_URL=http://localhost:8080/api
 NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
