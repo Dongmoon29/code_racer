@@ -284,8 +284,11 @@ func (s *authService) exchangeGitHubCode(code string) (*oauth2.Token, error) {
 		ClientID:     os.Getenv("GH_CLIENT_ID"),
 		ClientSecret: os.Getenv("GH_CLIENT_SECRET"),
 		RedirectURL:  os.Getenv("GH_REDIRECT_URL"),
-		Scopes:       []string{"user:email"},
-		Endpoint:     github.Endpoint,
+		Scopes: []string{
+			"user:email",
+			"read:user",
+		},
+		Endpoint: github.Endpoint,
 	}
 
 	return config.Exchange(context.Background(), code)
@@ -296,6 +299,35 @@ func (s *authService) getGitHubUserInfo(accessToken string) (*model.GitHubUser, 
 		&oauth2.Token{AccessToken: accessToken},
 	))
 
+	// 사용자의 기본 이메일 대신 모든 이메일 목록을 먼저 가져옴
+	emailResp, err := httpClient.Get("https://api.github.com/user/emails")
+	if err != nil {
+		return nil, fmt.Errorf("GitHub API email error: %w", err)
+	}
+	defer emailResp.Body.Close()
+
+	var emails []struct {
+		Email    string `json:"email"`
+		Primary  bool   `json:"primary"`
+		Verified bool   `json:"verified"`
+	}
+	if err := json.NewDecoder(emailResp.Body).Decode(&emails); err != nil {
+		return nil, fmt.Errorf("failed to decode GitHub email response: %w", err)
+	}
+
+	// 검증된 주 이메일을 찾음
+	var primaryEmail string
+	for _, email := range emails {
+		if email.Primary && email.Verified {
+			primaryEmail = email.Email
+			break
+		}
+	}
+
+	if primaryEmail == "" {
+		return nil, fmt.Errorf("no verified primary email found")
+	}
+
 	// 사용자 기본 정보 가져오기
 	userResp, err := httpClient.Get("https://api.github.com/user")
 	if err != nil {
@@ -304,10 +336,10 @@ func (s *authService) getGitHubUserInfo(accessToken string) (*model.GitHubUser, 
 	defer userResp.Body.Close()
 
 	var githubUser struct {
-		ID    int64  `json:"id"`
-		Login string `json:"login"`
-		Name  string `json:"name"`
-		Email string `json:"email"`
+		ID        int64  `json:"id"`
+		Login     string `json:"login"`
+		Name      string `json:"name"`
+		AvatarURL string `json:"avatar_url"` // 프로필 이미지 URL 추가
 	}
 	if err := json.NewDecoder(userResp.Body).Decode(&githubUser); err != nil {
 		return nil, fmt.Errorf("failed to decode GitHub user response: %w", err)
@@ -319,36 +351,10 @@ func (s *authService) getGitHubUserInfo(accessToken string) (*model.GitHubUser, 
 		name = githubUser.Login
 	}
 
-	// 기본 정보에서 이메일을 가져올 수 있다면 바로 사용
-	if githubUser.Email != "" {
-		return &model.GitHubUser{
-			ID:    strconv.FormatInt(githubUser.ID, 10),
-			Email: githubUser.Email,
-			Name:  name,
-		}, nil
-	}
-
-	// 이메일이 없는 경우에만 별도로 이메일 정보 가져오기
-	emailResp, err := httpClient.Get("https://api.github.com/user/emails")
-	if err != nil {
-		return nil, fmt.Errorf("GitHub API email error: %w", err)
-	}
-	defer emailResp.Body.Close()
-
-	var emails []struct {
-		Email string `json:"email"`
-	}
-	if err := json.NewDecoder(emailResp.Body).Decode(&emails); err != nil {
-		return nil, fmt.Errorf("failed to decode GitHub email response: %w", err)
-	}
-
-	if len(emails) == 0 {
-		return nil, fmt.Errorf("no email found")
-	}
-
 	return &model.GitHubUser{
-		ID:    strconv.FormatInt(githubUser.ID, 10),
-		Email: emails[0].Email,
-		Name:  name,
+		ID:        strconv.FormatInt(githubUser.ID, 10),
+		Email:     primaryEmail,
+		Name:      name,
+		AvatarURL: githubUser.AvatarURL, // 프로필 이미지 URL 반환
 	}, nil
 }

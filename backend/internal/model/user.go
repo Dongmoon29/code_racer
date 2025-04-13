@@ -96,7 +96,8 @@ type UpdateProfileRequest struct {
 
 // GitHubUser GitHub 사용자 정보
 type GitHubUser struct {
-	ID    string
-	Email string
-	Name  string
+	ID        string
+	Email     string
+	Name      string
+	AvatarURL string
 }
