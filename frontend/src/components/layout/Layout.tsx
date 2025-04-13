@@ -1,29 +1,22 @@
 import React from 'react';
-import Head from 'next/head';
+import { Footer } from './Footer';
 import Header from './Header';
+import { Contributor } from './Contributors';
 
 interface LayoutProps {
   children: React.ReactNode;
-  title?: string;
-  description?: string;
+  title: string;
+  description: string;
+  contributors: Contributor[];
 }
 
-const Layout: React.FC<LayoutProps> = ({
-  children,
-  title = 'Code Racer',
-  description = 'Real-time coding competitions',
-}) => {
+const Layout: React.FC<LayoutProps> = ({ children, contributors }) => {
   return (
-    <>
-      <Head>
-        <title>{title}</title>
-        <meta name="description" content={description} />
-      </Head>
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1">{children}</main>
-      </div>
-    </>
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-grow">{children}</main>
+      <Footer contributors={contributors} />
+    </div>
   );
 };
 

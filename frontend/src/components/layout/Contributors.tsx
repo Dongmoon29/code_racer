@@ -1,32 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 
-interface Contributor {
+export interface Contributor {
   login: string;
   avatar_url: string;
   html_url: string;
   contributions: number;
 }
 
-const Contributors = () => {
-  const [contributors, setContributors] = useState<Contributor[]>([]);
+interface ContributorsProps {
+  contributors: Contributor[];
+}
 
-  useEffect(() => {
-    const fetchContributors = async () => {
-      try {
-        const response = await fetch(
-          'https://api.github.com/repos/Dongmoon29/code_racer/contributors'
-        );
-        const data = await response.json();
-        setContributors(data);
-      } catch (error) {
-        console.error('Failed to fetch contributors:', error);
-      }
-    };
-
-    fetchContributors();
-  }, []);
-
+export const Contributors = ({ contributors }: ContributorsProps) => {
   return (
     <div className="flex flex-col items-center mt-4">
       <h3 className="text-sm font-medium mb-2 text-gray-500">
@@ -57,5 +43,3 @@ const Contributors = () => {
     </div>
   );
 };
-
-export default Contributors;

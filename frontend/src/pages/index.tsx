@@ -5,17 +5,30 @@ import { Card } from '../components/ui';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '@/stores/authStore';
 import { Code, Trophy, Users, Clock, Zap } from 'lucide-react';
+import { GetStaticProps } from 'next';
 
-const HomePage: React.FC = () => {
+interface Contributor {
+  login: string;
+  avatar_url: string;
+  html_url: string;
+  contributions: number;
+}
+
+interface HomeProps {
+  contributors: Contributor[];
+}
+
+const HomePage: React.FC<HomeProps> = ({ contributors }) => {
   const { isLoggedIn } = useAuthStore();
 
   return (
     <Layout
       title="Code Racer - Real-time Coding Competitions"
       description="Improve your coding skills by competing with friends in real-time"
+      contributors={contributors}
     >
-      {/* Hero Section */}
       <div className="w-full max-w-6xl mx-auto">
+        {/* Hero Section */}
         <div className="flex flex-col items-center text-center py-16">
           <h1 className="text-5xl font-bold mb-6 text-[hsl(var(--foreground))]">
             Welcome to CodeRacer
@@ -145,3 +158,26 @@ const HomePage: React.FC = () => {
 };
 
 export default HomePage;
+
+export const getStaticProps: GetStaticProps = async () => {
+  try {
+    const response = await fetch(
+      'https://api.github.com/repos/Dongmoon29/code_racer/contributors'
+    );
+    const contributors = await response.json();
+
+    return {
+      props: {
+        contributors,
+      },
+      revalidate: 3600, // 1시간마다 재생성
+    };
+  } catch (error) {
+    console.error('Failed to fetch contributors:', error);
+    return {
+      props: {
+        contributors: [],
+      },
+    };
+  }
+};
