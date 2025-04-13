@@ -190,11 +190,17 @@ func initDatabase(cfg *config.Config, appLogger logger.Logger) (*gorm.DB, error)
 		Str("dsn", maskedDsn).
 		Msg("Attempting database connection")
 
+	// 운영 환경에서는 Error 레벨로, 개발 환경에서는 Info 레벨로 설정
+	logLevel := gormLogger.Error
+	if !isProduction() {
+		logLevel = gormLogger.Info
+	}
+
 	gormLogger := gormLogger.New(
 		logger.NewGormWriter(appLogger),
 		gormLogger.Config{
 			SlowThreshold:             time.Second,
-			LogLevel:                  gormLogger.Info,
+			LogLevel:                  logLevel,
 			IgnoreRecordNotFoundError: true,
 			Colorful:                  !isProduction(),
 		},
