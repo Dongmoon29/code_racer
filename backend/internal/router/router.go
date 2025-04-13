@@ -31,8 +31,7 @@ func Setup(
 
 	// CORS 설정
 	router.Use(cors.New(cors.Config{
-		// TODO 프론트엔드 origin으로 바꾸기
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"http://localhost:3000", "https://code-racer-pi.vercel.app/"}, // 와일드카드(*) 대신 실제 프론트엔드 도메인
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},

@@ -28,30 +28,35 @@ func NewAuthMiddleware(authService service.AuthService, logger logger.Logger) *A
 // APIAuthRequired API 요청을 위한 인증 미들웨어
 func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		// Authorization 헤더에서 토큰 추출
-		authHeader := ctx.GetHeader("Authorization")
-		if authHeader == "" {
-			log.Println("No Authorization header provided")
-			ctx.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"message": "Authorization header is required",
-			})
-			ctx.Abort()
-			return
-		}
+		var tokenString string
 
-		// Bearer 토큰 형식 체크
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			log.Println("Invalid token format in header")
-			ctx.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"message": "Invalid token format",
-			})
-			ctx.Abort()
-			return
-		}
+		// 1. 먼저 쿠키에서 토큰 확인
+		if cookie, err := ctx.Cookie("authToken"); err == nil {
+			tokenString = cookie
+		} else {
+			// 2. 쿠키가 없으면 Authorization 헤더 확인
+			authHeader := ctx.GetHeader("Authorization")
+			if authHeader == "" {
+				ctx.JSON(http.StatusUnauthorized, gin.H{
+					"success": false,
+					"message": "Authentication required",
+				})
+				ctx.Abort()
+				return
+			}
 
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			// Bearer 토큰 형식 체크
+			if !strings.HasPrefix(authHeader, "Bearer ") {
+				ctx.JSON(http.StatusUnauthorized, gin.H{
+					"success": false,
+					"message": "Invalid token format",
+				})
+				ctx.Abort()
+				return
+			}
+
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+		}
 
 		// 토큰 검증 및 컨텍스트 설정
 		m.validateAndSetContext(ctx, tokenString)

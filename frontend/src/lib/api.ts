@@ -36,15 +36,13 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // 쿠키를 포함하여 요청
 });
 
 // 요청 인터셉터 - 토큰 추가
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // localStorage 대신 쿠키 사용 (쿠키는 자동으로 전송됨)
     return config;
   },
   (error) => Promise.reject(error)
@@ -54,17 +52,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 401 에러 (인증 실패) 처리
-    if (error.response && error.response.status === 401) {
-      // 현재 경로가 로그인 페이지가 아닐 때만 리다이렉트
-      if (
-        typeof window !== 'undefined' &&
-        !window.location.pathname.includes('/login')
-      ) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-      }
-    }
+    console.error('API Error:', error.response?.data); // 디버깅을 위한 로그 추가
     return Promise.reject(error);
   }
 );
@@ -83,33 +71,32 @@ export const authApi = {
 
   // 로그인
   login: async (email: string, password: string) => {
-    console.log('로그인 호출');
     const response = await api.post('/auth/login', { email, password });
-    // Zustand 스토어에 사용자 정보 저장
-    useAuthStore
-      .getState()
-      .login(response.data.user, response.data.access_token);
-    console.log('로그인 후 스토어 상태:', useAuthStore.getState());
     return response.data;
   },
 
   // 현재 사용자 정보 조회
   getCurrentUser: async () => {
-    const response = await api.get('/users/me');
-    return response.data;
+    try {
+      const response = await api.get('/users/me'); // /auth/me 대신 /users/me 사용
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
   // 로그아웃
-  logout: () => {
-    useAuthStore.getState().logout();
+  logout: async () => {
+    await api.post('/auth/logout');
   },
 
   // Google 로그인
   loginWithGoogle: async (code: string) => {
     const response = await api.post('/auth/google', { code });
-    useAuthStore
-      .getState()
-      .login(response.data.user, response.data.access_token);
+    // 토큰 저장
+    localStorage.setItem('token', response.data.access_token);
+    // store 업데이트는 user 정보만
+    useAuthStore.getState().login(response.data.user);
     return response.data;
   },
 };

@@ -76,21 +76,31 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
+	// HTTP-only 쿠키 설정 추가
+	ctx.SetCookie(
+		"authToken",
+		response.AccessToken,
+		3600*24*30, // 30일
+		"/",
+		"",
+		true, // Secure
+		true, // HTTP-only
+	)
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"success":      true,
-		"user":         response.User,
-		"access_token": response.AccessToken,
+		"success": true,
+		"user":    response.User,
 	})
 }
 
 // GetCurrentUser 현재 로그인된 사용자 정보 조회 핸들러
 func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
-	// 미들웨어에서 설정한 사용자 ID 가져오기
+	// userID는 미들웨어에서 설정됨
 	userID, exists := ctx.Get("userID")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
-			"message": "User not authenticated",
+			"message": "Unauthorized",
 		})
 		return
 	}
@@ -99,7 +109,7 @@ func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "Failed to get user information",
 		})
 		return
 	}
@@ -177,10 +187,19 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	// 프론트엔드로 리다이렉트 (토큰과 함께)
+	// HTTP-only 쿠키 설정
+	ctx.SetCookie(
+		"authToken",
+		response.AccessToken,
+		3600*24*30, // 30일
+		"/",
+		"",
+		true, // Secure
+		true, // HTTP-only
+	)
+
 	frontendURL := os.Getenv("FRONTEND_URL")
-	ctx.Redirect(http.StatusTemporaryRedirect,
-		fmt.Sprintf("%s/auth/callback?token=%s", frontendURL, response.AccessToken))
+	ctx.Redirect(http.StatusTemporaryRedirect, frontendURL+"/dashboard")
 }
 
 // GitHubAuthHandler GitHub 로그인 페이지로 리다이렉트

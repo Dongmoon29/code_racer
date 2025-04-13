@@ -1,11 +1,20 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
 
 export const ThemeToggle = () => {
+  const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <button
@@ -23,7 +32,7 @@ export const ThemeToggle = () => {
             } text-red-400`}
         />
         <Moon
-          className={` absolute h-5 w-5 transition-all duration-300
+          className={`absolute h-5 w-5 transition-all duration-300
             ${
               theme === 'dark'
                 ? 'scale-100 rotate-0 opacity-100'

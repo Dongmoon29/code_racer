@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { Eye, EyeOff, Mail } from 'lucide-react';
 import { authApi } from '../../lib/api';
 import { Spinner } from '../ui';
-import axios, { type AxiosError } from 'axios';
-import type { ApiErrorResponse } from '@/lib/types';
+import axios from 'axios';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/alert';
 import Image from 'next/image';
+import { useAuthStore } from '../../stores/authStore';
 
 const LoginForm: React.FC = () => {
   const router = useRouter();
@@ -22,37 +22,28 @@ const LoginForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 유효성 검사
-    if (!email.trim()) {
-      setError('Email is required');
-      return;
-    }
-
-    if (!password.trim()) {
-      setError('Password is required');
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
 
-      await authApi.login(email, password);
+      const response = await authApi.login(email, password);
 
-      // 로그인 성공 시 대시보드로 이동
-      router.push('/dashboard');
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        // AxiosError로 타입 지정
-        const axiosError = err as AxiosError<ApiErrorResponse>;
-        setError(
-          axiosError.response?.data?.message || 'Invalid email or password'
-        );
+      if (response.success) {
+        useAuthStore.getState().login(response.user);
+
+        // 로그인 성공 후 리다이렉트
+        const redirect = router.query.redirect as string;
+        await router.push(redirect || '/dashboard');
       } else {
-        // 기타 예상치 못한 오류
+        setError(response.message || 'Login failed');
+      }
+    } catch (err: unknown) {
+      console.error('Login error:', err);
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Invalid email or password');
+      } else {
         setError('An unexpected error occurred');
       }
-      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }
