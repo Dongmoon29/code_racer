@@ -12,6 +12,7 @@ import { Users, Clock, Code, Trophy, Search, X, Filter } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { Select } from '@/components/ui/Select';
 import { Alert } from '../ui/alert';
+import { useTheme } from 'next-themes';
 
 // 게임 방 타입
 interface Game {
@@ -50,6 +51,7 @@ const RoomList: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const { theme } = useTheme();
 
   const difficultyOptions = [
     { value: 'all', label: 'All Difficulties' },
@@ -207,7 +209,7 @@ const RoomList: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <Spinner size="sm" />
+        <Spinner size="sm" color={theme === 'dark' ? 'white' : 'black'} />
       </div>
     );
   }
