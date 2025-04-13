@@ -13,11 +13,7 @@ const GamePage: React.FC = () => {
   // 게임 ID가 로드되지 않은 경우
   if (!id) {
     return (
-      <Layout
-        title="Loading... | Code Racer"
-        description="Loading game..."
-        requireAuth={true}
-      >
+      <Layout title="Loading... | Code Racer" description="Loading game...">
         <div className="flex justify-center items-center h-64 text-[hsl(var(--foreground))]">
           <Spinner size="lg" />
         </div>
@@ -31,11 +27,7 @@ const GamePage: React.FC = () => {
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   ) {
     return (
-      <Layout
-        title="Invalid Game | Code Racer"
-        description="Invalid game ID"
-        requireAuth={true}
-      >
+      <Layout title="Invalid Game | Code Racer" description="Invalid game ID">
         <div className="max-w-2xl mx-auto p-6">
           <Alert variant="error">
             <AlertTitle className="text-lg font-semibold text-[hsl(var(--foreground))]">
@@ -61,7 +53,6 @@ const GamePage: React.FC = () => {
     <Layout
       title="Game Room | Code Racer"
       description="Compete in real-time coding challenge"
-      requireAuth={true}
     >
       <div className="w-full min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
         <div className="container mx-auto px-4 py-6">

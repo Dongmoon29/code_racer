@@ -7,7 +7,7 @@ interface LayoutProps {
   children: React.ReactNode;
   title: string;
   description: string;
-  contributors: Contributor[];
+  contributors?: Contributor[];
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, contributors }) => {
@@ -15,7 +15,8 @@ const Layout: React.FC<LayoutProps> = ({ children, contributors }) => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-grow">{children}</main>
-      <Footer contributors={contributors} />
+      {/* TODO: should refactor Footer */}
+      <Footer contributors={contributors ?? []} />
     </div>
   );
 };

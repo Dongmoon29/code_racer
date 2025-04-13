@@ -49,12 +49,11 @@ export class WebSocketClient {
       return;
     }
 
-    const wsUrl = `${
-      process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws'
-    }/${this.gameId}`;
-
+    const wsUrl = `/ws/${this.gameId}`;
     try {
-      this.ws = new WebSocket(`${wsUrl}?token=${token}`);
+      this.ws = new WebSocket(
+        `${window.location.origin.replace('http', 'ws')}${wsUrl}?token=${token}`
+      );
 
       this.ws.onopen = this.handleOpen.bind(this);
       this.ws.onmessage = this.handleMessage.bind(this);

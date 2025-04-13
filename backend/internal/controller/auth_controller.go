@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 	"os"
 
@@ -76,15 +74,26 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	// HTTP-only 쿠키 설정 추가
+	frontendDomain := os.Getenv("FRONTEND_DOMAIN")
+
+	// SameSite 설정 추가
+	sameSite := http.SameSiteNoneMode
+
+	c.logger.Info().
+		Str("frontendDomain", frontendDomain).
+		Int("sameSite", int(sameSite)).
+		Msg("Cookie configuration")
+
+	// 쿠키 설정에 SameSite 추가
+	ctx.SetSameSite(sameSite)
 	ctx.SetCookie(
 		"authToken",
 		response.AccessToken,
 		3600*24*30, // 30일
 		"/",
-		"",
-		true, // Secure
-		true, // HTTP-only
+		frontendDomain,
+		true, // Secure (프로덕션에서는 반드시 true)
+		true, // HttpOnly
 	)
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -159,9 +168,6 @@ func (c *AuthController) GoogleAuthHandler(ctx *gin.Context) {
 		Endpoint: google.Endpoint,
 	}
 
-	// 환경변수 확인을 위한 로깅 추가
-	log.Printf("ClientID: %s, RedirectURL: %s", config.ClientID, config.RedirectURL)
-
 	url := config.AuthCodeURL("state-token")
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
 }
@@ -187,18 +193,19 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	// HTTP-only 쿠키 설정
-	ctx.SetCookie(
-		"authToken",
-		response.AccessToken,
-		3600*24*30, // 30일
-		"/",
-		"",
-		true, // Secure
-		true, // HTTP-only
-	)
-
 	frontendURL := os.Getenv("FRONTEND_URL")
+
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     "authToken",
+		Value:    response.AccessToken,
+		MaxAge:   3600 * 24 * 30,
+		Path:     "/",
+		Domain:   "",
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
+	})
+
 	ctx.Redirect(http.StatusTemporaryRedirect, frontendURL+"/dashboard")
 }
 
@@ -218,18 +225,7 @@ func (c *AuthController) GitHubAuthHandler(ctx *gin.Context) {
 		Endpoint: github.Endpoint,
 	}
 
-	// 디버깅을 위한 로깅 추가
-	c.logger.Info().
-		Str("clientID", config.ClientID).
-		Str("redirectURL", config.RedirectURL).
-		Msg("GitHub OAuth configuration")
-
 	url := config.AuthCodeURL(state)
-
-	// 리다이렉트 전에 로깅
-	c.logger.Info().
-		Str("redirectURL", url).
-		Msg("Redirecting to GitHub OAuth page")
 
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
 }
@@ -255,6 +251,38 @@ func (c *AuthController) GitHubCallback(ctx *gin.Context) {
 	}
 
 	frontendURL := os.Getenv("FRONTEND_URL")
-	ctx.Redirect(http.StatusTemporaryRedirect,
-		fmt.Sprintf("%s/auth/callback?token=%s", frontendURL, response.AccessToken))
+
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     "authToken",
+		Value:    response.AccessToken,
+		MaxAge:   3600 * 24 * 30,
+		Path:     "/",
+		Domain:   "",
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
+	})
+
+	// 토큰을 URL 파라미터로 전달하지 않고 대시보드로 직접 리다이렉트
+	ctx.Redirect(http.StatusTemporaryRedirect, frontendURL+"/dashboard")
+}
+
+// Logout 로그아웃 핸들러
+func (c *AuthController) Logout(ctx *gin.Context) {
+
+	// 쿠키를 만료시켜 삭제
+	ctx.SetCookie(
+		"authToken",
+		"", // 빈 값
+		-1, // 즉시 만료
+		"/",
+		"",
+		true,
+		true,
+	)
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Successfully logged out",
+	})
 }

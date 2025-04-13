@@ -1,4 +1,3 @@
-import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 
 // LeetCode 문제 상세 정보 인터페이스
@@ -32,27 +31,18 @@ export interface UserProfile {
 
 // API 클라이언트 기본 설정
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api',
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // 쿠키를 포함하여 요청
+  withCredentials: true, // 쿠키 포함하여 요청
 });
 
-// 요청 인터셉터 - 토큰 추가
-api.interceptors.request.use(
-  (config) => {
-    // localStorage 대신 쿠키 사용 (쿠키는 자동으로 전송됨)
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// 응답 인터셉터 - 에러 처리
+// 응답 인터셉터
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error.response?.data); // 디버깅을 위한 로그 추가
+    console.error('API Error:', error.response?.data);
     return Promise.reject(error);
   }
 );
@@ -78,7 +68,7 @@ export const authApi = {
   // 현재 사용자 정보 조회
   getCurrentUser: async () => {
     try {
-      const response = await api.get('/users/me'); // /auth/me 대신 /users/me 사용
+      const response = await api.get('/users/me');
       return response.data;
     } catch (error) {
       throw error;
@@ -91,13 +81,11 @@ export const authApi = {
   },
 
   // Google 로그인
-  loginWithGoogle: async (code: string) => {
-    const response = await api.post('/auth/google', { code });
-    // 토큰 저장
-    localStorage.setItem('token', response.data.access_token);
-    // store 업데이트는 user 정보만
-    useAuthStore.getState().login(response.data.user);
-    return response.data;
+  loginWithGoogle: () => {
+    // 직접 Google OAuth URL로 리다이렉트
+    const backendURL =
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+    window.location.href = `${backendURL}/auth/google/login`;
   },
 };
 

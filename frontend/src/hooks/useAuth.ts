@@ -20,12 +20,12 @@ export const useAuth = () => {
       }
     };
 
-    if (!isLoggedIn) {
+    if (!isLoggedIn && isLoading) {
       checkAuth();
     } else {
       setIsLoading(false);
     }
-  }, [isLoggedIn, login]);
+  }, []);
 
   return { user, isLoggedIn, isLoading };
 };

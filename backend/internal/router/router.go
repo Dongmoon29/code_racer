@@ -1,6 +1,7 @@
 package router
 
 import (
+	"os"
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/config"
@@ -28,10 +29,11 @@ func Setup(
 			"status": "ok",
 		})
 	})
+	allowedOrigin := getEnv("FRONTEND_URL", "http://localhost:3000")
 
 	// CORS 설정
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "https://code-racer-pi.vercel.app/"}, // 와일드카드(*) 대신 실제 프론트엔드 도메인
+		AllowOrigins:     []string{allowedOrigin},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -47,6 +49,7 @@ func Setup(
 		{
 			auth.POST("/register", authController.Register)
 			auth.POST("/login", authController.Login)
+			auth.POST("/logout", authController.Logout)
 			auth.GET("/google", authController.GoogleAuthHandler)       // Google 로그인 페이지로 리다이렉트
 			auth.GET("/google/callback", authController.GoogleCallback) // Google OAuth 콜백 처리
 			auth.GET("/github", authController.GitHubAuthHandler)       // GitHub 로그인 페이지로 리다이렉트
@@ -87,4 +90,13 @@ func Setup(
 	router.GET("/ws/:gameId", authMiddleware.WebSocketAuthRequired(), wsController.HandleWebSocket)
 
 	return router
+}
+
+// getEnv 환경 변수를 가져오거나 기본값을 반환합니다
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }

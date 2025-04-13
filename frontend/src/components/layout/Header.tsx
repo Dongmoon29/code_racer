@@ -1,21 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { authApi } from '../../lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import Image from 'next/image';
 
 const Header: React.FC = () => {
   const router = useRouter();
-  const { user, isLoggedIn } = useAuthStore();
+  const { user, isLoggedIn, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // 로그아웃 처리
-  const handleLogout = () => {
-    authApi.logout();
+  const handleLogout = async () => {
+    await logout();
+    setDropdownOpen(false);
+    setMenuOpen(false);
     router.push('/login');
   };
 

@@ -27,9 +27,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     try {
       await api.post('/auth/logout');
-      set({ user: null, isLoggedIn: false });
+      // 상태를 명시적으로 초기화
+      set({
+        user: null,
+        isLoggedIn: false,
+      });
     } catch (error) {
       console.error('Logout failed:', error);
+      // 에러가 발생해도 클라이언트 상태는 초기화
+      set({
+        user: null,
+        isLoggedIn: false,
+      });
     }
   },
 }));

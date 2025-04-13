@@ -30,13 +30,19 @@ func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var tokenString string
 
-		// 1. 먼저 쿠키에서 토큰 확인
-		if cookie, err := ctx.Cookie("authToken"); err == nil {
+		// 쿠키 체크
+		cookie, err := ctx.Cookie("authToken")
+		if err == nil {
 			tokenString = cookie
 		} else {
-			// 2. 쿠키가 없으면 Authorization 헤더 확인
+			m.logger.Warn().
+				Err(err).
+				Msg("Failed to get auth token from cookie")
+
+			// Authorization 헤더 체크
 			authHeader := ctx.GetHeader("Authorization")
 			if authHeader == "" {
+				m.logger.Warn().Msg("No Authorization header found")
 				ctx.JSON(http.StatusUnauthorized, gin.H{
 					"success": false,
 					"message": "Authentication required",
@@ -45,8 +51,10 @@ func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 				return
 			}
 
-			// Bearer 토큰 형식 체크
 			if !strings.HasPrefix(authHeader, "Bearer ") {
+				m.logger.Info().
+					Str("header", authHeader).
+					Msg("Invalid Authorization header format")
 				ctx.JSON(http.StatusUnauthorized, gin.H{
 					"success": false,
 					"message": "Invalid token format",
@@ -56,10 +64,46 @@ func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 			}
 
 			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+			m.logger.Info().
+				Str("source", "header").
+				Msg("Auth token found in Authorization header")
 		}
 
-		// 토큰 검증 및 컨텍스트 설정
-		m.validateAndSetContext(ctx, tokenString)
+		// 토큰 검증
+		claims, err := m.authService.ValidateToken(tokenString)
+		if err != nil {
+			m.logger.Error().
+				Err(err).
+				Str("token", tokenString[:10]+"...").
+				Msg("Token validation failed")
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"message": "Invalid or expired token",
+			})
+			ctx.Abort()
+			return
+		}
+
+		m.logger.Info().
+			Str("userID", claims.UserID.String()).
+			Str("email", claims.Email).
+			Msg("Token validated successfully")
+
+		// 사용자 ID를 컨텍스트에 저장
+		userID, err := uuid.Parse(claims.UserID.String())
+		if err != nil {
+			log.Println("Invalid user ID in token:", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Invalid user ID in token",
+			})
+			ctx.Abort()
+			return
+		}
+
+		ctx.Set("userID", userID)
+		ctx.Set("email", claims.Email)
+		ctx.Next()
 	}
 }
 
@@ -78,7 +122,6 @@ func (m *AuthMiddleware) WebSocketAuthRequired() gin.HandlerFunc {
 			return
 		}
 
-		// 토큰 검증 및 컨텍스트 설정
 		m.validateAndSetContext(ctx, tokenParam)
 	}
 }
