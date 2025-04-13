@@ -79,11 +79,6 @@ func (c *AuthController) Login(ctx *gin.Context) {
 	// SameSite 설정 추가
 	sameSite := http.SameSiteNoneMode
 
-	c.logger.Info().
-		Str("frontendDomain", frontendDomain).
-		Int("sameSite", int(sameSite)).
-		Msg("Cookie configuration")
-
 	// 쿠키 설정에 SameSite 추가
 	ctx.SetSameSite(sameSite)
 	ctx.SetCookie(
@@ -92,8 +87,8 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		3600*24*30, // 30일
 		"/",
 		frontendDomain,
-		true, // Secure (프로덕션에서는 반드시 true)
-		true, // HttpOnly
+		true,
+		true,
 	)
 
 	ctx.JSON(http.StatusOK, gin.H{

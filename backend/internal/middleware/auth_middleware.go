@@ -84,11 +84,6 @@ func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 			return
 		}
 
-		m.logger.Info().
-			Str("userID", claims.UserID.String()).
-			Str("email", claims.Email).
-			Msg("Token validated successfully")
-
 		// 사용자 ID를 컨텍스트에 저장
 		userID, err := uuid.Parse(claims.UserID.String())
 		if err != nil {
