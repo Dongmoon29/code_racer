@@ -75,11 +75,7 @@ func LoadConfig() (*Config, error) {
 
 	config.RedisPort = util.GetEnvOptionalWithDefault("REDIS_PORT", "6379")
 
-	if redisUsername, err := util.GetenvRequired("REDIS_USERNAME"); err != nil {
-		missingVars = append(missingVars, "REDIS_USERNAME")
-	} else {
-		config.RedisUsername = redisUsername
-	}
+	config.RedisUsername = util.GetEnvOptionalWithDefault("REDIS_USERNAME", "default")
 
 	// Redis 패스워드는 선택적일 수 있음
 	config.RedisPassword = util.GetEnvOptionalWithDefault("REDIS_PASSWORD", "")
@@ -91,12 +87,7 @@ func LoadConfig() (*Config, error) {
 		config.JWTSecret = jwtSecret
 	}
 
-	// 서버 설정
-	if serverPort, err := util.GetenvRequired("PORT"); err != nil {
-		missingVars = append(missingVars, "PORT")
-	} else {
-		config.ServerPort = serverPort
-	}
+	config.ServerPort = util.GetEnvOptionalWithDefault("PORT", "8080")
 
 	// Judge0 API 설정
 	if judge0APIKey, err := util.GetenvRequired("JUDGE0_API_KEY"); err != nil {
