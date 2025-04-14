@@ -1,7 +1,11 @@
 package config
 
 import (
+	"fmt"
 	"os"
+	"strings"
+
+	"github.com/Dongmoon29/code_racer/internal/util"
 )
 
 // Config 앱의 설정 정보를 담는 구조체
@@ -31,38 +35,94 @@ type Config struct {
 }
 
 // LoadConfig 환경 변수에서 설정을 로드합니다
-func LoadConfig() *Config {
-	return &Config{
-		// 데이터베이스 설정
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", "postgres"),
-		DBName:     getEnv("DB_NAME", "code_racer"),
-		DBPort:     getEnv("DB_PORT", "5432"),
+func LoadConfig() (*Config, error) {
+	var missingVars []string
+	var config Config
 
-		// Redis 설정
-		RedisHost:     getEnv("REDIS_HOST", "localhost"),
-		RedisPort:     getEnv("REDIS_PORT", "6379"),
-		RedisUsername: getEnv("REDIS_USERNAME", "default"),
-		RedisPassword: getEnv("REDIS_PASSWORD", ""),
-
-		// JWT 설정
-		JWTSecret: getEnv("JWT_SECRET", "jwtsecret"),
-
-		// 서버 설정
-		ServerPort: getEnv("PORT", "8080"),
-
-		// Judge0 API 설정
-		Judge0APIKey:      getEnv("JUDGE0_API_KEY", ""),
-		Judge0APIEndpoint: getEnv("JUDGE0_API_ENDPOINT", "https://judge0-ce.p.rapidapi.com"),
+	// 데이터베이스 설정
+	if dbHost, err := util.GetenvRequired("DB_HOST"); err != nil {
+		missingVars = append(missingVars, "DB_HOST")
+	} else {
+		config.DBHost = dbHost
 	}
-}
 
-// getEnv 환경 변수를 가져오거나 기본값을 반환합니다
-func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
+	if dbUser, err := util.GetenvRequired("DB_USER"); err != nil {
+		missingVars = append(missingVars, "DB_USER")
+	} else {
+		config.DBUser = dbUser
 	}
-	return value
+
+	if dbPassword, err := util.GetenvRequired("DB_PASSWORD"); err != nil {
+		missingVars = append(missingVars, "DB_PASSWORD")
+	} else {
+		config.DBPassword = dbPassword
+	}
+
+	if dbName, err := util.GetenvRequired("DB_NAME"); err != nil {
+		missingVars = append(missingVars, "DB_NAME")
+	} else {
+		config.DBName = dbName
+	}
+
+	if dbPort, err := util.GetenvRequired("DB_PORT"); err != nil {
+		missingVars = append(missingVars, "DB_PORT")
+	} else {
+		config.DBPort = dbPort
+	}
+
+	// Redis 설정
+	if redisHost, err := util.GetenvRequired("REDIS_HOST"); err != nil {
+		missingVars = append(missingVars, "REDIS_HOST")
+	} else {
+		config.RedisHost = redisHost
+	}
+
+	if redisPort, err := util.GetenvRequired("REDIS_PORT"); err != nil {
+		missingVars = append(missingVars, "REDIS_PORT")
+	} else {
+		config.RedisPort = redisPort
+	}
+
+	if redisUsername, err := util.GetenvRequired("REDIS_USERNAME"); err != nil {
+		missingVars = append(missingVars, "REDIS_USERNAME")
+	} else {
+		config.RedisUsername = redisUsername
+	}
+
+	// Redis 패스워드는 선택적일 수 있음
+	config.RedisPassword = os.Getenv("REDIS_PASSWORD")
+
+	// JWT 설정
+	if jwtSecret, err := util.GetenvRequired("JWT_SECRET"); err != nil {
+		missingVars = append(missingVars, "JWT_SECRET")
+	} else {
+		config.JWTSecret = jwtSecret
+	}
+
+	// 서버 설정
+	if serverPort, err := util.GetenvRequired("PORT"); err != nil {
+		missingVars = append(missingVars, "PORT")
+	} else {
+		config.ServerPort = serverPort
+	}
+
+	// Judge0 API 설정
+	if judge0APIKey, err := util.GetenvRequired("JUDGE0_API_KEY"); err != nil {
+		missingVars = append(missingVars, "JUDGE0_API_KEY")
+	} else {
+		config.Judge0APIKey = judge0APIKey
+	}
+
+	if judge0APIEndpoint, err := util.GetenvRequired("JUDGE0_API_ENDPOINT"); err != nil {
+		missingVars = append(missingVars, "JUDGE0_API_ENDPOINT")
+	} else {
+		config.Judge0APIEndpoint = judge0APIEndpoint
+	}
+
+	// 누락된 환경변수가 있는지 확인
+	if len(missingVars) > 0 {
+		return nil, fmt.Errorf("missing required environment variables: %s", strings.Join(missingVars, ", "))
+	}
+
+	return &config, nil
 }

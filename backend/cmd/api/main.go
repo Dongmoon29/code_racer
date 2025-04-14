@@ -51,7 +51,7 @@ func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		TimeFormat: "2006-01-02 15:04:05",
-		NoColor:    isProduction(), // 프로덕션에서는 색상 비활성화
+		NoColor:    isProduction(),
 	})
 	logger := logger.NewZerologLogger(log.Logger)
 
@@ -61,10 +61,14 @@ func main() {
 			logger.Warn().Msg("No .env file found")
 		}
 		logger.Info().Msg("Loaded .env file")
-
 	}
 
-	cfg := config.LoadConfig()
+	// 환경 변수 로드
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to load configuration")
+	}
+
 	db, err := initDatabase(cfg, logger)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize database")
