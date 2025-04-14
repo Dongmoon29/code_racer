@@ -120,13 +120,10 @@ const RoomList: React.FC = () => {
 
     try {
       setCreating(true);
-      setError(null);
-
       const response = await gameApi.createGame(selectedLeetCode);
 
-      // 생성된 게임 방으로 이동
-      router.push(`/game/${response.game.id}`);
-    } catch (err: unknown) {
+      router.replace(`/game/${response.game.id}`);
+    } catch (err) {
       if (axios.isAxiosError(err)) {
         const axiosError = err as AxiosError<ApiErrorResponse>;
         setError(axiosError.response?.data?.message || 'Failed to create game');
@@ -134,7 +131,6 @@ const RoomList: React.FC = () => {
         setError('An unexpected error occurred while creating the game');
       }
       console.error('Error creating game:', err);
-    } finally {
       setCreating(false);
     }
   };

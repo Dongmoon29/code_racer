@@ -251,8 +251,8 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
           <Alert variant="warning">
             <h3>Game Closed</h3>
             <p>This game room has been closed by the creator.</p>
-            <Button onClick={() => router.push('/games')}>
-              Back to Game List
+            <Button onClick={() => router.push('/dashboard')}>
+              Back to dashboard
             </Button>
           </Alert>
         );
@@ -262,7 +262,9 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
           <Alert variant="error">
             <h3>Invalid Game State</h3>
             <p>The game is in an invalid state.</p>
-            <Button onClick={() => router.push('/games')}>Go Back</Button>
+            <Button onClick={() => router.push('/dashboard')}>
+              Back to dashboard
+            </Button>
           </Alert>
         );
     }
