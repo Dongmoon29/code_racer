@@ -14,10 +14,8 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/controller"
 	logger "github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/middleware"
-	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/Dongmoon29/code_racer/internal/router"
-	"github.com/Dongmoon29/code_racer/internal/seed"
 	"github.com/Dongmoon29/code_racer/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -69,14 +67,15 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to load configuration")
 	}
 
-	db, err := initDatabase(cfg, logger)
+	// config 패키지의 InitDatabase 사용
+	db, err := config.InitDatabase(cfg, logger)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize database")
 	}
 	rdb := initRedis(cfg)
 
 	// 데이터베이스 설정
-	if err := setupDatabase(db); err != nil {
+	if err := config.SetupDatabase(db); err != nil {
 		log.Fatal().Err(err).Msg("Failed to setup database")
 	}
 
@@ -95,31 +94,6 @@ func main() {
 
 	// 서버 시작
 	startServer(r, cfg.ServerPort)
-}
-
-func setupDatabase(db *gorm.DB) error {
-	operations := []struct {
-		name string
-		fn   func() error
-	}{
-		{"Enable UUID extension", func() error {
-			return db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";").Error
-		}},
-		{"Auto migrate", func() error {
-			return db.AutoMigrate(&model.User{}, &model.Game{}, &model.LeetCode{})
-		}},
-		{"Seed data", func() error {
-			return seed.SeedLeetCodeProblem(db)
-		}},
-	}
-
-	for _, op := range operations {
-		if err := op.fn(); err != nil {
-			return fmt.Errorf("%s: %w", op.name, err)
-		}
-	}
-
-	return nil
 }
 
 type dependencies struct {
