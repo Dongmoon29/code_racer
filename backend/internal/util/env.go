@@ -14,9 +14,13 @@ func GetenvRequired(key string) (string, error) {
 	return value, nil
 }
 
-// GetEnvOptional 환경 변수를 가져오되, 없으면 빈 문자열을 반환합니다
+// GetEnvOptionalWithDefault 환경 변수를 가져오되, 없거나 빈 문자열이면 기본값을 반환합니다
 func GetEnvOptionalWithDefault(key string, defaultString string) string {
-	return os.Getenv(key)
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultString
+	}
+	return value
 }
 
 func IsProduction() bool {

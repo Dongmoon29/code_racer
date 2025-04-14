@@ -57,14 +57,14 @@ func LoadConfig() (*Config, error) {
 		config.DBPassword = dbPassword
 	}
 
+	dbPort := util.GetEnvOptionalWithDefault("DB_PORT", "5432")
+	config.DBPort = dbPort
+
 	if dbName, err := util.GetenvRequired("DB_NAME"); err != nil {
 		missingVars = append(missingVars, "DB_NAME")
 	} else {
 		config.DBName = dbName
 	}
-
-	dbPort := util.GetEnvOptionalWithDefault("DB_PORT", "5432")
-	config.DBPort = dbPort
 
 	// Redis 설정
 	if redisHost, err := util.GetenvRequired("REDIS_HOST"); err != nil {
