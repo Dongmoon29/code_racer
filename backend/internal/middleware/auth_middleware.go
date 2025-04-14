@@ -105,19 +105,25 @@ func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 // WebSocketAuthRequired 웹소켓 연결을 위한 인증 미들웨어
 func (m *AuthMiddleware) WebSocketAuthRequired() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		// URL 쿼리 파라미터에서 토큰 추출
-		tokenParam := ctx.Query("token")
-		if tokenParam == "" {
-			log.Println("No token query parameter provided for WebSocket")
+		var tokenString string
+
+		// 쿠키 체크
+		cookie, err := ctx.Cookie("authToken")
+		if err == nil {
+			tokenString = cookie
+		} else {
+			m.logger.Warn().
+				Err(err).
+				Msg("No auth token cookie found for WebSocket connection")
 			ctx.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
-				"message": "Authentication token is required as a query parameter",
+				"message": "Authentication required",
 			})
 			ctx.Abort()
 			return
 		}
 
-		m.validateAndSetContext(ctx, tokenParam)
+		m.validateAndSetContext(ctx, tokenString)
 	}
 }
 

@@ -43,24 +43,39 @@ export class WebSocketClient {
       this.disconnect();
     }
 
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.error('No authentication token found');
-      return;
-    }
+    // /ws/ 경로가 중복되지 않도록 수정
+    const wsUrl = `/${this.gameId}`; // URL 패턴을 백엔드와 일치시킴
+    const wsBaseUrl =
+      process.env.NEXT_PUBLIC_WS_URL ||
+      window.location.origin.replace('http', 'ws');
+    const fullUrl = `${wsBaseUrl}${wsUrl}`;
 
-    const wsUrl = `/ws/${this.gameId}`;
+    console.log('Attempting WebSocket connection to:', fullUrl);
+
     try {
-      this.ws = new WebSocket(
-        `${window.location.origin.replace('http', 'ws')}${wsUrl}?token=${token}`
-      );
+      this.ws = new WebSocket(fullUrl);
 
-      this.ws.onopen = this.handleOpen.bind(this);
-      this.ws.onmessage = this.handleMessage.bind(this);
-      this.ws.onclose = this.handleClose.bind(this);
-      this.ws.onerror = this.handleError.bind(this);
+      this.ws.onopen = () => {
+        console.log('✅ WebSocket connected successfully');
+        this.handleOpen();
+      };
+
+      this.ws.onmessage = (event) => {
+        console.log('📩 WebSocket message received:', event.data);
+        this.handleMessage(event);
+      };
+
+      this.ws.onclose = (event) => {
+        console.log('❌ WebSocket closed:', event.code, event.reason);
+        this.handleClose(event);
+      };
+
+      this.ws.onerror = (event) => {
+        console.error('⚠️ WebSocket error:', event);
+        this.handleError(event);
+      };
     } catch (error) {
-      console.error('WebSocket connection error:', error);
+      console.error('Failed to create WebSocket connection:', error);
       this.scheduleReconnect();
     }
   }
@@ -101,25 +116,11 @@ export class WebSocketClient {
 
   // 코드 업데이트 메시지 전송
   sendCodeUpdate(code: string): void {
-    const authStorage = localStorage.getItem('auth-storage');
-    if (!authStorage) {
-      console.error('No auth storage found');
-      return;
-    }
-
-    try {
-      const authData = JSON.parse(authStorage);
-      const userId = authData.state.user.id;
-
-      this.sendMessage({
-        type: WebSocketMessageType.CODE_UPDATE,
-        game_id: this.gameId,
-        user_id: userId,
-        code,
-      });
-    } catch (error) {
-      console.error('Error parsing auth storage:', error);
-    }
+    this.sendMessage({
+      type: WebSocketMessageType.CODE_UPDATE,
+      game_id: this.gameId,
+      code,
+    });
   }
 
   // WebSocket 이벤트 핸들러

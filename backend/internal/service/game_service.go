@@ -193,6 +193,13 @@ func (s *gameService) SubmitSolution(gameID uuid.UUID, userID uuid.UUID, req *mo
 	if err != nil {
 		return nil, err
 	}
+	s.logger.Debug().
+		Bool("passed", result.Passed).
+		Float64("executionTime", result.ExecutionTime).
+		Float64("memoryUsage", result.MemoryUsage).
+		Int("testCaseCount", len(result.TestResults)).
+		Str("errorMessage", result.ErrorMessage).
+		Msg("Code evaluation result")
 
 	// 코드가 모든 테스트 케이스를 통과했는지 확인
 	if result.Passed {

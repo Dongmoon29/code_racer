@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from '@/lib/api';
+import api, { authApi } from '@/lib/api';
 
 // User 타입 정의
 type User = {
@@ -14,31 +14,46 @@ type User = {
 interface AuthState {
   user: User | null;
   isLoggedIn: boolean;
-  login: (user: User) => void; // Promise 제거
+  isLoading: boolean;
+  login: (user: User) => void;
   logout: () => Promise<void>;
+  initializeAuth: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoggedIn: false,
+  isLoading: true,
   login: (user: User) => {
     set({ user, isLoggedIn: true });
   },
   logout: async () => {
     try {
       await api.post('/auth/logout');
-      // 상태를 명시적으로 초기화
       set({
         user: null,
         isLoggedIn: false,
       });
     } catch (error) {
       console.error('Logout failed:', error);
-      // 에러가 발생해도 클라이언트 상태는 초기화
       set({
         user: null,
         isLoggedIn: false,
       });
+    }
+  },
+  initializeAuth: async () => {
+    try {
+      set({ isLoading: true });
+      const response = await authApi.getCurrentUser();
+      if (response.user) {
+        set({ user: response.user, isLoggedIn: true });
+      }
+    } catch (error) {
+      console.error('Failed to initialize auth:', error);
+      set({ user: null, isLoggedIn: false });
+    } finally {
+      set({ isLoading: false });
     }
   },
 }));

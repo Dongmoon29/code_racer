@@ -24,6 +24,7 @@ interface GameRoomProps {
 
 const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
   const router = useRouter();
+  const { user: currentUser, isLoading } = useAuthStore();
   const [game, setGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +66,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
   });
   const wsRef = useRef<WebSocketClient | null>(null);
 
-  const { user: currentUser } = useAuthStore();
+  // 로딩 중이거나 currentUser가 없을 때 로딩 상태 표시
 
   // 상태 변경 시 localStorage에 저장
   useEffect(() => {
@@ -137,6 +138,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
     return () => clearInterval(interval);
   }, [gameId]);
 
+  // WebSocket 효과
   useEffect(() => {
     if (game?.status === 'playing' || game?.status === 'waiting') {
       wsRef.current = new WebSocketClient(gameId);
@@ -146,8 +148,14 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
 
         if (message.type === 'code_update') {
           const codeMsg = message as CodeUpdateMessage;
-          if (currentUser && codeMsg.user_id !== currentUser.id) {
+          console.log('Current user:', currentUser?.id);
+          console.log('Message user:', codeMsg.user_id);
+
+          if (codeMsg.user_id !== currentUser?.id) {
+            console.log('Updating opponent code:', codeMsg.code);
             setOpponentCode(codeMsg.code);
+          } else {
+            console.log('Skipping code update - same user');
           }
         } else if (
           message.type === 'game_start' ||
@@ -167,7 +175,11 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
         }
       };
     }
-  }, [game?.status, gameId, currentUser]);
+  }, [game?.status, gameId, currentUser?.id]);
+
+  if (isLoading || !currentUser) {
+    return;
+  }
 
   const handleCloseGame = async () => {
     try {
