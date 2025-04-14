@@ -10,34 +10,21 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
+	"github.com/Dongmoon29/code_racer/internal/types"
 	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/golang-jwt/jwt/v5"
-
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/github" // GitHub OAuth2 엔드포인트용
+	"golang.org/x/oauth2/github"
 	"golang.org/x/oauth2/google"
 )
 
-// JWTClaims JWT 토큰에 포함될 클레임
-type JWTClaims struct {
-	UserID uuid.UUID `json:"user_id"`
-	Email  string    `json:"email"`
-	jwt.RegisteredClaims
-}
-
-// AuthService 인증 관련 기능을 제공하는 인터페이스
-type AuthService interface {
-	Register(req *model.RegisterRequest) (*model.UserResponse, error)
-	Login(req *model.LoginRequest) (*model.LoginResponse, error)
-	ValidateToken(tokenString string) (*JWTClaims, error)
-	GetUserByID(id uuid.UUID) (*model.UserResponse, error)
-	LoginWithGoogle(code string) (*model.LoginResponse, error)
-	LoginWithGitHub(code string) (*model.LoginResponse, error)
-}
+// AuthService 인터페이스 구현 확인
+var _ interfaces.AuthService = (*authService)(nil)
 
 // authService AuthService 인터페이스 구현체
 type authService struct {
@@ -48,7 +35,7 @@ type authService struct {
 }
 
 // NewAuthService AuthService 인스턴스 생성
-func NewAuthService(userRepo repository.UserRepository, jwtSecret string, logger logger.Logger) AuthService {
+func NewAuthService(userRepo repository.UserRepository, jwtSecret string, logger logger.Logger) interfaces.AuthService {
 	return &authService{
 		userRepo:    userRepo,
 		jwtSecret:   jwtSecret,
@@ -113,9 +100,9 @@ func (s *authService) Login(req *model.LoginRequest) (*model.LoginResponse, erro
 }
 
 // ValidateToken JWT 토큰 검증
-func (s *authService) ValidateToken(tokenString string) (*JWTClaims, error) {
+func (s *authService) ValidateToken(tokenString string) (*types.JWTClaims, error) {
 	// JWT 토큰 검증
-	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &types.JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.jwtSecret), nil
 	})
 
@@ -123,7 +110,7 @@ func (s *authService) ValidateToken(tokenString string) (*JWTClaims, error) {
 		return nil, err
 	}
 
-	if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
+	if claims, ok := token.Claims.(*types.JWTClaims); ok && token.Valid {
 		return claims, nil
 	}
 
@@ -143,8 +130,8 @@ func (s *authService) GetUserByID(id uuid.UUID) (*model.UserResponse, error) {
 // generateToken JWT 토큰 생성
 func (s *authService) generateToken(userID uuid.UUID, email string) (string, error) {
 	// 클레임 설정
-	claims := &JWTClaims{
-		UserID: userID,
+	claims := &types.JWTClaims{
+		UserID: userID.String(),
 		Email:  email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.tokenExpiry)),

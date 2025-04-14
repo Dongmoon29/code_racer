@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
-	"github.com/Dongmoon29/code_racer/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
@@ -16,12 +16,12 @@ import (
 
 // AuthController 인증 관련 컨트롤러
 type AuthController struct {
-	authService service.AuthService
+	authService interfaces.AuthService
 	logger      logger.Logger
 }
 
 // NewAuthController AuthController 인스턴스 생성
-func NewAuthController(authService service.AuthService, logger logger.Logger) *AuthController {
+func NewAuthController(authService interfaces.AuthService, logger logger.Logger) *AuthController {
 	return &AuthController{
 		authService: authService,
 		logger:      logger,

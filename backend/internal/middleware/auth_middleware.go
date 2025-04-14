@@ -5,20 +5,20 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
-	"github.com/Dongmoon29/code_racer/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 // AuthMiddleware 인증 관련 미들웨어
 type AuthMiddleware struct {
-	authService service.AuthService
+	authService interfaces.AuthService
 	logger      logger.Logger
 }
 
 // NewAuthMiddleware AuthMiddleware 인스턴스 생성
-func NewAuthMiddleware(authService service.AuthService, logger logger.Logger) *AuthMiddleware {
+func NewAuthMiddleware(authService interfaces.AuthService, logger logger.Logger) *AuthMiddleware {
 	return &AuthMiddleware{
 		authService: authService,
 		logger:      logger,
@@ -85,7 +85,7 @@ func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 		}
 
 		// 사용자 ID를 컨텍스트에 저장
-		userID, err := uuid.Parse(claims.UserID.String())
+		userID, err := uuid.Parse(claims.UserID)
 		if err != nil {
 			log.Println("Invalid user ID in token:", err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -142,7 +142,7 @@ func (m *AuthMiddleware) validateAndSetContext(ctx *gin.Context, tokenString str
 	}
 
 	// 사용자 ID를 컨텍스트에 저장
-	userID, err := uuid.Parse(claims.UserID.String())
+	userID, err := uuid.Parse(claims.UserID)
 	if err != nil {
 		log.Println("Invalid user ID in token:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
