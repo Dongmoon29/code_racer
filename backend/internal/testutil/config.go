@@ -5,6 +5,7 @@ import (
 )
 
 // SetupTestConfig creates and returns a config instance for testing
+// TODO: Create test env
 func SetupTestConfig() *config.Config {
 	return &config.Config{
 		// 테스트용 데이터베이스 설정

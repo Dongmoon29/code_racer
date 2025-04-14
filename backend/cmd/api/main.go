@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,9 +20,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	gormLogger "gorm.io/gorm/logger"
 )
 
 // isProduction returns true if the application is running in production mode
@@ -67,12 +63,14 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to load configuration")
 	}
 
-	// config 패키지의 InitDatabase 사용
+	// DB 초기화
 	db, err := config.InitDatabase(cfg, logger)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize database")
 	}
-	rdb := initRedis(cfg)
+
+	// Redis 초기화
+	rdb := config.InitRedis(cfg)
 
 	// 데이터베이스 설정
 	if err := config.SetupDatabase(db); err != nil {
@@ -129,102 +127,6 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 		wsController:   controller.NewWebSocketController(wsService, appLogger),
 		authMiddleware: middleware.NewAuthMiddleware(authService, appLogger),
 	}
-}
-
-func initDatabase(cfg *config.Config, appLogger logger.Logger) (*gorm.DB, error) {
-	appLogger.Info().
-		Str("host", cfg.DBHost).
-		Str("user", cfg.DBUser).
-		Str("database", cfg.DBName).
-		Str("port", cfg.DBPort).
-		Msg("Database configuration")
-
-	// SSL 모드를 환경에 따라 설정
-	sslMode := "disable" // 로컬 개발 환경 기본값
-	if isProduction() {
-		sslMode = "require" // 프로덕션 환경
-	}
-
-	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=Asia/Seoul",
-		cfg.DBHost,
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBName,
-		cfg.DBPort,
-		sslMode,
-	)
-
-	// 비밀번호를 마스킹한 DSN 로깅
-	maskedDsn := fmt.Sprintf(
-		"host=%s user=%s password=*** dbname=%s port=%s sslmode=%s TimeZone=Asia/Seoul",
-		cfg.DBHost,
-		cfg.DBUser,
-		cfg.DBName,
-		cfg.DBPort,
-		sslMode,
-	)
-	appLogger.Info().
-		Str("dsn", maskedDsn).
-		Msg("Attempting database connection")
-
-	// 운영 환경에서는 Error 레벨로, 개발 환경에서는 Info 레벨로 설정
-	logLevel := gormLogger.Error
-	if !isProduction() {
-		logLevel = gormLogger.Info
-	}
-
-	gormLogger := gormLogger.New(
-		logger.NewGormWriter(appLogger),
-		gormLogger.Config{
-			SlowThreshold:             time.Second,
-			LogLevel:                  logLevel,
-			IgnoreRecordNotFoundError: true,
-			Colorful:                  !isProduction(),
-		},
-	)
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: gormLogger,
-	})
-
-	if err != nil {
-		appLogger.Error().
-			Err(err).
-			Msg("Failed to connect to database")
-		return nil, err
-	}
-
-	appLogger.Info().Msg("Successfully connected to database")
-	return db, nil
-}
-
-func initRedis(cfg *config.Config) *redis.Client {
-	options := &redis.Options{
-		Addr: cfg.RedisHost + ":" + cfg.RedisPort,
-	}
-
-	// 프로덕션 환경에서만 TLS와 인증 설정 추가
-	if isProduction() {
-		options.Username = cfg.RedisUsername
-		options.Password = cfg.RedisPassword
-		options.TLSConfig = &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		}
-	}
-
-	rdb := redis.NewClient(options)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	_, err := rdb.Ping(ctx).Result()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to connect to Redis")
-	}
-
-	log.Info().Msgf("Connected to Redis at %s:%s", cfg.RedisHost, cfg.RedisPort)
-	return rdb
 }
 
 func startServer(router *gin.Engine, port string) {
