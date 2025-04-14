@@ -101,7 +101,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
       const template = getCodeTemplate(game.leetcode, selectedLanguage);
       setMyCode(template);
     }
-  }, [game?.leetcode?.id, selectedLanguage, setMyCode]);
+  }, [game?.leetcode, selectedLanguage, setMyCode]);
 
   // 게임이 종료되면 localStorage 정리
   useEffect(() => {
