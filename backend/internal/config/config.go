@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/util"
@@ -64,11 +63,8 @@ func LoadConfig() (*Config, error) {
 		config.DBName = dbName
 	}
 
-	if dbPort, err := util.GetenvRequired("DB_PORT"); err != nil {
-		missingVars = append(missingVars, "DB_PORT")
-	} else {
-		config.DBPort = dbPort
-	}
+	dbPort := util.GetEnvOptionalWithDefault("DB_PORT", "5432")
+	config.DBPort = dbPort
 
 	// Redis 설정
 	if redisHost, err := util.GetenvRequired("REDIS_HOST"); err != nil {
@@ -77,11 +73,7 @@ func LoadConfig() (*Config, error) {
 		config.RedisHost = redisHost
 	}
 
-	if redisPort, err := util.GetenvRequired("REDIS_PORT"); err != nil {
-		missingVars = append(missingVars, "REDIS_PORT")
-	} else {
-		config.RedisPort = redisPort
-	}
+	config.RedisPort = util.GetEnvOptionalWithDefault("REDIS_PORT", "6379")
 
 	if redisUsername, err := util.GetenvRequired("REDIS_USERNAME"); err != nil {
 		missingVars = append(missingVars, "REDIS_USERNAME")
@@ -90,7 +82,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	// Redis 패스워드는 선택적일 수 있음
-	config.RedisPassword = os.Getenv("REDIS_PASSWORD")
+	config.RedisPassword = util.GetEnvOptionalWithDefault("REDIS_PASSWORD", "")
 
 	// JWT 설정
 	if jwtSecret, err := util.GetenvRequired("JWT_SECRET"); err != nil {
@@ -113,11 +105,7 @@ func LoadConfig() (*Config, error) {
 		config.Judge0APIKey = judge0APIKey
 	}
 
-	if judge0APIEndpoint, err := util.GetenvRequired("JUDGE0_API_ENDPOINT"); err != nil {
-		missingVars = append(missingVars, "JUDGE0_API_ENDPOINT")
-	} else {
-		config.Judge0APIEndpoint = judge0APIEndpoint
-	}
+	config.Judge0APIEndpoint = util.GetEnvOptionalWithDefault("JUDGE0_API_ENDPOINT", "https://judge0-ce.p.rapidapi.com")
 
 	// 누락된 환경변수가 있는지 확인
 	if len(missingVars) > 0 {

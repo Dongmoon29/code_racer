@@ -15,7 +15,7 @@ func GetenvRequired(key string) (string, error) {
 }
 
 // GetEnvOptional 환경 변수를 가져오되, 없으면 빈 문자열을 반환합니다
-func GetEnvOptional(key string) string {
+func GetEnvOptionalWithDefault(key string, defaultString string) string {
 	return os.Getenv(key)
 }
 
