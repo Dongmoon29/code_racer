@@ -7,14 +7,22 @@ import (
 	"gorm.io/gorm"
 )
 
+type Role string
+
+const (
+	RoleUser  Role = "user"
+	RoleAdmin Role = "admin"
+)
+
 // User 사용자 정보를 담는 모델
 type User struct {
-	ID            uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()" json:"id"`
-	Email         string    `gorm:"type:varchar(255);uniqueIndex;not null" json:"email"`
-	Password      string    `gorm:"type:varchar(255)" json:"-"` // OAuth 사용자는 비밀번호가 없을 수 있으므로 not null 제거
-	Name          string    `gorm:"type:varchar(100);not null" json:"name"`
-	OAuthProvider string    `gorm:"type:varchar(20)" json:"oauth_provider"` // 'google', 'github' 등
-	OAuthID       string    `gorm:"type:varchar(255)" json:"oauth_id"`      // OAuth 제공자의 사용자 ID
+	ID            uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
+	Email         string    `gorm:"type:varchar(255);unique;not null" json:"email"`
+	Password      string    `gorm:"type:varchar(255)" json:"-"`
+	Name          string    `gorm:"type:varchar(255);not null" json:"name"`
+	Role          Role      `gorm:"type:varchar(20);default:'user'" json:"role"`
+	OAuthProvider string    `gorm:"type:varchar(20)" json:"oauth_provider,omitempty"`
+	OAuthID       string    `gorm:"type:varchar(255)" json:"oauth_id,omitempty"` // OAuth 제공자의 고유 ID
 	Homepage      string    `gorm:"type:varchar(255)" json:"homepage"`
 	LinkedIn      string    `gorm:"type:varchar(255)" json:"linkedin"`
 	GitHub        string    `gorm:"type:varchar(255)" json:"github"`
@@ -38,7 +46,9 @@ type UserResponse struct {
 	ID            uuid.UUID `json:"id"`
 	Email         string    `json:"email"`
 	Name          string    `json:"name"`
+	Role          Role      `json:"role"`
 	OAuthProvider string    `json:"oauth_provider,omitempty"`
+	OAuthID       string    `json:"oauth_id,omitempty"`
 	Homepage      string    `json:"homepage,omitempty"`
 	LinkedIn      string    `json:"linkedin,omitempty"`
 	GitHub        string    `json:"github,omitempty"`
@@ -54,7 +64,9 @@ func (u *User) ToResponse() *UserResponse {
 		ID:            u.ID,
 		Email:         u.Email,
 		Name:          u.Name,
+		Role:          u.Role,
 		OAuthProvider: u.OAuthProvider,
+		OAuthID:       u.OAuthID,
 		Homepage:      u.Homepage,
 		LinkedIn:      u.LinkedIn,
 		GitHub:        u.GitHub,
