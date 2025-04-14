@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/service"
@@ -15,6 +16,36 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+// MockLogger implements logger.Logger interface for testing
+type MockLogger struct {
+	mock.Mock
+}
+
+func (m *MockLogger) Debug() *zerolog.Event {
+	args := m.Called()
+	return args.Get(0).(*zerolog.Event)
+}
+
+func (m *MockLogger) Info() *zerolog.Event {
+	args := m.Called()
+	return args.Get(0).(*zerolog.Event)
+}
+
+func (m *MockLogger) Warn() *zerolog.Event {
+	args := m.Called()
+	return args.Get(0).(*zerolog.Event)
+}
+
+func (m *MockLogger) Error() *zerolog.Event {
+	args := m.Called()
+	return args.Get(0).(*zerolog.Event)
+}
+
+func (m *MockLogger) Fatal() *zerolog.Event {
+	args := m.Called()
+	return args.Get(0).(*zerolog.Event)
+}
 
 // MockWebSocketService는 WebSocketService 인터페이스의 mock 구현체입니다
 type MockWebSocketService struct {
@@ -91,41 +122,56 @@ func TestHandleWebSocket(t *testing.T) {
 	})
 
 	t.Run("successful_connection", func(t *testing.T) {
-		_, mockService, wsController := setupWebSocketTest()
+		// 테스트 서버와 라우터 설정
+		gin.SetMode(gin.TestMode)
+		router := gin.New()
 
+		// 모의 서비스 설정
+		mockService := new(MockWebSocketService)
+		log := zerolog.New(zerolog.NewTestWriter(nil)).With().Timestamp().Logger()
+		testLogger := logger.NewZerologLogger(log)
+		controller := NewWebSocketController(mockService, testLogger)
+
+		// 테스트용 UUID 생성
 		userID := uuid.New()
 		gameID := uuid.New()
 
-		// 테스트용 WebSocket 서버 설정
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// gin.Context 생성 및 설정
-			ctx, _ := gin.CreateTestContext(w)
-			ctx.Request = r
-			ctx.Set("userID", userID)
-			ctx.AddParam("gameId", gameID.String())
+		// HandleConnection이 호출될 것을 기대
+		mockService.On("HandleConnection", mock.AnythingOfType("*websocket.Conn"), userID, gameID).Return()
 
-			// WebSocket 컨트롤러 호출
-			wsController.HandleWebSocket(ctx)
-		}))
+		// 인증 미들웨어 시뮬레이션
+		router.Use(func(c *gin.Context) {
+			c.Set("userID", userID)
+			c.Next()
+		})
+
+		// WebSocket 핸들러 등록
+		router.GET("/ws/:gameId", controller.HandleWebSocket)
+
+		// 테스트 서버 생성
+		server := httptest.NewServer(router)
 		defer server.Close()
 
 		// WebSocket URL 생성
-		wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+		wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws/" + gameID.String()
 
-		// HandleConnection이 호출될 것으로 예상
-		mockService.On("HandleConnection",
-			mock.AnythingOfType("*websocket.Conn"),
-			userID,
-			gameID,
-		).Return()
-
-		// WebSocket 클라이언트 연결
-		c, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
-		if err == nil {
-			defer c.Close()
+		// WebSocket 클라이언트 다이얼러 설정
+		dialer := websocket.Dialer{
+			HandshakeTimeout: 5 * time.Second,
 		}
 
-		// 연결이 성공적으로 이루어졌는지 확인
+		// WebSocket 연결
+		conn, resp, err := dialer.Dial(wsURL, nil)
+
+		// 연결 성공 확인
+		assert.NoError(t, err)
+		assert.NotNil(t, conn)
+		if conn != nil {
+			defer conn.Close()
+		}
+		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
+
+		// 기대 호출 검증
 		mockService.AssertExpectations(t)
 	})
 }
