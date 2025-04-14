@@ -12,6 +12,8 @@ type LeetCodeRepository interface {
 	FindAll() ([]model.LeetCode, error)
 	FindByID(id uuid.UUID) (*model.LeetCode, error)
 	Create(leetcode *model.LeetCode) error
+	Update(leetcode *model.LeetCode) error
+	Delete(id uuid.UUID) error
 }
 
 // leetCodeRepository LeetCodeRepository 인터페이스 구현체
@@ -51,4 +53,14 @@ func (r *leetCodeRepository) FindByID(id uuid.UUID) (*model.LeetCode, error) {
 // Create 새 LeetCode 문제 생성
 func (r *leetCodeRepository) Create(leetcode *model.LeetCode) error {
 	return r.db.Create(leetcode).Error
+}
+
+// Update LeetCode 문제 업데이트
+func (r *leetCodeRepository) Update(leetcode *model.LeetCode) error {
+	return r.db.Save(leetcode).Error
+}
+
+// Delete LeetCode 문제 삭제
+func (r *leetCodeRepository) Delete(id uuid.UUID) error {
+	return r.db.Delete(&model.LeetCode{}, id).Error
 }

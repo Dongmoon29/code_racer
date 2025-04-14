@@ -27,6 +27,10 @@ type GameService interface {
 	UpdateCode(gameID uuid.UUID, userID uuid.UUID, code string) error
 	GetPlayerCode(gameID uuid.UUID, userID uuid.UUID) (string, error)
 	CloseGame(gameID uuid.UUID, userID uuid.UUID) error
+	CreateLeetCode(req *model.CreateLeetCodeRequest) (*model.LeetCodeDetail, error)
+	UpdateLeetCode(id uuid.UUID, req *model.UpdateLeetCodeRequest) (*model.LeetCodeDetail, error)
+	DeleteLeetCode(id uuid.UUID) error
+	GetLeetCode(id uuid.UUID) (*model.LeetCodeDetail, error)
 }
 
 // gameService GameService 인터페이스 구현체
@@ -325,4 +329,72 @@ func (s *gameService) CloseGame(gameID uuid.UUID, userID uuid.UUID) error {
 	s.wsService.BroadcastToGame(gameID, msgBytes)
 
 	return nil
+}
+
+func (s *gameService) CreateLeetCode(req *model.CreateLeetCodeRequest) (*model.LeetCodeDetail, error) {
+	leetcode := &model.LeetCode{
+		Title:              req.Title,
+		Description:        req.Description,
+		Examples:           req.Examples,
+		Constraints:        req.Constraints,
+		TestCases:          req.TestCases,
+		ExpectedOutputs:    req.ExpectedOutputs,
+		Difficulty:         req.Difficulty,
+		InputFormat:        req.InputFormat,
+		OutputFormat:       req.OutputFormat,
+		FunctionName:       req.FunctionName,
+		JavaScriptTemplate: req.JavaScriptTemplate,
+		PythonTemplate:     req.PythonTemplate,
+		GoTemplate:         req.GoTemplate,
+		JavaTemplate:       req.JavaTemplate,
+		CPPTemplate:        req.CPPTemplate,
+	}
+
+	if err := s.leetCodeRepo.Create(leetcode); err != nil {
+		return nil, err
+	}
+
+	return leetcode.ToDetailResponse(), nil
+}
+
+func (s *gameService) UpdateLeetCode(id uuid.UUID, req *model.UpdateLeetCodeRequest) (*model.LeetCodeDetail, error) {
+	leetcode, err := s.leetCodeRepo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// 필드 업데이트
+	leetcode.Title = req.Title
+	leetcode.Description = req.Description
+	leetcode.Examples = req.Examples
+	leetcode.Constraints = req.Constraints
+	leetcode.TestCases = req.TestCases
+	leetcode.ExpectedOutputs = req.ExpectedOutputs
+	leetcode.Difficulty = req.Difficulty
+	leetcode.InputFormat = req.InputFormat
+	leetcode.OutputFormat = req.OutputFormat
+	leetcode.FunctionName = req.FunctionName
+	leetcode.JavaScriptTemplate = req.JavaScriptTemplate
+	leetcode.PythonTemplate = req.PythonTemplate
+	leetcode.GoTemplate = req.GoTemplate
+	leetcode.JavaTemplate = req.JavaTemplate
+	leetcode.CPPTemplate = req.CPPTemplate
+
+	if err := s.leetCodeRepo.Update(leetcode); err != nil {
+		return nil, err
+	}
+
+	return leetcode.ToDetailResponse(), nil
+}
+
+func (s *gameService) DeleteLeetCode(id uuid.UUID) error {
+	return s.leetCodeRepo.Delete(id)
+}
+
+func (s *gameService) GetLeetCode(id uuid.UUID) (*model.LeetCodeDetail, error) {
+	leetcode, err := s.leetCodeRepo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	return leetcode.ToDetailResponse(), nil
 }

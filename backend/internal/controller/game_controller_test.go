@@ -84,6 +84,35 @@ func (m *MockGameService) CloseGame(gameID uuid.UUID, userID uuid.UUID) error {
 	return args.Error(0)
 }
 
+func (m *MockGameService) CreateLeetCode(req *model.CreateLeetCodeRequest) (*model.LeetCodeDetail, error) {
+	args := m.Called(req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.LeetCodeDetail), args.Error(1)
+}
+
+func (m *MockGameService) UpdateLeetCode(id uuid.UUID, req *model.UpdateLeetCodeRequest) (*model.LeetCodeDetail, error) {
+	args := m.Called(id, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.LeetCodeDetail), args.Error(1)
+}
+
+func (m *MockGameService) DeleteLeetCode(id uuid.UUID) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockGameService) GetLeetCode(id uuid.UUID) (*model.LeetCodeDetail, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.LeetCodeDetail), args.Error(1)
+}
+
 func setupGameTest() (*gin.Engine, *MockGameService, *GameController) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

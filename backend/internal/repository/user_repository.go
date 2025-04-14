@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 
+	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/google/uuid"
@@ -10,12 +11,6 @@ import (
 )
 
 // UserRepository 사용자 관련 데이터베이스 작업을 처리하는 인터페이스
-type UserRepository interface {
-	Create(user *model.User) error
-	FindByID(id uuid.UUID) (*model.User, error)
-	FindByEmail(email string) (*model.User, error)
-	Update(user *model.User) error
-}
 
 // userRepository UserRepository 인터페이스 구현체
 type userRepository struct {
@@ -24,7 +19,7 @@ type userRepository struct {
 }
 
 // NewUserRepository UserRepository 인스턴스 생성
-func NewUserRepository(db *gorm.DB, logger logger.Logger) UserRepository {
+func NewUserRepository(db *gorm.DB, logger logger.Logger) interfaces.UserRepository {
 	return &userRepository{
 		db:     db,
 		logger: logger,

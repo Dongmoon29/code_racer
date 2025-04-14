@@ -13,7 +13,6 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
-	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/Dongmoon29/code_racer/internal/types"
 	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/golang-jwt/jwt/v5"
@@ -28,14 +27,14 @@ var _ interfaces.AuthService = (*authService)(nil)
 
 // authService AuthService 인터페이스 구현체
 type authService struct {
-	userRepo    repository.UserRepository
+	userRepo    interfaces.UserRepository
 	jwtSecret   string
 	tokenExpiry time.Duration
 	logger      logger.Logger
 }
 
 // NewAuthService AuthService 인스턴스 생성
-func NewAuthService(userRepo repository.UserRepository, jwtSecret string, logger logger.Logger) interfaces.AuthService {
+func NewAuthService(userRepo interfaces.UserRepository, jwtSecret string, logger logger.Logger) interfaces.AuthService {
 	return &authService{
 		userRepo:    userRepo,
 		jwtSecret:   jwtSecret,

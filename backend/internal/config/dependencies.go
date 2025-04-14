@@ -19,15 +19,15 @@ type Dependencies struct {
 }
 
 func InitializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *Config, appLogger logger.Logger) *Dependencies {
-	userRepo := repository.NewUserRepository(db, appLogger)
-	gameRepo := repository.NewGameRepository(db, appLogger)
-	leetCodeRepo := repository.NewLeetCodeRepository(db, appLogger)
+	userRepository := repository.NewUserRepository(db, appLogger)
+	gameRepository := repository.NewGameRepository(db, appLogger)
+	leetCodeRepository := repository.NewLeetCodeRepository(db, appLogger)
 
-	authService := service.NewAuthService(userRepo, cfg.JWTSecret, appLogger)
-	userService := service.NewUserService(userRepo, appLogger)
+	authService := service.NewAuthService(userRepository, cfg.JWTSecret, appLogger)
+	userService := service.NewUserService(userRepository, appLogger)
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger)
 	wsService := service.NewWebSocketService(rdb, appLogger)
-	gameService := service.NewGameService(gameRepo, leetCodeRepo, rdb, wsService, judgeService, appLogger)
+	gameService := service.NewGameService(gameRepository, leetCodeRepository, rdb, wsService, judgeService, appLogger)
 
 	wsHub := wsService.InitHub()
 	go wsHub.Run()
@@ -37,6 +37,6 @@ func InitializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *Config, appLogg
 		GameController: controller.NewGameController(gameService, appLogger),
 		UserController: controller.NewUserController(userService, appLogger),
 		WsController:   controller.NewWebSocketController(wsService, appLogger),
-		AuthMiddleware: middleware.NewAuthMiddleware(authService, appLogger),
+		AuthMiddleware: middleware.NewAuthMiddleware(authService, userRepository, appLogger),
 	}
 }

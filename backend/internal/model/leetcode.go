@@ -153,3 +153,25 @@ func SplitByLine(s string) []string {
 
 	return result
 }
+
+// CreateLeetCodeRequest LeetCode 문제 생성 요청 DTO
+type CreateLeetCodeRequest struct {
+	Title              string    `json:"title" binding:"required"`
+	Description        string    `json:"description" binding:"required"`
+	Examples           string    `json:"examples" binding:"required"`
+	Constraints        string    `json:"constraints" binding:"required"`
+	TestCases          TestCases `json:"test_cases" binding:"required"`
+	ExpectedOutputs    string    `json:"expected_outputs" binding:"required"`
+	Difficulty         string    `json:"difficulty" binding:"required,oneof=Easy Medium Hard"`
+	InputFormat        string    `json:"input_format" binding:"required"`
+	OutputFormat       string    `json:"output_format" binding:"required"`
+	FunctionName       string    `json:"function_name" binding:"required"`
+	JavaScriptTemplate string    `json:"javascript_template" binding:"required"`
+	PythonTemplate     string    `json:"python_template" binding:"required"`
+	GoTemplate         string    `json:"go_template" binding:"required"`
+	JavaTemplate       string    `json:"java_template" binding:"required"`
+	CPPTemplate        string    `json:"cpp_template" binding:"required"`
+}
+
+// UpdateLeetCodeRequest는 CreateLeetCodeRequest와 동일한 필드를 가집니다
+type UpdateLeetCodeRequest CreateLeetCodeRequest

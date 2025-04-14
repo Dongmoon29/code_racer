@@ -83,6 +83,16 @@ func Setup(
 			leetcode := secured.Group("/leetcode")
 			{
 				leetcode.GET("", gameController.ListLeetCodes)
+				leetcode.GET("/:id", gameController.GetLeetCode)
+
+				// Admin 권한이 필요한 라우트
+				adminLeetcode := leetcode.Group("/")
+				adminLeetcode.Use(authMiddleware.AdminRequired())
+				{
+					adminLeetcode.POST("", gameController.CreateLeetCode)
+					adminLeetcode.PUT("/:id", gameController.UpdateLeetCode)
+					adminLeetcode.DELETE("/:id", gameController.DeleteLeetCode)
+				}
 			}
 		}
 	}

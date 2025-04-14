@@ -3,9 +3,9 @@ package service
 import (
 	"fmt"
 
+	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
-	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/google/uuid"
 )
 
@@ -16,11 +16,11 @@ type UserService interface {
 }
 
 type userService struct {
-	userRepo repository.UserRepository
+	userRepo interfaces.UserRepository
 	logger   logger.Logger
 }
 
-func NewUserService(userRepo repository.UserRepository, logger logger.Logger) UserService {
+func NewUserService(userRepo interfaces.UserRepository, logger logger.Logger) UserService {
 	return &userService{
 		userRepo: userRepo,
 		logger:   logger,
