@@ -7,36 +7,37 @@ import (
 	"sync"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
-	"github.com/Dongmoon29/code_racer/internal/judge"
+	"github.com/Dongmoon29/code_racer/internal/factory"
+	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/types"
 )
 
-type JudgeService interface {
-	EvaluateCode(code string, language string, problem *model.LeetCode) (*judge.EvaluationResult, error)
-}
-
 type judgeService struct {
-	codeWrapper  *judge.CodeWrapper
-	judge0Client *judge.Judge0Client
+	codeWrapper  interfaces.CodeWrapper
+	judge0Client interfaces.Judge0Client
 	logger       logger.Logger
 }
 
-func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger) JudgeService {
+// 인터페이스 구현 확인
+var _ interfaces.JudgeService = (*judgeService)(nil)
+
+func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger) interfaces.JudgeService {
 	return &judgeService{
-		codeWrapper:  judge.NewCodeWrapper(logger),
-		judge0Client: judge.NewJudge0Client(apiKey, apiEndpoint),
+		codeWrapper:  factory.NewCodeWrapper(logger),
+		judge0Client: factory.NewJudge0Client(apiKey, apiEndpoint),
 		logger:       logger,
 	}
 }
 
-func (s *judgeService) EvaluateCode(code string, language string, problem *model.LeetCode) (*judge.EvaluationResult, error) {
+func (s *judgeService) EvaluateCode(code string, language string, problem *model.LeetCode) (*types.EvaluationResult, error) {
 	languageID, err := s.getLanguageID(language)
 	if err != nil {
 		return nil, err
 	}
 
-	results := make(chan *judge.TestCaseResult, len(problem.TestCases))
+	results := make(chan *types.TestCaseResult, len(problem.TestCases))
 	var wg sync.WaitGroup
 
 	for i, testCase := range problem.TestCases {
@@ -50,6 +51,10 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 	}()
 
 	return s.collectResults(results)
+}
+
+func (s *judgeService) WrapCodeWithTestCase(code string, languageID int, testCase string, problem *model.LeetCode) (string, error) {
+	return s.codeWrapper.WrapCode(code, languageID, testCase, problem)
 }
 
 // getLanguageID는 문자열 언어 이름을 Judge0 API의 언어 ID로 변환합니다
@@ -79,15 +84,14 @@ func (s *judgeService) evaluateTestCase(
 	testCase model.TestCase,
 	problem *model.LeetCode,
 	index int,
-	results chan<- *judge.TestCaseResult,
+	results chan<- *types.TestCaseResult,
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
 
-	// 테스트 케이스를 JSON 문자열로 변환
 	testCaseJSON, err := json.Marshal(testCase.Input)
 	if err != nil {
-		results <- &judge.TestCaseResult{
+		results <- &types.TestCaseResult{
 			TestCaseIndex: index,
 			Passed:        false,
 			ErrorMessage:  fmt.Sprintf("Failed to marshal test case: %v", err),
@@ -95,10 +99,9 @@ func (s *judgeService) evaluateTestCase(
 		return
 	}
 
-	// 예상 출력을 JSON 문자열로 변환
 	expectedJSON, err := json.Marshal(testCase.Output)
 	if err != nil {
-		results <- &judge.TestCaseResult{
+		results <- &types.TestCaseResult{
 			TestCaseIndex: index,
 			Passed:        false,
 			ErrorMessage:  fmt.Sprintf("Failed to marshal expected output: %v", err),
@@ -106,10 +109,9 @@ func (s *judgeService) evaluateTestCase(
 		return
 	}
 
-	// 테스트 코드 래핑
 	wrappedCode, err := s.codeWrapper.WrapCode(code, languageID, string(testCaseJSON), problem)
 	if err != nil {
-		results <- &judge.TestCaseResult{
+		results <- &types.TestCaseResult{
 			TestCaseIndex: index,
 			Passed:        false,
 			ErrorMessage:  fmt.Sprintf("Failed to wrap code: %v", err),
@@ -117,8 +119,7 @@ func (s *judgeService) evaluateTestCase(
 		return
 	}
 
-	// Judge0 API 요청 준비
-	request := judge.Judge0Request{
+	request := types.Judge0Request{
 		SourceCode:       wrappedCode,
 		LanguageID:       languageID,
 		ExpectedOutput:   string(expectedJSON),
@@ -128,10 +129,9 @@ func (s *judgeService) evaluateTestCase(
 		EnableNetworking: false,
 	}
 
-	// Judge0 API 호출
 	response, err := s.judge0Client.SubmitCode(request)
 	if err != nil {
-		results <- &judge.TestCaseResult{
+		results <- &types.TestCaseResult{
 			TestCaseIndex: index,
 			Passed:        false,
 			ErrorMessage:  fmt.Sprintf("Judge0 API error: %v", err),
@@ -139,8 +139,7 @@ func (s *judgeService) evaluateTestCase(
 		return
 	}
 
-	// 결과 분석
-	result := &judge.TestCaseResult{
+	result := &types.TestCaseResult{
 		TestCaseIndex: index,
 		Input:         string(testCaseJSON),
 		Expected:      string(expectedJSON),
@@ -148,7 +147,6 @@ func (s *judgeService) evaluateTestCase(
 		MemoryUsage:   response.Memory,
 	}
 
-	// 컴파일 에러 체크
 	if response.CompileError != "" {
 		result.Passed = false
 		result.ErrorMessage = fmt.Sprintf("Compilation error: %s", response.CompileError)
@@ -156,7 +154,6 @@ func (s *judgeService) evaluateTestCase(
 		return
 	}
 
-	// 런타임 에러 체크
 	if response.Stderr != "" {
 		result.Passed = false
 		result.ErrorMessage = fmt.Sprintf("Runtime error: %s", response.Stderr)
@@ -164,16 +161,14 @@ func (s *judgeService) evaluateTestCase(
 		return
 	}
 
-	// 실행 결과 비교
 	result.Actual = strings.TrimSpace(response.Stdout)
 	result.Passed = strings.TrimSpace(result.Actual) == strings.TrimSpace(result.Expected)
 
 	results <- result
 }
 
-// collectResults는 모든 테스트 케이스의 결과를 수집하고 최종 평가 결과를 반환합니다
-func (s *judgeService) collectResults(results <-chan *judge.TestCaseResult) (*judge.EvaluationResult, error) {
-	var testResults []judge.TestCaseResult
+func (s *judgeService) collectResults(results <-chan *types.TestCaseResult) (*types.EvaluationResult, error) {
+	var testResults []types.TestCaseResult
 	var totalTime float64
 	var maxMemory float64
 	allPassed := true
@@ -189,7 +184,7 @@ func (s *judgeService) collectResults(results <-chan *judge.TestCaseResult) (*ju
 		}
 	}
 
-	return &judge.EvaluationResult{
+	return &types.EvaluationResult{
 		Passed:        allPassed,
 		TestResults:   testResults,
 		ExecutionTime: totalTime,
@@ -197,7 +192,6 @@ func (s *judgeService) collectResults(results <-chan *judge.TestCaseResult) (*ju
 	}, nil
 }
 
-// getFloat64Time은 interface{} 타입의 시간값을 float64로 변환합니다
 func getFloat64Time(timeValue interface{}) float64 {
 	switch v := timeValue.(type) {
 	case float64:
@@ -211,8 +205,4 @@ func getFloat64Time(timeValue interface{}) float64 {
 	default:
 		return 0
 	}
-}
-
-func (s *judgeService) wrapCodeWithTestCase(code string, languageID int, testCase string, problem *model.LeetCode) (string, error) {
-	return s.codeWrapper.WrapCode(code, languageID, testCase, problem)
 }

@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
@@ -34,8 +35,8 @@ type gameService struct {
 	leetCodeRepo repository.LeetCodeRepository
 	rdb          *redis.Client
 	wsService    WebSocketService
-	judgeService JudgeService
 	logger       logger.Logger
+	judgeService interfaces.JudgeService
 }
 
 // NewGameService GameService 인스턴스 생성
@@ -44,7 +45,7 @@ func NewGameService(
 	leetCodeRepo repository.LeetCodeRepository,
 	rdb *redis.Client,
 	wsService WebSocketService,
-	judgeService JudgeService,
+	judgeService interfaces.JudgeService,
 	logger logger.Logger,
 ) GameService {
 	return &gameService{

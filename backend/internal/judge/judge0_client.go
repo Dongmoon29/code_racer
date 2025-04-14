@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/Dongmoon29/code_racer/internal/types"
 )
 
 // Judge0Client는 Judge0 API와의 통신을 담당합니다
@@ -27,19 +29,6 @@ type Judge0Request struct {
 	EnableNetworking bool   `json:"enable_networking"`
 }
 
-type Judge0Response struct {
-	Stdout       string `json:"stdout"`
-	Stderr       string `json:"stderr"`
-	CompileError string `json:"compile_error"`
-	Status       struct {
-		ID          int    `json:"id"`
-		Description string `json:"description"`
-	} `json:"status"`
-	Memory      float64     `json:"memory"`
-	Time        interface{} `json:"time"`
-	CompileTime float64     `json:"compile_time"`
-}
-
 func NewJudge0Client(apiKey, apiEndpoint string) *Judge0Client {
 	return &Judge0Client{
 		apiKey:      apiKey,
@@ -51,7 +40,7 @@ func NewJudge0Client(apiKey, apiEndpoint string) *Judge0Client {
 }
 
 // SubmitCode Judge0 API에 코드를 제출하고 결과를 반환합니다
-func (c *Judge0Client) SubmitCode(req Judge0Request) (*Judge0Response, error) {
+func (c *Judge0Client) SubmitCode(req types.Judge0Request) (*types.Judge0Response, error) {
 	// 요청 데이터 직렬화
 	reqBody, err := json.Marshal(req)
 	if err != nil {
@@ -91,7 +80,7 @@ func (c *Judge0Client) SubmitCode(req Judge0Request) (*Judge0Response, error) {
 	}
 
 	// 응답 파싱
-	var result Judge0Response
+	var result types.Judge0Response
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
