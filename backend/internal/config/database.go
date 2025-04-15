@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
@@ -62,8 +63,8 @@ func InitDatabase(cfg *Config, appLogger logger.Logger) (*gorm.DB, error) {
 	)
 	appLogger.Info().Str("dsn", maskedDsn).Msg("Attempting database connection")
 
-	logLevel := gormLogger.Error
-	if !util.IsProduction() {
+	logLevel := gormLogger.Silent
+	if !util.IsProduction() && os.Getenv("SQL_DEBUG") == "true" {
 		logLevel = gormLogger.Info
 	}
 
