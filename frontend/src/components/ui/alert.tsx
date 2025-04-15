@@ -10,7 +10,7 @@ const alertVariants = cva(
         default:
           'bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border-[hsl(var(--border))]',
         destructive:
-          'border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive',
+          'bg-red-500 border-destructive/50 text-white dark:border-destructive [&>svg]:text-destructive',
         info: 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-200/30 dark:bg-blue-900/30 dark:text-blue-200',
         success:
           'border-green-200 bg-green-50 text-green-800 dark:border-green-200/30 dark:bg-green-900/30 dark:text-green-200',

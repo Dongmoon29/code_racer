@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -111,7 +112,7 @@ type LeetCodeDetail struct {
 // ToDetailResponse LeetCode 모델을 LeetCodeDetail DTO로 변환
 func (l *LeetCode) ToDetailResponse() *LeetCodeDetail {
 	testCases := l.TestCases
-	expectedOutputs := SplitByLine(l.ExpectedOutputs)
+	expectedOutputs := strings.Split(l.ExpectedOutputs, "\n")
 
 	return &LeetCodeDetail{
 		ID:                 l.ID,
@@ -131,27 +132,6 @@ func (l *LeetCode) ToDetailResponse() *LeetCodeDetail {
 		JavaTemplate:       l.JavaTemplate,
 		CPPTemplate:        l.CPPTemplate,
 	}
-}
-
-// SplitByLine 문자열을 줄 단위로 분리하는 헬퍼 함수
-func SplitByLine(s string) []string {
-	var result []string
-	var current string
-
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\n' {
-			result = append(result, current)
-			current = ""
-		} else {
-			current += string(s[i])
-		}
-	}
-
-	if current != "" {
-		result = append(result, current)
-	}
-
-	return result
 }
 
 // CreateLeetCodeRequest LeetCode 문제 생성 요청 DTO

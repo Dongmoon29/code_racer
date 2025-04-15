@@ -182,34 +182,53 @@ func (s *gameService) JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.GameR
 
 // SubmitSolution 코드 제출 및 평가
 func (s *gameService) SubmitSolution(gameID uuid.UUID, userID uuid.UUID, req *model.SubmitSolutionRequest) (*model.SubmitSolutionResponse, error) {
+	s.logger.Debug().
+		Str("gameID", gameID.String()).
+		Str("userID", userID.String()).
+		Msg("Starting solution submission")
+
 	// 게임 정보 조회
 	game, err := s.gameRepo.FindByID(gameID)
 	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to find game")
 		return nil, err
 	}
 
 	// 게임 상태 체크
 	if game.Status != model.GameStatusPlaying {
+		s.logger.Error().
+			Str("status", string(game.Status)).
+			Msg("Game is not in playing status")
 		return nil, errors.New("game is not in playing status")
 	}
+
+	s.logger.Debug().
+		Str("code", req.Code).
+		Str("language", req.Language).
+		Msg("Evaluating submitted code")
 
 	// Judge0 API를 통해 코드 평가
 	result, err := s.judgeService.EvaluateCode(req.Code, req.Language, &game.LeetCode)
 	if err != nil {
+		s.logger.Error().Err(err).Msg("Code evaluation failed")
 		return nil, err
 	}
+
 	s.logger.Debug().
 		Bool("passed", result.Passed).
 		Float64("executionTime", result.ExecutionTime).
 		Float64("memoryUsage", result.MemoryUsage).
 		Int("testCaseCount", len(result.TestResults)).
 		Str("errorMessage", result.ErrorMessage).
-		Msg("Code evaluation result")
+		Msg("Code evaluation completed")
 
 	// 코드가 모든 테스트 케이스를 통과했는지 확인
 	if result.Passed {
+		s.logger.Debug().Msg("All test cases passed, setting winner")
+
 		// 승자 설정
 		if err := s.gameRepo.SetWinner(gameID, userID); err != nil {
+			s.logger.Error().Err(err).Msg("Failed to set winner")
 			return nil, err
 		}
 
@@ -222,7 +241,7 @@ func (s *gameService) SubmitSolution(gameID uuid.UUID, userID uuid.UUID, req *mo
 
 		msgBytes, err := json.Marshal(gameEndMsg)
 		if err != nil {
-			log.Printf("Failed to marshal game end message: %v", err)
+			s.logger.Error().Err(err).Msg("Failed to marshal game end message")
 			return &model.SubmitSolutionResponse{
 				Success:  true,
 				Message:  "Your solution passed all test cases",
@@ -231,6 +250,7 @@ func (s *gameService) SubmitSolution(gameID uuid.UUID, userID uuid.UUID, req *mo
 		}
 
 		s.wsService.BroadcastToGame(game.ID, msgBytes)
+		s.logger.Info().Msg("Game end message broadcasted")
 
 		return &model.SubmitSolutionResponse{
 			Success:  true,
@@ -239,6 +259,7 @@ func (s *gameService) SubmitSolution(gameID uuid.UUID, userID uuid.UUID, req *mo
 		}, nil
 	}
 
+	s.logger.Debug().Msg("Solution failed some test cases")
 	return &model.SubmitSolutionResponse{
 		Success:  false,
 		Message:  fmt.Sprintf("Your solution failed: %s", result.ErrorMessage),

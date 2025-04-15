@@ -131,13 +131,22 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     const view = viewRef.current;
     if (view && value !== view.state.doc.toString()) {
       const currentCursor = view.state.selection.main;
+      const newDocLength = value.length;
+
+      // 커서 위치가 새로운 문서 길이를 초과하지 않도록 조정
+      const newAnchor = Math.min(currentCursor.anchor, newDocLength);
+      const newHead = Math.min(currentCursor.head, newDocLength);
+
       view.dispatch({
         changes: {
           from: 0,
           to: view.state.doc.length,
           insert: value,
         },
-        selection: { anchor: currentCursor.anchor, head: currentCursor.head },
+        selection: {
+          anchor: newAnchor,
+          head: newHead,
+        },
       });
     }
   }, [value]);

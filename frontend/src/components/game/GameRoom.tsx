@@ -65,6 +65,8 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
     return true;
   });
   const wsRef = useRef<WebSocketClient | null>(null);
+  // 초기 템플릿 설정을 위한 ref
+  const isTemplateSet = useRef(false);
 
   // 로딩 중이거나 currentUser가 없을 때 로딩 상태 표시
 
@@ -97,11 +99,12 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
   }, [showOpponentCode, gameId]);
 
   useEffect(() => {
-    if (game?.leetcode) {
+    if (game?.leetcode && !isTemplateSet.current && !myCode) {
       const template = getCodeTemplate(game.leetcode, selectedLanguage);
       setMyCode(template);
+      isTemplateSet.current = true;
     }
-  }, [game?.leetcode, selectedLanguage, setMyCode]);
+  }, [game?.leetcode, selectedLanguage, myCode]);
 
   // 게임이 종료되면 localStorage 정리
   useEffect(() => {
@@ -305,13 +308,19 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
   };
 
   const handleLanguageChange = (language: 'python' | 'javascript' | 'go') => {
-    setSelectedLanguage(language);
-    if (game?.leetcode) {
-      const template = getCodeTemplate(game.leetcode, language);
-      setMyCode(template);
-      // 언어 변경 시에도 WebSocket으로 코드 업데이트를 전송
-      if (wsRef.current) {
-        wsRef.current.sendCodeUpdate(template);
+    if (
+      window.confirm(
+        'Changing language will reset your code to template. Continue?'
+      )
+    ) {
+      setSelectedLanguage(language);
+      if (game?.leetcode) {
+        const template = getCodeTemplate(game.leetcode, language);
+        setMyCode(template);
+        // 언어 변경 시에도 WebSocket으로 코드 업데이트를 전송
+        if (wsRef.current) {
+          wsRef.current.sendCodeUpdate(template);
+        }
       }
     }
   };

@@ -1,3 +1,4 @@
+import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 
 // LeetCode 문제 상세 정보 인터페이스
@@ -41,8 +42,14 @@ const api = axios.create({
 // 응답 인터셉터
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    console.error('API Error:', error.response?.data);
+  async (error) => {
+    if (error.response?.status === 401) {
+      // 로그인 시도 중인 경우는 리다이렉트하지 않음
+      if (!error.config.url?.includes('/auth/login')) {
+        await useAuthStore.getState().logout();
+        window.location.href = '/login';
+      }
+    }
     return Promise.reject(error);
   }
 );
