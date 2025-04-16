@@ -68,8 +68,6 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
   // 초기 템플릿 설정을 위한 ref
   const isTemplateSet = useRef(false);
 
-  // 로딩 중이거나 currentUser가 없을 때 로딩 상태 표시
-
   // 상태 변경 시 localStorage에 저장
   useEffect(() => {
     if (typeof window !== 'undefined') {

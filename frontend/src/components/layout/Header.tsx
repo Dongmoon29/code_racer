@@ -107,7 +107,7 @@ const Header: React.FC = () => {
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={toggleDropdown}
-                    className="flex items-center space-x-1 hover:text-primary focus:outline-none"
+                    className="flex items-center space-x-1 hover:text-primary focus:outline-none cursor-pointer"
                     style={{ color: 'hsl(var(--foreground))' }}
                   >
                     <span>{user.name}</span>
@@ -132,6 +132,9 @@ const Header: React.FC = () => {
                       className="absolute right-0 mt-2 w-48 rounded-md shadow-lg z-10 border border-border"
                       style={{ backgroundColor: 'hsl(var(--background))' }}
                     >
+                      <div style={{ color: 'hsl(var(--foreground))' }}>
+                        {JSON.stringify(user)}
+                      </div>
                       <div className="py-1">
                         <button
                           onClick={handleLogout}
