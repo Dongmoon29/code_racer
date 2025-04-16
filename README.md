@@ -62,19 +62,30 @@ DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=code_racer
 DB_PORT=5432
-REDIS_HOST=localhost
-REDIS_PORT=6379
-JWT_SECRET=your_jwt_secret_key
 SERVER_PORT=8080
 JUDGE0_API_KEY=your_judge0_api_key
 JUDGE0_API_ENDPOINT=https://judge0-ce.p.rapidapi.com
 
+FRONTEND_URL=http://localhost:3000
+FRONTEND_DOMAIN=localhost
+
+# JWT Configuration
+JWT_SECRET=your_jwt_secret_key
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
 # Google OAuth
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REDIRECT_URL=http://localhost:8080/api/auth/google/callback
+GOOGLE_REDIRECT_URL=your_google_redirect_url
 
 # Github OAuth
+GH_CLIENT_ID=your_github_client_id
+GH_CLIENT_SECRET=your_github_client_secret
+GH_REDIRECT_URL=your_github_redirect_url
+
 
 # frontend/.env
 NEXT_PUBLIC_API_URL=http://localhost:8080/api
@@ -111,24 +122,79 @@ For detailed GCP deployment guide, refer to [deployment/README.md](deployment/RE
 .
 ├── backend/
 │   ├── cmd/
+│   │   └── api/
+│   │       └── main.go
 │   ├── internal/
 │   │   ├── config/
+│   │   │   ├── config.go
+│   │   │   ├── database.go
+│   │   │   └── dependencies.go
 │   │   ├── controller/
+│   │   │   ├── auth_controller.go
+│   │   │   ├── game_controller.go
+│   │   │   └── user_controller.go
+│   │   ├── logger/
+│   │   │   └── zerolog.go
 │   │   ├── middleware/
+│   │   │   ├── auth.go
+│   │   │   └── cors.go
 │   │   ├── model/
+│   │   │   ├── auth.go
+│   │   │   ├── game.go
+│   │   │   └── user.go
 │   │   ├── repository/
-│   │   └── service/
+│   │   │   ├── game_repository.go
+│   │   │   ├── leetcode_repository.go
+│   │   │   └── user_repository.go
+│   │   ├── service/
+│   │   │   ├── auth_service.go
+│   │   │   ├── game_service.go
+│   │   │   ├── judge_service.go
+│   │   │   ├── user_service.go
+│   │   │   └── websocket_service.go
+│   │   └── util/
+│   │       └── env.go
 │   ├── migrations/
-│   └── Dockerfile
+│   │   └── *.sql
+│   ├── .env.example
+│   ├── docker-compose.yml
+│   ├── Dockerfile
+│   └── go.mod
 ├── frontend/
+│   ├── public/
 │   ├── src/
 │   │   ├── components/
+│   │   │   ├── auth/
+│   │   │   ├── game/
+│   │   │   └── shared/
 │   │   ├── hooks/
+│   │   │   ├── useAuth.ts
+│   │   │   └── useWebSocket.ts
 │   │   ├── lib/
+│   │   │   ├── api.ts
+│   │   │   └── websocket.ts
 │   │   ├── pages/
+│   │   │   ├── auth/
+│   │   │   ├── game/
+│   │   │   └── _app.tsx
+│   │   ├── stores/
+│   │   │   ├── authStore.ts
+│   │   │   └── gameStore.ts
 │   │   └── styles/
-│   └── Dockerfile
-└── docker-compose.yml
+│   │       └── globals.css
+│   ├── .env.example
+│   ├── Dockerfile
+│   ├── next.config.ts
+│   └── package.json
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       └── cd.yml
+├── deployment/
+│   └── README.md
+├── docker-compose.yml
+├── README.md
+└── README.ko.md
 ```
 
 ## Contributing
