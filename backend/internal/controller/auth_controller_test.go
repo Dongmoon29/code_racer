@@ -213,6 +213,7 @@ func TestLogin(t *testing.T) {
 	})
 }
 
+// test currentUser
 func TestGetCurrentUser(t *testing.T) {
 	t.Run("successful_get_current_user", func(t *testing.T) {
 		// gin 라우터 직접 설정

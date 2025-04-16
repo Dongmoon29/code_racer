@@ -87,7 +87,7 @@ export const authApi = {
     await api.post('/auth/logout');
   },
 
-  // Google 로그인
+  // Google
   loginWithGoogle: () => {
     // 직접 Google OAuth URL로 리다이렉트
     const backendURL =
