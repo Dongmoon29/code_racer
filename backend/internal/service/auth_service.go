@@ -38,7 +38,7 @@ func NewAuthService(userRepo interfaces.UserRepository, jwtSecret string, logger
 	return &authService{
 		userRepo:    userRepo,
 		jwtSecret:   jwtSecret,
-		tokenExpiry: 24 * time.Hour, // 토큰 만료 시간 (24시간)
+		tokenExpiry: 7 * 24 * time.Hour,
 		logger:      logger,
 	}
 }
