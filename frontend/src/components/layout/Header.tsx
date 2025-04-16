@@ -132,9 +132,6 @@ const Header: React.FC = () => {
                       className="absolute right-0 mt-2 w-48 rounded-md shadow-lg z-10 border border-border"
                       style={{ backgroundColor: 'hsl(var(--background))' }}
                     >
-                      <div style={{ color: 'hsl(var(--foreground))' }}>
-                        {JSON.stringify(user)}
-                      </div>
                       <div className="py-1">
                         <button
                           onClick={handleLogout}

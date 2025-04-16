@@ -7,6 +7,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
@@ -74,7 +75,14 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	frontendDomain := os.Getenv("FRONTEND_DOMAIN")
+	frontendURL, err := util.GetenvRequired("FRONTEND_URL")
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to get frontend URL",
+		})
+		return
+	}
 
 	// SameSite 설정 추가
 	sameSite := http.SameSiteNoneMode
@@ -86,7 +94,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		response.AccessToken,
 		3600*24*30, // 30일
 		"/",
-		frontendDomain,
+		frontendURL,
 		true,
 		true,
 	)
@@ -188,14 +196,21 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	frontendURL := os.Getenv("FRONTEND_URL")
+	frontendURL, err := util.GetenvRequired("FRONTEND_URL")
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to get frontend URL",
+		})
+		return
+	}
 
 	http.SetCookie(ctx.Writer, &http.Cookie{
 		Name:     "authToken",
 		Value:    response.AccessToken,
 		MaxAge:   3600 * 24 * 30,
 		Path:     "/",
-		Domain:   "",
+		Domain:   frontendURL,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteNoneMode,
@@ -245,14 +260,21 @@ func (c *AuthController) GitHubCallback(ctx *gin.Context) {
 		return
 	}
 
-	frontendURL := os.Getenv("FRONTEND_URL")
+	frontendURL, err := util.GetenvRequired("FRONTEND_URL")
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to get frontend URL",
+		})
+		return
+	}
 
 	http.SetCookie(ctx.Writer, &http.Cookie{
 		Name:     "authToken",
 		Value:    response.AccessToken,
 		MaxAge:   3600 * 24 * 30,
 		Path:     "/",
-		Domain:   "",
+		Domain:   frontendURL,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteNoneMode,
