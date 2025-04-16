@@ -263,7 +263,6 @@ const RoomList: React.FC = () => {
             {creating ? (
               <div className="flex items-center">
                 <Spinner size="sm" />
-                Creating...
               </div>
             ) : (
               <div className="flex items-center">Create Game</div>

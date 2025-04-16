@@ -183,7 +183,7 @@ const RegisterForm: React.FC = () => {
           <div className="w-full border-t border-[hsl(var(--border))]"></div>
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))]">
+          <span className="px-2 bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] rounded-2xl">
             Or continue with
           </span>
         </div>
