@@ -75,7 +75,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	frontendURL, err := util.GetenvRequired("FRONTEND_URL")
+	frontendDomain, err := util.GetenvRequired("FRONTEND_DOMAIN")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -94,7 +94,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		response.AccessToken,
 		3600*24*30, // 30일
 		"/",
-		frontendURL,
+		frontendDomain,
 		true,
 		true,
 	)
@@ -196,11 +196,29 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
+	frontendDomain, err := util.GetenvRequired("FRONTEND_DOMAIN")
+	if err != nil {
+
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
 	frontendURL, err := util.GetenvRequired("FRONTEND_URL")
+	if err != nil {
+
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": "Failed to get frontend URL",
+			"message": err.Error(),
 		})
 		return
 	}
@@ -210,7 +228,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		Value:    response.AccessToken,
 		MaxAge:   3600 * 24 * 30,
 		Path:     "/",
-		Domain:   frontendURL,
+		Domain:   frontendDomain,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteNoneMode,
@@ -260,11 +278,21 @@ func (c *AuthController) GitHubCallback(ctx *gin.Context) {
 		return
 	}
 
+	frontendDomain, err := util.GetenvRequired("FRONTEND_DOMAIN")
+	if err != nil {
+
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
 	frontendURL, err := util.GetenvRequired("FRONTEND_URL")
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
+
+		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "Failed to get frontend URL",
+			"message": err.Error(),
 		})
 		return
 	}
@@ -274,7 +302,7 @@ func (c *AuthController) GitHubCallback(ctx *gin.Context) {
 		Value:    response.AccessToken,
 		MaxAge:   3600 * 24 * 30,
 		Path:     "/",
-		Domain:   frontendURL,
+		Domain:   frontendDomain,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteNoneMode,
