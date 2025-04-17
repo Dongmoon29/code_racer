@@ -329,12 +329,23 @@ func (s *gameService) CloseGame(gameID uuid.UUID, userID uuid.UUID) error {
 		return err
 	}
 
-	// Redis에서 게임 상태 업데이트
+	// Redis에서 게임 관련 데이터 정리
 	ctx := context.Background()
 	gameKey := fmt.Sprintf("game:%s", gameID.String())
-	if err := s.rdb.HSet(ctx, gameKey, "status", string(model.GameStatusClosed)).Err(); err != nil {
-		log.Printf("Failed to update game status in Redis: %v", err)
+	gameUsersKey := fmt.Sprintf("game:%s:users", gameID.String())
+
+	// 게임에 참가한 사용자 목록 가져오기
+	users, err := s.rdb.SMembers(ctx, gameUsersKey).Result()
+	if err == nil {
+		// 각 사용자의 코드 데이터 삭제
+		for _, uid := range users {
+			codeKey := fmt.Sprintf("game:%s:user:%s:code", gameID.String(), uid)
+			s.rdb.Del(ctx, codeKey)
+		}
 	}
+
+	// 게임 관련 키들 삭제
+	s.rdb.Del(ctx, gameKey, gameUsersKey)
 
 	// 게임 종료 메시지 브로드캐스트
 	gameClosedMsg := map[string]interface{}{

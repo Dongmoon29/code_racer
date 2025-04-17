@@ -106,7 +106,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
 
   // 게임이 종료되면 localStorage 정리
   useEffect(() => {
-    if (game?.status === 'finished') {
+    if (game?.status === 'finished' || game?.status === 'closed') {
       localStorage.removeItem(`game_${gameId}_code`);
       localStorage.removeItem(`game_${gameId}_language`);
       localStorage.removeItem(`game_${gameId}_showMyCode`);
