@@ -49,7 +49,8 @@ debug
 # Air live reload configuration
 .air.toml
 
-# Terraform files
+# Terraform files and directories
+**/terraform/
 *.tfstate
 *.tfstate.*
 .terraform/
