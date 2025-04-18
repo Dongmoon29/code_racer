@@ -5,6 +5,13 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "type": "java",
+      "name": "AuthApplication",
+      "request": "launch",
+      "mainClass": "com.coderacer.auth.AuthApplication",
+      "projectName": "auth"
+    },
+    {
       "name": "Debug Backend",
       "type": "go",
       "request": "launch",

@@ -19,6 +19,23 @@ services:
       timeout: 5s
       retries: 5
 
+  auth_postgres:
+    image: postgres:14-alpine
+    container_name: code_racer_auth_postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=code_racer_auth
+    ports:
+      - '5433:5432'
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     container_name: code_racer_redis
@@ -34,4 +51,5 @@ services:
 
 volumes:
   postgres_data:
+  auth_postgres_data:
   redis_data:

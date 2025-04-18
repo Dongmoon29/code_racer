@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/code_racer_auth
+    username: postgres
+    password: postgres
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            redirect-uri: http://localhost:3000/auth/callback/google
+          github:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            redirect-uri: http://localhost:3000/auth/callback/github
+
+server:
+  port: 8081
+
+cors:
+  allowed-origins: http://localhost:3000
