@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.UUID;
+import java.time.Duration;
+import org.springframework.http.ResponseCookie;
 
 @Component
 public class JwtTokenProvider {
@@ -16,6 +18,9 @@ public class JwtTokenProvider {
 
     @Value("${jwt.expiration}")
     private long jwtExpirationMs;
+
+    @Value("${frontend.domain}")
+    private String frontendDomain;
 
     public String generateToken(UUID userId, String email) {
         Date now = new Date();
@@ -40,5 +45,16 @@ public class JwtTokenProvider {
         } catch (JwtException e) {
             throw new IllegalArgumentException("Invalid JWT token");
         }
+    }
+
+    public ResponseCookie createCookie(String token) {
+        return ResponseCookie.from("authToken", token)
+                .domain(frontendDomain)
+                .path("/")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("None")
+                .maxAge(Duration.ofDays(30))
+                .build();
     }
 }

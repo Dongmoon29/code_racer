@@ -27,3 +27,7 @@ server:
 
 cors:
   allowed-origins: ${FRONTEND_URL}
+
+frontend:
+  domain: ${FRONTEND_DOMAIN}
+  url: ${FRONTEND_URL}

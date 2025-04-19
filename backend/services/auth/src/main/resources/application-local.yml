@@ -22,3 +22,7 @@ server:
 
 cors:
   allowed-origins: http://localhost:3000
+
+frontend:
+  domain: localhost
+  url: http://localhost:3000

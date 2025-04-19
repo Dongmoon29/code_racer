@@ -65,6 +65,7 @@ func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 		if err != nil {
 			return
 		}
+		// Replace with servives/auth 
 		user, err := m.userRepository.FindByID(userID)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
