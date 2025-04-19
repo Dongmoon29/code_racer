@@ -69,6 +69,17 @@ const Header: React.FC = () => {
           {/* 모바일 메뉴 버튼 */}
           <div className="md:hidden flex items-center space-x-2">
             <ThemeToggle />
+            {isLoggedIn && user && (
+              <div className="relative w-6 h-6 rounded-full overflow-hidden mr-2">
+                <Image
+                  src={user.profile_image || '/default-avatar.svg'}
+                  alt={`${user.name}'s profile`}
+                  fill
+                  className="object-cover"
+                  sizes="24px"
+                />
+              </div>
+            )}
             <button
               onClick={toggleMenu}
               className="p-2 rounded hover:bg-muted"
@@ -107,9 +118,18 @@ const Header: React.FC = () => {
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={toggleDropdown}
-                    className="flex items-center space-x-1 hover:text-primary focus:outline-none cursor-pointer"
+                    className="flex items-center space-x-3 hover:text-primary focus:outline-none cursor-pointer"
                     style={{ color: 'hsl(var(--foreground))' }}
                   >
+                    <div className="relative w-6 h-6 rounded-full overflow-hidden">
+                      <Image
+                        src={user.profile_image || '/default-avatar.svg'}
+                        alt={`${user.name}'s profile`}
+                        fill
+                        className="object-cover"
+                        sizes="24px"
+                      />
+                    </div>
                     <span>{user.name}</span>
                     <svg
                       className={`w-4 h-4 transition-transform ${
@@ -164,8 +184,9 @@ const Header: React.FC = () => {
           <div className="md:hidden py-4">
             {isLoggedIn && user ? (
               <div className="space-y-3">
-                <div className="px-2 text-sm text-muted-foreground">
-                  Signed in as <span className="font-medium">{user.email}</span>
+                <div className="px-2 text-sm text-muted-foreground flex items-center space-x-2">
+                  <span>Signed in as</span>
+                  <span className="font-medium">{user.email}</span>
                 </div>
                 <Link
                   href="/dashboard"

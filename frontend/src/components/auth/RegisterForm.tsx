@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, User } from 'lucide-react';
-import { authApi } from '../../lib/api';
+import { authApi } from '@/lib/api';
 import { Spinner } from '../ui';
 import axios, { AxiosError } from 'axios';
 import { ApiErrorResponse } from '@/lib/types';
@@ -189,27 +189,23 @@ const RegisterForm: React.FC = () => {
         </div>
       </div>
 
-      {/* Google 로그인 버튼 */}
+      {/* Google 회원가입 버튼 */}
       <Button
         type="button"
         variant="outline"
         className="w-full h-12 flex items-center justify-center gap-3 bg-white mb-4"
-        onClick={() => {
-          window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
-        }}
+        onClick={() => authApi.loginWithGoogle()}
       >
         <Image src="/google-logo.svg" alt="Google" width={20} height={20} />
         Sign up with Google
       </Button>
 
-      {/* GitHub 로그인 버튼 */}
+      {/* GitHub 회원가입 버튼 */}
       <Button
         type="button"
         variant="outline"
         className="w-full h-12 flex items-center justify-center gap-3 bg-white"
-        onClick={() => {
-          window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/github`;
-        }}
+        onClick={() => authApi.loginWithGitHub()}
       >
         <Image src="/github-logo.svg" alt="GitHub" width={20} height={20} />
         Sign up with GitHub

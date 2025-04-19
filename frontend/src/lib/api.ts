@@ -87,12 +87,18 @@ export const authApi = {
     await api.post('/auth/logout');
   },
 
-  // Google
+  // Google 로그인
   loginWithGoogle: () => {
-    // 직접 Google OAuth URL로 리다이렉트
     const backendURL =
       process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
     window.location.href = `${backendURL}/auth/google/login`;
+  },
+
+  // GitHub 로그인 추가
+  loginWithGitHub: () => {
+    const backendURL =
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+    window.location.href = `${backendURL}/auth/github/login`;
   },
 };
 

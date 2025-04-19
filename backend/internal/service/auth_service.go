@@ -170,11 +170,19 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 		user = &model.User{
 			Email:         googleUser.Email,
 			Name:          googleUser.Name,
+			ProfileImage:  googleUser.Picture,
 			OAuthProvider: "google",
 			OAuthID:       googleUser.ID,
 		}
 		if err := s.userRepo.Create(user); err != nil {
 			return nil, err
+		}
+	} else {
+		if user.OAuthProvider == "google" {
+			user.ProfileImage = googleUser.Picture
+			if err := s.userRepo.Update(user); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -243,12 +251,22 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 			ID:            uuid.New(),
 			Email:         githubUser.Email,
 			Name:          githubUser.Name,
+			ProfileImage:  githubUser.AvatarURL, // 프로필 이미지 추가
 			OAuthProvider: "github",
 			OAuthID:       githubUser.ID,
 		}
 		if err := s.userRepo.Create(user); err != nil {
 			s.logger.Error().Err(err).Msg("Failed to create new user")
 			return nil, err
+		}
+	} else {
+		// 기존 사용자의 경우 GitHub로 로그인한 사용자라면 프로필 이미지 업데이트
+		if user.OAuthProvider == "github" {
+			user.ProfileImage = githubUser.AvatarURL
+			if err := s.userRepo.Update(user); err != nil {
+				s.logger.Error().Err(err).Msg("Failed to update user profile image")
+				return nil, err
+			}
 		}
 	}
 

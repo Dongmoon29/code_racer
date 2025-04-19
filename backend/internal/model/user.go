@@ -14,12 +14,12 @@ const (
 	RoleAdmin Role = "admin"
 )
 
-// User 사용자 정보를 담는 모델
 type User struct {
 	ID            uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
 	Email         string    `gorm:"type:varchar(255);unique;not null" json:"email"`
 	Password      string    `gorm:"type:varchar(255)" json:"-"`
 	Name          string    `gorm:"type:varchar(255);not null" json:"name"`
+	ProfileImage  string    `gorm:"type:varchar(255)" json:"profile_image"`
 	Role          Role      `gorm:"type:varchar(20);default:'user'" json:"role"`
 	OAuthProvider string    `gorm:"type:varchar(20)" json:"oauth_provider,omitempty"`
 	OAuthID       string    `gorm:"type:varchar(255)" json:"oauth_id,omitempty"` // OAuth 제공자의 고유 ID
@@ -33,7 +33,6 @@ type User struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
-// BeforeCreate UUID 생성을 위한 GORM 훅
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 	if u.ID == uuid.Nil {
 		u.ID = uuid.New()
@@ -41,11 +40,11 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// UserResponse 사용자 정보 응답 DTO도 OAuth 필드 추가
 type UserResponse struct {
 	ID            uuid.UUID `json:"id"`
 	Email         string    `json:"email"`
 	Name          string    `json:"name"`
+	ProfileImage  string    `json:"profile_image"`
 	Role          Role      `json:"role"`
 	OAuthProvider string    `json:"oauth_provider,omitempty"`
 	OAuthID       string    `json:"oauth_id,omitempty"`
@@ -58,12 +57,12 @@ type UserResponse struct {
 	CreatedAt     time.Time `json:"created_at"`
 }
 
-// ToResponse User 모델을 UserResponse DTO로 변환
 func (u *User) ToResponse() *UserResponse {
 	return &UserResponse{
 		ID:            u.ID,
 		Email:         u.Email,
 		Name:          u.Name,
+		ProfileImage:  u.ProfileImage,
 		Role:          u.Role,
 		OAuthProvider: u.OAuthProvider,
 		OAuthID:       u.OAuthID,

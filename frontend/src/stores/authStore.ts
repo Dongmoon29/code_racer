@@ -7,9 +7,10 @@ type User = {
   id: string;
   name: string;
   email: string;
-  homepage?: string; // 선택적 필드
-  linkedin?: string; // 선택적 필드
-  oauthProvider?: string; // 선택적 필드
+  profile_image?: string; // 추가된 필드
+  homepage?: string;
+  linkedin?: string;
+  oauthProvider?: string;
 };
 
 interface AuthState {
