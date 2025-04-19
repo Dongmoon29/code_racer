@@ -132,32 +132,6 @@ func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 	})
 }
 
-func (c *AuthController) GoogleLogin(ctx *gin.Context) {
-	var req model.GoogleAuthRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid request",
-		})
-		return
-	}
-
-	response, err := c.authService.LoginWithGoogle(req.Code)
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success":      true,
-		"user":         response.User,
-		"access_token": response.AccessToken,
-	})
-}
-
 // GoogleAuthHandler Google 로그인 페이지로 리다이렉트
 func (c *AuthController) GoogleAuthHandler(ctx *gin.Context) {
 	config := &oauth2.Config{
