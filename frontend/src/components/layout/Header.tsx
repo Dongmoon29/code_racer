@@ -50,7 +50,7 @@ const Header: React.FC = () => {
   return (
     <header className="border-b border-border bg-[color:hsl(var(--header))]">
       <div className="mx-auto px-4">
-        <div className="flex justify-between md:justify-around items-center py-2">
+        <div className="flex justify-between md:justify-around items-center py-1">
           {/* 로고 */}
           <Link href="/" className="flex items-center">
             <Image
