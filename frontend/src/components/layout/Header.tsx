@@ -59,9 +59,11 @@ const Header: React.FC = () => {
               width={30}
               height={20}
               priority
-              className="h-auto w-auto mr-3"
+              className="h-auto w-auto mr-2" // mr-3에서 mr-2로 수정하여 간격도 약간 줄임
             />
-            <p className="text-xl font-bold text-[hsl(var(--foreground))]">
+            <p className="text-lg font-bold text-[hsl(var(--foreground))]">
+              {' '}
+              {/* text-xl에서 text-lg로 변경 */}
               codeRacer
             </p>
           </Link>
