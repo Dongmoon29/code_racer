@@ -61,9 +61,7 @@ const Header: React.FC = () => {
               priority
               className="h-auto w-auto mr-2" // mr-3에서 mr-2로 수정하여 간격도 약간 줄임
             />
-            <p className="text-lg font-bold text-[hsl(var(--foreground))]">
-              {' '}
-              {/* text-xl에서 text-lg로 변경 */}
+            <p className="text-md font-bold text-[hsl(var(--foreground))]">
               codeRacer
             </p>
           </Link>
@@ -106,13 +104,13 @@ const Header: React.FC = () => {
           </div>
 
           {/* 데스크톱 메뉴 */}
-          <nav className="hidden md:flex items-center space-x-4">
+          <nav className="hidden md:flex items-center gap-4">
             <ThemeToggle />
             {isLoggedIn && user ? (
               <>
                 <Link
                   href="/dashboard"
-                  className="hover:text-primary"
+                  className="hover:text-primary text-sm"
                   style={{ color: 'hsl(var(--foreground))' }}
                 >
                   Dashboard
@@ -132,7 +130,7 @@ const Header: React.FC = () => {
                         sizes="24px"
                       />
                     </div>
-                    <span>{user.name}</span>
+                    <span className="text-sm">{user.name}</span>
                     <svg
                       className={`w-4 h-4 transition-transform ${
                         dropdownOpen ? 'transform rotate-180' : ''
@@ -171,7 +169,7 @@ const Header: React.FC = () => {
               <>
                 <Link
                   href="/login"
-                  className="hover:text-primary"
+                  className="hover:text-primary text-sm"
                   style={{ color: 'hsl(var(--foreground))' }}
                 >
                   Login
@@ -186,13 +184,13 @@ const Header: React.FC = () => {
           <div className="md:hidden py-4">
             {isLoggedIn && user ? (
               <div className="space-y-3">
-                <div className="px-2 text-sm text-muted-foreground flex items-center space-x-2">
+                <div className="px-2 text-sm text-[hsl(var(--foreground))] flex items-center space-x-2">
                   <span>Signed in as</span>
-                  <span className="font-medium">{user.email}</span>
+                  <span>{user.email}</span>
                 </div>
                 <Link
                   href="/dashboard"
-                  className="block px-2 py-2 text-foreground hover:bg-muted rounded"
+                  className="block px-2 py-2 text-foreground hover:bg-muted rounded text-[hsl(var(--foreground))]"
                   onClick={() => setMenuOpen(false)}
                 >
                   Dashboard
@@ -202,7 +200,7 @@ const Header: React.FC = () => {
                     handleLogout();
                     setMenuOpen(false);
                   }}
-                  className="block w-full text-left px-2 py-2 text-foreground hover:bg-muted rounded"
+                  className="block w-full text-left px-2 py-2 text-foreground hover:bg-muted rounded text-[hsl(var(--foreground))]"
                 >
                   Logout
                 </button>
@@ -211,14 +209,14 @@ const Header: React.FC = () => {
               <div className="space-y-3">
                 <Link
                   href="/login"
-                  className="block px-2 py-2 text-foreground hover:bg-muted rounded"
+                  className="block px-2 py-2 text-foreground hover:bg-muted rounded text-[hsl(var(--foreground))]"
                   onClick={() => setMenuOpen(false)}
                 >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  className="block px-2 py-2 text-foreground hover:bg-muted rounded"
+                  className="block px-2 py-2 text-foreground hover:bg-muted rounded text-[hsl(var(--foreground))]"
                   onClick={() => setMenuOpen(false)}
                 >
                   Register
