@@ -50,7 +50,7 @@ const Header: React.FC = () => {
   return (
     <header className="border-b border-border bg-[color:hsl(var(--header))]">
       <div className="mx-auto px-4">
-        <div className="flex justify-around items-center py-2">
+        <div className="flex justify-between md:justify-around items-center py-2">
           {/* 로고 */}
           <Link href="/" className="flex items-center">
             <Image
@@ -59,7 +59,7 @@ const Header: React.FC = () => {
               width={30}
               height={20}
               priority
-              className="h-auto w-auto mr-2" // mr-3에서 mr-2로 수정하여 간격도 약간 줄임
+              className="h-auto w-auto mr-2"
             />
             <p className="text-md font-bold text-[hsl(var(--foreground))]">
               codeRacer
