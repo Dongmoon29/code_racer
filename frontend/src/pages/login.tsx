@@ -19,8 +19,8 @@ const LoginPage: React.FC = () => {
 
   return (
     <Layout
-      title="Login | Code Racer"
-      description="Login to your Code Racer account"
+      title="Login | CodeRacer"
+      description="Login to CodeRacer to start competing in real-time coding challenges"
     >
       <div className="flex w-full min-h-[calc(100vh-80px)]">
         {/* Left Column - Form */}
