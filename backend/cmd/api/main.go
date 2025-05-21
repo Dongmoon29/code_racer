@@ -23,7 +23,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// isProduction returns true if the application is running in production mode
+// isProduction returns true if the application is running in production mode...
 func isProduction() bool {
 	return gin.Mode() == gin.ReleaseMode
 }
