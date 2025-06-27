@@ -32,6 +32,7 @@ export class WebSocketClient {
   private connect() {
     const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}/${this.gameId}`;
     console.log('=============WS_URL============');
+    console.log(`gameID ==> ${this.gameId}`);
     console.log(`${process.env.NEXT_PUBLIC_WS_URL}`);
     this.ws = new WebSocket(wsUrl);
 
