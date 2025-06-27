@@ -10,6 +10,11 @@ export interface WebSocketMessage {
   payload?: unknown;
 }
 
+export interface CodeUpdateMessage extends WebSocketMessage {
+  type: 'code_update';
+  code: string;
+}
+
 // WebSocket 연결 관리 클래스
 export class WebSocketClient {
   private ws: WebSocket | null = null;

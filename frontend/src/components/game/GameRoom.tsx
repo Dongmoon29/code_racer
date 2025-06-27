@@ -167,7 +167,6 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
       };
 
       wsRef.current.addMessageHandler(handleMessage);
-      wsRef.current.connect();
 
       return () => {
         if (wsRef.current) {
