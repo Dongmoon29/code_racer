@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
@@ -90,20 +91,41 @@ func (m *AuthMiddleware) WebSocketAuthRequired() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var tokenString string
 
-		// 쿠키 체크
-		cookie, err := ctx.Cookie("authToken")
-		if err == nil {
-			tokenString = cookie
-		} else {
-			m.logger.Warn().
-				Err(err).
-				Msg("No auth token cookie found for WebSocket connection")
-			ctx.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"message": "Authentication required",
-			})
-			ctx.Abort()
-			return
+		// Sec-WebSocket-Protocol 헤더에서 토큰 확인
+		// 클라이언트는 "auth-token,YOUR_JWT_TOKEN" 형식으로 보낼 것으로 예상
+		protocols := ctx.GetHeader("Sec-WebSocket-Protocol")
+		if protocols != "" {
+			parts := strings.Split(protocols, ",")
+			for _, part := range parts {
+				trimmedPart := strings.TrimSpace(part)
+				if strings.HasPrefix(trimmedPart, "auth-token") {
+					tokenParts := strings.SplitN(trimmedPart, ":", 2) // "auth-token:YOUR_JWT_TOKEN"
+					if len(tokenParts) == 2 {
+						tokenString = tokenParts[1]
+						m.logger.Debug().Msg("Auth token found in Sec-WebSocket-Protocol header")
+						break
+					}
+				}
+			}
+		}
+
+		// 토큰이 없으면 쿠키에서도 확인 (하위 호환성 또는 대체 수단)
+		if tokenString == "" {
+			cookie, err := ctx.Cookie("authToken")
+			if err == nil {
+				tokenString = cookie
+				m.logger.Debug().Msg("Auth token found in cookie")
+			} else {
+				m.logger.Warn().
+					Err(err).
+					Msg("No auth token found in Sec-WebSocket-Protocol header or cookie for WebSocket connection")
+				ctx.JSON(http.StatusUnauthorized, gin.H{
+					"success": false,
+					"message": "Authentication required",
+				})
+				ctx.Abort()
+				return
+			}
 		}
 
 		m.validateAndSetContext(ctx, tokenString)
