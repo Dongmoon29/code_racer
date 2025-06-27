@@ -7,7 +7,6 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/util"
 )
 
-// Config 앱의 설정 정보를 담는 구조체
 type Config struct {
 	// 데이터베이스 설정
 	DBHost     string
