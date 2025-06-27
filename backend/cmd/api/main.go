@@ -38,8 +38,10 @@ func main() {
 	// 개발 환경에서는 더 자세한 로깅
 	if !isProduction() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Info().Msg("Global log level set to DEBUG (development mode)")
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		log.Info().Msg("Global log level set to INFO (production mode)")
 	}
 
 	log.Logger = log.Output(zerolog.ConsoleWriter{
