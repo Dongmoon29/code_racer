@@ -117,12 +117,14 @@ func (c *AuthController) Login(ctx *gin.Context) {
 	}
 
 	frontendDomain, err := util.GetenvRequired("FRONTEND_DOMAIN")
+
 	if err != nil {
 		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend URL")
 		return
 	}
 
 	c.setAuthCookie(ctx, response.AccessToken, frontendDomain)
+	c.logger.Debug().Str("frontendDomainFromEnv", frontendDomain).Msg("FRONTEND_DOMAIN environment variable value")
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,

@@ -66,9 +66,7 @@ func (c *WebSocketController) HandleWebSocket(ctx *gin.Context) {
 
 	// 인증 토큰 확인 (디버깅 용도)
 	tokenParam := ctx.Query("token")
-	tokenHeader := ctx.GetHeader("Authorization")
 	log.Printf("쿼리 파라미터 토큰: %s", tokenParam)
-	log.Printf("Authorization 헤더: %s", tokenHeader)
 
 	// HTTP 연결을 웹소켓 연결로 업그레이드 시도
 	log.Printf("웹소켓 연결 업그레이드 시도")
