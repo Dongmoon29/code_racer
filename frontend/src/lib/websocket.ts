@@ -1,17 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-// 쿠키에서 특정 이름의 값을 가져오는 유틸리티 함수
-function getCookie(name: string): string | undefined {
-  const nameEQ = name + '=';
-  const ca = document.cookie.split(';');
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-  }
-  return undefined;
-}
-
 // WebSocket 관련 타입 정의
 export interface WebSocketMessage {
   type: string;
@@ -46,11 +34,7 @@ export class WebSocketClient {
     console.log('=============WS_URL============');
     console.log(`gameID ==> ${this.gameId}`);
     console.log(`${process.env.NEXT_PUBLIC_WS_URL}`);
-
-    const authToken = getCookie('authToken');
-    const protocols = authToken ? [`auth-token:${authToken}`] : [];
-
-    this.ws = new WebSocket(wsUrl, protocols);
+    this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
       console.log('WebSocket connected');
