@@ -115,9 +115,13 @@ func (m *AuthMiddleware) validateAndSetContext(ctx *gin.Context, tokenString str
 	// 토큰 파싱
 	claims, err := m.authService.ValidateToken(tokenString)
 	if err != nil {
+		logMsg := "Invalid or expired token"
+		if len(tokenString) > 20 {
+			logMsg += " (token prefix: " + tokenString[:20] + "...)"
+		}
 		m.logger.Error().
 			Err(err).
-			Msg("Invalid or expired token")
+			Msg(logMsg)
 		ctx.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
 			"message": "Invalid or expired token",
@@ -131,6 +135,7 @@ func (m *AuthMiddleware) validateAndSetContext(ctx *gin.Context, tokenString str
 	if err != nil {
 		m.logger.Error().
 			Err(err).
+			Str("userIDInToken", claims.UserID).
 			Msg("Invalid user ID in token")
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -145,6 +150,7 @@ func (m *AuthMiddleware) validateAndSetContext(ctx *gin.Context, tokenString str
 	if err != nil {
 		m.logger.Error().
 			Err(err).
+			Str("userID", userID.String()).
 			Msg("Failed to find user")
 		ctx.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
