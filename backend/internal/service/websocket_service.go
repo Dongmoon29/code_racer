@@ -268,9 +268,70 @@ func (s *webSocketService) getGameUsers(ctx context.Context, gameID uuid.UUID) (
 	return s.rdb.SMembers(ctx, gameKey).Result()
 }
 
+// cleanupUserData WebSocket 연결 해제 시 Redis에서 사용자 데이터 정리
+func (s *webSocketService) cleanupUserData(userID uuid.UUID, gameID uuid.UUID) {
+	ctx := context.Background()
+	
+	// Redis 파이프라인을 사용한 원자적 정리
+	pipe := s.rdb.Pipeline()
+	
+	// 게임 참가자 목록에서 사용자 제거
+	gameUsersKey := fmt.Sprintf("game:%s:users", gameID.String())
+	pipe.SRem(ctx, gameUsersKey, userID.String())
+	
+	// 사용자 코드 데이터 삭제 (선택적 - 게임이 진행 중이면 보존할 수도 있음)
+	codeKey := fmt.Sprintf("game:%s:user:%s:code", gameID.String(), userID.String())
+	
+	// 게임 상태 확인을 위해 게임 정보 조회
+	gameKey := fmt.Sprintf("game:%s", gameID.String())
+	gameStatus, err := s.rdb.HGet(ctx, gameKey, "status").Result()
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to get game status during cleanup")
+	}
+	
+	// 게임이 대기 중이거나 종료된 경우에만 코드 데이터 삭제
+	if gameStatus == string(model.GameStatusWaiting) || 
+	   gameStatus == string(model.GameStatusFinished) || 
+	   gameStatus == string(model.GameStatusClosed) {
+		pipe.Del(ctx, codeKey)
+	}
+	
+	// 게임 참가자가 모두 나간 경우 게임 관련 데이터 정리
+	remainingUsers, err := s.rdb.SCard(ctx, gameUsersKey).Result()
+	if err == nil && remainingUsers <= 1 { // 현재 사용자 제거 후 0명 또는 1명 남음
+		// 대기 중인 게임이라면 완전 정리
+		if gameStatus == string(model.GameStatusWaiting) {
+			pipe.Del(ctx, gameKey)
+			pipe.Del(ctx, gameUsersKey)
+			// 모든 사용자 코드 삭제
+			users, _ := s.rdb.SMembers(ctx, gameUsersKey).Result()
+			for _, uid := range users {
+				userCodeKey := fmt.Sprintf("game:%s:user:%s:code", gameID.String(), uid)
+				pipe.Del(ctx, userCodeKey)
+			}
+		}
+	}
+	
+	// 파이프라인 실행
+	if _, err := pipe.Exec(ctx); err != nil {
+		s.logger.Error().
+			Err(err).
+			Str("userID", userID.String()).
+			Str("gameID", gameID.String()).
+			Msg("Failed to cleanup user data in Redis")
+	} else {
+		s.logger.Debug().
+			Str("userID", userID.String()).
+			Str("gameID", gameID.String()).
+			Msg("Successfully cleaned up user data in Redis")
+	}
+}
+
 // readPump 클라이언트에서 메시지 읽기
 func (c *Client) readPump(s *webSocketService) {
 	defer func() {
+		// Redis에서 사용자 데이터 정리
+		s.cleanupUserData(c.userID, c.gameID)
 		c.hub.unregister <- c
 		c.conn.Close()
 	}()

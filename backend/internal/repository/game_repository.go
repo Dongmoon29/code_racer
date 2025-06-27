@@ -20,6 +20,7 @@ type GameRepository interface {
 	SetWinner(gameID uuid.UUID, userID uuid.UUID) error
 	FindByUserID(userID uuid.UUID) ([]model.Game, error)
 	CloseGame(gameID uuid.UUID, creatorID uuid.UUID) error
+	Delete(id uuid.UUID) error
 }
 
 // gameRepository GameRepository 인터페이스 구현체
@@ -203,4 +204,9 @@ func (r *gameRepository) CloseGame(gameID uuid.UUID, creatorID uuid.UUID) error 
 	}
 
 	return result.Error
+}
+
+// Delete 게임 삭제 (롤백용)
+func (r *gameRepository) Delete(id uuid.UUID) error {
+	return r.db.Delete(&model.Game{}, "id = ?", id).Error
 }

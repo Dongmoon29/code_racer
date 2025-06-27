@@ -77,6 +77,7 @@ func (s *gameService) CreateGame(userID uuid.UUID, req *model.CreateGameRequest)
 		Status:     model.GameStatusWaiting,
 	}
 
+	// DB에 게임 생성
 	if err := s.gameRepo.Create(game); err != nil {
 		return nil, err
 	}
@@ -87,17 +88,23 @@ func (s *gameService) CreateGame(userID uuid.UUID, req *model.CreateGameRequest)
 		return nil, err
 	}
 
-	// Redis에 게임 방 정보 저장
+	// Redis에 게임 방 정보와 초기 코드를 원자적으로 저장
 	ctx := context.Background()
 	gameKey := fmt.Sprintf("game:%s", createdGame.ID.String())
-	if err := s.rdb.HSet(ctx, gameKey, "status", string(createdGame.Status)).Err(); err != nil {
-		log.Printf("Failed to store game status in Redis: %v", err)
-	}
-
-	// 초기 코드 저장 (빈 문자열)
 	creatorCodeKey := fmt.Sprintf("game:%s:user:%s:code", createdGame.ID.String(), userID.String())
-	if err := s.rdb.Set(ctx, creatorCodeKey, "", 24*time.Hour).Err(); err != nil {
-		log.Printf("Failed to initialize code in Redis: %v", err)
+	
+	// Redis 파이프라인을 사용한 원자적 처리
+	pipe := s.rdb.Pipeline()
+	pipe.HSet(ctx, gameKey, "status", string(createdGame.Status))
+	pipe.Set(ctx, creatorCodeKey, "", 24*time.Hour)
+	
+	if _, err := pipe.Exec(ctx); err != nil {
+		// Redis 저장 실패 시 DB에서 게임 삭제 (롤백)
+		s.logger.Error().Err(err).Msg("Failed to store game data in Redis, rolling back")
+		if deleteErr := s.gameRepo.Delete(game.ID); deleteErr != nil {
+			s.logger.Error().Err(deleteErr).Msg("Failed to rollback game creation")
+		}
+		return nil, fmt.Errorf("failed to initialize game: %w", err)
 	}
 
 	return createdGame.ToResponse(), nil
@@ -151,17 +158,22 @@ func (s *gameService) JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.GameR
 		return nil, err
 	}
 
-	// Redis에 게임 상태 업데이트
+	// Redis에 게임 상태와 참가자 코드를 원자적으로 업데이트
 	ctx := context.Background()
 	gameKey := fmt.Sprintf("game:%s", game.ID.String())
-	if err := s.rdb.HSet(ctx, gameKey, "status", string(game.Status)).Err(); err != nil {
-		log.Printf("Failed to update game status in Redis: %v", err)
-	}
-
-	// 참가자의 초기 코드 저장 (빈 문자열)
 	opponentCodeKey := fmt.Sprintf("game:%s:user:%s:code", game.ID.String(), userID.String())
-	if err := s.rdb.Set(ctx, opponentCodeKey, "", 24*time.Hour).Err(); err != nil {
-		log.Printf("Failed to initialize opponent code in Redis: %v", err)
+	gameUsersKey := fmt.Sprintf("game:%s:users", game.ID.String())
+	
+	// Redis 파이프라인을 사용한 원자적 처리
+	pipe := s.rdb.Pipeline()
+	pipe.HSet(ctx, gameKey, "status", string(game.Status))
+	pipe.Set(ctx, opponentCodeKey, "", 24*time.Hour)
+	pipe.SAdd(ctx, gameUsersKey, userID.String())
+	pipe.Expire(ctx, gameUsersKey, 24*time.Hour)
+	
+	if _, err := pipe.Exec(ctx); err != nil {
+		s.logger.Error().Err(err).Msg("Failed to update Redis after joining game")
+		// Redis 실패는 로그만 남기고 게임은 계속 진행 (DB 상태는 이미 업데이트됨)
 	}
 
 	// 게임 시작 메시지 브로드캐스트
@@ -172,7 +184,7 @@ func (s *gameService) JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.GameR
 
 	msgBytes, err := json.Marshal(gameStartMsg)
 	if err != nil {
-		log.Printf("Failed to marshal game start message: %v", err)
+		s.logger.Error().Err(err).Msg("Failed to marshal game start message")
 		return game.ToResponse(), nil
 	}
 	s.wsService.BroadcastToGame(game.ID, msgBytes)
@@ -226,10 +238,44 @@ func (s *gameService) SubmitSolution(gameID uuid.UUID, userID uuid.UUID, req *mo
 	if result.Passed {
 		s.logger.Debug().Msg("All test cases passed, setting winner")
 
+		// 분산 락을 사용한 승자 설정 (동시 제출 방지)
+		ctx := context.Background()
+		lockKey := fmt.Sprintf("game:%s:winner_lock", gameID.String())
+		lockValue := userID.String()
+		lockExpiry := 10 * time.Second
+
+		// 분산 락 획득 시도
+		lockAcquired, err := s.rdb.SetNX(ctx, lockKey, lockValue, lockExpiry).Result()
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to acquire winner lock")
+			return nil, err
+		}
+
+		if !lockAcquired {
+			// 다른 플레이어가 이미 승리했음
+			s.logger.Info().Msg("Another player already won the game")
+			return &model.SubmitSolutionResponse{
+				Success:  true,
+				Message:  "Your solution passed all test cases, but another player won first",
+				IsWinner: false,
+			}, nil
+		}
+
+		// 락 해제를 위한 defer 설정
+		defer func() {
+			s.rdb.Del(ctx, lockKey)
+		}()
+
 		// 승자 설정
 		if err := s.gameRepo.SetWinner(gameID, userID); err != nil {
 			s.logger.Error().Err(err).Msg("Failed to set winner")
 			return nil, err
+		}
+
+		// Redis에서 게임 상태 업데이트
+		gameKey := fmt.Sprintf("game:%s", gameID.String())
+		if err := s.rdb.HSet(ctx, gameKey, "status", string(model.GameStatusFinished)).Err(); err != nil {
+			s.logger.Error().Err(err).Msg("Failed to update game status in Redis")
 		}
 
 		// 게임 종료 메시지 브로드캐스트
@@ -324,28 +370,44 @@ func (s *gameService) GetPlayerCode(gameID uuid.UUID, userID uuid.UUID) (string,
 
 // CloseGame 게임 방 닫기
 func (s *gameService) CloseGame(gameID uuid.UUID, userID uuid.UUID) error {
-	// 게임 방 닫기
+	// DB에서 게임 방 닫기
 	if err := s.gameRepo.CloseGame(gameID, userID); err != nil {
 		return err
 	}
 
-	// Redis에서 게임 관련 데이터 정리
+	// Redis에서 게임 관련 데이터 원자적 정리
 	ctx := context.Background()
 	gameKey := fmt.Sprintf("game:%s", gameID.String())
 	gameUsersKey := fmt.Sprintf("game:%s:users", gameID.String())
-
+	
 	// 게임에 참가한 사용자 목록 가져오기
 	users, err := s.rdb.SMembers(ctx, gameUsersKey).Result()
-	if err == nil {
-		// 각 사용자의 코드 데이터 삭제
-		for _, uid := range users {
-			codeKey := fmt.Sprintf("game:%s:user:%s:code", gameID.String(), uid)
-			s.rdb.Del(ctx, codeKey)
-		}
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to get game users from Redis")
 	}
 
+	// Redis 파이프라인을 사용한 원자적 정리
+	pipe := s.rdb.Pipeline()
+	
+	// 게임 상태 업데이트
+	pipe.HSet(ctx, gameKey, "status", string(model.GameStatusClosed))
+	
+	// 각 사용자의 코드 데이터 삭제
+	for _, uid := range users {
+		codeKey := fmt.Sprintf("game:%s:user:%s:code", gameID.String(), uid)
+		pipe.Del(ctx, codeKey)
+	}
+	
 	// 게임 관련 키들 삭제
-	s.rdb.Del(ctx, gameKey, gameUsersKey)
+	pipe.Del(ctx, gameKey, gameUsersKey)
+	
+	// 승자 락 키도 정리
+	lockKey := fmt.Sprintf("game:%s:winner_lock", gameID.String())
+	pipe.Del(ctx, lockKey)
+	
+	if _, err := pipe.Exec(ctx); err != nil {
+		s.logger.Error().Err(err).Msg("Failed to cleanup Redis data")
+	}
 
 	// 게임 종료 메시지 브로드캐스트
 	gameClosedMsg := map[string]interface{}{
@@ -355,7 +417,7 @@ func (s *gameService) CloseGame(gameID uuid.UUID, userID uuid.UUID) error {
 
 	msgBytes, err := json.Marshal(gameClosedMsg)
 	if err != nil {
-		log.Printf("Failed to marshal game closed message: %v", err)
+		s.logger.Error().Err(err).Msg("Failed to marshal game closed message")
 		return nil
 	}
 	s.wsService.BroadcastToGame(gameID, msgBytes)
