@@ -29,23 +29,69 @@ func NewAuthController(authService interfaces.AuthService, logger logger.Logger)
 	}
 }
 
+// sendErrorResponse 오류 응답을 통일하여 처리
+func sendErrorResponse(ctx *gin.Context, statusCode int, message string) {
+	ctx.JSON(statusCode, gin.H{
+		"success": false,
+		"message": message,
+	})
+}
+
+// setAuthCookie 인증 쿠키 설정
+func setAuthCookie(ctx *gin.Context, accessToken, domain string) {
+	ctx.SetSameSite(http.SameSiteNoneMode)
+	ctx.SetCookie(
+		"authToken",
+		accessToken,
+		3600*24*30, // 30일
+		"/",
+		domain,
+		true,
+		true,
+	)
+}
+
+// getOAuth2Config OAuth2 설정을 가져오는 함수
+func getOAuth2Config(provider string) *oauth2.Config {
+	var config *oauth2.Config
+	switch provider {
+	case "google":
+		config = &oauth2.Config{
+			ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+			ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+			RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
+			Scopes: []string{
+				"https://www.googleapis.com/auth/userinfo.email",
+				"https://www.googleapis.com/auth/userinfo.profile",
+			},
+			Endpoint: google.Endpoint,
+		}
+	case "github":
+		config = &oauth2.Config{
+			ClientID:     os.Getenv("GH_CLIENT_ID"),
+			ClientSecret: os.Getenv("GH_CLIENT_SECRET"),
+			RedirectURL:  os.Getenv("GH_REDIRECT_URL"),
+			Scopes: []string{
+				"user:email",
+				"read:user",
+			},
+			Endpoint: github.Endpoint,
+		}
+	}
+	return config
+}
+
 // Register 회원가입 핸들러
 func (c *AuthController) Register(ctx *gin.Context) {
 	var req model.RegisterRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid request: " + err.Error(),
-		})
+		sendErrorResponse(ctx, http.StatusBadRequest, "Invalid request: "+err.Error())
 		return
 	}
 
 	user, err := c.authService.Register(&req)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		sendErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -59,45 +105,23 @@ func (c *AuthController) Register(ctx *gin.Context) {
 func (c *AuthController) Login(ctx *gin.Context) {
 	var req model.LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid request: " + err.Error(),
-		})
+		sendErrorResponse(ctx, http.StatusBadRequest, "Invalid request: "+err.Error())
 		return
 	}
 
 	response, err := c.authService.Login(&req)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		sendErrorResponse(ctx, http.StatusUnauthorized, err.Error())
 		return
 	}
 
 	frontendDomain, err := util.GetenvRequired("FRONTEND_DOMAIN")
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": "Failed to get frontend URL",
-		})
+		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend URL")
 		return
 	}
 
-	// SameSite 설정 추가
-	sameSite := http.SameSiteNoneMode
-
-	// 쿠키 설정에 SameSite 추가
-	ctx.SetSameSite(sameSite)
-	ctx.SetCookie(
-		"authToken",
-		response.AccessToken,
-		3600*24*30, // 30일
-		"/",
-		frontendDomain,
-		true,
-		true,
-	)
+	setAuthCookie(ctx, response.AccessToken, frontendDomain)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -110,19 +134,13 @@ func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 	// userID는 미들웨어에서 설정됨
 	userID, exists := ctx.Get("userID")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": "Unauthorized",
-		})
+		sendErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	user, err := c.authService.GetUserByID(userID.(uuid.UUID))
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": "Failed to get user information",
-		})
+		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get user information")
 		return
 	}
 
@@ -134,17 +152,11 @@ func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 
 // GoogleAuthHandler Google 로그인 페이지로 리다이렉트
 func (c *AuthController) GoogleAuthHandler(ctx *gin.Context) {
-	config := &oauth2.Config{
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/userinfo.profile",
-		},
-		Endpoint: google.Endpoint,
+	config := getOAuth2Config("google")
+	if config == nil {
+		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get Google OAuth config")
+		return
 	}
-
 	url := config.AuthCodeURL("state-token")
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
 }
@@ -154,59 +166,28 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	// Google이 리다이렉트로 전달한 인증 코드
 	code := ctx.Query("code")
 	if code == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Authorization code not found",
-		})
+		sendErrorResponse(ctx, http.StatusBadRequest, "Authorization code not found")
 		return
 	}
 
 	response, err := c.authService.LoginWithGoogle(code)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		sendErrorResponse(ctx, http.StatusUnauthorized, err.Error())
 		return
 	}
 
 	frontendDomain, err := util.GetenvRequired("FRONTEND_DOMAIN")
 	if err != nil {
-
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend domain")
 		return
 	}
 	frontendURL, err := util.GetenvRequired("FRONTEND_URL")
 	if err != nil {
-
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend URL")
 		return
 	}
 
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-
-	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:     "authToken",
-		Value:    response.AccessToken,
-		MaxAge:   3600 * 24 * 30,
-		Path:     "/",
-		Domain:   frontendDomain,
-		Secure:   true,
-		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode,
-	})
+	setAuthCookie(ctx, response.AccessToken, frontendDomain)
 
 	ctx.Redirect(http.StatusTemporaryRedirect, frontendURL+"/dashboard")
 }
@@ -216,17 +197,11 @@ func (c *AuthController) GitHubAuthHandler(ctx *gin.Context) {
 	// state 파라미터 추가 (CSRF 방지)
 	state := uuid.New().String()
 
-	config := &oauth2.Config{
-		ClientID:     os.Getenv("GH_CLIENT_ID"),
-		ClientSecret: os.Getenv("GH_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("GH_REDIRECT_URL"),
-		Scopes: []string{
-			"user:email",
-			"read:user", // 사용자 정보 읽기 권한 추가
-		},
-		Endpoint: github.Endpoint,
+	config := getOAuth2Config("github")
+	if config == nil {
+		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get GitHub OAuth config")
+		return
 	}
-
 	url := config.AuthCodeURL(state)
 
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
@@ -236,51 +211,28 @@ func (c *AuthController) GitHubAuthHandler(ctx *gin.Context) {
 func (c *AuthController) GitHubCallback(ctx *gin.Context) {
 	code := ctx.Query("code")
 	if code == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Authorization code not found",
-		})
+		sendErrorResponse(ctx, http.StatusBadRequest, "Authorization code not found")
 		return
 	}
 
 	response, err := c.authService.LoginWithGitHub(code)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		sendErrorResponse(ctx, http.StatusUnauthorized, err.Error())
 		return
 	}
 
 	frontendDomain, err := util.GetenvRequired("FRONTEND_DOMAIN")
 	if err != nil {
-
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend domain")
 		return
 	}
 	frontendURL, err := util.GetenvRequired("FRONTEND_URL")
 	if err != nil {
-
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend URL")
 		return
 	}
 
-	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:     "authToken",
-		Value:    response.AccessToken,
-		MaxAge:   3600 * 24 * 30,
-		Path:     "/",
-		Domain:   frontendDomain,
-		Secure:   true,
-		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode,
-	})
+	setAuthCookie(ctx, response.AccessToken, frontendDomain)
 
 	// 토큰을 URL 파라미터로 전달하지 않고 대시보드로 직접 리다이렉트
 	ctx.Redirect(http.StatusTemporaryRedirect, frontendURL+"/dashboard")

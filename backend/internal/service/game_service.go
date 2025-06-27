@@ -92,12 +92,12 @@ func (s *gameService) CreateGame(userID uuid.UUID, req *model.CreateGameRequest)
 	ctx := context.Background()
 	gameKey := fmt.Sprintf("game:%s", createdGame.ID.String())
 	creatorCodeKey := fmt.Sprintf("game:%s:user:%s:code", createdGame.ID.String(), userID.String())
-	
+
 	// Redis 파이프라인을 사용한 원자적 처리
 	pipe := s.rdb.Pipeline()
 	pipe.HSet(ctx, gameKey, "status", string(createdGame.Status))
 	pipe.Set(ctx, creatorCodeKey, "", 24*time.Hour)
-	
+
 	if _, err := pipe.Exec(ctx); err != nil {
 		// Redis 저장 실패 시 DB에서 게임 삭제 (롤백)
 		s.logger.Error().Err(err).Msg("Failed to store game data in Redis, rolling back")
@@ -163,14 +163,14 @@ func (s *gameService) JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.GameR
 	gameKey := fmt.Sprintf("game:%s", game.ID.String())
 	opponentCodeKey := fmt.Sprintf("game:%s:user:%s:code", game.ID.String(), userID.String())
 	gameUsersKey := fmt.Sprintf("game:%s:users", game.ID.String())
-	
+
 	// Redis 파이프라인을 사용한 원자적 처리
 	pipe := s.rdb.Pipeline()
 	pipe.HSet(ctx, gameKey, "status", string(game.Status))
 	pipe.Set(ctx, opponentCodeKey, "", 24*time.Hour)
 	pipe.SAdd(ctx, gameUsersKey, userID.String())
 	pipe.Expire(ctx, gameUsersKey, 24*time.Hour)
-	
+
 	if _, err := pipe.Exec(ctx); err != nil {
 		s.logger.Error().Err(err).Msg("Failed to update Redis after joining game")
 		// Redis 실패는 로그만 남기고 게임은 계속 진행 (DB 상태는 이미 업데이트됨)
@@ -379,7 +379,7 @@ func (s *gameService) CloseGame(gameID uuid.UUID, userID uuid.UUID) error {
 	ctx := context.Background()
 	gameKey := fmt.Sprintf("game:%s", gameID.String())
 	gameUsersKey := fmt.Sprintf("game:%s:users", gameID.String())
-	
+
 	// 게임에 참가한 사용자 목록 가져오기
 	users, err := s.rdb.SMembers(ctx, gameUsersKey).Result()
 	if err != nil {
@@ -388,23 +388,23 @@ func (s *gameService) CloseGame(gameID uuid.UUID, userID uuid.UUID) error {
 
 	// Redis 파이프라인을 사용한 원자적 정리
 	pipe := s.rdb.Pipeline()
-	
+
 	// 게임 상태 업데이트
 	pipe.HSet(ctx, gameKey, "status", string(model.GameStatusClosed))
-	
+
 	// 각 사용자의 코드 데이터 삭제
 	for _, uid := range users {
 		codeKey := fmt.Sprintf("game:%s:user:%s:code", gameID.String(), uid)
 		pipe.Del(ctx, codeKey)
 	}
-	
+
 	// 게임 관련 키들 삭제
 	pipe.Del(ctx, gameKey, gameUsersKey)
-	
+
 	// 승자 락 키도 정리
 	lockKey := fmt.Sprintf("game:%s:winner_lock", gameID.String())
 	pipe.Del(ctx, lockKey)
-	
+
 	if _, err := pipe.Exec(ctx); err != nil {
 		s.logger.Error().Err(err).Msg("Failed to cleanup Redis data")
 	}
