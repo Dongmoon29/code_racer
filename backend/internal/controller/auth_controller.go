@@ -38,7 +38,8 @@ func sendErrorResponse(ctx *gin.Context, statusCode int, message string) {
 }
 
 // setAuthCookie 인증 쿠키 설정
-func setAuthCookie(ctx *gin.Context, accessToken, domain string) {
+func (c *AuthController) setAuthCookie(ctx *gin.Context, accessToken, domain string) {
+	c.logger.Info().Str("cookieDomain", domain).Msg("Setting auth cookie with domain")
 	ctx.SetSameSite(http.SameSiteNoneMode)
 	ctx.SetCookie(
 		"authToken",
@@ -121,7 +122,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	setAuthCookie(ctx, response.AccessToken, frontendDomain)
+	c.setAuthCookie(ctx, response.AccessToken, frontendDomain)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -187,7 +188,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	setAuthCookie(ctx, response.AccessToken, frontendDomain)
+	c.setAuthCookie(ctx, response.AccessToken, frontendDomain)
 
 	ctx.Redirect(http.StatusTemporaryRedirect, frontendURL+"/dashboard")
 }
@@ -232,7 +233,7 @@ func (c *AuthController) GitHubCallback(ctx *gin.Context) {
 		return
 	}
 
-	setAuthCookie(ctx, response.AccessToken, frontendDomain)
+	c.setAuthCookie(ctx, response.AccessToken, frontendDomain)
 
 	// 토큰을 URL 파라미터로 전달하지 않고 대시보드로 직접 리다이렉트
 	ctx.Redirect(http.StatusTemporaryRedirect, frontendURL+"/dashboard")
