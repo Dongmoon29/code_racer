@@ -30,6 +30,8 @@ func InitRedis(cfg *Config) *redis.Client {
 
 	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
+
+		log.Fatal().Str("addr", options.Addr).Msg("Redis 연결 주소")
 		log.Fatal().Err(err).Msg("Failed to connect to Redis")
 	}
 
