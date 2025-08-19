@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail } from 'lucide-react';
@@ -17,16 +17,6 @@ const LoginForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-
-  // 이미 로그인된 사용자 체크
-  const { isLoggedIn } = useAuthStore();
-
-  // 로그인된 사용자가 로그인 페이지에 접근하면 dashboard로 리다이렉트
-  useEffect(() => {
-    if (isLoggedIn) {
-      router.replace('/dashboard');
-    }
-  }, [isLoggedIn, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
