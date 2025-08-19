@@ -194,19 +194,13 @@ func TestLogin(t *testing.T) {
 		var response map[string]interface{}
 		json.Unmarshal(w.Body.Bytes(), &response)
 		assert.True(t, response["success"].(bool))
-		assert.NotNil(t, response["user"])
 
-		// 쿠키 검증
-		cookies := w.Result().Cookies()
-		var authCookie *http.Cookie
-		for _, cookie := range cookies {
-			if cookie.Name == "authToken" {
-				authCookie = cookie
-				break
-			}
-		}
-		assert.NotNil(t, authCookie)
-		assert.Equal(t, expectedResponse.AccessToken, authCookie.Value)
+		// 토큰 검증 (JSON 응답에서 확인)
+		assert.NotNil(t, response["data"])
+		data := response["data"].(map[string]interface{})
+		assert.NotNil(t, data["token"])
+		assert.Equal(t, expectedResponse.AccessToken, data["token"])
+		assert.NotNil(t, data["user"])
 	})
 
 	t.Run("invalid credentials", func(t *testing.T) {
@@ -307,18 +301,11 @@ func TestLogout(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	// 쿠키가 제거되었는지 확인
-	cookies := w.Result().Cookies()
-	var authCookie *http.Cookie
-	for _, cookie := range cookies {
-		if cookie.Name == "authToken" {
-			authCookie = cookie
-			break
-		}
-	}
-	assert.NotNil(t, authCookie)
-	assert.Equal(t, "", authCookie.Value)
-	assert.Equal(t, -1, authCookie.MaxAge)
+	// 로그아웃 성공 응답 확인 (토큰 기반으로 변경)
+	var response map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &response)
+	assert.True(t, response["success"].(bool))
+	assert.Equal(t, "Successfully logged out. Please remove the token from client storage.", response["message"])
 }
 
 func TestGoogleAuth(t *testing.T) {
