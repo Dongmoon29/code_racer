@@ -1,9 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Layout from '../components/layout/Layout';
 import RegisterForm from '../components/auth/RegisterForm';
 import Image from 'next/image';
+import { useAuthStore } from '@/stores/authStore';
 
 const RegisterPage: React.FC = () => {
+  const router = useRouter();
+  const { isLoggedIn } = useAuthStore();
+
+  useEffect(() => {
+    // 이미 로그인된 사용자가 회원가입 페이지에 접근하면 dashboard로 리다이렉트
+    if (isLoggedIn) {
+      router.replace('/dashboard');
+    }
+  }, [isLoggedIn, router]);
+
   return (
     <Layout
       title="Register | Code Racer"

@@ -13,12 +13,18 @@ const LoginPage: React.FC = () => {
   console.log(isLoggedIn, user);
 
   useEffect(() => {
+    // 이미 로그인된 사용자가 로그인 페이지에 접근하면 dashboard로 리다이렉트
+    if (isLoggedIn) {
+      router.replace('/dashboard');
+      return;
+    }
+
     if (router.query.registered === 'true') {
       setMessage(
         'Registration successful! Please login with your new account.'
       );
     }
-  }, [router.query]);
+  }, [isLoggedIn, router.query, router]);
 
   return (
     <Layout

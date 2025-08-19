@@ -14,14 +14,17 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     // OAuth 콜백에서 토큰 처리
     const token = router.query.token as string;
-    if (token) {
+    if (token && !localStorage.getItem('authToken')) {
+      console.log('OAuth token received:', token);
       localStorage.setItem('authToken', token);
-
-      // URL에서 토큰 파라미터 제거
-      router.replace('/dashboard', undefined, { shallow: true });
 
       // 인증 상태 재확인
       useAuthStore.getState().initializeAuth();
+
+      // URL에서 토큰 파라미터 제거 (무한 루프 방지)
+      if (router.asPath.includes('token=')) {
+        router.replace('/dashboard', undefined, { shallow: true });
+      }
     }
   }, [router.query.token, router]);
 
