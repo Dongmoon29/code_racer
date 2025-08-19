@@ -40,6 +40,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {
+      // 로컬 스토리지에서 토큰 제거
+      localStorage.removeItem('authToken');
+      
       set({
         user: null,
         isLoggedIn: false,

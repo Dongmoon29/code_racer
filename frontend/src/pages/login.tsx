@@ -4,10 +4,13 @@ import Layout from '../components/layout/Layout';
 import LoginForm from '../components/auth/LoginForm';
 import Image from 'next/image';
 import { Alert } from '@/components/ui/alert';
+import { useAuthStore } from '@/stores/authStore';
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
+  const { isLoggedIn, user } = useAuthStore();
+  console.log(isLoggedIn, user);
 
   useEffect(() => {
     if (router.query.registered === 'true') {

@@ -36,8 +36,22 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // 쿠키 포함하여 요청
+  withCredentials: false, // 쿠키 방식 제거
 });
+
+// 요청 인터셉터 - Authorization 헤더 추가
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // 응답 인터셉터
 api.interceptors.response.use(

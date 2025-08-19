@@ -29,6 +29,11 @@ const LoginForm: React.FC = () => {
       const response = await authApi.login(email, password);
 
       if (response.success) {
+        // 토큰 저장
+        if (response.data?.token) {
+          localStorage.setItem('authToken', response.data.token);
+        }
+
         useAuthStore.getState().login(response.user);
 
         // 로그인 성공 후 리다이렉트
