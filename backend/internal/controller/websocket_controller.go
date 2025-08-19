@@ -3,6 +3,8 @@ package controller
 import (
 	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/service"
@@ -22,9 +24,46 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true // Origin 헤더가 없는 경우 허용 (일부 클라이언트)
+		}
+
+		// 허용된 오리진 목록
+		allowedOrigins := []string{
+			"http://localhost:3000",
+			"http://localhost:3001",
+		}
+
+		// 환경 변수에서 추가 오리진 가져오기
+		if frontendURL := os.Getenv("FRONTEND_URL"); frontendURL != "" {
+			allowedOrigins = append(allowedOrigins, frontendURL)
+		}
+
+		// CORS_ALLOWED_ORIGINS 환경 변수에서 추가 오리진 가져오기
+		if corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS"); corsOrigins != "" {
+			origins := strings.Split(corsOrigins, ",")
+			for _, o := range origins {
+				o = strings.TrimSpace(o)
+				if o != "" {
+					allowedOrigins = append(allowedOrigins, o)
+				}
+			}
+		}
+
+		// 오리진 체크
+		for _, allowed := range allowedOrigins {
+			if origin == allowed {
+				return true
+			}
+		}
+
 		// 개발 환경에서는 모든 오리진 허용
-		// 프로덕션 환경에서는 적절한 오리진 체크 구현 필요
-		return true
+		if os.Getenv("ENVIRONMENT") == "development" {
+			return true
+		}
+
+		return false
 	},
 }
 

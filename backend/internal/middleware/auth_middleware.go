@@ -30,17 +30,16 @@ func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var tokenString string
 
-		// 쿠키에서 토큰 확인
-		cookie, err := c.Cookie("authToken")
-		if err == nil {
-			tokenString = cookie
+		// Authorization 헤더에서 Bearer 토큰 확인
+		authHeader := c.GetHeader("Authorization")
+		if authHeader != "" && len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+			tokenString = authHeader[7:]
+			m.logger.Debug().Msg("Token found in Authorization header")
 		} else {
-			m.logger.Warn().
-				Err(err).
-				Msg("No auth token cookie found")
+			m.logger.Warn().Msg("No Authorization header found")
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
-				"message": "Authentication required",
+				"message": "Authorization header required: Bearer <token>",
 			})
 			c.Abort()
 			return
@@ -63,11 +62,24 @@ func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 		// 사용자 정보 조회
 		userID, err := uuid.Parse(claims.UserID)
 		if err != nil {
+			m.logger.Error().
+				Err(err).
+				Str("userIDInToken", claims.UserID).
+				Msg("Invalid user ID in token")
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Invalid user ID in token",
+			})
+			c.Abort()
 			return
 		}
-		// Replace with servives/auth
+
 		user, err := m.userRepository.FindByID(userID)
 		if err != nil {
+			m.logger.Error().
+				Err(err).
+				Str("userID", userID.String()).
+				Msg("Failed to find user")
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"message": "Invalid user",
@@ -90,20 +102,25 @@ func (m *AuthMiddleware) WebSocketAuthRequired() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var tokenString string
 
-		// 쿠키 체크
-		cookie, err := ctx.Cookie("authToken")
-		if err == nil {
-			tokenString = cookie
+		// Authorization 헤더에서 Bearer 토큰 확인
+		authHeader := ctx.GetHeader("Authorization")
+		if authHeader != "" && len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+			tokenString = authHeader[7:]
+			m.logger.Debug().Msg("Token found in Authorization header")
 		} else {
-			m.logger.Warn().
-				Err(err).
-				Msg("No auth token cookie found for WebSocket connection")
-			ctx.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"message": "Authentication required",
-			})
-			ctx.Abort()
-			return
+			// 쿼리 파라미터에서 토큰 확인 (fallback)
+			if tokenParam := ctx.Query("token"); tokenParam != "" {
+				tokenString = tokenParam
+				m.logger.Debug().Msg("Token found in query parameter")
+			} else {
+				m.logger.Warn().Msg("No Authorization header or token parameter found for WebSocket connection")
+				ctx.JSON(http.StatusUnauthorized, gin.H{
+					"success": false,
+					"message": "Authorization header required: Bearer <token>",
+				})
+				ctx.Abort()
+				return
+			}
 		}
 
 		m.validateAndSetContext(ctx, tokenString)

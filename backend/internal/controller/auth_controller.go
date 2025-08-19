@@ -37,20 +37,8 @@ func sendErrorResponse(ctx *gin.Context, statusCode int, message string) {
 	})
 }
 
-// setAuthCookie 인증 쿠키 설정
-func (c *AuthController) setAuthCookie(ctx *gin.Context, accessToken, domain string) {
-	c.logger.Info().Str("cookieDomain", domain).Msg("Setting auth cookie with domain")
-	ctx.SetSameSite(http.SameSiteNoneMode)
-	ctx.SetCookie(
-		"authToken",
-		accessToken,
-		3600*24*30, // 30일
-		"/",
-		domain,
-		true,
-		true,
-	)
-}
+// setAuthCookie 함수는 더 이상 사용하지 않음 (쿠키 기반 인증 제거)
+// 토큰은 응답 본문에 포함하여 전달
 
 // getOAuth2Config OAuth2 설정을 가져오는 함수
 func getOAuth2Config(provider string) *oauth2.Config {
@@ -116,19 +104,13 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	frontendDomain, err := util.GetenvRequired("FRONTEND_DOMAIN")
-
-	if err != nil {
-		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend URL")
-		return
-	}
-
-	c.setAuthCookie(ctx, response.AccessToken, frontendDomain)
-	c.logger.Debug().Str("frontendDomainFromEnv", frontendDomain).Msg("FRONTEND_DOMAIN environment variable value")
-
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"user":    response.User,
+		"message": "Login successful",
+		"data": gin.H{
+			"user":  response.User,
+			"token": response.AccessToken,
+		},
 	})
 }
 
@@ -179,20 +161,15 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	frontendDomain, err := util.GetenvRequired("FRONTEND_DOMAIN")
-	if err != nil {
-		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend domain")
-		return
-	}
 	frontendURL, err := util.GetenvRequired("FRONTEND_URL")
 	if err != nil {
 		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend URL")
 		return
 	}
 
-	c.setAuthCookie(ctx, response.AccessToken, frontendDomain)
-
-	ctx.Redirect(http.StatusTemporaryRedirect, frontendURL+"/dashboard")
+	// 토큰을 URL 파라미터로 전달
+	redirectURL := frontendURL + "/dashboard?token=" + response.AccessToken
+	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
 // GitHubAuthHandler GitHub 로그인 페이지로 리다이렉트
@@ -224,39 +201,22 @@ func (c *AuthController) GitHubCallback(ctx *gin.Context) {
 		return
 	}
 
-	frontendDomain, err := util.GetenvRequired("FRONTEND_DOMAIN")
-	if err != nil {
-		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend domain")
-		return
-	}
 	frontendURL, err := util.GetenvRequired("FRONTEND_URL")
 	if err != nil {
 		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend URL")
 		return
 	}
 
-	c.setAuthCookie(ctx, response.AccessToken, frontendDomain)
-
-	// 토큰을 URL 파라미터로 전달하지 않고 대시보드로 직접 리다이렉트
-	ctx.Redirect(http.StatusTemporaryRedirect, frontendURL+"/dashboard")
+	// 토큰을 URL 파라미터로 전달
+	redirectURL := frontendURL + "/dashboard?token=" + response.AccessToken
+	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
 // Logout 로그아웃 핸들러
 func (c *AuthController) Logout(ctx *gin.Context) {
-
-	// 쿠키를 만료시켜 삭제
-	ctx.SetCookie(
-		"authToken",
-		"", // 빈 값
-		-1, // 즉시 만료
-		"/",
-		"",
-		true,
-		true,
-	)
-
+	// 클라이언트에서 토큰을 삭제하도록 안내
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Successfully logged out",
+		"message": "Successfully logged out. Please remove the token from client storage.",
 	})
 }
