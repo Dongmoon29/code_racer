@@ -30,6 +30,28 @@ export interface UserProfile {
   fav_language?: string;
 }
 
+// User 타입 정의 (types.ts에서 import하거나 여기서 정의)
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  profile_image?: string;
+  homepage?: string;
+  linkedin?: string;
+  oauthProvider?: string;
+}
+
+// User 객체인지 확인하는 타입 가드
+const isUser = (obj: unknown): obj is User => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    typeof (obj as Record<string, unknown>).id === 'string' &&
+    typeof (obj as Record<string, unknown>).name === 'string' &&
+    typeof (obj as Record<string, unknown>).email === 'string'
+  );
+};
+
 // API 클라이언트 기본 설정
 const api = axios.create({
   baseURL: '/api',
@@ -69,14 +91,34 @@ api.interceptors.response.use(
 );
 
 // API 응답에서 사용자 정보를 일관성 있게 추출하는 헬퍼 함수
-export const extractUserFromResponse = (response: any) => {
+export const extractUserFromResponse = (response: unknown): User | null => {
   // Login API: { success: true, data: { user, token } }
-  if (response.data?.user) {
-    return response.data.user;
+  if (
+    response &&
+    typeof response === 'object' &&
+    response !== null &&
+    'data' in response &&
+    response.data &&
+    typeof response.data === 'object' &&
+    response.data !== null &&
+    'user' in response.data
+  ) {
+    const data = response.data as Record<string, unknown>;
+    if (isUser(data.user)) {
+      return data.user;
+    }
   }
   // Register/GetCurrentUser API: { success: true, user: user }
-  if (response.user) {
-    return response.user;
+  if (
+    response &&
+    typeof response === 'object' &&
+    response !== null &&
+    'user' in response
+  ) {
+    const responseObj = response as Record<string, unknown>;
+    if (isUser(responseObj.user)) {
+      return responseObj.user;
+    }
   }
   return null;
 };
