@@ -15,13 +15,11 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-// AuthController 인증 관련 컨트롤러
 type AuthController struct {
 	authService interfaces.AuthService
 	logger      logger.Logger
 }
 
-// NewAuthController AuthController 인스턴스 생성
 func NewAuthController(authService interfaces.AuthService, logger logger.Logger) *AuthController {
 	return &AuthController{
 		authService: authService,
@@ -29,7 +27,6 @@ func NewAuthController(authService interfaces.AuthService, logger logger.Logger)
 	}
 }
 
-// sendErrorResponse 오류 응답을 통일하여 처리
 func sendErrorResponse(ctx *gin.Context, statusCode int, message string) {
 	ctx.JSON(statusCode, gin.H{
 		"success": false,
@@ -37,10 +34,6 @@ func sendErrorResponse(ctx *gin.Context, statusCode int, message string) {
 	})
 }
 
-// setAuthCookie 함수는 더 이상 사용하지 않음 (쿠키 기반 인증 제거)
-// 토큰은 응답 본문에 포함하여 전달
-
-// getOAuth2Config OAuth2 설정을 가져오는 함수
 func getOAuth2Config(provider string) *oauth2.Config {
 	var config *oauth2.Config
 	switch provider {
@@ -70,7 +63,6 @@ func getOAuth2Config(provider string) *oauth2.Config {
 	return config
 }
 
-// Register 회원가입 핸들러
 func (c *AuthController) Register(ctx *gin.Context) {
 	var req model.RegisterRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -90,7 +82,6 @@ func (c *AuthController) Register(ctx *gin.Context) {
 	})
 }
 
-// Login 로그인 핸들러
 func (c *AuthController) Login(ctx *gin.Context) {
 	var req model.LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -114,9 +105,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 	})
 }
 
-// GetCurrentUser 현재 로그인된 사용자 정보 조회 핸들러
 func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
-	// userID는 미들웨어에서 설정됨
 	userID, exists := ctx.Get("userID")
 	if !exists {
 		sendErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
@@ -135,7 +124,6 @@ func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 	})
 }
 
-// GoogleAuthHandler Google 로그인 페이지로 리다이렉트
 func (c *AuthController) GoogleAuthHandler(ctx *gin.Context) {
 	config := getOAuth2Config("google")
 	if config == nil {
@@ -146,9 +134,7 @@ func (c *AuthController) GoogleAuthHandler(ctx *gin.Context) {
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
 }
 
-// GoogleCallback Google OAuth 콜백 처리
 func (c *AuthController) GoogleCallback(ctx *gin.Context) {
-	// Google이 리다이렉트로 전달한 인증 코드
 	code := ctx.Query("code")
 	if code == "" {
 		sendErrorResponse(ctx, http.StatusBadRequest, "Authorization code not found")
@@ -167,14 +153,11 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	// 토큰을 URL 파라미터로 전달
 	redirectURL := frontendURL + "/dashboard?token=" + response.AccessToken
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
-// GitHubAuthHandler GitHub 로그인 페이지로 리다이렉트
 func (c *AuthController) GitHubAuthHandler(ctx *gin.Context) {
-	// state 파라미터 추가 (CSRF 방지)
 	state := uuid.New().String()
 
 	config := getOAuth2Config("github")
@@ -187,7 +170,6 @@ func (c *AuthController) GitHubAuthHandler(ctx *gin.Context) {
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
 }
 
-// GitHubCallback GitHub OAuth 콜백 처리
 func (c *AuthController) GitHubCallback(ctx *gin.Context) {
 	code := ctx.Query("code")
 	if code == "" {
@@ -207,14 +189,11 @@ func (c *AuthController) GitHubCallback(ctx *gin.Context) {
 		return
 	}
 
-	// 토큰을 URL 파라미터로 전달
 	redirectURL := frontendURL + "/dashboard?token=" + response.AccessToken
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
-// Logout 로그아웃 핸들러
 func (c *AuthController) Logout(ctx *gin.Context) {
-	// 클라이언트에서 토큰을 삭제하도록 안내
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Successfully logged out. Please remove the token from client storage.",
