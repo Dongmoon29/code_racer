@@ -7,7 +7,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
+
+	"fmt"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -108,6 +111,7 @@ func setupTest(t *testing.T) (*gin.Engine, *MockAuthService, *AuthController) {
 		auth.GET("/google/callback", authController.GoogleCallback)
 		auth.GET("/github", authController.GitHubAuthHandler)
 		auth.GET("/github/callback", authController.GitHubCallback)
+		auth.POST("/exchange-token", authController.ExchangeToken)
 	}
 
 	return r, mockAuthService, authController
@@ -309,55 +313,51 @@ func TestLogout(t *testing.T) {
 }
 
 func TestGoogleAuth(t *testing.T) {
-	r, mockService, _ := setupTest(t)
+	r, _, _, _ := setupTestWithEnv(t)
 
 	t.Run("google callback success", func(t *testing.T) {
-		// Set required environment variables for the test
-		os.Setenv("FRONTEND_URL", "http://localhost:3000")
-		os.Setenv("FRONTEND_DOMAIN", "localhost")
-
 		code := "test-auth-code"
-		expectedResponse := &model.LoginResponse{
-			User: &model.UserResponse{
-				ID:    uuid.New(),
-				Email: "test@gmail.com",
-				Name:  "Google User",
-			},
-			AccessToken: "google-test-token",
-		}
+		state := "test-state-123"
 
-		// Mock service's LoginWithGoogle call
-		mockService.On("LoginWithGoogle", code).Return(expectedResponse, nil).Once()
-
-		// Create test request
-		req := httptest.NewRequest("GET", "/api/auth/google/callback?code="+code, nil)
+		// Create test request with both code and state parameters
+		req := httptest.NewRequest("GET", "/api/auth/google/callback?code="+code+"&state="+state, nil)
 		w := httptest.NewRecorder()
 
 		r.ServeHTTP(w, req)
 
-		// Verify response
+		// Verify response - should redirect to frontend with code and state
 		assert.Equal(t, http.StatusTemporaryRedirect, w.Code)
 		location := w.Header().Get("Location")
 		assert.Contains(t, location, "localhost")
-
-		mockService.AssertExpectations(t)
+		assert.Contains(t, location, "code="+code)
+		assert.Contains(t, location, "state="+state)
+		assert.Contains(t, location, "/auth/callback")
 
 		// Clean up environment variables
 		os.Unsetenv("FRONTEND_URL")
 		os.Unsetenv("FRONTEND_DOMAIN")
 	})
 
-	t.Run("google callback error", func(t *testing.T) {
-		code := "invalid-code"
-		mockService.On("LoginWithGoogle", code).Return(nil, errors.New("authentication failed")).Once()
+	t.Run("google callback missing code", func(t *testing.T) {
+		state := "test-state-123"
+
+		req := httptest.NewRequest("GET", "/api/auth/google/callback?state="+state, nil)
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("google callback missing state", func(t *testing.T) {
+		code := "test-auth-code"
 
 		req := httptest.NewRequest("GET", "/api/auth/google/callback?code="+code, nil)
 		w := httptest.NewRecorder()
 
 		r.ServeHTTP(w, req)
 
-		assert.Equal(t, http.StatusUnauthorized, w.Code)
-		mockService.AssertExpectations(t)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 }
 
@@ -403,29 +403,119 @@ func setupTestWithEnv(t *testing.T) (*gin.Engine, *MockAuthService, *AuthControl
 }
 
 func TestGitHubAuth(t *testing.T) {
-	r, mockService, _, _ := setupTestWithEnv(t)
+	r, _, _, _ := setupTestWithEnv(t)
 
 	t.Run("github callback success", func(t *testing.T) {
 		code := "test-auth-code"
-		expectedResponse := &model.LoginResponse{
-			User: &model.UserResponse{
-				ID:    uuid.New(),
-				Email: "test@github.com",
-				Name:  "GitHub User",
-			},
-			AccessToken: "github-test-token",
-		}
+		state := "test-state-123"
 
-		mockService.On("LoginWithGitHub", code).Return(expectedResponse, nil).Once()
+		req := httptest.NewRequest("GET", "/api/auth/github/callback?code="+code+"&state="+state, nil)
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, req)
+
+		// Verify response - should redirect to frontend with code and state
+		assert.Equal(t, http.StatusTemporaryRedirect, w.Code)
+		location := w.Header().Get("Location")
+		assert.Contains(t, location, "localhost")
+		assert.Contains(t, location, "code="+code)
+		assert.Contains(t, location, "state="+state)
+		assert.Contains(t, location, "/auth/callback")
+	})
+
+	t.Run("github callback missing code", func(t *testing.T) {
+		state := "test-state-123"
+
+		req := httptest.NewRequest("GET", "/api/auth/github/callback?state="+state, nil)
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("github callback missing state", func(t *testing.T) {
+		code := "test-auth-code"
 
 		req := httptest.NewRequest("GET", "/api/auth/github/callback?code="+code, nil)
 		w := httptest.NewRecorder()
 
 		r.ServeHTTP(w, req)
 
-		assert.Equal(t, http.StatusTemporaryRedirect, w.Code)
-		assert.Contains(t, w.Header().Get("Location"), "/dashboard")
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
+func TestExchangeToken(t *testing.T) {
+	r, mockService, _, _ := setupTestWithEnv(t)
+
+	t.Run("exchange token success", func(t *testing.T) {
+		code := "test-auth-code"
+		state := "test-state-123"
+
+		expectedResponse := &model.LoginResponse{
+			User: &model.UserResponse{
+				ID:    uuid.New(),
+				Email: "test@example.com",
+				Name:  "Test User",
+			},
+			AccessToken: "test-token",
+		}
+
+		// Mock service calls
+		mockService.On("LoginWithGoogle", code).Return(expectedResponse, nil).Once()
+
+		req := httptest.NewRequest("POST", "/api/auth/exchange-token", strings.NewReader(
+			fmt.Sprintf(`{"code":"%s","state":"%s"}`, code, state)))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, true, response["success"])
+		assert.Equal(t, expectedResponse.AccessToken, response["token"])
 
 		mockService.AssertExpectations(t)
+	})
+
+	t.Run("exchange token missing code", func(t *testing.T) {
+		state := "test-state-123"
+
+		req := httptest.NewRequest("POST", "/api/auth/exchange-token", strings.NewReader(
+			fmt.Sprintf(`{"state":"%s"}`, state)))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("exchange token missing state", func(t *testing.T) {
+		code := "test-auth-code"
+
+		req := httptest.NewRequest("POST", "/api/auth/exchange-token", strings.NewReader(
+			fmt.Sprintf(`{"code":"%s"}`, code)))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("exchange token invalid json", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/api/auth/exchange-token", strings.NewReader("invalid json"))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 }

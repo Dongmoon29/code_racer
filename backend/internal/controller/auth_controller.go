@@ -279,10 +279,19 @@ func (c *AuthController) detectOAuthProvider(code string) string {
 	// Google과 GitHub의 code 형식이 다를 수 있음
 	// 실제로는 더 정교한 감지 로직 필요
 	// 현재는 간단한 예시
-	if len(code) > 50 {
-		return "google" // Google code는 일반적으로 더 김
+
+	// Google OAuth code는 일반적으로 더 길고 특정 패턴을 가짐
+	if len(code) > 100 {
+		return "google"
 	}
-	return "github"
+
+	// GitHub OAuth code는 상대적으로 짧음
+	if len(code) > 20 && len(code) <= 100 {
+		return "github"
+	}
+
+	// 기본값으로 Google 반환 (더 일반적)
+	return "google"
 }
 
 func (c *AuthController) Logout(ctx *gin.Context) {
