@@ -111,7 +111,7 @@ func (m *AuthMiddleware) WebSocketAuthRequired() gin.HandlerFunc {
 			// 쿼리 파라미터에서 토큰 확인 (fallback)
 			if tokenParam := ctx.Query("token"); tokenParam != "" {
 				tokenString = tokenParam
-				m.logger.Debug().Msg("Token found in query parameter")
+				m.logger.Debug().Str("tokenPrefix", tokenParam[:min(len(tokenParam), 20)]).Msg("Token found in query parameter")
 			} else {
 				m.logger.Warn().Msg("No Authorization header or token parameter found for WebSocket connection")
 				ctx.JSON(http.StatusUnauthorized, gin.H{
@@ -125,6 +125,14 @@ func (m *AuthMiddleware) WebSocketAuthRequired() gin.HandlerFunc {
 
 		m.validateAndSetContext(ctx, tokenString)
 	}
+}
+
+// min 함수 추가
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // validateAndSetContext 토큰 검증 및 컨텍스트 설정 공통 로직
