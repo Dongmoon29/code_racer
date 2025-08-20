@@ -80,6 +80,11 @@ var upgrader = websocket.Upgrader{
 			return true
 		}
 
+		// coderacer.pro 도메인 허용
+		if strings.Contains(origin, "coderacer.pro") {
+			return true
+		}
+
 		return false
 	},
 }

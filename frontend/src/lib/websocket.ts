@@ -33,11 +33,13 @@ export class WebSocketClient {
     // WebSocket URL 구성
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
-    // 프로덕션 환경에서는 현재 도메인 사용, 개발환경에서는 localhost 사용
+    // 프로덕션 환경에서는 백엔드 도메인 사용, 개발환경에서는 localhost 사용
     let wsHost: string;
     if (process.env.NODE_ENV === 'production') {
-      // 프로덕션: 현재 도메인 사용
-      wsHost = window.location.host;
+      // 프로덕션: 환경변수에서 백엔드 도메인 가져오기
+      wsHost =
+        process.env.NEXT_PUBLIC_WS_HOST ||
+        'code-racer-651798881748.asia-northeast3.run.app';
     } else {
       // 개발환경: 환경변수 또는 기본값 사용
       wsHost =
