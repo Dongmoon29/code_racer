@@ -32,17 +32,27 @@ export class WebSocketClient {
   private connect() {
     // WebSocket URL 구성
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsHost =
-      process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
-      'http://localhost:8080';
-    const wsUrl = `${wsProtocol}//${wsHost.replace(/^https?:\/\//, '')}/ws/${
-      this.gameId
-    }`;
-
+    
+    // 프로덕션 환경에서는 현재 도메인 사용, 개발환경에서는 localhost 사용
+    let wsHost: string;
+    if (process.env.NODE_ENV === 'production') {
+      // 프로덕션: 현재 도메인 사용
+      wsHost = window.location.host;
+    } else {
+      // 개발환경: 환경변수 또는 기본값 사용
+      wsHost = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8080';
+      wsHost = wsHost.replace(/^https?:\/\//, '');
+    }
+    
+    const wsUrl = `${wsProtocol}//${wsHost}/ws/${this.gameId}`;
+    
     console.log('=============WebSocket Connection============');
     console.log(`Game ID: ${this.gameId}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`Protocol: ${wsProtocol}`);
+    console.log(`Host: ${wsHost}`);
     console.log(`WebSocket URL: ${wsUrl}`);
-
+    
     // JWT 토큰 가져오기
     const token =
       localStorage.getItem('authToken') || localStorage.getItem('token');
@@ -85,21 +95,32 @@ export class WebSocketClient {
 
   private handleDisconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+      
+      console.log(`WebSocket disconnected. Attempting to reconnect in ${delay}ms (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+      
       this.reconnectTimeout = setTimeout(() => {
-        this.reconnectAttempts++;
+        console.log('Attempting to reconnect...');
         this.connect();
       }, delay);
+    } else {
+      console.error('Max reconnection attempts reached. WebSocket connection failed.');
     }
   }
 
   private startPingInterval() {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+    }
+    
     this.pingInterval = setInterval(() => {
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: 'ping' }));
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        // ping 메시지 전송 (브라우저 WebSocket에서는 ping 메서드가 지원되지 않음)
+        this.ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
         this.lastPingTime = Date.now();
       }
-    }, 30000);
+    }, 30000); // 30초마다 ping
   }
 
   private handleMessage(message: WebSocketMessage) {
@@ -134,14 +155,21 @@ export class WebSocketClient {
   }
 
   public disconnect() {
+    console.log('Disconnecting WebSocket...');
+    
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
     }
+    
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
+      this.pingInterval = null;
     }
+
     if (this.ws) {
-      this.ws.close();
+      this.ws.close(1000, 'User requested disconnect');
+      this.ws = null;
     }
   }
 

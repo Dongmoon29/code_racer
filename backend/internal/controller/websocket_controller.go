@@ -33,11 +33,18 @@ var upgrader = websocket.Upgrader{
 		allowedOrigins := []string{
 			"http://localhost:3000",
 			"http://localhost:3001",
+			"https://localhost:3000",
+			"https://localhost:3001",
 		}
 
 		// 환경 변수에서 추가 오리진 가져오기
 		if frontendURL := os.Getenv("FRONTEND_URL"); frontendURL != "" {
 			allowedOrigins = append(allowedOrigins, frontendURL)
+			// HTTPS 버전도 추가
+			if strings.HasPrefix(frontendURL, "http://") {
+				httpsVersion := strings.Replace(frontendURL, "http://", "https://", 1)
+				allowedOrigins = append(allowedOrigins, httpsVersion)
+			}
 		}
 
 		// CORS_ALLOWED_ORIGINS 환경 변수에서 추가 오리진 가져오기
@@ -47,6 +54,11 @@ var upgrader = websocket.Upgrader{
 				o = strings.TrimSpace(o)
 				if o != "" {
 					allowedOrigins = append(allowedOrigins, o)
+					// HTTPS 버전도 추가
+					if strings.HasPrefix(o, "http://") {
+						httpsVersion := strings.Replace(o, "http://", "https://", 1)
+						allowedOrigins = append(allowedOrigins, httpsVersion)
+					}
 				}
 			}
 		}
@@ -60,6 +72,11 @@ var upgrader = websocket.Upgrader{
 
 		// 개발 환경에서는 모든 오리진 허용
 		if os.Getenv("ENVIRONMENT") == "development" {
+			return true
+		}
+
+		// 프로덕션 환경에서도 Cloud Run 도메인 허용
+		if strings.Contains(origin, "asia-northeast3.run.app") {
 			return true
 		}
 

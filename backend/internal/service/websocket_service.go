@@ -381,6 +381,15 @@ func (c *Client) readPump(wsService *webSocketService) {
 			// 인증 메시지 처리 (이미 연결 시점에 인증됨)
 			log.Printf("Auth message received from user %s", c.userID.String())
 			
+		case "ping":
+			// ping 메시지에 대한 pong 응답
+			pongMsg := map[string]interface{}{
+				"type": "pong",
+				"timestamp": time.Now().Unix(),
+			}
+			pongBytes, _ := json.Marshal(pongMsg)
+			c.send <- pongBytes
+			
 		case "code_update":
 			// 코드 업데이트 메시지 처리
 			if data, ok := msg["data"].(map[string]interface{}); ok {
