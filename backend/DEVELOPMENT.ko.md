@@ -1,12 +1,12 @@
-# Code Racer Backend Development Guide
+# Code Racer 백엔드 개발 가이드
 
 [한국어](DEVELOPMENT.md) | [English](DEVELOPMENT.en.md)
 
-## 🚀 Getting Started
+## 🚀 시작하기
 
-### Development Environment Setup
+### 개발 환경 설정
 
-1. **Install Go**
+1. **Go 설치**
 
    ```bash
    # macOS
@@ -16,137 +16,137 @@
    sudo apt-get install golang-go
 
    # Windows
-   # Download from https://golang.org/dl/
+   # https://golang.org/dl/ 에서 다운로드
    ```
 
-2. **Install Dependencies**
+2. **의존성 설치**
 
    ```bash
    cd backend
    go mod download
    ```
 
-3. **Database Setup**
+3. **데이터베이스 설정**
 
    ```bash
-   # Install PostgreSQL (macOS)
+   # PostgreSQL 설치 (macOS)
    brew install postgresql
    brew services start postgresql
 
-   # Install Redis (macOS)
+   # Redis 설치 (macOS)
    brew install redis
    brew services start redis
    ```
 
-4. **Environment Variables**
+4. **환경 변수 설정**
    ```bash
    cp .env.example .env
-   # Edit .env file with actual values
+   # .env 파일을 편집하여 실제 값으로 설정
    ```
 
-### Running the Project
+### 프로젝트 실행
 
 ```bash
-# Run in development mode
+# 개발 모드로 실행
 go run cmd/api/main.go
 
-# Or build and run
+# 또는 빌드 후 실행
 go build -o bin/api cmd/api/main.go
 ./bin/api
 ```
 
-## 🏗️ Architecture
+## 🏗️ 아키텍처
 
-### Layer Structure
+### 계층 구조
 
 ```
 ┌─────────────────┐
-│   Controller    │ ← HTTP request/response handling
+│   Controller    │ ← HTTP 요청/응답 처리
 ├─────────────────┤
-│    Service      │ ← Business logic
+│    Service      │ ← 비즈니스 로직
 ├─────────────────┤
-│   Repository    │ ← Data access
+│   Repository    │ ← 데이터 접근
 ├─────────────────┤
-│     Model       │ ← Data structures
+│     Model       │ ← 데이터 구조
 └─────────────────┘
 ```
 
-### Dependency Injection
+### 의존성 주입
 
-All dependencies are initialized and injected in `main.go`:
+`main.go`에서 모든 의존성을 초기화하고 주입합니다:
 
 ```go
 func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *dependencies {
-    // Initialize repositories
+    // 레포지토리 초기화
     userRepository := repository.NewUserRepository(db, appLogger)
 
-    // Initialize services
+    // 서비스 초기화
     authService := service.NewAuthService(userRepository, cfg.JWTSecret, appLogger)
 
-    // Initialize controllers
+    // 컨트롤러 초기화
     authController := controller.NewAuthController(authService, appLogger)
 
     return &dependencies{
         authController: authController,
-        // ... other dependencies
+        // ... 기타 의존성
     }
 }
 ```
 
-## 📝 Coding Conventions
+## 📝 코딩 컨벤션
 
-### 1. File and Package Naming
+### 1. 파일 및 패키지 네이밍
 
-- **Filenames**: snake_case (e.g., `auth_controller.go`)
-- **Package names**: lowercase (e.g., `package controller`)
-- **Directory names**: lowercase (e.g., `internal/controller/`)
+- **파일명**: snake_case (예: `auth_controller.go`)
+- **패키지명**: 소문자 (예: `package controller`)
+- **디렉토리명**: 소문자 (예: `internal/controller/`)
 
-### 2. Function and Variable Naming
+### 2. 함수 및 변수 네이밍
 
-- **Function names**: PascalCase (e.g., `CreateUser`)
-- **Variable names**: camelCase (e.g., `userID`)
-- **Constants**: UPPER_SNAKE_CASE (e.g., `MAX_RETRY_COUNT`)
+- **함수명**: PascalCase (예: `CreateUser`)
+- **변수명**: camelCase (예: `userID`)
+- **상수명**: UPPER_SNAKE_CASE (예: `MAX_RETRY_COUNT`)
 
-### 3. Interface Naming
+### 3. 인터페이스 네이밍
 
-- **Interface names**: verb + er (e.g., `UserRepository`, `AuthService`)
-- **File names**: `interfaces.go` or `_interfaces.go`
+- **인터페이스명**: 동사 + er (예: `UserRepository`, `AuthService`)
+- **파일명**: `interfaces.go` 또는 `_interfaces.go`
 
-### 4. Error Handling
+### 4. 에러 처리
 
 ```go
-// Good example
+// 좋은 예
 if err != nil {
     return fmt.Errorf("failed to create user: %w", err)
 }
 
-// Bad example
+// 나쁜 예
 if err != nil {
     return err
 }
 ```
 
-### 5. Logging
+### 5. 로깅
 
 ```go
-// Use structured logging
+// 구조화된 로깅 사용
 logger.Info().
     Str("user_id", userID).
     Str("action", "user_created").
     Msg("User created successfully")
 
-// Error logging
+// 에러 로깅
 logger.Error().
     Err(err).
     Str("user_id", userID).
     Msg("Failed to create user")
 ```
 
-## 🔧 Adding New Features
+## 🔧 새로운 기능 추가하기
 
-### 1. Define Model
+### 1. 모델 정의
 
-Define a new model in the `internal/model/` directory:
+`internal/model/` 디렉토리에 새로운 모델을 정의합니다:
 
 ```go
 // internal/model/example.go
@@ -165,9 +165,9 @@ type Example struct {
 }
 ```
 
-### 2. Implement Repository
+### 2. 레포지토리 구현
 
-Implement data access logic in the `internal/repository/` directory:
+`internal/repository/` 디렉토리에 데이터 접근 로직을 구현합니다:
 
 ```go
 // internal/repository/example_repository.go
@@ -206,9 +206,9 @@ func (r *ExampleRepository) FindByID(id uuid.UUID) (*model.Example, error) {
 }
 ```
 
-### 3. Implement Service
+### 3. 서비스 구현
 
-Implement business logic in the `internal/service/` directory:
+`internal/service/` 디렉토리에 비즈니스 로직을 구현합니다:
 
 ```go
 // internal/service/example_service.go
@@ -248,9 +248,9 @@ func (s *ExampleService) CreateExample(name string) (*model.Example, error) {
 }
 ```
 
-### 4. Implement Controller
+### 4. 컨트롤러 구현
 
-Implement HTTP handlers in the `internal/controller/` directory:
+`internal/controller/` 디렉토리에 HTTP 핸들러를 구현합니다:
 
 ```go
 // internal/controller/example_controller.go
@@ -315,29 +315,29 @@ func (c *ExampleController) CreateExample(ctx *gin.Context) {
 }
 ```
 
-### 5. Add Endpoint to Router
+### 5. 라우터에 엔드포인트 추가
 
-Add new routes to `internal/router/router.go`:
+`internal/router/router.go`에 새로운 라우트를 추가합니다:
 
 ```go
 // internal/router/router.go
 func Setup(
-    // ... existing dependencies
+    // ... 기존 의존성
     exampleController *controller.ExampleController,
-    // ... other dependencies
+    // ... 기타 의존성
 ) *gin.Engine {
-    // ... existing code
+    // ... 기존 코드
 
-    // API route group
+    // API 라우트 그룹
     api := router.Group("/api")
     {
-        // ... existing routes
+        // ... 기존 라우트
 
-        // Example routes
+        // Example 라우트
         example := api.Group("/examples")
         {
             example.POST("", exampleController.CreateExample)
-            // Additional routes...
+            // 추가 라우트...
         }
     }
 
@@ -345,31 +345,31 @@ func Setup(
 }
 ```
 
-### 6. Initialize Dependencies
+### 6. 의존성 초기화
 
-Add new dependencies to the `initializeDependencies` function in `main.go`:
+`main.go`의 `initializeDependencies` 함수에 새로운 의존성을 추가합니다:
 
 ```go
 func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *dependencies {
-    // ... existing code
+    // ... 기존 코드
 
-    // Example dependencies
+    // Example 의존성 추가
     exampleRepository := repository.NewExampleRepository(db, appLogger)
     exampleService := service.NewExampleService(exampleRepository, appLogger)
     exampleController := controller.NewExampleController(exampleService, appLogger)
 
     return &dependencies{
-        // ... existing dependencies
+        // ... 기존 의존성
         exampleController: exampleController,
     }
 }
 ```
 
-## 🧪 Testing
+## 🧪 테스트 작성
 
-### 1. Unit Tests
+### 1. 단위 테스트
 
-Write test files for each package:
+각 패키지에 대한 테스트 파일을 작성합니다:
 
 ```go
 // internal/service/example_service_test.go
@@ -382,32 +382,32 @@ import (
 )
 
 func TestExampleService_CreateExample(t *testing.T) {
-    // Create mock repository
+    // Mock repository 생성
     mockRepo := &MockExampleRepository{}
     mockLogger := &MockLogger{}
 
-    // Setup mock
+    // Mock 설정
     mockRepo.On("Create", mock.AnythingOfType("*model.Example")).Return(nil)
 
-    // Create service
+    // Service 생성
     service := NewExampleService(mockRepo, mockLogger)
 
-    // Run test
+    // 테스트 실행
     example, err := service.CreateExample("test")
 
-    // Verify
+    // 검증
     assert.NoError(t, err)
     assert.NotNil(t, example)
     assert.Equal(t, "test", example.Name)
 
-    // Verify mock calls
+    // Mock 호출 검증
     mockRepo.AssertExpectations(t)
 }
 ```
 
-### 2. Integration Tests
+### 2. 통합 테스트
 
-Write integration tests using the `internal/testutil/` package:
+`internal/testutil/` 패키지를 사용하여 통합 테스트를 작성합니다:
 
 ```go
 // internal/service/example_service_integration_test.go
@@ -420,22 +420,22 @@ import (
 )
 
 func TestExampleService_Integration(t *testing.T) {
-    // Setup test database
+    // 테스트 데이터베이스 설정
     db, cleanup := testutil.SetupTestDB(t)
     defer cleanup()
 
-    // Create repository and service
+    // Repository 및 Service 생성
     repo := repository.NewExampleRepository(db, testutil.NewTestLogger())
     service := NewExampleService(repo, testutil.NewTestLogger())
 
-    // Run test
+    // 테스트 실행
     example, err := service.CreateExample("integration_test")
 
-    // Verify
+    // 검증
     assert.NoError(t, err)
     assert.NotNil(t, example)
 
-    // Check if actually saved in database
+    // 데이터베이스에서 실제로 저장되었는지 확인
     var savedExample model.Example
     err = db.Where("id = ?", example.ID).First(&savedExample).Error
     assert.NoError(t, err)
@@ -443,27 +443,27 @@ func TestExampleService_Integration(t *testing.T) {
 }
 ```
 
-### 3. Running Tests
+### 3. 테스트 실행
 
 ```bash
-# Run all tests
+# 전체 테스트 실행
 go test ./...
 
-# Run specific package tests
+# 특정 패키지 테스트
 go test ./internal/service
 
-# Check test coverage
+# 테스트 커버리지 확인
 go test -cover ./...
 
-# Run benchmark tests
+# 벤치마크 테스트
 go test -bench=. ./internal/service
 ```
 
-## 🔍 Debugging
+## 🔍 디버깅
 
-### 1. Log Level Configuration
+### 1. 로그 레벨 설정
 
-Set DEBUG level in development for detailed logs:
+개발 환경에서는 DEBUG 레벨로 설정하여 상세한 로그를 확인할 수 있습니다:
 
 ```go
 if !isProduction() {
@@ -471,7 +471,7 @@ if !isProduction() {
 }
 ```
 
-### 2. Structured Logging
+### 2. 구조화된 로깅
 
 ```go
 logger.Debug().
@@ -481,7 +481,7 @@ logger.Debug().
     Msg("User login attempt")
 ```
 
-### 3. Error Tracking
+### 3. 에러 추적
 
 ```go
 logger.Error().
@@ -491,19 +491,19 @@ logger.Error().
     Msg("Failed to create user")
 ```
 
-## 📊 Performance Optimization
+## 📊 성능 최적화
 
-### 1. Database Query Optimization
+### 1. 데이터베이스 쿼리 최적화
 
 ```go
-// Prevent N+1 problem
+// N+1 문제 방지
 func (r *UserRepository) GetUsersWithGames() ([]model.User, error) {
     var users []model.User
     err := r.db.Preload("Games").Find(&users).Error
     return users, err
 }
 
-// Use indexes
+// 인덱스 활용
 func (r *UserRepository) GetUserByEmail(email string) (*model.User, error) {
     var user model.User
     err := r.db.Where("email = ?", email).First(&user).Error
@@ -511,11 +511,11 @@ func (r *UserRepository) GetUserByEmail(email string) (*model.User, error) {
 }
 ```
 
-### 2. Redis Caching
+### 2. Redis 캐싱
 
 ```go
 func (s *UserService) GetUserProfile(userID uuid.UUID) (*model.User, error) {
-    // Check cache first
+    // 캐시에서 먼저 확인
     cacheKey := fmt.Sprintf("user_profile:%s", userID)
     if cached, err := s.redis.Get(context.Background(), cacheKey).Result(); err == nil {
         var user model.User
@@ -524,13 +524,13 @@ func (s *UserService) GetUserProfile(userID uuid.UUID) (*model.User, error) {
         }
     }
 
-    // Query database
+    // 데이터베이스에서 조회
     user, err := s.repo.FindByID(userID)
     if err != nil {
         return nil, err
     }
 
-    // Save to cache
+    // 캐시에 저장
     if userData, err := json.Marshal(user); err == nil {
         s.redis.Set(context.Background(), cacheKey, userData, time.Hour)
     }
@@ -539,15 +539,15 @@ func (s *UserService) GetUserProfile(userID uuid.UUID) (*model.User, error) {
 }
 ```
 
-## 🚀 Deployment
+## 🚀 배포
 
-### 1. Environment-specific Configuration
+### 1. 환경별 설정
 
 ```go
 // config/config.go
 type Config struct {
     Environment string
-    // ... other settings
+    // ... 기타 설정
 }
 
 func LoadConfig() (*Config, error) {
@@ -557,18 +557,18 @@ func LoadConfig() (*Config, error) {
 
     switch config.Environment {
     case "production":
-        // Production settings
+        // 프로덕션 설정
     case "staging":
-        // Staging settings
+        // 스테이징 설정
     default:
-        // Development settings
+        // 개발 설정
     }
 
     return config, nil
 }
 ```
 
-### 2. Docker Image Build
+### 2. Docker 이미지 빌드
 
 ```dockerfile
 # Dockerfile
@@ -588,7 +588,7 @@ COPY --from=builder /app/main .
 CMD ["./main"]
 ```
 
-### 3. Environment Variable Management
+### 3. 환경 변수 관리
 
 ```bash
 # .env.production
@@ -598,9 +598,9 @@ DB_PASSWORD=production-password
 JWT_SECRET=production-jwt-secret
 ```
 
-## 🔒 Security
+## 🔒 보안
 
-### 1. Input Validation
+### 1. 입력 검증
 
 ```go
 func (c *UserController) CreateUser(ctx *gin.Context) {
@@ -610,7 +610,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
         return
     }
 
-    // Additional validation
+    // 추가 검증
     if len(req.Password) < 8 {
         ctx.JSON(http.StatusBadRequest, gin.H{"error": "Password too short"})
         return
@@ -618,19 +618,19 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 }
 ```
 
-### 2. SQL Injection Prevention
+### 2. SQL 인젝션 방지
 
-GORM automatically prevents SQL injection:
+GORM을 사용하여 자동으로 SQL 인젝션을 방지합니다:
 
 ```go
-// Safe query
+// 안전한 쿼리
 err := db.Where("email = ?", email).First(&user).Error
 
-// Dangerous query (don't use)
+// 위험한 쿼리 (사용하지 말 것)
 err := db.Raw(fmt.Sprintf("SELECT * FROM users WHERE email = '%s'", email)).Scan(&user).Error
 ```
 
-### 3. CORS Configuration
+### 3. CORS 설정
 
 ```go
 router.Use(cors.New(cors.Config{
@@ -641,59 +641,55 @@ router.Use(cors.New(cors.Config{
 }))
 ```
 
-## 📚 Useful Resources
+## 📚 유용한 리소스
 
-### Go Related
+### Go 관련
 
-- [Go Official Documentation](https://golang.org/doc/)
+- [Go 공식 문서](https://golang.org/doc/)
 - [Go by Example](https://gobyexample.com/)
 - [Effective Go](https://golang.org/doc/effective_go.html)
 
-### Framework Related
+### 프레임워크 관련
 
-- [Gin Documentation](https://gin-gonic.com/docs/)
-- [GORM Documentation](https://gorm.io/docs/)
-- [Zerolog Documentation](https://github.com/rs/zerolog)
+- [Gin 문서](https://gin-gonic.com/docs/)
+- [GORM 문서](https://gorm.io/docs/)
+- [Zerolog 문서](https://github.com/rs/zerolog)
 
-### Testing Related
+### 테스트 관련
 
-- [Testify Documentation](https://github.com/stretchr/testify)
-- [Go Testing Guide](https://golang.org/pkg/testing/)
+- [Testify 문서](https://github.com/stretchr/testify)
+- [Go 테스트 가이드](https://golang.org/pkg/testing/)
 
-## 🤝 Contributing
+## 🤝 기여 가이드
 
-### 1. Issue Reporting
+### 1. 이슈 리포트
 
-If you find a bug or want to suggest a new feature:
+버그를 발견했거나 새로운 기능을 제안하고 싶다면:
 
-1. Create a GitHub issue
-2. Write a clear title and description
-3. Include reproduction steps
+1. GitHub 이슈를 생성하세요
+2. 명확한 제목과 설명을 작성하세요
+3. 재현 단계를 포함하세요
 
-### 2. Pull Requests
+### 2. 풀 리퀘스트
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Create a Pull Request
+2. Feature branch 생성 (`git checkout -b feature/amazing-feature`)
+3. 변경사항 커밋 (`git commit -m 'Add amazing feature'`)
+4. Branch 푸시 (`git push origin feature/amazing-feature`)
+5. Pull Request 생성
 
-### 3. Code Review
+### 3. 코드 리뷰
 
-All PRs must go through code review:
+모든 PR은 코드 리뷰를 거쳐야 합니다:
 
-- Tests must pass
-- Code style guidelines must be followed
-- Documentation must be updated
+- 테스트가 통과해야 합니다
+- 코드 스타일 가이드를 따라야 합니다
+- 문서가 업데이트되어야 합니다
 
-## 📞 Contact
+## 📞 문의
 
-If you have development-related questions or suggestions:
+개발 관련 질문이나 제안사항이 있으시면:
 
-1. Create a GitHub issue
-2. Contact the project team
-3. Check the documentation
-
----
-
-This guide provides comprehensive information for Code Racer backend development and will be continuously updated as the project evolves.
+1. GitHub 이슈를 생성하세요
+2. 프로젝트 팀원에게 연락하세요
+3. 문서를 확인하세요

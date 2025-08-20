@@ -6,23 +6,28 @@ CodeRacer is a real-time coding competition platform where you can improve your 
 
 ## Key Features
 
-- Real-time coding competitions
-- Multiple programming language support (JavaScript, Python, Go, Rust)
-- LeetCode-style problem solving (TBD)
-- Real-time code evaluation system
-- Progress monitoring through dashboard (TBD)
+- **Real-time Coding Battles**: WebSocket-based real-time multiplayer games
+- **Multiple Programming Languages**: JavaScript, Python, Go, Rust, Java, C++
+- **Advanced Code Editor**: CodeMirror 6 with Vim mode support and syntax highlighting
+- **Theme System**: Dark/Light mode with neon effect UI
+- **LeetCode-style Problems**: Real coding interview problem solving
+- **Real-time Code Evaluation**: Judge0 API-based automatic grading system
+- **OAuth Authentication**: Google and GitHub social login support
+- **Responsive Design**: Mobile and desktop optimized
 
 ## Tech Stack
 
 ### Frontend
 
 - Next.js 15.2
-- React 19
+- React 18.3
 - TypeScript
-- TailwindCSS
-- CodeMirror 6
+- TailwindCSS 4
+- CodeMirror 6 (with Vim mode support)
 - Zustand (State Management)
-- WebSocket
+- WebSocket (Real-time communication)
+- Radix UI (Accessibility components)
+- next-themes (Theme system)
 
 ### Backend
 
@@ -114,87 +119,85 @@ npm install
 npm run dev
 ```
 
-For detailed GCP deployment guide, refer to [deployment/README.md](deployment/README.md).
+## 📖 Documentation
+
+### Development Guides
+- **Backend Development**: [Korean](backend/DEVELOPMENT.md) | [English](backend/DEVELOPMENT.en.md)
+- **Frontend Development**: [Korean](frontend/DEVELOPMENT.md) | [English](frontend/DEVELOPMENT.en.md)
+
+### API Documentation
+- **REST API**: [Korean](backend/API.md) | [English](backend/API.en.md)
+- **WebSocket Setup**: [Korean](backend/WEBSOCKET_SETUP.md) | [English](backend/WEBSOCKET_SETUP.en.md)
+
+### Deployment Guide
+- **GCP Deployment**: [deployment/README.md](deployment/README.md)
 
 ## Project Structure
 
 ```
 .
-├── backend/
-│   ├── cmd/
-│   │   └── api/
-│   │       └── main.go
-│   ├── internal/
-│   │   ├── config/
-│   │   │   ├── config.go
-│   │   │   ├── database.go
-│   │   │   └── dependencies.go
-│   │   ├── controller/
-│   │   │   ├── auth_controller.go
-│   │   │   ├── game_controller.go
-│   │   │   └── user_controller.go
-│   │   ├── logger/
-│   │   │   └── zerolog.go
-│   │   ├── middleware/
-│   │   │   ├── auth.go
-│   │   │   └── cors.go
-│   │   ├── model/
-│   │   │   ├── auth.go
-│   │   │   ├── game.go
-│   │   │   └── user.go
-│   │   ├── repository/
-│   │   │   ├── game_repository.go
-│   │   │   ├── leetcode_repository.go
-│   │   │   └── user_repository.go
-│   │   ├── service/
-│   │   │   ├── auth_service.go
-│   │   │   ├── game_service.go
-│   │   │   ├── judge_service.go
-│   │   │   ├── user_service.go
-│   │   │   └── websocket_service.go
-│   │   └── util/
-│   │       └── env.go
-│   ├── migrations/
-│   │   └── *.sql
-│   ├── .env.example
-│   ├── docker-compose.yml
-│   ├── Dockerfile
-│   └── go.mod
-├── frontend/
-│   ├── public/
+├── backend/                      # Go backend server
+│   ├── cmd/api/                 # Application entry point
+│   │   └── main.go
+│   ├── internal/                # Internal packages
+│   │   ├── config/             # Configuration (DB, Redis, JWT)
+│   │   ├── controller/         # HTTP handlers
+│   │   │   ├── auth_controller.go      # Authentication (login/register/OAuth)
+│   │   │   ├── game_controller.go      # Game management
+│   │   │   ├── user_controller.go      # User management
+│   │   │   └── websocket_controller.go # WebSocket connections
+│   │   ├── service/            # Business logic
+│   │   │   ├── auth_service.go         # JWT, OAuth processing
+│   │   │   ├── game_service.go         # Game state management
+│   │   │   ├── judge_service.go        # Code evaluation
+│   │   │   ├── user_service.go         # User management
+│   │   │   └── websocket_service.go    # Real-time communication
+│   │   ├── repository/         # Data access layer
+│   │   ├── model/              # Data models
+│   │   ├── middleware/         # Auth, CORS middleware
+│   │   ├── judge/              # Judge0 API integration
+│   │   ├── interfaces/         # Interface definitions
+│   │   ├── types/              # Type definitions
+│   │   ├── util/               # Utility functions
+│   │   └── logger/             # Logging configuration
+│   ├── migrations/              # Database migrations
+│   ├── deployment/              # Deployment files (Terraform)
+│   └── docker-compose.yml       # Development environment
+├── frontend/                     # Next.js frontend
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── auth/
-│   │   │   ├── game/
-│   │   │   └── shared/
-│   │   ├── hooks/
-│   │   │   ├── useAuth.ts
-│   │   │   └── useWebSocket.ts
-│   │   ├── lib/
-│   │   │   ├── api.ts
-│   │   │   └── websocket.ts
-│   │   ├── pages/
-│   │   │   ├── auth/
-│   │   │   ├── game/
-│   │   │   └── _app.tsx
-│   │   ├── stores/
-│   │   │   ├── authStore.ts
-│   │   │   └── gameStore.ts
-│   │   └── styles/
-│   │       └── globals.css
-│   ├── .env.example
-│   ├── Dockerfile
-│   ├── next.config.ts
-│   └── package.json
-├── .github/
-│   └── workflows/
-│       ├── ci.yml
-│       └── cd.yml
-├── deployment/
-│   └── README.md
-├── docker-compose.yml
-├── README.md
-└── README.ko.md
+│   │   ├── pages/              # Page routing
+│   │   │   ├── index.tsx               # Home page
+│   │   │   ├── login.tsx               # Login page
+│   │   │   ├── dashboard.tsx           # Dashboard
+│   │   │   └── game/[id].tsx           # Game room
+│   │   ├── components/         # React components
+│   │   │   ├── game/                   # Game-related components
+│   │   │   │   ├── CodeEditor.tsx      # CodeMirror 6 editor
+│   │   │   │   ├── GameRoom.tsx        # Game room management
+│   │   │   │   ├── RoomList.tsx        # Game room list
+│   │   │   │   └── states/             # Game state UI
+│   │   │   ├── auth/                   # Authentication related
+│   │   │   ├── layout/                 # Layout components
+│   │   │   └── ui/                     # Reusable UI components
+│   │   ├── lib/                # Library configuration
+│   │   │   ├── api.ts                  # API client
+│   │   │   ├── websocket.ts            # WebSocket client
+│   │   │   ├── language-support.ts     # Language editor settings
+│   │   │   └── editor-theme.ts         # Editor themes
+│   │   ├── stores/             # Zustand state management
+│   │   │   └── authStore.ts
+│   │   ├── hooks/              # Custom React hooks
+│   │   │   └── useAuth.ts
+│   │   └── styles/             # Stylesheets
+│   │       └── globals.css             # Global CSS, theme system
+│   ├── public/                  # Static files
+│   ├── components.json          # Radix UI configuration
+│   ├── tailwind.config.ts       # Tailwind CSS configuration
+│   └── next.config.ts           # Next.js configuration
+├── .github/workflows/           # CI/CD pipeline
+├── docker-compose.yml           # Full development environment
+├── README.md                    # Project documentation (English)
+└── README.ko.md                 # Project documentation (Korean)
 ```
 
 ## Contributing
