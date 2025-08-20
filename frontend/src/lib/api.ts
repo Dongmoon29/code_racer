@@ -68,6 +68,19 @@ api.interceptors.response.use(
   }
 );
 
+// API 응답에서 사용자 정보를 일관성 있게 추출하는 헬퍼 함수
+export const extractUserFromResponse = (response: any) => {
+  // Login API: { success: true, data: { user, token } }
+  if (response.data?.user) {
+    return response.data.user;
+  }
+  // Register/GetCurrentUser API: { success: true, user: user }
+  if (response.user) {
+    return response.user;
+  }
+  return null;
+};
+
 // 인증 관련 API
 export const authApi = {
   // 회원가입

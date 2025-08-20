@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail } from 'lucide-react';
-import { authApi } from '../../lib/api';
+import { authApi, extractUserFromResponse } from '../../lib/api';
 import { Spinner } from '../ui';
 import axios from 'axios';
 import { Button } from '../ui/Button';
@@ -33,7 +33,11 @@ const LoginForm: React.FC = () => {
           localStorage.setItem('authToken', response.data.token);
         }
 
-        useAuthStore.getState().login(response.user);
+        // extractUserFromResponse 함수를 사용하여 사용자 정보 추출
+        const user = extractUserFromResponse(response);
+        if (user) {
+          useAuthStore.getState().login(user);
+        }
 
         // 로그인 성공 후 리다이렉트
         const redirect = router.query.redirect as string;

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api, { authApi } from '@/lib/api';
+import api, { authApi, extractUserFromResponse } from '@/lib/api';
 import { AxiosError } from 'axios';
 
 // User 타입 정의
@@ -42,7 +42,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } finally {
       // 로컬 스토리지에서 토큰 제거
       localStorage.removeItem('authToken');
-      
+
       set({
         user: null,
         isLoggedIn: false,
@@ -61,8 +61,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true });
       const response = await authApi.getCurrentUser();
-      if (response.user) {
-        set({ user: response.user, isLoggedIn: true });
+      // extractUserFromResponse 함수를 사용하여 사용자 정보 처리
+      const user = extractUserFromResponse(response);
+      if (user) {
+        set({ user, isLoggedIn: true });
       }
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 401) {
