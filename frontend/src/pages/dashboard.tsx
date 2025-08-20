@@ -5,28 +5,10 @@ import { GetServerSideProps } from 'next';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore } from '@/stores/authStore';
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
   const { isLoggedIn, isLoading } = useAuth();
-
-  useEffect(() => {
-    // OAuth 콜백에서 토큰 처리
-    const token = router.query.token as string;
-    if (token && !localStorage.getItem('authToken')) {
-      console.log('OAuth token received:', token);
-      localStorage.setItem('authToken', token);
-
-      // 인증 상태 재확인
-      useAuthStore.getState().initializeAuth();
-
-      // URL에서 토큰 파라미터 제거 (무한 루프 방지)
-      if (router.asPath.includes('token=')) {
-        router.replace('/dashboard', undefined, { shallow: true });
-      }
-    }
-  }, [router.query.token, router]);
 
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {

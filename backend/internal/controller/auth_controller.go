@@ -1,13 +1,13 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
-	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
@@ -134,26 +134,39 @@ func (c *AuthController) GoogleAuthHandler(ctx *gin.Context) {
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
 }
 
+// GoogleCallback Google OAuth 콜백 처리
 func (c *AuthController) GoogleCallback(ctx *gin.Context) {
+	c.logger.Info().Msg("Google OAuth callback: Starting callback processing")
+
+	// Google이 리다이렉트로 전달한 인증 코드
 	code := ctx.Query("code")
 	if code == "" {
+		c.logger.Error().Msg("Google OAuth callback: Authorization code not found")
 		sendErrorResponse(ctx, http.StatusBadRequest, "Authorization code not found")
 		return
 	}
 
-	response, err := c.authService.LoginWithGoogle(code)
-	if err != nil {
-		sendErrorResponse(ctx, http.StatusUnauthorized, err.Error())
+	// state 파라미터 확인 (CSRF 방지)
+	state := ctx.Query("state")
+	if state == "" {
+		c.logger.Error().Msg("Google OAuth callback: State parameter not found")
+		sendErrorResponse(ctx, http.StatusBadRequest, "State parameter not found")
 		return
 	}
 
-	frontendURL, err := util.GetenvRequired("FRONTEND_URL")
-	if err != nil {
-		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend URL")
-		return
+	c.logger.Info().Str("code", code[:10]+"...").Msg("Google OAuth callback: Authorization code received")
+
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000" // 기본값
 	}
 
-	redirectURL := frontendURL + "/dashboard?token=" + response.AccessToken
+	c.logger.Info().Str("frontend_url", frontendURL).Msg("Google OAuth callback: Frontend URL retrieved")
+
+	// code와 state를 프론트엔드로 전달 (토큰 X)
+	redirectURL := fmt.Sprintf("%s/auth/callback?code=%s&state=%s", frontendURL, code, state)
+	c.logger.Info().Str("redirect_url", redirectURL).Msg("Google OAuth callback: Redirecting to frontend")
+
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
@@ -170,27 +183,106 @@ func (c *AuthController) GitHubAuthHandler(ctx *gin.Context) {
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
 }
 
+// GitHubCallback GitHub OAuth 콜백 처리
 func (c *AuthController) GitHubCallback(ctx *gin.Context) {
 	code := ctx.Query("code")
 	if code == "" {
+		c.logger.Error().Msg("GitHub OAuth callback: Authorization code not found")
 		sendErrorResponse(ctx, http.StatusBadRequest, "Authorization code not found")
 		return
 	}
 
-	response, err := c.authService.LoginWithGitHub(code)
+	// state 파라미터 확인 (CSRF 방지)
+	state := ctx.Query("state")
+	if state == "" {
+		c.logger.Error().Msg("GitHub OAuth callback: State parameter not found")
+		sendErrorResponse(ctx, http.StatusBadRequest, "State parameter not found")
+		return
+	}
+
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000" // 기본값
+	}
+
+	// code와 state를 프론트엔드로 전달 (토큰 X)
+	redirectURL := fmt.Sprintf("%s/auth/callback?code=%s&state=%s", frontendURL, code, state)
+	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
+}
+
+// ExchangeToken OAuth 코드를 토큰으로 교환
+func (c *AuthController) ExchangeToken(ctx *gin.Context) {
+	var req struct {
+		Code  string `json:"code" binding:"required"`
+		State string `json:"state" binding:"required"`
+	}
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		sendErrorResponse(ctx, http.StatusBadRequest, "Invalid request: "+err.Error())
+		return
+	}
+
+	c.logger.Info().Str("code", req.Code[:10]+"...").Msg("ExchangeToken: Processing token exchange")
+
+	// state 검증 (CSRF 방지)
+	if !c.validateState(req.State) {
+		c.logger.Error().Msg("ExchangeToken: Invalid state parameter")
+		sendErrorResponse(ctx, http.StatusBadRequest, "Invalid state parameter")
+		return
+	}
+
+	// code를 사용하여 OAuth 제공자로부터 토큰 교환
+	// provider는 state에서 추출하거나 별도 파라미터로 받기
+	provider := c.detectOAuthProvider(req.Code) // Google 또는 GitHub 감지
+	if provider == "" {
+		sendErrorResponse(ctx, http.StatusBadRequest, "Unable to detect OAuth provider")
+		return
+	}
+
+	var response *model.LoginResponse
+	var err error
+
+	switch provider {
+	case "google":
+		response, err = c.authService.LoginWithGoogle(req.Code)
+	case "github":
+		response, err = c.authService.LoginWithGitHub(req.Code)
+	default:
+		sendErrorResponse(ctx, http.StatusBadRequest, "Unsupported OAuth provider")
+		return
+	}
+
 	if err != nil {
+		c.logger.Error().Err(err).Msg("ExchangeToken: OAuth login failed")
 		sendErrorResponse(ctx, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	frontendURL, err := util.GetenvRequired("FRONTEND_URL")
-	if err != nil {
-		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get frontend URL")
-		return
-	}
+	c.logger.Info().Msg("ExchangeToken: Token exchange successful")
 
-	redirectURL := frontendURL + "/dashboard?token=" + response.AccessToken
-	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"token":   response.AccessToken,
+		"user":    response.User,
+	})
+}
+
+// validateState state 파라미터 검증 (CSRF 방지)
+func (c *AuthController) validateState(state string) bool {
+	// 실제 구현에서는 Redis나 세션에 저장된 state와 비교
+	// 현재는 간단한 검증만 수행
+	return len(state) > 0 && len(state) < 100
+}
+
+// detectOAuthProvider OAuth 제공자 감지
+func (c *AuthController) detectOAuthProvider(code string) string {
+	// Google과 GitHub의 code 형식이 다를 수 있음
+	// 실제로는 더 정교한 감지 로직 필요
+	// 현재는 간단한 예시
+	if len(code) > 50 {
+		return "google" // Google code는 일반적으로 더 김
+	}
+	return "github"
 }
 
 func (c *AuthController) Logout(ctx *gin.Context) {

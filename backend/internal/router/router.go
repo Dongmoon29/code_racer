@@ -56,6 +56,7 @@ func Setup(
 			auth.GET("/google/callback", authController.GoogleCallback) // Google OAuth 콜백 처리
 			auth.GET("/github", authController.GitHubAuthHandler)       // GitHub 로그인 페이지로 리다이렉트
 			auth.GET("/github/callback", authController.GitHubCallback) // GitHub OAuth 콜백 처리
+			auth.POST("/exchange-token", authController.ExchangeToken)  // OAuth 코드를 토큰으로 교환
 		}
 
 		// 인증이 필요한 라우트

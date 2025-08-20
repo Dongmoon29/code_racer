@@ -86,6 +86,12 @@ export const authApi = {
     return response.data;
   },
 
+  // OAuth 코드를 토큰으로 교환
+  exchangeToken: async (code: string, state: string) => {
+    const response = await api.post('/auth/exchange-token', { code, state });
+    return response.data;
+  },
+
   // 현재 사용자 정보 조회
   getCurrentUser: async () => {
     try {
@@ -105,14 +111,14 @@ export const authApi = {
   loginWithGoogle: () => {
     const backendURL =
       process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
-    window.location.href = `${backendURL}/auth/google/login`;
+    window.location.href = `${backendURL}/auth/google`;
   },
 
   // GitHub 로그인 추가
   loginWithGitHub: () => {
     const backendURL =
       process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
-    window.location.href = `${backendURL}/auth/github/login`;
+    window.location.href = `${backendURL}/auth/github`;
   },
 };
 
