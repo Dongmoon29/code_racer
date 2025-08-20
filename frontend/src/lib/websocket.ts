@@ -33,19 +33,27 @@ export class WebSocketClient {
     // WebSocket URL 구성
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
-    // 프로덕션 환경에서는 백엔드 도메인 사용, 개발환경에서는 localhost 사용
-    let wsHost: string;
-    if (process.env.NODE_ENV === 'production') {
-      // 프로덕션: 환경변수에서 백엔드 도메인 가져오기
-      wsHost =
-        process.env.NEXT_PUBLIC_WS_HOST ||
-        'code-racer-651798881748.asia-northeast3.run.app';
+    // 환경변수에서 WebSocket URL 가져오기
+    let wsUrl: string;
+    if (process.env.NEXT_PUBLIC_WS_URL) {
+      // 환경변수에 전체 URL이 설정된 경우
+      wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}/${this.gameId}`;
     } else {
-      // 개발환경: 환경변수 또는 기본값 사용
-      wsHost =
-        process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
-        'http://localhost:8080';
-      wsHost = wsHost.replace(/^https?:\/\//, '');
+      // 환경변수가 없는 경우 기본 구성
+      let wsHost: string;
+      if (process.env.NODE_ENV === 'production') {
+        // 프로덕션: 환경변수에서 백엔드 도메인 가져오기
+        wsHost =
+          process.env.NEXT_PUBLIC_WS_HOST ||
+          'code-racer-651798881748.asia-northeast3.run.app';
+      } else {
+        // 개발환경: 환경변수 또는 기본값 사용
+        wsHost =
+          process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
+          'http://localhost:8080';
+        wsHost = wsHost.replace(/^https?:\/\//, '');
+      }
+      wsUrl = `${wsProtocol}//${wsHost}/ws/${this.gameId}`;
     }
 
     // JWT 토큰 가져오기
@@ -58,17 +66,19 @@ export class WebSocketClient {
     }
 
     // 토큰을 쿼리 파라미터로 추가 (브라우저 WebSocket에서는 헤더 설정 불가)
-    const wsUrl = `${wsProtocol}//${wsHost}/ws/${
-      this.gameId
-    }?token=${encodeURIComponent(token)}`;
+    wsUrl = `${wsUrl}?token=${encodeURIComponent(token)}`;
 
     console.log('=============WebSocket Connection============');
     console.log(`Game ID: ${this.gameId}`);
     console.log(`Environment: ${process.env.NODE_ENV}`);
     console.log(`Protocol: ${wsProtocol}`);
-    console.log(`Host: ${wsHost}`);
     console.log(`WebSocket URL: ${wsUrl}`);
     console.log(`Token: ${token.substring(0, 20)}...`);
+    if (process.env.NEXT_PUBLIC_WS_URL) {
+      console.log(
+        `Using NEXT_PUBLIC_WS_URL: ${process.env.NEXT_PUBLIC_WS_URL}`
+      );
+    }
 
     // WebSocket 연결 생성
     this.ws = new WebSocket(wsUrl);
