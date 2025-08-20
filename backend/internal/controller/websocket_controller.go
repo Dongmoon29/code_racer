@@ -79,7 +79,7 @@ func NewWebSocketController(wsService service.WebSocketService, logger logger.Lo
 func (c *WebSocketController) HandleWebSocket(ctx *gin.Context) {
 	log.Printf("WebSocket 연결 시도: 게임 ID = %s", ctx.Param("gameId"))
 
-	// 사용자 ID 가져오기
+	// JWT 토큰 검증
 	userID, exists := ctx.Get("userID")
 	if !exists {
 		log.Printf("웹소켓 인증 실패: userID가 컨텍스트에 없음")
@@ -102,10 +102,6 @@ func (c *WebSocketController) HandleWebSocket(ctx *gin.Context) {
 		return
 	}
 	log.Printf("게임 ID 파싱 성공: %s", gameID.String())
-
-	// 인증 토큰 확인 (디버깅 용도)
-	tokenParam := ctx.Query("token")
-	log.Printf("쿼리 파라미터 토큰: %s", tokenParam)
 
 	// HTTP 연결을 웹소켓 연결로 업그레이드 시도
 	log.Printf("웹소켓 연결 업그레이드 시도")

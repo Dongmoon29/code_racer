@@ -30,25 +30,51 @@ export class WebSocketClient {
   }
 
   private connect() {
-    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}/${this.gameId}`;
-    console.log('=============WS_URL============');
-    console.log(`gameID ==> ${this.gameId}`);
-    console.log(`${process.env.NEXT_PUBLIC_WS_URL}`);
+    // WebSocket URL 구성
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost =
+      process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
+      'http://localhost:8080';
+    const wsUrl = `${wsProtocol}//${wsHost.replace(/^https?:\/\//, '')}/ws/${
+      this.gameId
+    }`;
+
+    console.log('=============WebSocket Connection============');
+    console.log(`Game ID: ${this.gameId}`);
+    console.log(`WebSocket URL: ${wsUrl}`);
+
+    // JWT 토큰 가져오기
+    const token =
+      localStorage.getItem('authToken') || localStorage.getItem('token');
+
+    if (!token) {
+      console.error('No authentication token found');
+      return;
+    }
+
+    // WebSocket 연결 생성
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('WebSocket connected successfully');
       this.reconnectAttempts = 0;
       this.startPingInterval();
+
+      // 연결 후 인증 메시지 전송
+      this.sendAuthMessage(token);
     };
 
     this.ws.onmessage = (event) => {
-      const message = JSON.parse(event.data) as WebSocketMessage;
-      this.handleMessage(message);
+      try {
+        const message = JSON.parse(event.data) as WebSocketMessage;
+        this.handleMessage(message);
+      } catch (error) {
+        console.error('Failed to parse WebSocket message:', error);
+      }
     };
 
-    this.ws.onclose = () => {
-      console.log('WebSocket disconnected');
+    this.ws.onclose = (event) => {
+      console.log('WebSocket disconnected:', event.code, event.reason);
       this.handleDisconnect();
     };
 
@@ -94,15 +120,16 @@ export class WebSocketClient {
     this.messageHandlers = this.messageHandlers.filter((h) => h !== handler);
   }
 
-  public sendCodeUpdate(code: string) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(
-        JSON.stringify({
-          type: 'code_update',
-          game_id: this.gameId,
-          code: code,
-        })
-      );
+  // 코드 업데이트 메시지 전송
+  sendCodeUpdate(code: string) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      const message = {
+        type: 'code_update',
+        data: { code },
+      };
+      this.ws.send(JSON.stringify(message));
+    } else {
+      console.error('WebSocket is not connected');
     }
   }
 
@@ -115,6 +142,17 @@ export class WebSocketClient {
     }
     if (this.ws) {
       this.ws.close();
+    }
+  }
+
+  // 인증 메시지 전송
+  private sendAuthMessage(token: string) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      const authMessage = {
+        type: 'auth',
+        data: { token },
+      };
+      this.ws.send(JSON.stringify(authMessage));
     }
   }
 }

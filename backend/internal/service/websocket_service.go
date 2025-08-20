@@ -15,6 +15,18 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// WebSocket 관련 상수
+const (
+	// 메시지 크기 제한
+	maxMessageSize = 1024 * 1024 // 1MB
+	
+	// 핑/퐁 타임아웃
+	pongWait = 60 * time.Second
+	
+	// 핑 간격
+	pingPeriod = (pongWait * 9) / 10
+)
+
 // Hub 웹소켓 허브 구조체
 type Hub struct {
 	// 등록된 클라이언트 맵
@@ -327,19 +339,17 @@ func (s *webSocketService) cleanupUserData(userID uuid.UUID, gameID uuid.UUID) {
 	}
 }
 
-// readPump 클라이언트에서 메시지 읽기
-func (c *Client) readPump(s *webSocketService) {
+// readPump 클라이언트로부터 메시지를 읽는 고루틴
+func (c *Client) readPump(wsService *webSocketService) {
 	defer func() {
-		// Redis에서 사용자 데이터 정리
-		s.cleanupUserData(c.userID, c.gameID)
 		c.hub.unregister <- c
 		c.conn.Close()
 	}()
 
-	c.conn.SetReadLimit(1024 * 1024) // 1MB
-	c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	c.conn.SetReadLimit(maxMessageSize)
+	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		c.conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
 
@@ -347,53 +357,54 @@ func (c *Client) readPump(s *webSocketService) {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err)
+				log.Printf("WebSocket read error: %v", err)
 			}
 			break
 		}
 
-		// 메시지 처리
-		var msgMap map[string]interface{}
-		if err := json.Unmarshal(message, &msgMap); err != nil {
-			log.Printf("error unmarshaling message: %v", err)
+		// 메시지 파싱
+		var msg map[string]interface{}
+		if err := json.Unmarshal(message, &msg); err != nil {
+			log.Printf("Failed to parse message: %v", err)
 			continue
 		}
 
 		// 메시지 타입에 따른 처리
-		msgType, ok := msgMap["type"].(string)
+		msgType, ok := msg["type"].(string)
 		if !ok {
+			log.Printf("Invalid message type")
 			continue
 		}
 
 		switch msgType {
-		case model.MessageTypeCodeUpdate:
+		case "auth":
+			// 인증 메시지 처리 (이미 연결 시점에 인증됨)
+			log.Printf("Auth message received from user %s", c.userID.String())
+			
+		case "code_update":
 			// 코드 업데이트 메시지 처리
-			code, ok := msgMap["code"].(string)
-			if !ok {
-				continue
+			if data, ok := msg["data"].(map[string]interface{}); ok {
+				if code, ok := data["code"].(string); ok {
+					// Redis에 코드 저장
+					ctx := context.Background()
+					codeKey := fmt.Sprintf("game:%s:user:%s:code", c.gameID.String(), c.userID.String())
+					wsService.rdb.Set(ctx, codeKey, code, 24*time.Hour)
+					
+					// 다른 클라이언트들에게 브로드캐스트
+					codeUpdateMsg := CodeUpdateMessage{
+						Type:   "code_update",
+						GameID: c.gameID.String(),
+						UserID: c.userID.String(),
+						Code:   code,
+					}
+					
+					msgBytes, _ := json.Marshal(codeUpdateMsg)
+					wsService.BroadcastToGame(c.gameID, msgBytes)
+				}
 			}
-
-			// Redis에 코드 저장
-			ctx := context.Background()
-			codeKey := fmt.Sprintf("game:%s:user:%s:code", c.gameID.String(), c.userID.String())
-			if err := s.rdb.Set(ctx, codeKey, code, 24*time.Hour).Err(); err != nil {
-				log.Printf("error saving code to Redis: %v", err)
-				continue
-			}
-
-			// 업데이트된 코드 브로드캐스트
-			codeUpdateMsg := CodeUpdateMessage{
-				Type:   model.MessageTypeCodeUpdate,
-				GameID: c.gameID.String(),
-				UserID: c.userID.String(),
-				Code:   code,
-			}
-
-			msgBytes, _ := json.Marshal(codeUpdateMsg)
-			c.hub.gameBroadcast <- &GameMessage{
-				gameID: c.gameID,
-				data:   msgBytes,
-			}
+			
+		default:
+			log.Printf("Unknown message type: %s", msgType)
 		}
 	}
 }
