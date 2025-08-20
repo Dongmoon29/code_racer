@@ -43,6 +43,7 @@ const AuthCallback: React.FC = () => {
         setError(response.message || '토큰 교환에 실패했습니다.');
         setIsProcessing(false);
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Token exchange failed:', error);
 
