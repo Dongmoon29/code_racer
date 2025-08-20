@@ -452,6 +452,7 @@ func TestExchangeToken(t *testing.T) {
 	t.Run("exchange token success", func(t *testing.T) {
 		code := "test-auth-code"
 		state := "test-state-123"
+		provider := "google"
 
 		expectedResponse := &model.LoginResponse{
 			User: &model.UserResponse{
@@ -466,14 +467,14 @@ func TestExchangeToken(t *testing.T) {
 		mockService.On("LoginWithGoogle", code).Return(expectedResponse, nil).Once()
 
 		req := httptest.NewRequest("POST", "/api/auth/exchange-token", strings.NewReader(
-			fmt.Sprintf(`{"code":"%s","state":"%s"}`, code, state)))
+			fmt.Sprintf(`{"code":"%s","state":"%s","provider":"%s"}`, code, state, provider)))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		r.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-
+		
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
@@ -485,9 +486,10 @@ func TestExchangeToken(t *testing.T) {
 
 	t.Run("exchange token missing code", func(t *testing.T) {
 		state := "test-state-123"
+		provider := "google"
 
 		req := httptest.NewRequest("POST", "/api/auth/exchange-token", strings.NewReader(
-			fmt.Sprintf(`{"state":"%s"}`, state)))
+			fmt.Sprintf(`{"state":"%s","provider":"%s"}`, state, provider)))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -498,9 +500,39 @@ func TestExchangeToken(t *testing.T) {
 
 	t.Run("exchange token missing state", func(t *testing.T) {
 		code := "test-auth-code"
+		provider := "google"
 
 		req := httptest.NewRequest("POST", "/api/auth/exchange-token", strings.NewReader(
-			fmt.Sprintf(`{"code":"%s"}`, code)))
+			fmt.Sprintf(`{"code":"%s","provider":"%s"}`, code, provider)))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("exchange token missing provider", func(t *testing.T) {
+		code := "test-auth-code"
+		state := "test-state-123"
+
+		req := httptest.NewRequest("POST", "/api/auth/exchange-token", strings.NewReader(
+			fmt.Sprintf(`{"code":"%s","state":"%s"}`, code, state)))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("exchange token invalid provider", func(t *testing.T) {
+		code := "test-auth-code"
+		state := "test-state-123"
+		provider := "invalid-provider"
+
+		req := httptest.NewRequest("POST", "/api/auth/exchange-token", strings.NewReader(
+			fmt.Sprintf(`{"code":"%s","state":"%s","provider":"%s"}`, code, state, provider)))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 

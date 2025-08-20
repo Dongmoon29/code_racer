@@ -6,67 +6,76 @@ import { Spinner } from '@/components/ui';
 
 const AuthCallback: React.FC = () => {
   const router = useRouter();
-  const [isProcessing, setIsProcessing] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { code, state } = router.query;
 
   useEffect(() => {
-    if (code && state) {
-      exchangeCodeForToken(code as string, state as string);
-    } else if (!code || !state) {
-      setError('인증 코드가 누락되었습니다.');
-      setIsProcessing(false);
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    const provider = urlParams.get('provider');
+
+    if (!code || !state || !provider) {
+      setError('필수 인증 파라미터가 누락되었습니다.');
+      setLoading(false);
+      return;
     }
-  }, [code, state]);
 
-  const exchangeCodeForToken = async (code: string, state: string) => {
-    try {
-      setIsProcessing(true);
-      setError(null);
+    const exchangeToken = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      console.log('Exchanging OAuth code for token...');
+        console.log('Exchanging OAuth code for token...');
 
-      const response = await authApi.exchangeToken(code, state);
+        const response = await authApi.exchangeToken(code, state, provider);
 
-      if (response.success) {
-        console.log('Token exchange successful');
+        if (response.success) {
+          console.log('Token exchange successful');
 
-        // 토큰 저장
-        localStorage.setItem('authToken', response.token);
+          // 토큰 저장
+          localStorage.setItem('authToken', response.token);
 
-        // 사용자 정보 설정
-        useAuthStore.getState().login(response.user);
+          // 사용자 정보 설정
+          useAuthStore.getState().login(response.user);
 
-        // 대시보드로 이동
-        router.push('/dashboard');
-      } else {
-        setError(response.message || '토큰 교환에 실패했습니다.');
-        setIsProcessing(false);
+          // 대시보드로 이동
+          router.push('/dashboard');
+        } else {
+          setError(response.message || '토큰 교환에 실패했습니다.');
+          setLoading(false);
+        }
+      } catch (error: unknown) {
+        console.error('Token exchange failed:', error);
+
+        let errorMessage = '인증 처리 중 오류가 발생했습니다.';
+
+        if (error && typeof error === 'object' && 'response' in error) {
+          const response = (error as { response?: { status?: number } })
+            .response;
+          if (response?.status === 400) {
+            errorMessage = '잘못된 인증 요청입니다.';
+          } else if (response?.status === 401) {
+            errorMessage = '인증에 실패했습니다. 다시 시도해주세요.';
+          } else if (response?.status === 500) {
+            errorMessage =
+              '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+          }
+        }
+
+        setError(errorMessage);
+        setLoading(false);
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error('Token exchange failed:', error);
+    };
 
-      let errorMessage = '인증 처리 중 오류가 발생했습니다.';
-
-      if (error.response?.status === 400) {
-        errorMessage = '잘못된 인증 요청입니다.';
-      } else if (error.response?.status === 401) {
-        errorMessage = '인증에 실패했습니다. 다시 시도해주세요.';
-      } else if (error.response?.status === 500) {
-        errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
-      }
-
-      setError(errorMessage);
-      setIsProcessing(false);
-    }
-  };
+    exchangeToken();
+  }, []);
 
   const handleRetry = () => {
     router.push('/login');
   };
 
-  if (isProcessing) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full space-y-8 text-center">

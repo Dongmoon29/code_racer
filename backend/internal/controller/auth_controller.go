@@ -164,7 +164,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	c.logger.Info().Str("frontend_url", frontendURL).Msg("Google OAuth callback: Frontend URL retrieved")
 
 	// code와 state를 프론트엔드로 전달 (토큰 X)
-	redirectURL := fmt.Sprintf("%s/auth/callback?code=%s&state=%s", frontendURL, code, state)
+	redirectURL := fmt.Sprintf("%s/auth/callback?code=%s&state=%s&provider=google", frontendURL, code, state)
 	c.logger.Info().Str("redirect_url", redirectURL).Msg("Google OAuth callback: Redirecting to frontend")
 
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -206,15 +206,16 @@ func (c *AuthController) GitHubCallback(ctx *gin.Context) {
 	}
 
 	// code와 state를 프론트엔드로 전달 (토큰 X)
-	redirectURL := fmt.Sprintf("%s/auth/callback?code=%s&state=%s", frontendURL, code, state)
+	redirectURL := fmt.Sprintf("%s/auth/callback?code=%s&state=%s&provider=github", frontendURL, code, state)
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
 // ExchangeToken OAuth 코드를 토큰으로 교환
 func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 	var req struct {
-		Code  string `json:"code" binding:"required"`
-		State string `json:"state" binding:"required"`
+		Code     string `json:"code" binding:"required"`
+		State    string `json:"state" binding:"required"`
+		Provider string `json:"provider" binding:"required"` // OAuth 제공자 명시
 	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -222,7 +223,7 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 		return
 	}
 
-	c.logger.Info().Str("code", req.Code[:10]+"...").Msg("ExchangeToken: Processing token exchange")
+	c.logger.Info().Str("code", req.Code[:10]+"...").Str("provider", req.Provider).Msg("ExchangeToken: Processing token exchange")
 
 	// state 검증 (CSRF 방지)
 	if !c.validateState(req.State) {
@@ -231,18 +232,16 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 		return
 	}
 
-	// code를 사용하여 OAuth 제공자로부터 토큰 교환
-	// provider는 state에서 추출하거나 별도 파라미터로 받기
-	provider := c.detectOAuthProvider(req.Code) // Google 또는 GitHub 감지
-	if provider == "" {
-		sendErrorResponse(ctx, http.StatusBadRequest, "Unable to detect OAuth provider")
+	// provider 검증
+	if req.Provider != "google" && req.Provider != "github" {
+		sendErrorResponse(ctx, http.StatusBadRequest, "Unsupported OAuth provider")
 		return
 	}
 
 	var response *model.LoginResponse
 	var err error
 
-	switch provider {
+	switch req.Provider {
 	case "google":
 		response, err = c.authService.LoginWithGoogle(req.Code)
 	case "github":
@@ -272,26 +271,6 @@ func (c *AuthController) validateState(state string) bool {
 	// 실제 구현에서는 Redis나 세션에 저장된 state와 비교
 	// 현재는 간단한 검증만 수행
 	return len(state) > 0 && len(state) < 100
-}
-
-// detectOAuthProvider OAuth 제공자 감지
-func (c *AuthController) detectOAuthProvider(code string) string {
-	// Google과 GitHub의 code 형식이 다를 수 있음
-	// 실제로는 더 정교한 감지 로직 필요
-	// 현재는 간단한 예시
-
-	// Google OAuth code는 일반적으로 더 길고 특정 패턴을 가짐
-	if len(code) > 100 {
-		return "google"
-	}
-
-	// GitHub OAuth code는 상대적으로 짧음
-	if len(code) > 20 && len(code) <= 100 {
-		return "github"
-	}
-
-	// 기본값으로 Google 반환 (더 일반적)
-	return "google"
 }
 
 func (c *AuthController) Logout(ctx *gin.Context) {

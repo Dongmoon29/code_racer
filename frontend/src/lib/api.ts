@@ -87,8 +87,12 @@ export const authApi = {
   },
 
   // OAuth 코드를 토큰으로 교환
-  exchangeToken: async (code: string, state: string) => {
-    const response = await api.post('/auth/exchange-token', { code, state });
+  exchangeToken: async (code: string, state: string, provider: string) => {
+    const response = await api.post('/auth/exchange-token', {
+      code,
+      state,
+      provider,
+    });
     return response.data;
   },
 
