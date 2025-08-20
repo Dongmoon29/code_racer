@@ -21,6 +21,7 @@ import {
 } from '../../lib/editor-theme';
 import { getLanguageSupport } from '@/lib/language-support';
 import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
+import { vim } from '@replit/codemirror-vim';
 
 interface CodeEditorProps {
   value: string;
@@ -28,6 +29,7 @@ interface CodeEditorProps {
   language: string;
   theme?: string;
   readOnly?: boolean;
+  vimMode?: boolean;
 }
 
 const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -36,10 +38,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   language,
   theme = 'dark',
   readOnly = false,
+  vimMode = false,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const initialValueRef = useRef(value);
+  // Vim 모드 상태 표시줄 스타일
 
   // 모든 확장 기능을 생성하는 함수
   const createExtensions = (theme: string) => {
@@ -58,16 +62,35 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       ...themeStyle,
       languageSupport,
       EditorState.readOnly.of(readOnly),
-      autocompletion({
-        defaultKeymap: true,
-        activateOnTyping: true,
-        maxRenderedOptions: 10,
-      }),
-      keymap.of([...completionKeymap]),
     ];
 
+    // Vim 모드가 활성화되어 있고 읽기 전용이 아닐 때만 Vim 확장 추가
+    if (vimMode && !readOnly) {
+      extensions.push(
+        vim({
+          status: false, // 기본 상태 표시줄 비활성화 (우리가 커스텀으로 구현)
+        })
+      );
+    } else {
+      // 일반 모드일 때만 자동 완성 추가
+      extensions.push(
+        autocompletion({
+          defaultKeymap: true,
+          activateOnTyping: true,
+          maxRenderedOptions: 10,
+        }),
+        keymap.of([...completionKeymap])
+      );
+    }
+
     if (!readOnly) {
-      extensions.push(keymap.of([indentWithTab, ...defaultKeymap]));
+      // Vim 모드가 비활성화되어 있을 때만 기본 키맵 추가
+      if (!vimMode) {
+        extensions.push(keymap.of([indentWithTab, ...defaultKeymap]));
+      } else {
+        // Vim 모드에서는 Tab 키만 추가 (기본 키맵은 Vim이 처리)
+        extensions.push(keymap.of([indentWithTab]));
+      }
     }
 
     if (onChange && !readOnly) {
@@ -86,7 +109,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     return extensions;
   };
 
-  // theme이 변경될 때마다 모든 확장 기능 업데이트
+  // Vim 모드나 theme이 변경될 때마다 모든 확장 기능 업데이트
   useEffect(() => {
     if (!viewRef.current) return;
 
@@ -94,7 +117,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     viewRef.current.dispatch({
       effects: StateEffect.reconfigure.of(extensions),
     });
-  }, [theme, language, readOnly, onChange, value]);
+  }, [theme, language, readOnly, onChange, value, vimMode]);
 
   // 초기 에디터 설정
   useEffect(() => {
@@ -151,7 +174,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   }, [value]);
 
-  return <div ref={editorRef} className="w-full h-full overflow-auto" />;
+  return (
+    <div className="w-full h-full flex flex-col">
+      <div ref={editorRef} className="flex-1 overflow-auto relative" />
+    </div>
+  );
 };
 
 export default CodeEditor;

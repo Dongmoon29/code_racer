@@ -42,6 +42,7 @@ export const PlayingGame: React.FC<Props> = ({
     'my' | 'opponent' | null
   >(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
+  const [myVimMode, setMyVimMode] = useState(false);
   const isCreator = currentUserId === game.creator.id;
 
   const handleMaximizeToggle = (editor: 'my' | 'opponent') => {
@@ -177,17 +178,31 @@ export const PlayingGame: React.FC<Props> = ({
               >
                 Me
               </span>
-              <button
-                onClick={() => handleMaximizeToggle('my')}
-                className="cursor-pointer p-1 hover:bg-gray-200 rounded-md transition-colors shrink-0"
-                title={maximizedEditor === 'my' ? 'Restore' : 'Maximize'}
-              >
-                {maximizedEditor === 'my' ? (
-                  <Minimize2 className="w-4 h-4" />
-                ) : (
-                  <Maximize2 className="w-4 h-4" />
-                )}
-              </button>
+              <div className="flex items-center space-x-2">
+                {/* Vim 모드 토글 버튼 */}
+                <button
+                  onClick={() => setMyVimMode(!myVimMode)}
+                  className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+                    myVimMode
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                  } hover:opacity-80`}
+                  title={myVimMode ? 'Vim 모드' : '일반 모드'}
+                >
+                  {myVimMode ? 'VIM' : 'NORMAL'}
+                </button>
+                <button
+                  onClick={() => handleMaximizeToggle('my')}
+                  className="cursor-pointer p-1 hover:bg-gray-200 rounded-md transition-colors shrink-0"
+                  title={maximizedEditor === 'my' ? 'Restore' : 'Maximize'}
+                >
+                  {maximizedEditor === 'my' ? (
+                    <Minimize2 className="w-4 h-4" />
+                  ) : (
+                    <Maximize2 className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </div>
             <div
               className={`h-[calc(100%-40px)] overflow-auto ${
@@ -199,6 +214,7 @@ export const PlayingGame: React.FC<Props> = ({
                 onChange={onCodeChange}
                 language={selectedLanguage}
                 theme={theme}
+                vimMode={myVimMode}
               />
             </div>
           </div>
