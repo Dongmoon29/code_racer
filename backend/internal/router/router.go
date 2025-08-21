@@ -1,6 +1,7 @@
 package router
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/config"
@@ -23,48 +24,51 @@ func Setup(
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
 
-	// 헬스체크 엔드포인트
+	// health check endpoint
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status": "ok",
 		})
 	})
-	// CORS 설정 - 여러 도메인 지원
+	// CORS config
 	allowedOrigins := util.GetCORSAllowedOrigins()
+	allowedMethods := []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions}
+	allowedHeaders := []string{"Origin", "Content-Type", "Accept", "Authorization"}
+	exposeHeaders := []string{"Content-Length"}
 
-	// CORS 설정
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     allowedOrigins,
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: false, // 쿠키 기반 인증 제거로 false로 변경
+		AllowMethods:     allowedMethods,
+		AllowHeaders:     allowedHeaders,
+		ExposeHeaders:    exposeHeaders,
+		AllowCredentials: false,
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// API 라우트 그룹
 	api := router.Group("/api")
 	{
-		// 인증 관련 라우트
+		// Auth routes
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", authController.Register)
 			auth.POST("/login", authController.Login)
 			auth.POST("/logout", authController.Logout)
-			auth.GET("/google", authController.GoogleAuthHandler)       // Google 로그인 페이지로 리다이렉트
-			auth.GET("/google/callback", authController.GoogleCallback) // Google OAuth 콜백 처리
-			auth.GET("/github", authController.GitHubAuthHandler)       // GitHub 로그인 페이지로 리다이렉트
-			auth.GET("/github/callback", authController.GitHubCallback) // GitHub OAuth 콜백 처리
-			auth.POST("/exchange-token", authController.ExchangeToken)  // OAuth 코드를 토큰으로 교환
+			// OAuth routes
+			auth.GET("/google", authController.GoogleAuthHandler)
+			auth.GET("/google/callback", authController.GoogleCallback)
+			auth.GET("/github", authController.GitHubAuthHandler)
+			auth.GET("/github/callback", authController.GitHubCallback)
+
+			auth.POST("/exchange-token", authController.ExchangeToken)
 		}
 
-		// 인증이 필요한 라우트
+		// secured routes
 		secured := api.Group("/")
 		secured.Use(authMiddleware.APIAuthRequired())
 		{
-			// 게임 관련 라우트
 			game := secured.Group("/games")
 			{
+				// game
 				game.GET("", gameController.ListGames)
 				game.POST("", gameController.CreateGame)
 				game.GET("/:id", gameController.GetGame)
@@ -73,7 +77,7 @@ func Setup(
 				game.POST("/:id/close", gameController.CloseGame)
 			}
 
-			// 유저 관련 라우트
+			// users
 			user := secured.Group("/users")
 			{
 				user.GET("/me", userController.GetCurrentUser)
@@ -81,13 +85,12 @@ func Setup(
 				user.PUT("/profile", userController.UpdateProfile)
 			}
 
-			// LeetCode 문제 관련 라우트
+			// leetcode
 			leetcode := secured.Group("/leetcode")
 			{
 				leetcode.GET("", gameController.ListLeetCodes)
 				leetcode.GET("/:id", gameController.GetLeetCode)
 
-				// Admin 권한이 필요한 라우트
 				adminLeetcode := leetcode.Group("/")
 				adminLeetcode.Use(authMiddleware.AdminRequired())
 				{
@@ -99,6 +102,7 @@ func Setup(
 		}
 	}
 
+	// web socket
 	router.GET("/ws/:gameId", authMiddleware.WebSocketAuthRequired(), wsController.HandleWebSocket)
 
 	return router
