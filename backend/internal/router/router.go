@@ -1,13 +1,12 @@
 package router
 
 import (
-	"os"
-	"strings"
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/controller"
 	"github.com/Dongmoon29/code_racer/internal/middleware"
+	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -31,7 +30,7 @@ func Setup(
 		})
 	})
 	// CORS 설정 - 여러 도메인 지원
-	allowedOrigins := getCORSAllowedOrigins()
+	allowedOrigins := util.GetCORSAllowedOrigins()
 
 	// CORS 설정
 	router.Use(cors.New(cors.Config{
@@ -103,39 +102,4 @@ func Setup(
 	router.GET("/ws/:gameId", authMiddleware.WebSocketAuthRequired(), wsController.HandleWebSocket)
 
 	return router
-}
-
-// getEnv 환경 변수를 가져오거나 기본값을 반환합니다
-func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
-}
-
-// getCORSAllowedOrigins CORS 허용 오리진 목록을 반환합니다
-func getCORSAllowedOrigins() []string {
-	// 기본값
-	defaultOrigins := []string{"http://localhost:3000", "http://localhost:3001"}
-
-	// 환경 변수에서 프론트엔드 URL 가져오기
-	frontendURL := getEnv("FRONTEND_URL", "")
-	if frontendURL != "" {
-		defaultOrigins = append(defaultOrigins, frontendURL)
-	}
-
-	// 추가 CORS 허용 오리진 (쉼표로 구분)
-	additionalOrigins := getEnv("CORS_ALLOWED_ORIGINS", "")
-	if additionalOrigins != "" {
-		origins := strings.Split(additionalOrigins, ",")
-		for _, origin := range origins {
-			origin = strings.TrimSpace(origin)
-			if origin != "" {
-				defaultOrigins = append(defaultOrigins, origin)
-			}
-		}
-	}
-
-	return defaultOrigins
 }
