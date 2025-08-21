@@ -43,9 +43,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const initialValueRef = useRef(value);
-  // Vim 모드 상태 표시줄 스타일
 
-  // 모든 확장 기능을 생성하는 함수
+  // Function to create all extensions
   const createExtensions = (theme: string) => {
     const languageSupport = getLanguageSupport(language);
     const themeStyle =
@@ -64,15 +63,15 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       EditorState.readOnly.of(readOnly),
     ];
 
-    // Vim 모드가 활성화되어 있고 읽기 전용이 아닐 때만 Vim 확장 추가
+    // Add Vim extension only when Vim mode is enabled and not read-only
     if (vimMode && !readOnly) {
       extensions.push(
         vim({
-          status: false, // 기본 상태 표시줄 비활성화 (우리가 커스텀으로 구현)
+          status: false, // Disable default status bar (we implement custom one)
         })
       );
     } else {
-      // 일반 모드일 때만 자동 완성 추가
+      // Add autocompletion only in normal mode
       extensions.push(
         autocompletion({
           defaultKeymap: true,
@@ -84,11 +83,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
 
     if (!readOnly) {
-      // Vim 모드가 비활성화되어 있을 때만 기본 키맵 추가
+      // Add default keymaps only when Vim mode is disabled
       if (!vimMode) {
         extensions.push(keymap.of([indentWithTab, ...defaultKeymap]));
       } else {
-        // Vim 모드에서는 Tab 키만 추가 (기본 키맵은 Vim이 처리)
+        // In Vim mode, only add Tab key (Vim handles other keymaps)
         extensions.push(keymap.of([indentWithTab]));
       }
     }
@@ -109,7 +108,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     return extensions;
   };
 
-  // Vim 모드나 theme이 변경될 때마다 모든 확장 기능 업데이트
+  // Update all extensions when Vim mode or theme changes
   useEffect(() => {
     if (!viewRef.current) return;
 
@@ -119,7 +118,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     });
   }, [theme, language, readOnly, onChange, value, vimMode]);
 
-  // 초기 에디터 설정
+  // Initial editor setup
   useEffect(() => {
     if (!editorRef.current) return;
 
@@ -147,16 +146,16 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       view.destroy();
       editorRef.current?.removeEventListener('contextmenu', disableContextMenu);
     };
-  }, [language, readOnly]); // theme 의존성 제거
+  }, [language, readOnly]); // Remove theme dependency
 
-  // 외부에서 value가 변경될 때만 업데이트
+  // Update only when value changes externally
   useEffect(() => {
     const view = viewRef.current;
     if (view && value !== view.state.doc.toString()) {
       const currentCursor = view.state.selection.main;
       const newDocLength = value.length;
 
-      // 커서 위치가 새로운 문서 길이를 초과하지 않도록 조정
+      // Adjust cursor position to not exceed new document length
       const newAnchor = Math.min(currentCursor.anchor, newDocLength);
       const newHead = Math.min(currentCursor.head, newDocLength);
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -15,76 +14,76 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// WebSocket 관련 상수
+// WebSocket constants
 const (
-	// 메시지 크기 제한
+	// Message size limit
 	maxMessageSize = 1024 * 1024 // 1MB
-
-	// 핑/퐁 타임아웃
+	
+	// Ping/pong timeout
 	pongWait = 60 * time.Second
-
-	// 핑 간격
+	
+	// Ping interval
 	pingPeriod = (pongWait * 9) / 10
 )
 
-// Hub 웹소켓 허브 구조체
+// Hub manages WebSocket connections
 type Hub struct {
-	// 등록된 클라이언트 맵
+	// Map of registered clients
 	clients map[*Client]bool
 
-	// 게임 ID별 클라이언트 맵
+	// Map of clients by game ID
 	gameClients map[string]map[*Client]bool
 
-	// 클라이언트 등록 채널
+	// Channel for client registration
 	register chan *Client
 
-	// 클라이언트 등록 해제 채널
+	// Channel for client unregistration
 	unregister chan *Client
 
-	// 브로드캐스트 메시지 채널
+	// Channel for broadcast messages
 	broadcast chan *Message
 
-	// 게임별 브로드캐스트 메시지 채널
+	// Channel for game-specific broadcast messages
 	gameBroadcast chan *GameMessage
 
-	// 뮤텍스 락
+	// Mutex lock
 	mu sync.RWMutex
 }
 
-// Client 웹소켓 클라이언트 구조체
+// Client represents a WebSocket client
 type Client struct {
-	// 허브 참조
+	// Hub reference
 	hub *Hub
 
-	// 웹소켓 연결
+	// WebSocket connection
 	conn *websocket.Conn
 
-	// 메시지 전송 채널
+	// Message send channel
 	send chan []byte
 
-	// 사용자 ID
+	// User ID
 	userID uuid.UUID
 
-	// 게임 ID
+	// Game ID
 	gameID uuid.UUID
 }
 
-// Message 브로드캐스트 메시지 구조체
+// Message represents a broadcast message
 type Message struct {
-	// 메시지 내용
+	// Message content
 	data []byte
 }
 
-// GameMessage 게임별 브로드캐스트 메시지 구조체
+// GameMessage represents a game-specific broadcast message
 type GameMessage struct {
-	// 게임 ID
+	// Game ID
 	gameID uuid.UUID
 
-	// 메시지 내용
+	// Message content
 	data []byte
 }
 
-// CodeUpdateMessage 코드 업데이트 메시지 구조체
+// CodeUpdateMessage represents a code update message
 type CodeUpdateMessage struct {
 	Type   string `json:"type"`
 	GameID string `json:"game_id"`
@@ -92,21 +91,21 @@ type CodeUpdateMessage struct {
 	Code   string `json:"code"`
 }
 
-// WebSocketService 웹소켓 관련 서비스 인터페이스
+// WebSocketService interface for WebSocket operations
 type WebSocketService interface {
 	InitHub() *Hub
 	HandleConnection(conn *websocket.Conn, userID uuid.UUID, gameID uuid.UUID)
 	BroadcastToGame(gameID uuid.UUID, message []byte)
 }
 
-// webSocketService WebSocketService 인터페이스 구현체
+// webSocketService implements WebSocketService interface
 type webSocketService struct {
 	rdb    *redis.Client
-	hub    *Hub
 	logger logger.Logger
+	hub    *Hub
 }
 
-// NewWebSocketService WebSocketService 인스턴스 생성
+// NewWebSocketService creates a new WebSocketService instance
 func NewWebSocketService(rdb *redis.Client, logger logger.Logger) WebSocketService {
 	return &webSocketService{
 		rdb:    rdb,
@@ -114,7 +113,7 @@ func NewWebSocketService(rdb *redis.Client, logger logger.Logger) WebSocketServi
 	}
 }
 
-// InitHub 웹소켓 허브 초기화
+// InitHub initializes the WebSocket hub
 func (s *webSocketService) InitHub() *Hub {
 	s.hub = &Hub{
 		clients:       make(map[*Client]bool),
@@ -124,20 +123,19 @@ func (s *webSocketService) InitHub() *Hub {
 		broadcast:     make(chan *Message),
 		gameBroadcast: make(chan *GameMessage),
 	}
-
 	return s.hub
 }
 
-// Run 웹소켓 허브 실행
+// Run starts the WebSocket hub
 func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
-			// 클라이언트 등록
+			// Register client
 			h.mu.Lock()
 			h.clients[client] = true
 
-			// 게임별 클라이언트 맵에 추가
+			// Add to game-specific client map
 			gameID := client.gameID.String()
 			if _, ok := h.gameClients[gameID]; !ok {
 				h.gameClients[gameID] = make(map[*Client]bool)
@@ -146,13 +144,13 @@ func (h *Hub) Run() {
 			h.mu.Unlock()
 
 		case client := <-h.unregister:
-			// 클라이언트 등록 해제
+			// Unregister client
 			h.mu.Lock()
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.send)
 
-				// 게임별 클라이언트 맵에서 제거
+				// Remove from game-specific client map
 				gameID := client.gameID.String()
 				if _, ok := h.gameClients[gameID]; ok {
 					delete(h.gameClients[gameID], client)
@@ -164,7 +162,7 @@ func (h *Hub) Run() {
 			h.mu.Unlock()
 
 		case message := <-h.broadcast:
-			// 전체 클라이언트에 메시지 브로드캐스트
+			// Broadcast message to all clients
 			h.mu.RLock()
 			for client := range h.clients {
 				select {
@@ -175,7 +173,7 @@ func (h *Hub) Run() {
 					delete(h.clients, client)
 					close(client.send)
 
-					// 게임별 클라이언트 맵에서 제거
+					// Remove from game-specific client map
 					gameID := client.gameID.String()
 					if _, ok := h.gameClients[gameID]; ok {
 						delete(h.gameClients[gameID], client)
@@ -189,21 +187,21 @@ func (h *Hub) Run() {
 			}
 			h.mu.RUnlock()
 
-		case message := <-h.gameBroadcast:
-			// 특정 게임의 클라이언트에만 메시지 브로드캐스트
-			gameID := message.gameID.String()
+		case gameMessage := <-h.gameBroadcast:
+			// Broadcast message to specific game clients
+			gameID := gameMessage.gameID.String()
 			h.mu.RLock()
 			if clients, ok := h.gameClients[gameID]; ok {
 				for client := range clients {
 					select {
-					case client.send <- message.data:
+					case client.send <- gameMessage.data:
 					default:
 						h.mu.RUnlock()
 						h.mu.Lock()
 						delete(h.clients, client)
 						close(client.send)
 
-						// 게임별 클라이언트 맵에서 제거
+						// Remove from game-specific client map
 						if _, ok := h.gameClients[gameID]; ok {
 							delete(h.gameClients[gameID], client)
 							if len(h.gameClients[gameID]) == 0 {
@@ -220,9 +218,9 @@ func (h *Hub) Run() {
 	}
 }
 
-// HandleConnection 웹소켓 연결 처리
+// HandleConnection handles a new WebSocket connection
 func (s *webSocketService) HandleConnection(conn *websocket.Conn, userID uuid.UUID, gameID uuid.UUID) {
-	// 클라이언트 생성
+	// Create client
 	client := &Client{
 		hub:    s.hub,
 		conn:   conn,
@@ -231,42 +229,35 @@ func (s *webSocketService) HandleConnection(conn *websocket.Conn, userID uuid.UU
 		gameID: gameID,
 	}
 
-	// 허브에 클라이언트 등록
+	// Register client with hub
 	client.hub.register <- client
 
-	// 기존 코드 로드 및 전송
+	// Load existing code and send to client
 	ctx := context.Background()
-	gameUsers, err := s.getGameUsers(ctx, gameID)
-	if err == nil {
-		for _, uid := range gameUsers {
-			codeKey := fmt.Sprintf("game:%s:user:%s:code", gameID.String(), uid)
-			code, err := s.rdb.Get(ctx, codeKey).Result()
-			if err == nil {
-				// 코드 업데이트 메시지 생성
-				codeUpdateMsg := CodeUpdateMessage{
-					Type:   "code_update",
-					GameID: gameID.String(),
-					UserID: uid,
-					Code:   code,
-				}
-
-				msgBytes, _ := json.Marshal(codeUpdateMsg)
-				client.send <- msgBytes
-			}
+	codeKey := fmt.Sprintf("game:%s:user:%s:code", gameID.String(), userID.String())
+	if existingCode, err := s.rdb.Get(ctx, codeKey).Result(); err == nil && existingCode != "" {
+		// Send existing code to client
+		codeUpdateMsg := CodeUpdateMessage{
+			Type:   "code_update",
+			GameID: gameID.String(),
+			UserID: userID.String(),
+			Code:   existingCode,
 		}
+		msgBytes, _ := json.Marshal(codeUpdateMsg)
+		client.send <- msgBytes
 	}
 
-	// 사용자를 게임 참가자 목록에 추가
+	// Add user to game participants list
 	gameUsersKey := fmt.Sprintf("game:%s:users", gameID.String())
 	s.rdb.SAdd(ctx, gameUsersKey, userID.String())
 	s.rdb.Expire(ctx, gameUsersKey, 24*time.Hour)
 
-	// 고루틴으로 클라이언트 메시지 읽기 및 쓰기 처리
-	go client.writePump()
+	// Start goroutines for client message reading and writing
 	go client.readPump(s)
+	go client.writePump()
 }
 
-// BroadcastToGame 특정 게임에 메시지 브로드캐스트
+// BroadcastToGame broadcasts a message to all clients in a specific game
 func (s *webSocketService) BroadcastToGame(gameID uuid.UUID, message []byte) {
 	s.hub.gameBroadcast <- &GameMessage{
 		gameID: gameID,
@@ -274,17 +265,17 @@ func (s *webSocketService) BroadcastToGame(gameID uuid.UUID, message []byte) {
 	}
 }
 
-// getGameUsers 게임에 참가 중인 사용자 ID 목록 가져오기
+// getGameUsers gets the list of user IDs participating in a game
 func (s *webSocketService) getGameUsers(ctx context.Context, gameID uuid.UUID) ([]string, error) {
 	gameKey := fmt.Sprintf("game:%s:users", gameID.String())
 	return s.rdb.SMembers(ctx, gameKey).Result()
 }
 
-// cleanupUserData WebSocket 연결 해제 시 Redis에서 사용자 데이터 정리
+// cleanupUserData cleans up user data from Redis when WebSocket connection is closed
 func (s *webSocketService) cleanupUserData(userID uuid.UUID, gameID uuid.UUID) {
 	ctx := context.Background()
 
-	// Redis 파이프라인을 사용한 원자적 정리
+	// Use Redis pipeline for atomic cleanup
 	pipe := s.rdb.Pipeline()
 
 	// 게임 참가자 목록에서 사용자 제거
@@ -324,7 +315,7 @@ func (s *webSocketService) cleanupUserData(userID uuid.UUID, gameID uuid.UUID) {
 		}
 	}
 
-	// 파이프라인 실행
+	// Execute pipeline
 	if _, err := pipe.Exec(ctx); err != nil {
 		s.logger.Error().
 			Err(err).
@@ -339,11 +330,13 @@ func (s *webSocketService) cleanupUserData(userID uuid.UUID, gameID uuid.UUID) {
 	}
 }
 
-// readPump 클라이언트로부터 메시지를 읽는 고루틴
+// readPump reads messages from the client
 func (c *Client) readPump(wsService *webSocketService) {
 	defer func() {
 		c.hub.unregister <- c
 		c.conn.Close()
+		// Clean up user data when connection is closed
+		wsService.cleanupUserData(c.userID, c.gameID)
 	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
@@ -357,68 +350,69 @@ func (c *Client) readPump(wsService *webSocketService) {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket read error: %v", err)
+				// Only log unexpected connection closures
+				continue
 			}
 			break
 		}
 
-		// 메시지 파싱
+		// Parse message
 		var msg map[string]interface{}
 		if err := json.Unmarshal(message, &msg); err != nil {
-			log.Printf("Failed to parse message: %v", err)
+			// Don't log message parsing failures (client errors)
 			continue
 		}
 
-		// 메시지 타입에 따른 처리
+		// Handle message by type
 		msgType, ok := msg["type"].(string)
 		if !ok {
-			log.Printf("Invalid message type")
+			// Don't log invalid message types
 			continue
 		}
 
 		switch msgType {
 		case "auth":
-			// 인증 메시지 처리 (이미 연결 시점에 인증됨)
-			log.Printf("Auth message received from user %s", c.userID.String())
-
+			// Handle auth message (already authenticated at connection time)
+			// Logging removed
+			
 		case "ping":
-			// ping 메시지에 대한 pong 응답
+			// Respond to ping message with pong
 			pongMsg := map[string]interface{}{
 				"type":      "pong",
 				"timestamp": time.Now().Unix(),
 			}
 			pongBytes, _ := json.Marshal(pongMsg)
 			c.send <- pongBytes
-
+			
 		case "code_update":
-			// 코드 업데이트 메시지 처리
+			// Handle code update message
 			if data, ok := msg["data"].(map[string]interface{}); ok {
 				if code, ok := data["code"].(string); ok {
-					// Redis에 코드 저장
+					// Store code in Redis
 					ctx := context.Background()
 					codeKey := fmt.Sprintf("game:%s:user:%s:code", c.gameID.String(), c.userID.String())
 					wsService.rdb.Set(ctx, codeKey, code, 24*time.Hour)
-
-					// 다른 클라이언트들에게 브로드캐스트
+					
+					// Broadcast to other clients
 					codeUpdateMsg := CodeUpdateMessage{
 						Type:   "code_update",
 						GameID: c.gameID.String(),
 						UserID: c.userID.String(),
 						Code:   code,
 					}
-
+					
 					msgBytes, _ := json.Marshal(codeUpdateMsg)
 					wsService.BroadcastToGame(c.gameID, msgBytes)
 				}
 			}
-
+			
 		default:
-			log.Printf("Unknown message type: %s", msgType)
+			// Don't log unknown message types
 		}
 	}
 }
 
-// writePump 클라이언트에 메시지 쓰기
+// writePump writes messages to the client
 func (c *Client) writePump() {
 	ticker := time.NewTicker(54 * time.Second)
 	defer func() {
@@ -431,7 +425,7 @@ func (c *Client) writePump() {
 		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if !ok {
-				// 채널이 닫힌 경우
+				// Channel is closed
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
@@ -442,7 +436,7 @@ func (c *Client) writePump() {
 			}
 			w.Write(message)
 
-			// 대기 중인 모든 메시지를 현재 메시지에 추가
+			// Add all pending messages to current message
 			n := len(c.send)
 			for i := 0; i < n; i++ {
 				w.Write([]byte{'\n'})
@@ -453,7 +447,6 @@ func (c *Client) writePump() {
 				return
 			}
 		case <-ticker.C:
-			// 핑 메시지 전송
 			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
