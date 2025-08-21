@@ -25,13 +25,9 @@ const AuthCallback: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        console.log('Exchanging OAuth code for token...');
-
         const response = await authApi.exchangeToken(code, state, provider);
 
         if (response.success) {
-          console.log('Token exchange successful');
-
           // 토큰 저장
           localStorage.setItem('authToken', response.token);
 

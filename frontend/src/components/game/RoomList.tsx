@@ -90,7 +90,7 @@ const RoomList: React.FC = () => {
         } else {
           setError('An unexpected error occurred while loading data');
         }
-        console.error('Error loading data:', err);
+        console.error('Failed to load games:', err);
       } finally {
         setLoading(false);
       }
@@ -104,7 +104,7 @@ const RoomList: React.FC = () => {
         const response = await gameApi.listGames();
         setGames(response.games || []);
       } catch (err) {
-        console.error('Error refreshing games:', err);
+        console.error('Failed to refresh games:', err);
       }
     }, 10000);
 
@@ -130,7 +130,7 @@ const RoomList: React.FC = () => {
       } else {
         setError('An unexpected error occurred while creating the game');
       }
-      console.error('Error creating game:', err);
+      console.error('Failed to create game:', err);
       setCreating(false);
     }
   };

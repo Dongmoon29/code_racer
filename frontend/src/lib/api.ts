@@ -241,15 +241,6 @@ export const getCodeTemplate = (
     return '';
   }
 
-  console.log('Getting template for language:', language);
-  console.log('Available templates:', {
-    javascript: problem.javascript_template,
-    python: problem.python_template,
-    go: problem.go_template,
-    java: problem.java_template,
-    cpp: problem.cpp_template,
-  });
-
   switch (language) {
     case 'javascript':
       return problem.javascript_template || '';

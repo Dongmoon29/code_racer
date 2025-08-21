@@ -62,7 +62,7 @@ const RegisterForm: React.FC = () => {
       } else {
         setError('An unexpected error occurred during registration');
       }
-      console.error('Registration error:', err);
+      console.error('Registration failed:', err);
     } finally {
       setLoading(false);
     }

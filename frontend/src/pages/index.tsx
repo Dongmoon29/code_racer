@@ -173,7 +173,7 @@ export const getStaticProps: GetStaticProps = async () => {
       revalidate: 3600, // 1시간마다 재생성
     };
   } catch (error) {
-    console.error('Failed to fetch contributors:', error);
+    console.error('Failed to fetch contributors', error);
     return {
       props: {
         contributors: [],

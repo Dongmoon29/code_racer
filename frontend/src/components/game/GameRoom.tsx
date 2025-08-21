@@ -128,7 +128,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
         } else {
           setError('An unexpected error occurred while loading the game');
         }
-        console.error('Error loading game:', err);
+        console.error('Failed to load game:', err);
       } finally {
         setLoading(false);
       }
@@ -145,18 +145,11 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
       wsRef.current = new WebSocketClient(gameId);
 
       const handleMessage = (message: WebSocketMessage) => {
-        console.log('Received WebSocket message:', message);
-
         if (message.type === 'code_update') {
           const codeMsg = message as CodeUpdateMessage;
-          console.log('Current user:', currentUser?.id);
-          console.log('Message user:', codeMsg.user_id);
 
           if (codeMsg.user_id !== currentUser?.id) {
-            console.log('Updating opponent code:', codeMsg.code);
             setOpponentCode(codeMsg.code);
-          } else {
-            console.log('Skipping code update - same user');
           }
         } else if (
           message.type === 'game_start' ||
@@ -186,7 +179,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
       await gameApi.closeGame(gameId);
       router.push('/dashboard'); // 게임 목록 페이지로 이동
     } catch (err) {
-      console.error('Error closing game:', err);
+      console.error('Failed to close game:', err);
       // 에러 처리 (예: 토스트 메시지 표시)
     }
   };
@@ -275,7 +268,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
       const response = await gameApi.getGame(gameId);
       setGame(response.game);
     } catch (err) {
-      console.error('Error refreshing game:', err);
+      console.error('Failed to refresh game:', err);
     }
   };
 
@@ -291,7 +284,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
       } else {
         setError('An unexpected error occurred while joining the game');
       }
-      console.error('Error joining game:', err);
+      console.error('Failed to join game:', err);
     } finally {
       setLoading(false);
     }
@@ -374,7 +367,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
           is_winner: false,
         });
       }
-      console.error('Error submitting code:', err);
+      console.error('Failed to submit code:', err);
     } finally {
       setSubmitting(false);
     }

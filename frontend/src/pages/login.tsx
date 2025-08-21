@@ -9,8 +9,7 @@ import { useAuthStore } from '@/stores/authStore';
 const LoginPage: React.FC = () => {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
-  const { isLoggedIn, user } = useAuthStore();
-  console.log(isLoggedIn, user);
+  const { isLoggedIn } = useAuthStore();
 
   useEffect(() => {
     // 이미 로그인된 사용자가 로그인 페이지에 접근하면 dashboard로 리다이렉트

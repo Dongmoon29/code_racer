@@ -68,23 +68,10 @@ export class WebSocketClient {
     // 토큰을 쿼리 파라미터로 추가 (브라우저 WebSocket에서는 헤더 설정 불가)
     wsUrl = `${wsUrl}?token=${encodeURIComponent(token)}`;
 
-    console.log('=============WebSocket Connection============');
-    console.log(`Game ID: ${this.gameId}`);
-    console.log(`Environment: ${process.env.NODE_ENV}`);
-    console.log(`Protocol: ${wsProtocol}`);
-    console.log(`WebSocket URL: ${wsUrl}`);
-    console.log(`Token: ${token.substring(0, 20)}...`);
-    if (process.env.NEXT_PUBLIC_WS_URL) {
-      console.log(
-        `Using NEXT_PUBLIC_WS_URL: ${process.env.NEXT_PUBLIC_WS_URL}`
-      );
-    }
-
     // WebSocket 연결 생성
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connected successfully');
       this.reconnectAttempts = 0;
       this.startPingInterval();
 
@@ -101,8 +88,7 @@ export class WebSocketClient {
       }
     };
 
-    this.ws.onclose = (event) => {
-      console.log('WebSocket disconnected:', event.code, event.reason);
+    this.ws.onclose = () => {
       this.handleDisconnect();
     };
 
@@ -116,12 +102,7 @@ export class WebSocketClient {
       this.reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
 
-      console.log(
-        `WebSocket disconnected. Attempting to reconnect in ${delay}ms (${this.reconnectAttempts}/${this.maxReconnectAttempts})`
-      );
-
       this.reconnectTimeout = setTimeout(() => {
-        console.log('Attempting to reconnect...');
         this.connect();
       }, delay);
     } else {
@@ -147,8 +128,6 @@ export class WebSocketClient {
 
   private handleMessage(message: WebSocketMessage) {
     if (message.type === 'pong') {
-      const latency = Date.now() - this.lastPingTime;
-      console.log(`WebSocket latency: ${latency}ms`);
       return;
     }
 

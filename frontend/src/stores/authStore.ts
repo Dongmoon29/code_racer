@@ -38,7 +38,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       await api.post('/auth/logout');
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('Logout failed', error);
     } finally {
       // 로컬 스토리지에서 토큰 제거
       localStorage.removeItem('authToken');
@@ -71,7 +71,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // 로그아웃 한 번만 호출
         await get().logout();
       } else {
-        console.error('Failed to initialize auth:', error);
+        console.error('Failed to initialize auth');
         set({ user: null, isLoggedIn: false });
       }
     } finally {

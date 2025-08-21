@@ -21,7 +21,7 @@ export const useAuth = () => {
           login(response.user);
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+        console.error('Auth check failed', error);
         // 인증 실패 시 토큰 제거
         localStorage.removeItem('authToken');
       } finally {

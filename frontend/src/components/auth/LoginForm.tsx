@@ -46,7 +46,7 @@ const LoginForm: React.FC = () => {
         setError(response.message || 'Login failed');
       }
     } catch (err: unknown) {
-      console.error('Login error:', err);
+      console.error('Login failed:', err);
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.message || 'Invalid email or password');
       } else {

@@ -19,10 +19,10 @@ import (
 const (
 	// 메시지 크기 제한
 	maxMessageSize = 1024 * 1024 // 1MB
-	
+
 	// 핑/퐁 타임아웃
 	pongWait = 60 * time.Second
-	
+
 	// 핑 간격
 	pingPeriod = (pongWait * 9) / 10
 )
@@ -380,16 +380,16 @@ func (c *Client) readPump(wsService *webSocketService) {
 		case "auth":
 			// 인증 메시지 처리 (이미 연결 시점에 인증됨)
 			log.Printf("Auth message received from user %s", c.userID.String())
-			
+
 		case "ping":
 			// ping 메시지에 대한 pong 응답
 			pongMsg := map[string]interface{}{
-				"type": "pong",
+				"type":      "pong",
 				"timestamp": time.Now().Unix(),
 			}
 			pongBytes, _ := json.Marshal(pongMsg)
 			c.send <- pongBytes
-			
+
 		case "code_update":
 			// 코드 업데이트 메시지 처리
 			if data, ok := msg["data"].(map[string]interface{}); ok {
@@ -398,7 +398,7 @@ func (c *Client) readPump(wsService *webSocketService) {
 					ctx := context.Background()
 					codeKey := fmt.Sprintf("game:%s:user:%s:code", c.gameID.String(), c.userID.String())
 					wsService.rdb.Set(ctx, codeKey, code, 24*time.Hour)
-					
+
 					// 다른 클라이언트들에게 브로드캐스트
 					codeUpdateMsg := CodeUpdateMessage{
 						Type:   "code_update",
@@ -406,12 +406,12 @@ func (c *Client) readPump(wsService *webSocketService) {
 						UserID: c.userID.String(),
 						Code:   code,
 					}
-					
+
 					msgBytes, _ := json.Marshal(codeUpdateMsg)
 					wsService.BroadcastToGame(c.gameID, msgBytes)
 				}
 			}
-			
+
 		default:
 			log.Printf("Unknown message type: %s", msgType)
 		}
