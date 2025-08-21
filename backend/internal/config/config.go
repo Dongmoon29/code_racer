@@ -56,7 +56,7 @@ func LoadConfig() (*Config, error) {
 		config.DBPassword = dbPassword
 	}
 
-	dbPort := util.GetEnvOptionalWithDefault("DB_PORT", "5432")
+	dbPort := util.GetEnv("DB_PORT", "5432")
 	config.DBPort = dbPort
 
 	if dbName, err := util.GetenvRequired("DB_NAME"); err != nil {
@@ -72,12 +72,12 @@ func LoadConfig() (*Config, error) {
 		config.RedisHost = redisHost
 	}
 
-	config.RedisPort = util.GetEnvOptionalWithDefault("REDIS_PORT", "6379")
+	config.RedisPort = util.GetEnv("REDIS_PORT", "6379")
 
-	config.RedisUsername = util.GetEnvOptionalWithDefault("REDIS_USERNAME", "default")
+	config.RedisUsername = util.GetEnv("REDIS_USERNAME", "default")
 
 	// Redis 패스워드는 선택적일 수 있음
-	config.RedisPassword = util.GetEnvOptionalWithDefault("REDIS_PASSWORD", "")
+	config.RedisPassword = util.GetEnv("REDIS_PASSWORD", "")
 
 	// JWT 설정
 	if jwtSecret, err := util.GetenvRequired("JWT_SECRET"); err != nil {
@@ -86,7 +86,7 @@ func LoadConfig() (*Config, error) {
 		config.JWTSecret = jwtSecret
 	}
 
-	config.ServerPort = util.GetEnvOptionalWithDefault("PORT", "8080")
+	config.ServerPort = util.GetEnv("PORT", "8080")
 
 	// Judge0 API 설정
 	if judge0APIKey, err := util.GetenvRequired("JUDGE0_API_KEY"); err != nil {
@@ -95,7 +95,7 @@ func LoadConfig() (*Config, error) {
 		config.Judge0APIKey = judge0APIKey
 	}
 
-	config.Judge0APIEndpoint = util.GetEnvOptionalWithDefault("JUDGE0_API_ENDPOINT", "https://judge0-ce.p.rapidapi.com")
+	config.Judge0APIEndpoint = util.GetEnv("JUDGE0_API_ENDPOINT", "https://judge0-ce.p.rapidapi.com")
 
 	// 누락된 환경변수가 있는지 확인
 	if len(missingVars) > 0 {
