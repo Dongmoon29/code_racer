@@ -28,18 +28,15 @@ const LoginForm: React.FC = () => {
       const response = await authApi.login(email, password);
 
       if (response.success) {
-        // 토큰 저장
         if (response.data?.token) {
           localStorage.setItem('authToken', response.data.token);
         }
 
-        // extractUserFromResponse 함수를 사용하여 사용자 정보 추출
         const user = extractUserFromResponse(response);
         if (user) {
           useAuthStore.getState().login(user);
         }
 
-        // 로그인 성공 후 리다이렉트
         const redirect = router.query.redirect as string;
         await router.push(redirect || '/dashboard');
       } else {
@@ -125,7 +122,6 @@ const LoginForm: React.FC = () => {
         </Button>
       </form>
 
-      {/* 구분선 추가 */}
       <div className="relative my-8">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-[hsl(var(--border))]"></div>
@@ -137,7 +133,7 @@ const LoginForm: React.FC = () => {
         </div>
       </div>
 
-      {/* Google 로그인 버튼 */}
+      {/* Google Login Button  */}
       <Button
         type="button"
         variant="outline"
@@ -150,7 +146,7 @@ const LoginForm: React.FC = () => {
         Sign in with Google
       </Button>
 
-      {/* GitHub 로그인 버튼 */}
+      {/* GitHub Login Button */}
       <Button
         type="button"
         variant="outline"

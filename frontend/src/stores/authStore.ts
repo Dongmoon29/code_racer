@@ -52,26 +52,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
   initializeAuth: async () => {
-    // 이미 로딩 중이거나 로그아웃 상태면 스킵
-    const state = get();
-    if (state.isLoading || (!state.isLoggedIn && !state.user)) {
+    // 로컬 스토리지에 토큰이 있는지 확인
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      set({ user: null, isLoggedIn: false, isLoading: false });
+      return;
+    }
+
+    // 이미 로딩 중이면 스킵
+    if (get().isLoading) {
       return;
     }
 
     try {
       set({ isLoading: true });
       const response = await authApi.getCurrentUser();
-      // extractUserFromResponse 함수를 사용하여 사용자 정보 처리
       const user = extractUserFromResponse(response);
       if (user) {
         set({ user, isLoggedIn: true });
+      } else {
+        // 사용자 정보를 가져올 수 없으면 토큰 제거
+        localStorage.removeItem('authToken');
+        set({ user: null, isLoggedIn: false });
       }
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 401) {
-        // 로그아웃 한 번만 호출
-        await get().logout();
+        // 토큰이 유효하지 않으면 제거
+        localStorage.removeItem('authToken');
+        set({ user: null, isLoggedIn: false });
       } else {
-        console.error('Failed to initialize auth');
+        console.error('Failed to initialize auth', error);
         set({ user: null, isLoggedIn: false });
       }
     } finally {
