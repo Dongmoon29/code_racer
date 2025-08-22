@@ -18,10 +18,10 @@ import (
 const (
 	// Message size limit
 	maxMessageSize = 1024 * 1024 // 1MB
-	
+
 	// Ping/pong timeout
 	pongWait = 60 * time.Second
-	
+
 	// Ping interval
 	pingPeriod = (pongWait * 9) / 10
 )
@@ -350,10 +350,11 @@ func (c *Client) readPump(wsService *webSocketService) {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				// Only log unexpected connection closures
+				// unexpected close error
 				continue
+			} else {
+				break
 			}
-			break
 		}
 
 		// Parse message
@@ -374,7 +375,7 @@ func (c *Client) readPump(wsService *webSocketService) {
 		case "auth":
 			// Handle auth message (already authenticated at connection time)
 			// Logging removed
-			
+
 		case "ping":
 			// Respond to ping message with pong
 			pongMsg := map[string]interface{}{
@@ -383,7 +384,7 @@ func (c *Client) readPump(wsService *webSocketService) {
 			}
 			pongBytes, _ := json.Marshal(pongMsg)
 			c.send <- pongBytes
-			
+
 		case "code_update":
 			// Handle code update message
 			if data, ok := msg["data"].(map[string]interface{}); ok {
@@ -392,7 +393,7 @@ func (c *Client) readPump(wsService *webSocketService) {
 					ctx := context.Background()
 					codeKey := fmt.Sprintf("game:%s:user:%s:code", c.gameID.String(), c.userID.String())
 					wsService.rdb.Set(ctx, codeKey, code, 24*time.Hour)
-					
+
 					// Broadcast to other clients
 					codeUpdateMsg := CodeUpdateMessage{
 						Type:   "code_update",
@@ -400,12 +401,12 @@ func (c *Client) readPump(wsService *webSocketService) {
 						UserID: c.userID.String(),
 						Code:   code,
 					}
-					
+
 					msgBytes, _ := json.Marshal(codeUpdateMsg)
 					wsService.BroadcastToGame(c.gameID, msgBytes)
 				}
 			}
-			
+
 		default:
 			// Don't log unknown message types
 		}
