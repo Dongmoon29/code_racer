@@ -86,6 +86,7 @@ func main() {
 		deps.authController,
 		deps.gameController,
 		deps.userController,
+		deps.leetcodeController,
 		deps.wsController,
 		deps.authMiddleware,
 		cfg,
@@ -96,11 +97,12 @@ func main() {
 }
 
 type dependencies struct {
-	authController *controller.AuthController
-	gameController *controller.GameController
-	userController *controller.UserController
-	wsController   *controller.WebSocketController
-	authMiddleware *middleware.AuthMiddleware
+	authController     *controller.AuthController
+	gameController     *controller.GameController
+	userController     *controller.UserController
+	leetcodeController *controller.LeetCodeController
+	wsController       *controller.WebSocketController
+	authMiddleware     *middleware.AuthMiddleware
 }
 
 func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *dependencies {
@@ -120,13 +122,17 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 	wsHub := wsService.InitHub()
 	go wsHub.Run()
 
+	// initialize LeetCode service
+	leetCodeService := service.NewLeetCodeService(leetCodeRepo, appLogger)
+
 	// init controllers and middleware
 	return &dependencies{
-		authController: controller.NewAuthController(authService, appLogger),
-		gameController: controller.NewGameController(gameService, appLogger),
-		userController: controller.NewUserController(userService, appLogger),
-		wsController:   controller.NewWebSocketController(wsService, appLogger),
-		authMiddleware: middleware.NewAuthMiddleware(authService, userRepository, appLogger),
+		authController:     controller.NewAuthController(authService, appLogger),
+		gameController:     controller.NewGameController(gameService, appLogger),
+		userController:     controller.NewUserController(userService, appLogger),
+		leetcodeController: controller.NewLeetCodeController(leetCodeService, appLogger),
+		wsController:       controller.NewWebSocketController(wsService, appLogger),
+		authMiddleware:     middleware.NewAuthMiddleware(authService, userRepository, appLogger),
 	}
 }
 
