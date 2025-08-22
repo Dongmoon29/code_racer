@@ -29,13 +29,12 @@ func isProduction() bool {
 }
 
 func main() {
-	// Gin 모드 로깅
+	// log (dev or prod) mode
 	log.Info().Msgf("Starting application in %s mode", gin.Mode())
 
-	// 로그 설정
+	// set log format
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	// 개발 환경에서는 더 자세한 로깅
 	if !isProduction() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 		log.Info().Msg("Global log level set to DEBUG (development mode)")
@@ -51,7 +50,7 @@ func main() {
 	})
 	logger := logger.NewZerologLogger(log.Logger)
 
-	// 개발 환경에서는 .env 파일 로드
+	// load .env file (dev mode)
 	if !isProduction() {
 		if err := godotenv.Load(); err != nil {
 			logger.Warn().Msg("No .env file found")
@@ -59,30 +58,30 @@ func main() {
 		logger.Info().Msg("Loaded .env file")
 	}
 
-	// 환경 변수 로드
+	// load config
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to load configuration")
 	}
 
-	// DB 초기화
+	// init database
 	db, err := config.InitDatabase(cfg, logger)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize database")
 	}
 
-	// Redis 초기화
+	// init redis
 	rdb := config.InitRedis(cfg)
 
-	// 데이터베이스 설정
+	// setup database
 	if err := config.SetupDatabase(db); err != nil {
 		log.Fatal().Err(err).Msg("Failed to setup database")
 	}
 
-	// 의존성 초기화
+	// initialize dependencies
 	deps := initializeDependencies(db, rdb, cfg, logger)
 
-	// 라우터 설정
+	// setup router
 	r := router.Setup(
 		deps.authController,
 		deps.gameController,
@@ -92,7 +91,7 @@ func main() {
 		cfg,
 	)
 
-	// 서버 시작
+	// start server
 	startServer(r, cfg.ServerPort)
 }
 
@@ -105,23 +104,23 @@ type dependencies struct {
 }
 
 func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *dependencies {
-	// 레포지토리 초기화
+	// initialize repositories
 	userRepository := repository.NewUserRepository(db, appLogger)
 	gameRepository := repository.NewGameRepository(db, appLogger)
 	leetCodeRepo := repository.NewLeetCodeRepository(db, appLogger)
 
-	// 서비스 초기화
+	// initialize services
 	authService := service.NewAuthService(userRepository, cfg.JWTSecret, appLogger)
 	userService := service.NewUserService(userRepository, appLogger)
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger)
 	wsService := service.NewWebSocketService(rdb, appLogger)
 	gameService := service.NewGameService(gameRepository, leetCodeRepo, rdb, wsService, judgeService, appLogger)
 
-	// 웹소켓 허브 초기화
+	// init web socket hub
 	wsHub := wsService.InitHub()
 	go wsHub.Run()
 
-	// 컨트롤러 및 미들웨어 초기화
+	// init controllers and middleware
 	return &dependencies{
 		authController: controller.NewAuthController(authService, appLogger),
 		gameController: controller.NewGameController(gameService, appLogger),

@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// LeetCodeRepository LeetCode 문제 관련 데이터베이스 작업을 처리하는 인터페이스
 type LeetCodeRepository interface {
 	FindAll() ([]model.LeetCode, error)
 	FindByID(id uuid.UUID) (*model.LeetCode, error)
@@ -16,13 +15,11 @@ type LeetCodeRepository interface {
 	Delete(id uuid.UUID) error
 }
 
-// leetCodeRepository LeetCodeRepository 인터페이스 구현체
 type leetCodeRepository struct {
 	db     *gorm.DB
 	logger logger.Logger
 }
 
-// NewLeetCodeRepository LeetCodeRepository 인스턴스 생성
 func NewLeetCodeRepository(db *gorm.DB, logger logger.Logger) LeetCodeRepository {
 	return &leetCodeRepository{
 		db:     db,
@@ -30,7 +27,6 @@ func NewLeetCodeRepository(db *gorm.DB, logger logger.Logger) LeetCodeRepository
 	}
 }
 
-// FindAll 모든 LeetCode 문제 조회
 func (r *leetCodeRepository) FindAll() ([]model.LeetCode, error) {
 	var leetcodes []model.LeetCode
 	err := r.db.Order("created_at DESC").Find(&leetcodes).Error
@@ -40,7 +36,6 @@ func (r *leetCodeRepository) FindAll() ([]model.LeetCode, error) {
 	return leetcodes, nil
 }
 
-// FindByID ID로 LeetCode 문제 조회
 func (r *leetCodeRepository) FindByID(id uuid.UUID) (*model.LeetCode, error) {
 	var leetcode model.LeetCode
 	err := r.db.Where("id = ?", id).First(&leetcode).Error
@@ -50,17 +45,14 @@ func (r *leetCodeRepository) FindByID(id uuid.UUID) (*model.LeetCode, error) {
 	return &leetcode, nil
 }
 
-// Create 새 LeetCode 문제 생성
 func (r *leetCodeRepository) Create(leetcode *model.LeetCode) error {
 	return r.db.Create(leetcode).Error
 }
 
-// Update LeetCode 문제 업데이트
 func (r *leetCodeRepository) Update(leetcode *model.LeetCode) error {
 	return r.db.Save(leetcode).Error
 }
 
-// Delete LeetCode 문제 삭제
 func (r *leetCodeRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&model.LeetCode{}, id).Error
 }

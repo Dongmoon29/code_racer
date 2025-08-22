@@ -10,7 +10,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// GameRepository 게임 관련 데이터베이스 작업을 처리하는 인터페이스
 type GameRepository interface {
 	Create(game *model.Game) error
 	FindByID(id uuid.UUID) (*model.Game, error)
@@ -23,13 +22,11 @@ type GameRepository interface {
 	Delete(id uuid.UUID) error
 }
 
-// gameRepository GameRepository 인터페이스 구현체
 type gameRepository struct {
 	db     *gorm.DB
 	logger logger.Logger
 }
 
-// NewGameRepository GameRepository 인스턴스 생성
 func NewGameRepository(db *gorm.DB, logger logger.Logger) GameRepository {
 	return &gameRepository{
 		db:     db,
@@ -37,12 +34,10 @@ func NewGameRepository(db *gorm.DB, logger logger.Logger) GameRepository {
 	}
 }
 
-// Create 새로운 게임 방 생성
 func (r *gameRepository) Create(game *model.Game) error {
 	return r.db.Create(game).Error
 }
 
-// FindByID ID로 게임 방 찾기
 func (r *gameRepository) FindByID(id uuid.UUID) (*model.Game, error) {
 	var game model.Game
 	err := r.db.
@@ -58,7 +53,6 @@ func (r *gameRepository) FindByID(id uuid.UUID) (*model.Game, error) {
 	return &game, nil
 }
 
-// FindOpenGames 참가 가능한 오픈 게임 방 목록 조회
 func (r *gameRepository) FindOpenGames() ([]model.Game, error) {
 	var games []model.Game
 	err := r.db.
@@ -73,12 +67,10 @@ func (r *gameRepository) FindOpenGames() ([]model.Game, error) {
 	return games, nil
 }
 
-// Update 게임 방 정보 업데이트
 func (r *gameRepository) Update(game *model.Game) error {
 	return r.db.Save(game).Error
 }
 
-// JoinGame 게임 방 참가
 func (r *gameRepository) JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.Game, error) {
 	var game model.Game
 	err := r.db.
@@ -90,28 +82,28 @@ func (r *gameRepository) JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.Ga
 		return nil, err
 	}
 
-	// 게임 상태 체크
+	// check if game is in waiting status
 	if game.Status != model.GameStatusWaiting {
 		return nil, errors.New("game is not in waiting status")
 	}
 
-	// 이미 참가한 사용자인지 체크
+	// check if user is already in the game
 	if game.CreatorID == userID {
 		return nil, errors.New("you are the creator of this game")
 	}
 
-	// 이미 다른 사용자가 참가했는지 체크
+	// check if there is already an opponent
 	if game.OpponentID != nil {
 		return nil, errors.New("game is already full")
 	}
 
-	// 트랜잭션 시작
+	// start transaction
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
-	// 상대 플레이어 설정 및 게임 상태 변경
+	// set opponent and update game status
 	now := time.Now()
 	game.OpponentID = &userID
 	game.Status = model.GameStatusPlaying
@@ -122,7 +114,7 @@ func (r *gameRepository) JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.Ga
 		return nil, err
 	}
 
-	// 상대 플레이어 정보 로드
+	// load opponent user info
 	var opponent model.User
 	if err := tx.Where("id = ?", userID).First(&opponent).Error; err != nil {
 		tx.Rollback()
@@ -130,7 +122,7 @@ func (r *gameRepository) JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.Ga
 	}
 	game.Opponent = &opponent
 
-	// 트랜잭션 커밋
+	// commit transaction
 	if err := tx.Commit().Error; err != nil {
 		return nil, err
 	}
@@ -138,7 +130,6 @@ func (r *gameRepository) JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.Ga
 	return &game, nil
 }
 
-// SetWinner 게임 승자 설정
 func (r *gameRepository) SetWinner(gameID uuid.UUID, userID uuid.UUID) error {
 	var game model.Game
 	err := r.db.Where("id = ?", gameID).First(&game).Error
@@ -146,18 +137,18 @@ func (r *gameRepository) SetWinner(gameID uuid.UUID, userID uuid.UUID) error {
 		return err
 	}
 
-	// 게임 상태 체크
+	// check if game is in playing status
 	if game.Status != model.GameStatusPlaying {
 		return errors.New("game is not in playing status")
 	}
 
-	// 트랜잭션 시작
+	// start transaction
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return tx.Error
 	}
 
-	// 승자 설정 및 게임 상태 변경
+	// set winner and update game status
 	now := time.Now()
 	game.WinnerID = &userID
 	game.Status = model.GameStatusFinished
@@ -168,7 +159,7 @@ func (r *gameRepository) SetWinner(gameID uuid.UUID, userID uuid.UUID) error {
 		return err
 	}
 
-	// 트랜잭션 커밋
+	// commit transaction
 	if err := tx.Commit().Error; err != nil {
 		return err
 	}
@@ -176,7 +167,6 @@ func (r *gameRepository) SetWinner(gameID uuid.UUID, userID uuid.UUID) error {
 	return nil
 }
 
-// FindByUserID 사용자 ID로 참가한 게임 방 목록 조회
 func (r *gameRepository) FindByUserID(userID uuid.UUID) ([]model.Game, error) {
 	var games []model.Game
 	err := r.db.
@@ -193,7 +183,6 @@ func (r *gameRepository) FindByUserID(userID uuid.UUID) ([]model.Game, error) {
 	return games, nil
 }
 
-// CloseGame 게임 방 닫기 (대기 중인 게임만 가능)
 func (r *gameRepository) CloseGame(gameID uuid.UUID, creatorID uuid.UUID) error {
 	result := r.db.Model(&model.Game{}).
 		Where("id = ? AND creator_id = ? AND status = ?", gameID, creatorID, model.GameStatusWaiting).
@@ -206,7 +195,6 @@ func (r *gameRepository) CloseGame(gameID uuid.UUID, creatorID uuid.UUID) error 
 	return result.Error
 }
 
-// Delete 게임 삭제 (롤백용)
 func (r *gameRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&model.Game{}, "id = ?", id).Error
 }
