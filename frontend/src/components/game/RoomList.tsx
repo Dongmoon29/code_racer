@@ -74,7 +74,7 @@ const RoomList: React.FC = () => {
         ]);
 
         setGames(gamesResponse.games || []);
-        setLeetcodes(leetcodesResponse.leetcodes || []);
+        setLeetcodes(leetcodesResponse.data || []);
 
         // 첫 번째 LeetCode 문제를 기본 선택
         if (
