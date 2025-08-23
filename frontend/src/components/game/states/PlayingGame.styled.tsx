@@ -147,18 +147,20 @@ export const ProblemCode = styled.pre`
   line-height: 1.5;
 `;
 
-// Code editors container
+// Code editors container - flex로 남은 공간 모두 차지
 export const CodeEditorsContainer = styled.div`
   display: flex;
   gap: 1rem;
   margin-left: 1rem;
   flex: 1;
+  transition: all 0.3s ease-in-out;
 `;
 
-// Individual code editor
+// Individual code editor - 기존 resize 로직 복원
 export const CodeEditorWrapper = styled.div<{
   maximized: boolean;
   isOpponent: boolean;
+  maximizedEditor: 'my' | 'opponent' | null;
 }>`
   transition: all 0.3s ease-in-out;
   border: 1px solid hsl(var(--border));
@@ -166,15 +168,15 @@ export const CodeEditorWrapper = styled.div<{
   overflow: hidden;
 
   ${(props) => {
-    if (props.maximized) {
+    if (props.maximizedEditor === 'opponent') {
       return css`
         width: 40px;
       `;
     }
 
-    if (props.isOpponent) {
+    if (props.maximizedEditor === 'my') {
       return css`
-        width: calc(50% - 0.5rem);
+        width: 100%;
       `;
     }
 
