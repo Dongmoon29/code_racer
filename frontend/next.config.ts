@@ -1,6 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Styled Components SSR 설정
+  compiler: {
+    styledComponents: {
+      displayName: true,
+      ssr: true,
+      fileName: true,
+      meaninglessFileNames: ['index', 'styles'],
+      minify: true,
+      transpileTemplateLiterals: true,
+      pure: false,
+    },
+  },
   images: {
     domains: [
       'avatars.githubusercontent.com',
