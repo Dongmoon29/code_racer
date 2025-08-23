@@ -95,12 +95,11 @@ func Setup(
 				leetcode.GET("/page", leetcodeController.GetProblemsWithPagination)
 				leetcode.GET("/:id", leetcodeController.GetProblemByID)
 
-				adminLeetcode := leetcode.Group("/")
-				adminLeetcode.Use(authMiddleware.AdminRequired())
+				leetcode.Use(authMiddleware.AdminRequired())
 				{
-					adminLeetcode.POST("", leetcodeController.CreateProblem)
-					adminLeetcode.PUT("/:id", leetcodeController.UpdateProblem)
-					adminLeetcode.DELETE("/:id", leetcodeController.DeleteProblem)
+					leetcode.POST("", leetcodeController.CreateProblem)
+					leetcode.PUT("/:id", leetcodeController.UpdateProblem)
+					leetcode.DELETE("/:id", leetcodeController.DeleteProblem)
 				}
 			}
 		}

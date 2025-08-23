@@ -333,6 +333,9 @@ func (s *webSocketService) cleanupUserData(userID uuid.UUID, gameID uuid.UUID) {
 // readPump reads messages from the client
 func (c *Client) readPump(wsService *webSocketService) {
 	defer func() {
+		if r := recover(); r != nil {
+			wsService.logger.Error().Interface("panic", r).Msg("Recovered from panic in readPump")
+		}
 		c.hub.unregister <- c
 		c.conn.Close()
 		// Clean up user data when connection is closed
@@ -352,7 +355,12 @@ func (c *Client) readPump(wsService *webSocketService) {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				// unexpected close error
 				continue
+			} else if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				// normal close, break the loop
+				break
 			} else {
+				// other errors, log and break
+				wsService.logger.Debug().Err(err).Msg("WebSocket read error, closing connection")
 				break
 			}
 		}
@@ -417,6 +425,10 @@ func (c *Client) readPump(wsService *webSocketService) {
 func (c *Client) writePump() {
 	ticker := time.NewTicker(54 * time.Second)
 	defer func() {
+		if r := recover(); r != nil {
+			// Log panic but don't crash the service
+			// Note: We don't have access to logger here, so we'll just recover
+		}
 		ticker.Stop()
 		c.conn.Close()
 	}()

@@ -85,16 +85,16 @@ export const PlayingGame: React.FC<Props> = ({
         </Alert>
       )}
 
-      {/* Main content - flex-1로 남은 공간 모두 사용 */}
-      <div className="flex-1 px-4 flex w-full min-h-0">
+      {/* Main content - 고정 너비로 설정 */}
+      <div className="flex-1 px-4 flex min-h-0 game-editor-container" style={{ width: '100%' }}>
         {/* Problem Description - flex-basis로 기본 너비 설정 */}
         <div
           className={`
             transition-all duration-300 overflow-auto
             ${
               isDescriptionExpanded
-                ? 'flex-[0_0_33.333%]' // flex: 0 0 33.333%
-                : 'flex-[0_0_40px]' // flex: 0 0 40px
+                ? 'w-[33.333%]' // 고정 너비 33.333%
+                : 'w-[40px]' // 고정 너비 40px
             }
           `}
         >
@@ -148,7 +148,7 @@ export const PlayingGame: React.FC<Props> = ({
         </div>
 
         {/* Code Editors Container */}
-        <div className="flex gap-4 ml-4 flex-1">
+        <div className="flex gap-4 ml-4" style={{ width: 'calc(100% - 33.333% - 1rem)' }}>
           <div
             className={`
               transition-all duration-300 border border-gray-200 rounded-lg overflow-hidden
@@ -157,7 +157,7 @@ export const PlayingGame: React.FC<Props> = ({
                   ? 'w-[40px]'
                   : maximizedEditor === 'my'
                   ? 'w-full'
-                  : 'w-1/2'
+                  : 'w-[calc(50%-0.5rem)]'
               }
             `}
           >
@@ -227,7 +227,7 @@ export const PlayingGame: React.FC<Props> = ({
                   ? 'w-[40px]'
                   : maximizedEditor === 'opponent'
                   ? 'w-full'
-                  : 'w-1/2'
+                  : 'w-[calc(50%-0.5rem)]'
               }
             `}
           >

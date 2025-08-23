@@ -50,9 +50,28 @@ async function apiRequest<T>(
 export async function createLeetCodeProblem(
   data: CreateLeetCodeRequest
 ): Promise<LeetCodeDetail> {
+  // camelCase를 snake_case로 변환
+  const snakeCaseData = {
+    title: data.title,
+    description: data.description,
+    examples: data.examples,
+    constraints: data.constraints,
+    test_cases: data.testCases,
+    expected_outputs: data.expectedOutputs,
+    difficulty: data.difficulty,
+    input_format: data.inputFormat,
+    output_format: data.outputFormat,
+    function_name: data.functionName,
+    javascript_template: data.javascriptTemplate,
+    python_template: data.pythonTemplate,
+    go_template: data.goTemplate,
+    java_template: data.javaTemplate,
+    cpp_template: data.cppTemplate,
+  };
+
   return apiRequest<LeetCodeDetail>('/leetcode', {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(snakeCaseData),
   });
 }
 
@@ -61,9 +80,28 @@ export async function updateLeetCodeProblem(
   id: string,
   data: UpdateLeetCodeRequest
 ): Promise<LeetCodeDetail> {
+  // camelCase를 snake_case로 변환
+  const snakeCaseData = {
+    title: data.title,
+    description: data.description,
+    examples: data.examples,
+    constraints: data.constraints,
+    test_cases: data.testCases,
+    expected_outputs: data.expectedOutputs,
+    difficulty: data.difficulty,
+    input_format: data.inputFormat,
+    output_format: data.outputFormat,
+    function_name: data.functionName,
+    javascript_template: data.javascriptTemplate,
+    python_template: data.pythonTemplate,
+    go_template: data.goTemplate,
+    java_template: data.javaTemplate,
+    cpp_template: data.cppTemplate,
+  };
+
   return apiRequest<LeetCodeDetail>(`/leetcode/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(data),
+    body: JSON.stringify(snakeCaseData),
   });
 }
 

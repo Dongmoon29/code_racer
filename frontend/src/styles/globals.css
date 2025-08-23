@@ -99,6 +99,28 @@ body {
   transition-property: all;
 }
 
+/* 코드 에디터 스크롤 처리 */
+.cm-editor {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.cm-editor .cm-scroller {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* 게임 에디터 영역 너비 제한 */
+.game-editor-container {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.game-editor-container > * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 .duration-300 {
   transition-duration: 300ms;
 }
