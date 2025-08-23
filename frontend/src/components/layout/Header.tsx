@@ -153,6 +153,16 @@ const Header: React.FC = () => {
                       style={{ backgroundColor: 'hsl(var(--background))' }}
                     >
                       <div className="py-1">
+                        {user.role === 'admin' && (
+                          <Link
+                            href="/admin"
+                            className="block w-full text-left px-4 py-2 text-sm hover:bg-muted"
+                            style={{ color: 'hsl(var(--foreground))' }}
+                            onClick={() => setDropdownOpen(false)}
+                          >
+                            Admin Panel
+                          </Link>
+                        )}
                         <button
                           onClick={handleLogout}
                           className="block w-full text-left px-4 py-2 text-sm hover:bg-muted"
@@ -195,6 +205,15 @@ const Header: React.FC = () => {
                 >
                   Dashboard
                 </Link>
+                {user.role === 'admin' && (
+                  <Link
+                    href="/admin"
+                    className="block px-2 py-2 text-foreground hover:bg-muted rounded text-[hsl(var(--foreground))]"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Admin Panel
+                  </Link>
+                )}
                 <button
                   onClick={() => {
                     handleLogout();

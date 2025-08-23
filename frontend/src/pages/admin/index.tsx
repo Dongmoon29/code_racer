@@ -6,7 +6,7 @@ import AdminNav from '../../components/admin/AdminNav';
 import Link from 'next/link';
 
 export default function AdminPage() {
-  const { user, isLoading, isLoggedIn } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -57,14 +57,6 @@ export default function AdminPage() {
       <AdminNav />
 
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Admin Panel</h1>
-          <p className="text-lg text-gray-600">
-            Administrative tools for system management and monitoring.
-          </p>
-        </div>
-
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {adminFeatures.map((feature) => (
@@ -142,21 +134,12 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Debug Information */}
           <div className="mt-6 p-4 bg-gray-100 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              Debug Information
+              User Information
             </h3>
             <div className="text-sm text-gray-600 space-y-1">
-              <p>
-                Auth Token:{' '}
-                {localStorage.getItem('authToken') ? '✅ Present' : '❌ Missing'}
-              </p>
-              <p>
-                Token Length: {localStorage.getItem('authToken')?.length || 0}
-              </p>
               <p>User ID: {user.id}</p>
-              <p>Is Logged In: {isLoggedIn ? '✅' : '❌'}</p>
             </div>
           </div>
         </div>
