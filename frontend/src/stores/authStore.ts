@@ -11,6 +11,7 @@ type User = {
   homepage?: string;
   linkedin?: string;
   oauthProvider?: string;
+  role: string;
 };
 
 interface AuthState {

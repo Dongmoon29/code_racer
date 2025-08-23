@@ -8,8 +8,9 @@ import { useAuth } from '@/hooks/useAuth';
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
-  const { isLoggedIn, isLoading } = useAuth();
+  const { isLoggedIn, isLoading, user } = useAuth();
 
+  console.log(user);
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
       router.push('/login');

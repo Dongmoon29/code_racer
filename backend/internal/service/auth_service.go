@@ -56,6 +56,7 @@ func (s *authService) Register(req *model.RegisterRequest) (*model.UserResponse,
 		Email:    req.Email,
 		Password: hashedPassword,
 		Name:     req.Name,
+		Role:     model.RoleUser, // 기본 role을 'user'로 설정
 	}
 
 	// 사용자 저장
@@ -87,7 +88,7 @@ func (s *authService) Login(req *model.LoginRequest) (*model.LoginResponse, erro
 	}
 
 	// JWT 토큰 생성
-	token, err := s.generateToken(user.ID, user.Email)
+	token, err := s.generateToken(user.ID, user.Email, string(user.Role))
 	if err != nil {
 		return nil, err
 	}
@@ -127,11 +128,12 @@ func (s *authService) GetUserByID(id uuid.UUID) (*model.UserResponse, error) {
 }
 
 // generateToken JWT 토큰 생성
-func (s *authService) generateToken(userID uuid.UUID, email string) (string, error) {
+func (s *authService) generateToken(userID uuid.UUID, email string, role string) (string, error) {
 	// 클레임 설정
 	claims := &types.JWTClaims{
 		UserID: userID.String(),
 		Email:  email,
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.tokenExpiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -171,6 +173,7 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 			Email:         googleUser.Email,
 			Name:          googleUser.Name,
 			ProfileImage:  googleUser.Picture,
+			Role:          model.RoleUser, // 기본 role을 'user'로 설정
 			OAuthProvider: "google",
 			OAuthID:       googleUser.ID,
 		}
@@ -187,7 +190,7 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 	}
 
 	// JWT 토큰 생성
-	jwtToken, err := s.generateToken(user.ID, user.Email)
+	jwtToken, err := s.generateToken(user.ID, user.Email, string(user.Role))
 	if err != nil {
 		return nil, err
 	}
@@ -252,6 +255,7 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 			Email:         githubUser.Email,
 			Name:          githubUser.Name,
 			ProfileImage:  githubUser.AvatarURL, // 프로필 이미지 추가
+			Role:          model.RoleUser,       // 기본 role을 'user'로 설정
 			OAuthProvider: "github",
 			OAuthID:       githubUser.ID,
 		}
@@ -271,7 +275,7 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 	}
 
 	// JWT 토큰 생성
-	jwtToken, err := s.generateToken(user.ID, user.Email)
+	jwtToken, err := s.generateToken(user.ID, user.Email, string(user.Role))
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to generate JWT token")
 		return nil, err

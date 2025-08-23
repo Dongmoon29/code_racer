@@ -65,12 +65,23 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
+    console.log(
+      'API Request to:',
+      config.url,
+      'Token:',
+      token ? 'exists' : 'missing'
+    );
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('Authorization header added');
+    } else {
+      console.warn('No auth token found for request to:', config.url);
     }
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
