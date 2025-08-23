@@ -30,11 +30,12 @@ export interface UserProfile {
   fav_language?: string;
 }
 
-// User 타입 정의 (types.ts에서 import하거나 여기서 정의)
+// User 타입 정의 (authStore와 일치)
 interface User {
   id: string;
   name: string;
   email: string;
+  role: string;
   profile_image?: string;
   homepage?: string;
   linkedin?: string;
@@ -48,7 +49,8 @@ const isUser = (obj: unknown): obj is User => {
     typeof obj === 'object' &&
     typeof (obj as Record<string, unknown>).id === 'string' &&
     typeof (obj as Record<string, unknown>).name === 'string' &&
-    typeof (obj as Record<string, unknown>).email === 'string'
+    typeof (obj as Record<string, unknown>).email === 'string' &&
+    typeof (obj as Record<string, unknown>).role === 'string'
   );
 };
 

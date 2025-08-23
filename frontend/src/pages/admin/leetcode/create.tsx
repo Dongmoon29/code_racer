@@ -5,14 +5,14 @@ import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
 export default function CreateLeetCodePage() {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && (!user || user.role !== 'admin')) {
+    if (!isLoading && (!user || user.role !== 'admin')) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, isLoading, router]);
 
   const handleSuccess = () => {
     router.push('/admin/leetcode');
@@ -22,7 +22,7 @@ export default function CreateLeetCodePage() {
     router.push('/admin/leetcode');
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-lg">로딩 중...</div>

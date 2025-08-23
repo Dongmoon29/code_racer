@@ -54,20 +54,29 @@ export default function LeetCodeForm({
     }
   }, [initialData]);
 
-  const handleInputChange = (field: keyof LeetCodeFormData, value: any) => {
+  const handleInputChange = (
+    field: keyof LeetCodeFormData,
+    value: string | number
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleTestCaseChange = (
     index: number,
     field: keyof TestCase,
-    value: any
+    value: (string | number | boolean)[] | (string | number | boolean)
   ) => {
     const newTestCases = [...formData.testCases];
     if (field === 'input') {
-      newTestCases[index] = { ...newTestCases[index], input: value };
+      newTestCases[index] = {
+        ...newTestCases[index],
+        input: value as (string | number | boolean)[],
+      };
     } else {
-      newTestCases[index] = { ...newTestCases[index], output: value };
+      newTestCases[index] = {
+        ...newTestCases[index],
+        output: value as string | number | boolean,
+      };
     }
     setFormData((prev) => ({ ...prev, testCases: newTestCases }));
   };
@@ -96,8 +105,11 @@ export default function LeetCodeForm({
     try {
       if (mode === 'create') {
         await createLeetCodeProblem(formData);
-      } else if (initialData) {
-        await updateLeetCodeProblem(initialData.id || '', formData);
+      } else if (initialData && initialData.id) {
+        await updateLeetCodeProblem(initialData.id, {
+          ...formData,
+          id: initialData.id,
+        });
       }
 
       onSuccess?.();
@@ -293,7 +305,7 @@ export default function LeetCodeForm({
                   </label>
                   <input
                     type="text"
-                    value={testCase.output}
+                    value={String(testCase.output)}
                     onChange={(e) =>
                       handleTestCaseChange(index, 'output', e.target.value)
                     }

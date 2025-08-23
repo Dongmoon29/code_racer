@@ -75,8 +75,11 @@ export async function deleteLeetCodeProblem(id: string): Promise<void> {
 }
 
 // 모든 LeetCode 문제 조회
-export async function getAllLeetCodeProblems(): Promise<LeetCodeSummary[]> {
-  return apiRequest<LeetCodeSummary[]>('/leetcode');
+export async function getAllLeetCodeProblems(): Promise<{
+  success: boolean;
+  data: LeetCodeSummary[];
+}> {
+  return apiRequest<{ success: boolean; data: LeetCodeSummary[] }>('/leetcode');
 }
 
 // 특정 LeetCode 문제 조회

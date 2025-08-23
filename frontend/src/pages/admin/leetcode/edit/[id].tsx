@@ -6,7 +6,7 @@ import { LeetCodeFormData } from '../../../../lib/leetcode-types';
 import LeetCodeForm from '../../../../components/admin/LeetCodeForm';
 
 export default function EditLeetCodePage() {
-  const { user, loading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { id } = router.query;
 
@@ -15,10 +15,10 @@ export default function EditLeetCodePage() {
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    if (!loading && (!user || user.role !== 'admin')) {
+    if (!authLoading && (!user || user.role !== 'admin')) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     if (id && typeof id === 'string') {
@@ -51,6 +51,8 @@ export default function EditLeetCodePage() {
         cppTemplate: data.cppTemplate,
         timeLimit: data.timeLimit,
         memoryLimit: data.memoryLimit,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
       };
 
       setProblem(formData);
@@ -71,7 +73,7 @@ export default function EditLeetCodePage() {
     router.push('/admin/leetcode');
   };
 
-  if (loading || isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-lg">로딩 중...</div>

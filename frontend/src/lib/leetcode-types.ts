@@ -54,6 +54,7 @@ export interface LeetCodeDetail extends LeetCodeSummary {
 }
 
 export interface LeetCodeFormData {
+  id?: string;
   title: string;
   description: string;
   examples: string;
@@ -71,4 +72,6 @@ export interface LeetCodeFormData {
   cppTemplate: string;
   timeLimit: number;
   memoryLimit: number;
+  createdAt?: string;
+  updatedAt?: string;
 }

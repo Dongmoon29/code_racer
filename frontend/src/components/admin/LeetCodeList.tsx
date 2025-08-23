@@ -23,7 +23,7 @@ export default function LeetCodeList() {
     try {
       setIsLoading(true);
       const result = await getAllLeetCodeProblems();
-      setProblems(result.data as any);
+      setProblems(result.data as LeetCodeSummary[]);
     } catch (err) {
       setError(
         err instanceof Error
