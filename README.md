@@ -1,209 +1,189 @@
-# CodeRacer
+# CodeRacer 🏁
 
-[English](README.md) | [한국어](README.ko.md)
+실시간 코딩 대결 플랫폼 - 알고리즘 문제를 풀며 다른 개발자와 경쟁하세요!
 
-CodeRacer is a real-time coding competition platform where you can improve your skills and compete with friends by solving coding problems together.
+## 🎯 프로젝트 소개
 
-## Key Features
+CodeRacer는 실시간으로 다른 개발자와 알고리즘 문제를 풀며 경쟁할 수 있는 플랫폼입니다. LeetCode 문제를 기반으로 한 실시간 코딩 대결, 멀티 언어 지원, 그리고 관리자 기능을 제공합니다.
 
-- **Real-time Coding Battles**: WebSocket-based real-time multiplayer games
-- **Multiple Programming Languages**: JavaScript, Python, Go, Rust, Java, C++
-- **Advanced Code Editor**: CodeMirror 6 with Vim mode support and syntax highlighting
-- **Theme System**: Dark/Light mode with neon effect UI
-- **LeetCode-style Problems**: Real coding interview problem solving
-- **Real-time Code Evaluation**: Judge0 API-based automatic grading system
-- **OAuth Authentication**: Google and GitHub social login support
-- **Responsive Design**: Mobile and desktop optimized
+## ✨ 주요 기능
 
-## Tech Stack
+- 🚀 **실시간 코딩 대결**: WebSocket을 통한 실시간 코드 동기화
+- 📚 **LeetCode 통합**: 다양한 난이도의 알고리즘 문제
+- 🌍 **멀티 언어 지원**: JavaScript, Python, Go, Java, C++
+- 👑 **관리자 기능**: LeetCode 문제 관리 (Admin Role)
+- 🔐 **소셜 로그인**: Google, GitHub OAuth 지원
+- 🎨 **모던 UI**: Tailwind CSS 기반 반응형 디자인
+- ⚡ **실시간 채점**: Judge0를 통한 안전한 코드 실행
+
+## 🛠 기술 스택
 
 ### Frontend
 
-- Next.js 15.2
-- React 18.3
-- TypeScript
-- TailwindCSS 4
-- CodeMirror 6 (with Vim mode support)
-- Zustand (State Management)
-- WebSocket (Real-time communication)
-- Radix UI (Accessibility components)
-- next-themes (Theme system)
+- **Next.js 13+** - React 기반 풀스택 프레임워크
+- **TypeScript** - 타입 안전성 보장
+- **Tailwind CSS** - 유틸리티 기반 CSS
+- **Zustand** - 경량 상태 관리
+- **CodeMirror** - 코드 에디터
 
 ### Backend
 
-- Go 1.25
-- Gin Web Framework
-- GORM
-- PostgreSQL
-- Redis
-- WebSocket
-- JWT Authentication
+- **Go 1.25** - 고성능 시스템 프로그래밍
+- **Gin** - HTTP 웹 프레임워크
+- **GORM** - Go ORM 라이브러리
+- **PostgreSQL** - 주 데이터베이스
+- **Redis** - 캐시 및 세션 관리
+- **Judge0** - 코드 실행 및 채점
 
-## Getting Started
+### DevOps
 
-### Prerequisites
+- **Docker** - 컨테이너화
+- **GitHub Actions** - CI/CD 파이프라인
+- **systemd** - 서비스 관리
 
-- Node.js 18+
-- Go 1.20+
-- Docker & Docker Compose
-- PostgreSQL 14
-- Redis 7
+## 📁 프로젝트 구조
 
-### Local Development Setup
+```
+code_racer/
+├── frontend/                    # Next.js 프론트엔드
+│   ├── src/
+│   │   ├── components/         # React 컴포넌트
+│   │   ├── pages/             # 페이지 컴포넌트
+│   │   ├── stores/            # Zustand 스토어
+│   │   └── lib/               # 유틸리티 및 설정
+│   ├── ARCHITECTURE.md         # 프론트엔드 아키텍처 문서
+│   └── README.md              # 프론트엔드 README
+├── backend/                     # Go 백엔드
+│   ├── internal/              # 내부 패키지
+│   ├── cmd/                   # 애플리케이션 진입점
+│   ├── migrations/            # 데이터베이스 마이그레이션
+│   ├── ARCHITECTURE.md         # 백엔드 아키텍처 문서
+│   └── README.md              # 백엔드 README
+└── README.md                   # 프로젝트 메인 README
+```
 
-1. Clone the repository
+## 🚀 빠른 시작
+
+### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/Dongmoon29/code_racer.git
+git clone https://github.com/your-username/code_racer.git
 cd code_racer
 ```
 
-2. Set up environment variables
-
-```bash
-# backend/.env
-DB_HOST=localhost
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=code_racer
-DB_PORT=5432
-SERVER_PORT=8080
-JUDGE0_API_KEY=your_judge0_api_key
-JUDGE0_API_ENDPOINT=https://judge0-ce.p.rapidapi.com
-
-FRONTEND_URL=http://localhost:3000
-FRONTEND_DOMAIN=localhost
-
-# JWT Configuration
-JWT_SECRET=your_jwt_secret_key
-
-# Redis Configuration
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-# Google OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REDIRECT_URL=your_google_redirect_url
-
-# Github OAuth
-GH_CLIENT_ID=your_github_client_id
-GH_CLIENT_SECRET=your_github_client_secret
-GH_REDIRECT_URL=your_github_redirect_url
-
-
-# frontend/.env
-NEXT_PUBLIC_API_URL=http://localhost:8080/api
-NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
-```
-
-3. Start the databases
-
-```bash
-docker-compose up postgres redis
-```
-
-4. Run the backend
+### 2. 백엔드 실행
 
 ```bash
 cd backend
+
+# 의존성 설치
 go mod download
+
+# 환경 변수 설정
+cp env.example .env
+# .env 파일 편집하여 데이터베이스 정보 입력
+
+# 데이터베이스 실행
+docker-compose up -d postgres redis
+
+# 마이그레이션 실행
+make migrate-up
+
+# 서버 실행
 go run cmd/api/main.go
 ```
 
-5. Run the frontend
+### 3. 프론트엔드 실행
 
 ```bash
 cd frontend
+
+# 의존성 설치
 npm install
+
+# 개발 서버 실행
 npm run dev
 ```
 
-## 📖 Documentation
+### 4. 브라우저에서 접속
 
-### Development Guides
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8080
 
-- **Backend Development**: [Korean](backend/DEVELOPMENT.md) | [English](backend/DEVELOPMENT.en.md)
-- **Frontend Development**: [Korean](frontend/DEVELOPMENT.md) | [English](frontend/DEVELOPMENT.en.md)
+## 📚 아키텍처 문서
 
-### API Documentation
+프로젝트의 상세한 아키텍처와 설계 원칙을 확인하세요:
 
-- **REST API**: [Korean](backend/API.md) | [English](backend/API.en.md)
-- **WebSocket Setup**: [Korean](backend/WEBSOCKET_SETUP.md) | [English](backend/WEBSOCKET_SETUP.en.md)
+- **[프론트엔드 아키텍처](frontend/ARCHITECTURE.md)** - Next.js, React, TypeScript 기반 프론트엔드 설계
+- **[백엔드 아키텍처](backend/ARCHITECTURE.md)** - Go, Gin, GORM 기반 백엔드 설계
 
-### Deployment Guide
+## 🔧 개발 환경 설정
 
-- **GCP Deployment**: [deployment/README.md](deployment/README.md)
+### 필수 요구사항
 
-## Project Structure
+- **Go 1.25+**
+- **Node.js 18+**
+- **PostgreSQL 14+**
+- **Redis 6+**
+- **Docker & Docker Compose**
 
-```
-.
-├── backend/                      # Go backend server
-│   ├── cmd/api/                 # Application entry point
-│   │   └── main.go
-│   ├── internal/                # Internal packages
-│   │   ├── config/             # Configuration (DB, Redis, JWT)
-│   │   ├── controller/         # HTTP handlers
-│   │   │   ├── auth_controller.go      # Authentication (login/register/OAuth)
-│   │   │   ├── game_controller.go      # Game management
-│   │   │   ├── user_controller.go      # User management
-│   │   │   └── websocket_controller.go # WebSocket connections
-│   │   ├── service/            # Business logic
-│   │   │   ├── auth_service.go         # JWT, OAuth processing
-│   │   │   ├── game_service.go         # Game state management
-│   │   │   ├── judge_service.go        # Code evaluation
-│   │   │   ├── user_service.go         # User management
-│   │   │   └── websocket_service.go    # Real-time communication
-│   │   ├── repository/         # Data access layer
-│   │   ├── model/              # Data models
-│   │   ├── middleware/         # Auth, CORS middleware
-│   │   ├── judge/              # Judge0 API integration
-│   │   ├── interfaces/         # Interface definitions
-│   │   ├── types/              # Type definitions
-│   │   ├── util/               # Utility functions
-│   │   └── logger/             # Logging configuration
-│   ├── migrations/              # Database migrations
-│   ├── deployment/              # Deployment files (Terraform)
-│   └── docker-compose.yml       # Development environment
-├── frontend/                     # Next.js frontend
-│   ├── src/
-│   │   ├── pages/              # Page routing
-│   │   │   ├── index.tsx               # Home page
-│   │   │   ├── login.tsx               # Login page
-│   │   │   ├── dashboard.tsx           # Dashboard
-│   │   │   └── game/[id].tsx           # Game room
-│   │   ├── components/         # React components
-│   │   │   ├── game/                   # Game-related components
-│   │   │   │   ├── CodeEditor.tsx      # CodeMirror 6 editor
-│   │   │   │   ├── GameRoom.tsx        # Game room management
-│   │   │   │   ├── RoomList.tsx        # Game room list
-│   │   │   │   └── states/             # Game state UI
-│   │   │   ├── auth/                   # Authentication related
-│   │   │   ├── layout/                 # Layout components
-│   │   │   └── ui/                     # Reusable UI components
-│   │   ├── lib/                # Library configuration
-│   │   │   ├── api.ts                  # API client
-│   │   │   ├── websocket.ts            # WebSocket client
-│   │   │   ├── language-support.ts     # Language editor settings
-│   │   │   └── editor-theme.ts         # Editor themes
-│   │   ├── stores/             # Zustand state management
-│   │   │   └── authStore.ts
-│   │   ├── hooks/              # Custom React hooks
-│   │   │   └── useAuth.ts
-│   │   └── styles/             # Stylesheets
-│   │       └── globals.css             # Global CSS, theme system
-│   ├── public/                  # Static files
-│   ├── components.json          # Radix UI configuration
-│   ├── tailwind.config.ts       # Tailwind CSS configuration
-│   └── next.config.ts           # Next.js configuration
-├── .github/workflows/           # CI/CD pipeline
-├── docker-compose.yml           # Full development environment
-├── README.md                    # Project documentation (English)
-└── README.ko.md                 # Project documentation (Korean)
+### 환경 변수
+
+```bash
+# Backend (.env)
+DATABASE_URL=postgres://user:pass@localhost:5432/coderacer
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=your-secret-key
+JUDGE0_API_KEY=your-judge0-api-key
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# Frontend (.env.local)
+NEXT_PUBLIC_API_URL=http://localhost:8080
+NEXT_PUBLIC_WS_URL=ws://localhost:8080
 ```
 
-## Contributing
+## 🧪 테스트
+
+### 백엔드 테스트
+
+```bash
+cd backend
+go test ./...
+go test -v -cover ./...
+```
+
+### 프론트엔드 테스트
+
+```bash
+cd frontend
+npm run test
+npm run test:watch
+```
+
+## 🚀 배포
+
+### Docker를 통한 배포
+
+```bash
+# 전체 스택 빌드 및 실행
+docker-compose up -d
+
+# 프로덕션 빌드
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### 수동 배포
+
+```bash
+cd backend
+make build
+make deploy
+```
+
+## 🤝 기여하기
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
@@ -211,10 +191,26 @@ npm run dev
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## License
+## 📄 라이선스
 
-MIT License - see the [LICENSE](LICENSE) file for details.
+이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
-Project Link: [https://github.com/Dongmoon29/code_racer](https://github.com/Dongmoon29/code_racer)
+## 👥 팀
 
-For detailed documentation on project code base, refer to [https://app.komment.ai/wiki/github/Dongmoon29/code_racer?branch=main&version=1](https://app.komment.ai/wiki/github/Dongmoon29/code_racer?branch=main&version=1).
+- **Dongmoon** - Full Stack Developer
+- **Contributors** - 프로젝트에 기여한 모든 분들
+
+## 🙏 감사의 말
+
+- [LeetCode](https://leetcode.com/) - 알고리즘 문제 제공
+- [Judge0](https://judge0.com/) - 코드 실행 서비스
+- [Next.js](https://nextjs.org/) - React 프레임워크
+- [Gin](https://gin-gonic.com/) - Go 웹 프레임워크
+
+## 📞 연락처
+
+프로젝트에 대한 질문이나 제안사항이 있으시면 [Issues](https://github.com/your-username/code_racer/issues)를 통해 연락해 주세요.
+
+---
+
+⭐ 이 프로젝트가 도움이 되었다면 Star를 눌러주세요!
