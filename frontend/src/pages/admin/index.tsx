@@ -18,7 +18,7 @@ export default function AdminPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="text-lg">로딩 중...</div>
+        <div className="text-lg">Loading...</div>
       </div>
     );
   }
@@ -29,23 +29,23 @@ export default function AdminPage() {
 
   const adminFeatures = [
     {
-      title: 'LeetCode 문제 관리',
-      description: '새로운 코딩 문제를 추가하고 기존 문제를 수정/삭제합니다.',
+      title: 'LeetCode Problem Management',
+      description: 'Add new coding problems and edit/delete existing ones.',
       href: '/admin/leetcode',
       icon: '📝',
       color: 'bg-blue-500',
     },
-    // 향후 추가될 admin 기능들
+    // Future admin features to be added
     // {
-    //   title: '사용자 관리',
-    //   description: '사용자 권한을 관리하고 계정을 모니터링합니다.',
+    //   title: 'User Management',
+    //   description: 'Manage user permissions and monitor accounts.',
     //   href: '/admin/users',
     //   icon: '👥',
     //   color: 'bg-green-500'
     // },
     // {
-    //   title: '시스템 통계',
-    //   description: '애플리케이션 사용 통계와 성능 지표를 확인합니다.',
+    //   title: 'System Analytics',
+    //   description: 'View application usage statistics and performance metrics.',
     //   href: '/admin/analytics',
     //   icon: '📊',
     //   color: 'bg-purple-500'
@@ -57,15 +57,15 @@ export default function AdminPage() {
       <AdminNav />
 
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* 헤더 */}
+        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Admin Panel</h1>
           <p className="text-lg text-gray-600">
-            시스템 관리 및 모니터링을 위한 관리자 도구입니다.
+            Administrative tools for system management and monitoring.
           </p>
         </div>
 
-        {/* 기능 카드들 */}
+        {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {adminFeatures.map((feature) => (
             <Link
@@ -86,7 +86,7 @@ export default function AdminPage() {
                 </div>
                 <p className="text-gray-600 mb-4">{feature.description}</p>
                 <div className="flex items-center text-blue-600 group-hover:text-blue-700">
-                  <span className="text-sm font-medium">관리하기</span>
+                  <span className="text-sm font-medium">Manage</span>
                   <svg
                     className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform"
                     fill="none"
@@ -106,27 +106,27 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* 사용자 정보 */}
+        {/* User Information */}
         <div className="mt-12 bg-white rounded-lg shadow-md p-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            현재 관리자 정보
+            Current Administrator Information
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                이름
+                Name
               </label>
               <p className="text-lg text-gray-900">{user.name}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                이메일
+                Email
               </label>
               <p className="text-lg text-gray-900">{user.email}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                권한
+                Role
               </label>
               <span className="inline-flex px-2 py-1 text-sm font-semibold rounded-full bg-red-100 text-red-800">
                 {user.role}
@@ -134,23 +134,23 @@ export default function AdminPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                마지막 로그인
+                Last Login
               </label>
               <p className="text-lg text-gray-900">
-                {new Date().toLocaleDateString('ko-KR')}
+                {new Date().toLocaleDateString('en-US')}
               </p>
             </div>
           </div>
 
-          {/* 디버깅 정보 */}
+          {/* Debug Information */}
           <div className="mt-6 p-4 bg-gray-100 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              디버깅 정보
+              Debug Information
             </h3>
             <div className="text-sm text-gray-600 space-y-1">
               <p>
                 Auth Token:{' '}
-                {localStorage.getItem('authToken') ? '✅ 존재' : '❌ 없음'}
+                {localStorage.getItem('authToken') ? '✅ Present' : '❌ Missing'}
               </p>
               <p>
                 Token Length: {localStorage.getItem('authToken')?.length || 0}
@@ -161,7 +161,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* 빠른 액션 */}
+        {/* Quick Actions */}
         <div className="mt-8 text-center">
           <Link
             href="/admin/leetcode/create"
@@ -180,7 +180,7 @@ export default function AdminPage() {
                 d="M12 6v6m0 0v6m0-6h6m-6 0H6"
               />
             </svg>
-            새 LeetCode 문제 추가
+            Add New LeetCode Problem
           </Link>
         </div>
       </div>

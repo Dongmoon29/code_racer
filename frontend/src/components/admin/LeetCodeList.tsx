@@ -26,9 +26,7 @@ export default function LeetCodeList() {
       setProblems(result.data as LeetCodeSummary[]);
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : '문제 목록을 불러오는데 실패했습니다.'
+        err instanceof Error ? err.message : 'Failed to load problem list.'
       );
     } finally {
       setIsLoading(false);
@@ -36,7 +34,7 @@ export default function LeetCodeList() {
   };
 
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`"${title}" 문제를 정말 삭제하시겠습니까?`)) {
+    if (!confirm(`Are you sure you want to delete "${title}" problem?`)) {
       return;
     }
 
@@ -44,7 +42,7 @@ export default function LeetCodeList() {
       await deleteLeetCodeProblem(id);
       setProblems((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
-      alert(err instanceof Error ? err.message : '문제 삭제에 실패했습니다.');
+      alert(err instanceof Error ? err.message : 'Failed to delete problem.');
     }
   };
 
@@ -73,7 +71,7 @@ export default function LeetCodeList() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg text-gray-600">로딩 중...</div>
+        <div className="text-lg text-gray-600">Loading...</div>
       </div>
     );
   }
@@ -86,7 +84,7 @@ export default function LeetCodeList() {
           onClick={loadProblems}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
-          다시 시도
+          Try Again
         </button>
       </div>
     );
@@ -94,23 +92,25 @@ export default function LeetCodeList() {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      {/* 헤더 */}
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">LeetCode 문제 관리</h1>
+        <h1 className="text-3xl font-bold text-gray-800">
+          LeetCode Problem Management
+        </h1>
         <Link
           href="/admin/leetcode/create"
           className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
         >
-          + 새 문제 추가
+          + Add New Problem
         </Link>
       </div>
 
-      {/* 필터 및 검색 */}
+      {/* Filter and Search */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1">
           <input
             type="text"
-            placeholder="문제 제목으로 검색..."
+            placeholder="Search by problem title..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -122,7 +122,7 @@ export default function LeetCodeList() {
             onChange={(e) => setDifficultyFilter(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="all">모든 난이도</option>
+            <option value="all">All Difficulties</option>
             <option value="Easy">Easy</option>
             <option value="Medium">Medium</option>
             <option value="Hard">Hard</option>
@@ -130,26 +130,26 @@ export default function LeetCodeList() {
         </div>
       </div>
 
-      {/* 문제 목록 */}
+      {/* Problem List */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  제목
+                  Title
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  난이도
+                  Difficulty
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  생성일
+                  Created
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  수정일
+                  Updated
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  작업
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -161,8 +161,8 @@ export default function LeetCodeList() {
                     className="px-6 py-4 text-center text-gray-500"
                   >
                     {searchTerm || difficultyFilter !== 'all'
-                      ? '검색 조건에 맞는 문제가 없습니다.'
-                      : '등록된 문제가 없습니다.'}
+                      ? 'No problems match the search criteria.'
+                      : 'No problems registered.'}
                   </td>
                 </tr>
               ) : (
@@ -183,10 +183,10 @@ export default function LeetCodeList() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(problem.createdAt).toLocaleDateString('ko-KR')}
+                      {new Date(problem.createdAt).toLocaleDateString('en-US')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(problem.updatedAt).toLocaleDateString('ko-KR')}
+                      {new Date(problem.updatedAt).toLocaleDateString('en-US')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
@@ -194,7 +194,7 @@ export default function LeetCodeList() {
                           href={`/admin/leetcode/edit/${problem.id}`}
                           className="text-blue-600 hover:text-blue-900"
                         >
-                          수정
+                          Edit
                         </Link>
                         <button
                           onClick={() =>
@@ -202,7 +202,7 @@ export default function LeetCodeList() {
                           }
                           className="text-red-600 hover:text-red-900"
                         >
-                          삭제
+                          Delete
                         </button>
                       </div>
                     </td>
@@ -214,10 +214,12 @@ export default function LeetCodeList() {
         </div>
       </div>
 
-      {/* 통계 */}
+      {/* Statistics */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-sm font-medium text-gray-500">전체 문제</div>
+          <div className="text-sm font-medium text-gray-500">
+            Total Problems
+          </div>
           <div className="text-2xl font-bold text-gray-900">
             {problems.length}
           </div>

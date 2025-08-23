@@ -57,9 +57,7 @@ export default function EditLeetCodePage() {
 
       setProblem(formData);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : '문제를 불러오는데 실패했습니다.'
-      );
+      setError(err instanceof Error ? err.message : 'Failed to load problem.');
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +74,7 @@ export default function EditLeetCodePage() {
   if (authLoading || isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="text-lg">로딩 중...</div>
+        <div className="text-lg">Loading...</div>
       </div>
     );
   }
@@ -94,7 +92,7 @@ export default function EditLeetCodePage() {
             onClick={() => router.push('/admin/leetcode')}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
-            목록으로 돌아가기
+            Back to List
           </button>
         </div>
       </div>
@@ -104,7 +102,7 @@ export default function EditLeetCodePage() {
   if (!problem) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">문제를 찾을 수 없습니다.</div>
+        <div className="text-lg text-gray-600">Problem not found.</div>
       </div>
     );
   }

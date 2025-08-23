@@ -123,7 +123,9 @@ export default function LeetCodeForm({
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">
-        {mode === 'create' ? '새로운 LeetCode 문제 추가' : 'LeetCode 문제 수정'}
+        {mode === 'create'
+          ? 'Add New LeetCode Problem'
+          : 'Edit LeetCode Problem'}
       </h2>
 
       {error && (
@@ -133,11 +135,11 @@ export default function LeetCodeForm({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 기본 정보 */}
+        {/* Basic Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              제목 *
+              Title *
             </label>
             <input
               type="text"
@@ -150,7 +152,7 @@ export default function LeetCodeForm({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              난이도 *
+              Difficulty *
             </label>
             <select
               value={formData.difficulty}
@@ -167,10 +169,10 @@ export default function LeetCodeForm({
           </div>
         </div>
 
-        {/* 설명 */}
+        {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            문제 설명 *
+            Problem Description *
           </label>
           <textarea
             value={formData.description}
@@ -181,10 +183,10 @@ export default function LeetCodeForm({
           />
         </div>
 
-        {/* 예시 */}
+        {/* Examples */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            예시 *
+            Examples *
           </label>
           <textarea
             value={formData.examples}
@@ -196,10 +198,10 @@ export default function LeetCodeForm({
           />
         </div>
 
-        {/* 제약 조건 */}
+        {/* Constraints */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            제약 조건 *
+            Constraints *
           </label>
           <textarea
             value={formData.constraints}
@@ -211,11 +213,11 @@ export default function LeetCodeForm({
           />
         </div>
 
-        {/* 입력/출력 형식 */}
+        {/* Input/Output Format */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              입력 형식 *
+              Input Format *
             </label>
             <input
               type="text"
@@ -229,7 +231,7 @@ export default function LeetCodeForm({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              출력 형식 *
+              Output Format *
             </label>
             <input
               type="text"
@@ -244,10 +246,10 @@ export default function LeetCodeForm({
           </div>
         </div>
 
-        {/* 함수명 */}
+        {/* Function Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            함수명 *
+            Function Name *
           </label>
           <input
             type="text"
@@ -259,18 +261,18 @@ export default function LeetCodeForm({
           />
         </div>
 
-        {/* 테스트 케이스 */}
+        {/* Test Cases */}
         <div>
           <div className="flex justify-between items-center mb-4">
             <label className="block text-sm font-medium text-gray-700">
-              테스트 케이스 *
+              Test Cases *
             </label>
             <button
               type="button"
               onClick={addTestCase}
               className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
             >
-              + 테스트 케이스 추가
+              + Add Test Case
             </button>
           </div>
 
@@ -282,7 +284,7 @@ export default function LeetCodeForm({
               >
                 <div className="flex-1">
                   <label className="block text-xs text-gray-600 mb-1">
-                    입력
+                    Input
                   </label>
                   <input
                     type="text"
@@ -301,7 +303,7 @@ export default function LeetCodeForm({
                 </div>
                 <div className="flex-1">
                   <label className="block text-xs text-gray-600 mb-1">
-                    출력
+                    Output
                   </label>
                   <input
                     type="text"
@@ -320,7 +322,7 @@ export default function LeetCodeForm({
                     onClick={() => removeTestCase(index)}
                     className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
                   >
-                    삭제
+                    Delete
                   </button>
                 )}
               </div>
@@ -328,10 +330,10 @@ export default function LeetCodeForm({
           </div>
         </div>
 
-        {/* 예상 출력 */}
+        {/* Expected Output */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            예상 출력 *
+            Expected Output *
           </label>
           <input
             type="text"
@@ -345,14 +347,14 @@ export default function LeetCodeForm({
           />
         </div>
 
-        {/* 코드 템플릿 */}
+        {/* Code Templates */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-800">코드 템플릿</h3>
+          <h3 className="text-lg font-medium text-gray-800">Code Templates</h3>
 
           {['javascript', 'python', 'go', 'java', 'cpp'].map((lang) => (
             <div key={lang}>
               <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
-                {lang} 템플릿 *
+                {lang} Template *
               </label>
               <textarea
                 value={
@@ -368,18 +370,18 @@ export default function LeetCodeForm({
                 }
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                placeholder={`${lang} 코드 템플릿을 입력하세요`}
+                placeholder={`Enter ${lang} code template`}
                 required
               />
             </div>
           ))}
         </div>
 
-        {/* 제한 사항 */}
+        {/* Limits */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              시간 제한 (ms)
+              Time Limit (ms)
             </label>
             <input
               type="number"
@@ -395,7 +397,7 @@ export default function LeetCodeForm({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              메모리 제한 (MB)
+              Memory Limit (MB)
             </label>
             <input
               type="number"
@@ -410,14 +412,14 @@ export default function LeetCodeForm({
           </div>
         </div>
 
-        {/* 버튼 */}
+        {/* Buttons */}
         <div className="flex justify-end space-x-4 pt-6 border-t">
           <button
             type="button"
             onClick={onCancel}
             className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
           >
-            취소
+            Cancel
           </button>
           <button
             type="submit"
@@ -425,10 +427,10 @@ export default function LeetCodeForm({
             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting
-              ? '처리 중...'
+              ? 'Processing...'
               : mode === 'create'
-              ? '문제 추가'
-              : '문제 수정'}
+              ? 'Add Problem'
+              : 'Update Problem'}
           </button>
         </div>
       </form>

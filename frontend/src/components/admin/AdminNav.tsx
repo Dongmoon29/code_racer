@@ -8,19 +8,19 @@ export default function AdminNav() {
   const navItems = [
     {
       href: '/admin/leetcode',
-      label: 'LeetCode 문제 관리',
-      description: '문제 추가, 수정, 삭제',
+      label: 'LeetCode Problems',
+      description: 'Add, edit, delete problems',
     },
-    // 향후 다른 admin 기능들을 여기에 추가할 수 있습니다
+    // Additional admin features can be added here in the future
     // {
     //   href: '/admin/users',
-    //   label: '사용자 관리',
-    //   description: '사용자 권한 관리'
+    //   label: 'User Management',
+    //   description: 'Manage user permissions'
     // },
     // {
     //   href: '/admin/analytics',
-    //   label: '통계 및 분석',
-    //   description: '시스템 사용 통계'
+    //   label: 'Analytics',
+    //   description: 'System usage statistics'
     // }
   ];
 
@@ -58,7 +58,7 @@ export default function AdminNav() {
               href="/dashboard"
               className="text-gray-500 hover:text-gray-700 text-sm font-medium"
             >
-              대시보드로 돌아가기
+              Back to Dashboard
             </Link>
           </div>
         </div>
