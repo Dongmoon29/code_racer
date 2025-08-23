@@ -22,7 +22,7 @@ type User struct {
 	ProfileImage  string    `gorm:"type:varchar(255)" json:"profile_image"`
 	Role          Role      `gorm:"type:varchar(20);default:'user'" json:"role"`
 	OAuthProvider string    `gorm:"type:varchar(20)" json:"oauth_provider,omitempty"`
-	OAuthID       string    `gorm:"type:varchar(255)" json:"oauth_id,omitempty"` // OAuth 제공자의 고유 ID
+	OAuthID       string    `gorm:"type:varchar(255)" json:"oauth_id,omitempty"`
 	Homepage      string    `gorm:"type:varchar(255)" json:"homepage"`
 	LinkedIn      string    `gorm:"type:varchar(255)" json:"linkedin"`
 	GitHub        string    `gorm:"type:varchar(255)" json:"github"`
@@ -76,26 +76,22 @@ func (u *User) ToResponse() *UserResponse {
 	}
 }
 
-// RegisterRequest 회원가입 요청 DTO
 type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
 	Name     string `json:"name" binding:"required,min=2,max=100"`
 }
 
-// LoginRequest 로그인 요청 DTO
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
-// LoginResponse 로그인 응답 DTO
 type LoginResponse struct {
 	User        *UserResponse `json:"user"`
 	AccessToken string        `json:"access_token"`
 }
 
-// 프로필 업데이트를 위한 요청 구조체
 type UpdateProfileRequest struct {
 	Homepage    string `json:"homepage" binding:"omitempty,url"`
 	LinkedIn    string `json:"linkedin" binding:"omitempty,url"`
@@ -105,7 +101,6 @@ type UpdateProfileRequest struct {
 	FavLanguage string `json:"fav_language" binding:"omitempty,oneof=javascript python go java cpp rust"`
 }
 
-// GitHubUser GitHub 사용자 정보
 type GitHubUser struct {
 	ID        string
 	Email     string
