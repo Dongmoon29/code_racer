@@ -31,7 +31,7 @@ CodeRacer is a real-time coding competition platform where you can improve your 
 
 ### Backend
 
-- Go 1.20
+- Go 1.25
 - Gin Web Framework
 - GORM
 - PostgreSQL
@@ -122,14 +122,17 @@ npm run dev
 ## 📖 Documentation
 
 ### Development Guides
+
 - **Backend Development**: [Korean](backend/DEVELOPMENT.md) | [English](backend/DEVELOPMENT.en.md)
 - **Frontend Development**: [Korean](frontend/DEVELOPMENT.md) | [English](frontend/DEVELOPMENT.en.md)
 
 ### API Documentation
+
 - **REST API**: [Korean](backend/API.md) | [English](backend/API.en.md)
 - **WebSocket Setup**: [Korean](backend/WEBSOCKET_SETUP.md) | [English](backend/WEBSOCKET_SETUP.en.md)
 
 ### Deployment Guide
+
 - **GCP Deployment**: [deployment/README.md](deployment/README.md)
 
 ## Project Structure

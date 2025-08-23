@@ -1,6 +1,6 @@
 module github.com/Dongmoon29/code_racer
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/gin-contrib/cors v1.4.0
@@ -13,7 +13,7 @@ require (
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.37.0
-	golang.org/x/sys v0.32.0 // indirect; Go 1.22와 호환되는 버전으로 다운그레이드
+	golang.org/x/sys v0.32.0
 	gorm.io/driver/postgres v1.5.2
 	gorm.io/gorm v1.25.1
 )
