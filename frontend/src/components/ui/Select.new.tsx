@@ -139,7 +139,6 @@ export const SelectWithArrow: React.FC<SelectProps> = (props) => {
 export const MultiSelect: React.FC<MultiSelectProps> = ({
   value,
   onChange,
-  options,
   placeholder,
   disabled = false,
   maxTags = 10,
