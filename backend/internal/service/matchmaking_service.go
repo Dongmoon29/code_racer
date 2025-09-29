@@ -1,16 +1,20 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
+	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 )
 
 // MatchmakingService handles player matching and game creation
 type MatchmakingService interface {
-	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string) error
+	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string) (interface{}, error)
 	SetWebSocketService(wsService WebSocketService)
 }
 
@@ -37,7 +41,7 @@ func NewMatchmakingService(
 }
 
 // CreateMatch handles the complete match creation flow
-func (s *matchmakingService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string) error {
+func (s *matchmakingService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string) (interface{}, error) {
 	s.logger.Info().
 		Str("player1ID", player1ID.String()).
 		Str("player2ID", player2ID.String()).
@@ -48,14 +52,8 @@ func (s *matchmakingService) CreateMatch(player1ID, player2ID uuid.UUID, difficu
 	game, err := s.gameService.CreateGameForMatch(player1ID, player2ID, difficulty)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to create game for match")
-		return s.notifyMatchError(player1ID, player2ID, "Failed to create game")
-	}
-
-	// 2. Notify both players about successful match
-	if err := s.notifyMatchSuccess(player1ID, player2ID, game); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to notify players about match")
-		// Game is created but notification failed - could be handled differently
-		return err
+		s.notifyMatchError(player1ID, player2ID, "Failed to create game")
+		return nil, err
 	}
 
 	s.logger.Info().
@@ -64,17 +62,69 @@ func (s *matchmakingService) CreateMatch(player1ID, player2ID uuid.UUID, difficu
 		Str("player2ID", player2ID.String()).
 		Msg("Match created successfully")
 
-	return nil
+	return game, nil
 }
 
 // notifyMatchSuccess sends match found notifications to both players
 func (s *matchmakingService) notifyMatchSuccess(player1ID, player2ID uuid.UUID, game interface{}) error {
-	// TODO: Implement proper notification system
-	// For now, just log the successful match
+	// Type assertion to get the actual game
+	actualGame, ok := game.(*model.Game)
+	if !ok {
+		s.logger.Error().Msg("Failed to cast game to *model.Game")
+		return fmt.Errorf("invalid game type")
+	}
+
+	// Create match found messages for both players
+	matchMsg1 := MatchFoundMessage{
+		Type:   "match_found",
+		GameID: actualGame.ID.String(),
+		Problem: map[string]interface{}{
+			"id":          actualGame.LeetCode.ID.String(),
+			"title":       actualGame.LeetCode.Title,
+			"difficulty":  actualGame.LeetCode.Difficulty,
+			"description": actualGame.LeetCode.Description,
+		},
+		Opponent: map[string]interface{}{
+			"id":   player2ID.String(),
+			"name": "Player 2", // TODO: Get actual user name
+		},
+	}
+
+	matchMsg2 := MatchFoundMessage{
+		Type:   "match_found",
+		GameID: actualGame.ID.String(),
+		Problem: map[string]interface{}{
+			"id":          actualGame.LeetCode.ID.String(),
+			"title":       actualGame.LeetCode.Title,
+			"difficulty":  actualGame.LeetCode.Difficulty,
+			"description": actualGame.LeetCode.Description,
+		},
+		Opponent: map[string]interface{}{
+			"id":   player1ID.String(),
+			"name": "Player 1", // TODO: Get actual user name
+		},
+	}
+
+	// For now, we'll handle notification through a different mechanism
+	// The WebSocket Hub should handle the client notification directly
+	// Store match result for clients to check
+	ctx := context.Background()
+	matchKey1 := fmt.Sprintf("match_result:%s", player1ID.String())
+	matchKey2 := fmt.Sprintf("match_result:%s", player2ID.String())
+
+	if msgBytes1, err := json.Marshal(matchMsg1); err == nil {
+		s.rdb.Set(ctx, matchKey1, string(msgBytes1), 5*time.Minute)
+	}
+
+	if msgBytes2, err := json.Marshal(matchMsg2); err == nil {
+		s.rdb.Set(ctx, matchKey2, string(msgBytes2), 5*time.Minute)
+	}
+
 	s.logger.Info().
+		Str("gameID", actualGame.ID.String()).
 		Str("player1ID", player1ID.String()).
 		Str("player2ID", player2ID.String()).
-		Msg("Match created successfully - notifications to be implemented")
+		Msg("Match notifications sent successfully")
 
 	return nil
 }

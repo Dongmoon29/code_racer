@@ -89,6 +89,31 @@ func (m *MockGameService) GetLeetCode(id uuid.UUID) (*model.LeetCodeDetail, erro
 	return args.Get(0).(*model.LeetCodeDetail), args.Error(1)
 }
 
+// Matchmaking methods
+func (m *MockGameService) CreateGameForMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Game, error) {
+	args := m.Called(player1ID, player2ID, difficulty)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.Game), args.Error(1)
+}
+
+func (m *MockGameService) GetRandomLeetCodeByDifficulty(difficulty string) (*model.LeetCode, error) {
+	args := m.Called(difficulty)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.LeetCode), args.Error(1)
+}
+
+func (m *MockGameService) CreateGameFromMatch(matchID string, userID uuid.UUID) (*model.GameResponse, error) {
+	args := m.Called(matchID, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.GameResponse), args.Error(1)
+}
+
 func setupGameTest() (*gin.Engine, *MockGameService, *GameController) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

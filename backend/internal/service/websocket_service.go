@@ -259,6 +259,8 @@ func (h *Hub) cleanupDeadClient(client *Client) {
 
 // handleStartMatching processes a matching request
 func (h *Hub) handleStartMatching(req *MatchingRequest) {
+	fmt.Printf("🔍 handleStartMatching called for user: %s, difficulty: %s\n", req.Client.userID.String(), req.Difficulty)
+
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -272,10 +274,12 @@ func (h *Hub) handleStartMatching(req *MatchingRequest) {
 
 	// Add to matching queue
 	h.matchingClients[difficulty] = append(h.matchingClients[difficulty], client)
+	fmt.Printf("🔍 Added to queue. Current queue size for %s: %d\n", difficulty, len(h.matchingClients[difficulty]))
 
 	// Send queue status to client
 	queuePos := len(h.matchingClients[difficulty])
 	h.sendMatchingStatus(client, "searching", queuePos, 0)
+	fmt.Printf("🔍 Sent matching status to client\n")
 
 	// Try to find a match immediately
 	h.tryMatchmaking(difficulty)
@@ -366,15 +370,129 @@ func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
 	player1.isMatching = false
 	player2.isMatching = false
 
-	// Delegate to matchmaking service
-	if err := h.matchmakingService.CreateMatch(player1.userID, player2.userID, difficulty); err != nil {
+	// Create the actual game
+	game, err := h.matchmakingService.CreateMatch(player1.userID, player2.userID, difficulty)
+	if err != nil {
+		// Send error to both players
+		errorMsg := map[string]interface{}{
+			"type":    "match_error",
+			"message": "Failed to create game. Please try again.",
+		}
+
+		if msgBytes, err := json.Marshal(errorMsg); err == nil {
+			select {
+			case player1.send <- msgBytes:
+			default:
+			}
+			select {
+			case player2.send <- msgBytes:
+			default:
+			}
+		}
+
 		// Return players to matching queue on error
 		h.mu.Lock()
 		h.matchingClients[difficulty] = append([]*Client{player1, player2}, h.matchingClients[difficulty]...)
 		player1.isMatching = true
 		player2.isMatching = true
 		h.mu.Unlock()
+		return
 	}
+
+	// Send match found notifications directly to clients
+	h.sendMatchFoundNotifications(player1, player2, game)
+}
+
+// sendMatchFoundNotifications sends match found messages to both players
+func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, game interface{}) {
+	// Type assertion to get the actual game
+	actualGame, ok := game.(*model.Game)
+	if !ok {
+		// Send simple notification without game details
+		simpleMsg := map[string]interface{}{
+			"type":    "match_found",
+			"message": "Match found! Redirecting to game...",
+		}
+
+		if msgBytes, err := json.Marshal(simpleMsg); err == nil {
+			select {
+			case player1.send <- msgBytes:
+			default:
+			}
+			select {
+			case player2.send <- msgBytes:
+			default:
+			}
+		}
+		return
+	}
+
+	// Create detailed match found messages
+	matchMsg1 := MatchFoundMessage{
+		Type:   "match_found",
+		GameID: actualGame.ID.String(),
+		Problem: map[string]interface{}{
+			"id":          actualGame.LeetCode.ID.String(),
+			"title":       actualGame.LeetCode.Title,
+			"difficulty":  actualGame.LeetCode.Difficulty,
+			"description": actualGame.LeetCode.Description,
+		},
+		Opponent: map[string]interface{}{
+			"id":   player2.userID.String(),
+			"name": "Player 2", // TODO: Get actual user name
+		},
+	}
+
+	matchMsg2 := MatchFoundMessage{
+		Type:   "match_found",
+		GameID: actualGame.ID.String(),
+		Problem: map[string]interface{}{
+			"id":          actualGame.LeetCode.ID.String(),
+			"title":       actualGame.LeetCode.Title,
+			"difficulty":  actualGame.LeetCode.Difficulty,
+			"description": actualGame.LeetCode.Description,
+		},
+		Opponent: map[string]interface{}{
+			"id":   player1.userID.String(),
+			"name": "Player 1", // TODO: Get actual user name
+		},
+	}
+
+	// Send to both players
+	if msgBytes1, err := json.Marshal(matchMsg1); err == nil {
+		select {
+		case player1.send <- msgBytes1:
+			// Log successful message send
+			fmt.Printf("✅ Match found message sent to player1: %s\n", string(msgBytes1))
+		default:
+			fmt.Printf("❌ Failed to send match found message to player1 (channel blocked)\n")
+		}
+	} else {
+		fmt.Printf("❌ Failed to marshal match message for player1: %v\n", err)
+	}
+
+	if msgBytes2, err := json.Marshal(matchMsg2); err == nil {
+		select {
+		case player2.send <- msgBytes2:
+			fmt.Printf("✅ Match found message sent to player2: %s\n", string(msgBytes2))
+		default:
+			fmt.Printf("❌ Failed to send match found message to player2 (channel blocked)\n")
+		}
+	} else {
+		fmt.Printf("❌ Failed to marshal match message for player2: %v\n", err)
+	}
+
+	// Update client gameIDs for future communication
+	player1.gameID = actualGame.ID
+	player2.gameID = actualGame.ID
+
+	// Add both players to the game clients map
+	h.mu.Lock()
+	gameIDStr := actualGame.ID.String()
+	h.gameClients[gameIDStr] = make(map[*Client]bool)
+	h.gameClients[gameIDStr][player1] = true
+	h.gameClients[gameIDStr][player2] = true
+	h.mu.Unlock()
 }
 
 // broadcastToAllClients sends a message to all connected clients
@@ -637,17 +755,24 @@ func (c *Client) readPump(wsService *webSocketService) {
 
 		case "start_matching":
 			// Handle start matching request
-			if data, ok := msg["data"].(map[string]interface{}); ok {
-				if difficulty, ok := data["difficulty"].(string); ok {
-					// Validate difficulty
-					if difficulty == "Easy" || difficulty == "Medium" || difficulty == "Hard" {
-						matchReq := &MatchingRequest{
-							Client:     c,
-							Difficulty: difficulty,
-						}
-						c.hub.startMatching <- matchReq
+			fmt.Printf("🎯 Received start_matching message: %+v\n", msg)
+			// Frontend sends difficulty directly in the message, not nested in data
+			if difficulty, ok := msg["difficulty"].(string); ok {
+				fmt.Printf("🎯 Extracted difficulty: %s\n", difficulty)
+				// Validate difficulty
+				if difficulty == "Easy" || difficulty == "Medium" || difficulty == "Hard" {
+					fmt.Printf("🎯 Creating match request for user: %s\n", c.userID.String())
+					matchReq := &MatchingRequest{
+						Client:     c,
+						Difficulty: difficulty,
 					}
+					c.hub.startMatching <- matchReq
+					fmt.Printf("🎯 Match request sent to hub\n")
+				} else {
+					fmt.Printf("❌ Invalid difficulty: %s\n", difficulty)
 				}
+			} else {
+				fmt.Printf("❌ Failed to extract difficulty from message: %+v\n", msg)
 			}
 
 		case "cancel_matching":

@@ -98,7 +98,9 @@ export class MatchmakingWebSocketClient {
 
         this.ws.onmessage = (event) => {
           try {
+            console.log('📨 Received WebSocket message:', event.data);
             const message = JSON.parse(event.data) as MatchingWebSocketMessage;
+            console.log('📨 Parsed message:', message);
             this.handleMessage(message);
           } catch (error) {
             console.error('Failed to parse matchmaking message:', error);
@@ -134,11 +136,14 @@ export class MatchmakingWebSocketClient {
   }
 
   private handleMessage(message: MatchingWebSocketMessage) {
+    console.log('🎯 Handling message type:', message.type);
     switch (message.type) {
       case 'matching_status':
+        console.log('📊 Matching status update:', message);
         this.callbacks.onStatusUpdate?.(message);
         break;
       case 'match_found':
+        console.log('🎉 Match found!:', message);
         this.callbacks.onMatchFound?.(message);
         break;
       default:
@@ -172,8 +177,12 @@ export class MatchmakingWebSocketClient {
       difficulty,
     };
 
+    console.log('🚀 Sending start_matching message:', message);
     this.ws.send(JSON.stringify(message));
-    console.log('Started matching with difficulty:', difficulty);
+    console.log(
+      '✅ Message sent successfully. Started matching with difficulty:',
+      difficulty
+    );
   }
 
   cancelMatching() {
