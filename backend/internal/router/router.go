@@ -69,13 +69,8 @@ func Setup(
 		{
 			game := secured.Group("/games")
 			{
-				// game
-				game.GET("", gameController.ListGames)
-				game.POST("", gameController.CreateGame)
 				game.GET("/:id", gameController.GetGame)
-				game.POST("/:id/join", gameController.JoinGame)
 				game.POST("/:id/submit", gameController.SubmitSolution)
-				game.POST("/:id/close", gameController.CloseGame)
 			}
 
 			// users
@@ -106,6 +101,7 @@ func Setup(
 	}
 
 	// web socket
+	router.GET("/ws/matching", authMiddleware.WebSocketAuthRequired(), wsController.HandleMatchmaking)
 	router.GET("/ws/:gameId", authMiddleware.WebSocketAuthRequired(), wsController.HandleWebSocket)
 
 	return router

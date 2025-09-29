@@ -18,19 +18,24 @@ import (
 
 // GameService 게임 관련 기능을 제공하는 인터페이스
 type GameService interface {
-	CreateGame(userID uuid.UUID, req *model.CreateGameRequest) (*model.GameResponse, error)
+	// Game management (active games only)
 	GetGame(gameID uuid.UUID) (*model.GameResponse, error)
-	ListGames() ([]*model.GameListResponse, error)
-	ListLeetCodes() ([]*model.LeetCodeSummary, error)
-	JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.GameResponse, error)
 	SubmitSolution(gameID uuid.UUID, userID uuid.UUID, req *model.SubmitSolutionRequest) (*model.SubmitSolutionResponse, error)
 	UpdateCode(gameID uuid.UUID, userID uuid.UUID, code string) error
 	GetPlayerCode(gameID uuid.UUID, userID uuid.UUID) (string, error)
-	CloseGame(gameID uuid.UUID, userID uuid.UUID) error
+
+	// LeetCode management
+	ListLeetCodes() ([]*model.LeetCodeSummary, error)
 	CreateLeetCode(req *model.CreateLeetCodeRequest) (*model.LeetCodeDetail, error)
 	UpdateLeetCode(id uuid.UUID, req *model.UpdateLeetCodeRequest) (*model.LeetCodeDetail, error)
 	DeleteLeetCode(id uuid.UUID) error
 	GetLeetCode(id uuid.UUID) (*model.LeetCodeDetail, error)
+
+	// REMOVED: Room-based APIs (replaced by WebSocket matching)
+	// CreateGame(userID uuid.UUID, req *model.CreateGameRequest) (*model.GameResponse, error)
+	// ListGames() ([]*model.GameListResponse, error)
+	// JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.GameResponse, error)
+	// CloseGame(gameID uuid.UUID, userID uuid.UUID) error
 }
 
 // gameService GameService 인터페이스 구현체

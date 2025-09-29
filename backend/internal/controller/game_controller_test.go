@@ -21,40 +21,9 @@ type MockGameService struct {
 	mock.Mock
 }
 
-func (m *MockGameService) CreateGame(userID uuid.UUID, req *model.CreateGameRequest) (*model.GameResponse, error) {
-	args := m.Called(userID, req)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*model.GameResponse), args.Error(1)
-}
-
+// Game management (active games only)
 func (m *MockGameService) GetGame(gameID uuid.UUID) (*model.GameResponse, error) {
 	args := m.Called(gameID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*model.GameResponse), args.Error(1)
-}
-
-func (m *MockGameService) ListGames() ([]*model.GameListResponse, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]*model.GameListResponse), args.Error(1)
-}
-
-func (m *MockGameService) ListLeetCodes() ([]*model.LeetCodeSummary, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]*model.LeetCodeSummary), args.Error(1)
-}
-
-func (m *MockGameService) JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.GameResponse, error) {
-	args := m.Called(gameID, userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -79,10 +48,17 @@ func (m *MockGameService) GetPlayerCode(gameID uuid.UUID, userID uuid.UUID) (str
 	return args.String(0), args.Error(1)
 }
 
-func (m *MockGameService) CloseGame(gameID uuid.UUID, userID uuid.UUID) error {
-	args := m.Called(gameID, userID)
-	return args.Error(0)
+// LeetCode management
+func (m *MockGameService) ListLeetCodes() ([]*model.LeetCodeSummary, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*model.LeetCodeSummary), args.Error(1)
 }
+
+// REMOVED: Room-based API mocks (replaced by WebSocket matching)
+// CreateGame, ListGames, JoinGame, CloseGame - no longer part of interface
 
 func (m *MockGameService) CreateLeetCode(req *model.CreateLeetCodeRequest) (*model.LeetCodeDetail, error) {
 	args := m.Called(req)
@@ -131,81 +107,22 @@ func setupGameTest() (*gin.Engine, *MockGameService, *GameController) {
 
 	games := r.Group("/api/games")
 	{
-		games.POST("", gameController.CreateGame)
-		games.GET("", gameController.ListGames)
-		games.GET("/:id", gameController.GetGame)
-		games.POST("/:id/join", gameController.JoinGame)
-		games.POST("/:id/submit", gameController.SubmitSolution)
-		games.POST("/:id/close", gameController.CloseGame)
+		// Only keep APIs needed for active games
+		games.GET("/:id", gameController.GetGame)                // Get game info during play
+		games.POST("/:id/submit", gameController.SubmitSolution) // Submit code solution
+
+		// REMOVED: Room-based APIs (replaced by WebSocket matching)
+		// games.POST("", gameController.CreateGame)     // Replaced by auto-matching
+		// games.GET("", gameController.ListGames)       // No longer needed
+		// games.POST("/:id/join", gameController.JoinGame) // Replaced by auto-matching
+		// games.POST("/:id/close", gameController.CloseGame) // No room concept
 	}
 
 	return r, mockService, gameController
 }
 
-func TestCreateGame(t *testing.T) {
-	t.Run("successful_create_game", func(t *testing.T) {
-		r, mockService, _ := setupGameTest()
-
-		userID := uuid.New()
-		leetCodeID := uuid.New()
-		req := &model.CreateGameRequest{
-			LeetCodeID: leetCodeID,
-		}
-
-		expectedGame := &model.GameResponse{
-			ID: uuid.New(),
-			Creator: &model.UserResponse{
-				ID: userID,
-			},
-			Status: model.GameStatusWaiting,
-		}
-
-		mockService.On("CreateGame", mock.AnythingOfType("uuid.UUID"), req).Return(expectedGame, nil)
-
-		reqBody, _ := json.Marshal(req)
-		w := httptest.NewRecorder()
-		request := httptest.NewRequest("POST", "/api/games", bytes.NewBuffer(reqBody))
-		request.Header.Set("Content-Type", "application/json")
-
-		r.ServeHTTP(w, request)
-
-		assert.Equal(t, http.StatusCreated, w.Code)
-
-		var response map[string]interface{}
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.True(t, response["success"].(bool))
-		assert.NotNil(t, response["game"])
-
-		mockService.AssertExpectations(t)
-	})
-
-	t.Run("unauthorized_create_game", func(t *testing.T) {
-		// 인증되지 않은 요청을 테스트하기 위해 새로운 라우터 설정
-		gin.SetMode(gin.TestMode)
-		r := gin.New()
-		mockService := new(MockGameService)
-		log := zerolog.New(zerolog.NewTestWriter(nil)).With().Timestamp().Logger()
-		testLogger := logger.NewZerologLogger(log)
-		gameController := NewGameController(mockService, testLogger)
-
-		games := r.Group("/api/games")
-		games.POST("", gameController.CreateGame)
-
-		req := &model.CreateGameRequest{
-			LeetCodeID: uuid.New(),
-		}
-
-		reqBody, _ := json.Marshal(req)
-		w := httptest.NewRecorder()
-		request := httptest.NewRequest("POST", "/api/games", bytes.NewBuffer(reqBody))
-		request.Header.Set("Content-Type", "application/json")
-
-		r.ServeHTTP(w, request)
-
-		assert.Equal(t, http.StatusUnauthorized, w.Code)
-	})
-}
+// REMOVED: TestCreateGame - replaced by automatic matching system
+// Room creation is no longer supported; games are created automatically via WebSocket matching
 
 func TestGetGame(t *testing.T) {
 	t.Run("successful_get_game", func(t *testing.T) {
@@ -236,73 +153,8 @@ func TestGetGame(t *testing.T) {
 	})
 }
 
-func TestJoinGame(t *testing.T) {
-	t.Run("successful_join_game", func(t *testing.T) {
-		r := gin.New() // 새로운 라우터 생성
-		mockService := new(MockGameService)
-		log := zerolog.New(zerolog.NewTestWriter(nil)).With().Timestamp().Logger()
-		testLogger := logger.NewZerologLogger(log)
-		gameController := NewGameController(mockService, testLogger)
-
-		userID := uuid.New()
-		gameID := uuid.New()
-		expectedGame := &model.GameResponse{
-			ID: gameID,
-			Opponent: &model.UserResponse{
-				ID: userID,
-			},
-			Status: model.GameStatusPlaying,
-		}
-
-		// 미들웨어 설정
-		r.Use(func(c *gin.Context) {
-			c.Set("userID", userID) // 테스트에서 사용할 특정 userID 설정
-			c.Next()
-		})
-
-		// 라우트 설정
-		games := r.Group("/api/games")
-		games.POST("/:id/join", gameController.JoinGame)
-
-		mockService.On("JoinGame", gameID, userID).Return(expectedGame, nil)
-
-		w := httptest.NewRecorder()
-		request := httptest.NewRequest("POST", "/api/games/"+gameID.String()+"/join", nil)
-
-		r.ServeHTTP(w, request)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		var response map[string]interface{}
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.True(t, response["success"].(bool))
-		assert.NotNil(t, response["game"])
-
-		mockService.AssertExpectations(t)
-	})
-
-	t.Run("unauthorized_join_game", func(t *testing.T) {
-		r := gin.New()
-		mockService := new(MockGameService)
-		log := zerolog.New(zerolog.NewTestWriter(nil)).With().Timestamp().Logger()
-		testLogger := logger.NewZerologLogger(log)
-		gameController := NewGameController(mockService, testLogger)
-
-		gameID := uuid.New()
-
-		// 라우트 설정 (미들웨어 없이)
-		games := r.Group("/api/games")
-		games.POST("/:id/join", gameController.JoinGame)
-
-		w := httptest.NewRecorder()
-		request := httptest.NewRequest("POST", "/api/games/"+gameID.String()+"/join", nil)
-
-		r.ServeHTTP(w, request)
-
-		assert.Equal(t, http.StatusUnauthorized, w.Code)
-	})
-}
+// REMOVED: TestJoinGame - replaced by automatic matching system
+// Players are automatically matched via WebSocket; no manual room joining required
 
 func TestSubmitSolution(t *testing.T) {
 	t.Run("successful_submit_solution", func(t *testing.T) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import Layout from '../components/layout/Layout';
-import RoomList from '@/components/game/RoomList';
+// REMOVED: RoomList - replaced by automatic matching system
 import { GetServerSideProps } from 'next';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
@@ -27,9 +27,22 @@ const DashboardPage: React.FC = () => {
   return (
     <Layout
       title="Dashboard | Code Racer"
-      description="Find or create coding challenge rooms"
+      description="Find opponents and start coding challenges"
     >
-      <RoomList />
+      <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-[hsl(var(--foreground))] mb-4">
+            Welcome to Code Racer
+          </h1>
+          <p className="text-[hsl(var(--muted-foreground))] mb-8">
+            Automatic matching system coming soon!
+          </p>
+          <div className="text-sm text-[hsl(var(--muted-foreground))]">
+            The new matching system will automatically pair you with opponents
+            based on difficulty.
+          </div>
+        </div>
+      </div>
     </Layout>
   );
 };

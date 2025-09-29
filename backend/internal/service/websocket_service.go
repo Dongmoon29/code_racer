@@ -34,6 +34,9 @@ type Hub struct {
 	// Map of clients by game ID
 	gameClients map[string]map[*Client]bool
 
+	// NEW: Matchmaking clients by difficulty
+	matchingClients map[string][]*Client
+
 	// Channel for client registration
 	register chan *Client
 
@@ -45,6 +48,10 @@ type Hub struct {
 
 	// Channel for game-specific broadcast messages
 	gameBroadcast chan *GameMessage
+
+	// NEW: Matchmaking channels
+	startMatching  chan *MatchingRequest
+	cancelMatching chan *CancelRequest
 
 	// Mutex lock
 	mu sync.RWMutex
@@ -66,6 +73,11 @@ type Client struct {
 
 	// Game ID
 	gameID uuid.UUID
+
+	// NEW: Matching state
+	isMatching   bool
+	difficulty   string
+	matchStarted time.Time
 }
 
 // Message represents a broadcast message
@@ -91,6 +103,37 @@ type CodeUpdateMessage struct {
 	Code   string `json:"code"`
 }
 
+// NEW: Matchmaking message types
+type MatchingRequest struct {
+	Client     *Client `json:"-"`
+	Difficulty string  `json:"difficulty"`
+}
+
+type CancelRequest struct {
+	Client *Client `json:"-"`
+}
+
+type MatchingStatusMessage struct {
+	Type          string `json:"type"`
+	Status        string `json:"status"`
+	QueuePos      int    `json:"queue_position,omitempty"`
+	WaitTime      int    `json:"wait_time_seconds,omitempty"`
+	EstimatedWait int    `json:"estimated_wait_seconds,omitempty"`
+}
+
+type MatchFoundMessage struct {
+	Type     string      `json:"type"`
+	GameID   string      `json:"game_id"`
+	Problem  interface{} `json:"problem"`
+	Opponent interface{} `json:"opponent"`
+}
+
+// GameServiceInterface for game creation during matching
+type GameServiceInterface interface {
+	CreateGameForMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Game, error)
+	GetRandomLeetCodeByDifficulty(difficulty string) (*model.LeetCode, error)
+}
+
 // WebSocketService interface for WebSocket operations
 type WebSocketService interface {
 	InitHub() *Hub
@@ -103,6 +146,7 @@ type webSocketService struct {
 	rdb    *redis.Client
 	logger logger.Logger
 	hub    *Hub
+	// TODO: Add gameService GameServiceInterface when needed
 }
 
 // NewWebSocketService creates a new WebSocketService instance
@@ -116,14 +160,311 @@ func NewWebSocketService(rdb *redis.Client, logger logger.Logger) WebSocketServi
 // InitHub initializes the WebSocket hub
 func (s *webSocketService) InitHub() *Hub {
 	s.hub = &Hub{
-		clients:       make(map[*Client]bool),
-		gameClients:   make(map[string]map[*Client]bool),
-		register:      make(chan *Client),
-		unregister:    make(chan *Client),
-		broadcast:     make(chan *Message),
-		gameBroadcast: make(chan *GameMessage),
+		clients:         make(map[*Client]bool),
+		gameClients:     make(map[string]map[*Client]bool),
+		matchingClients: make(map[string][]*Client),
+		register:        make(chan *Client),
+		unregister:      make(chan *Client),
+		broadcast:       make(chan *Message),
+		gameBroadcast:   make(chan *GameMessage),
+		startMatching:   make(chan *MatchingRequest),
+		cancelMatching:  make(chan *CancelRequest),
 	}
 	return s.hub
+}
+
+// registerClient adds a new client to the hub
+func (h *Hub) registerClient(client *Client) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	// Add client to global clients map
+	h.clients[client] = true
+
+	// Add client to game-specific map
+	h.addClientToGame(client)
+}
+
+// unregisterClient removes a client from the hub
+func (h *Hub) unregisterClient(client *Client) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	// Check if client exists in global map
+	if _, exists := h.clients[client]; !exists {
+		return
+	}
+
+	// Remove from global clients map
+	delete(h.clients, client)
+	close(client.send)
+
+	// Remove from game-specific map
+	h.removeClientFromGame(client)
+}
+
+// addClientToGame adds a client to the game-specific client map
+func (h *Hub) addClientToGame(client *Client) {
+	gameID := client.gameID.String()
+
+	// Initialize game client map if it doesn't exist
+	if _, exists := h.gameClients[gameID]; !exists {
+		h.gameClients[gameID] = make(map[*Client]bool)
+	}
+
+	// Add client to the game
+	h.gameClients[gameID][client] = true
+}
+
+// removeClientFromGame removes a client from the game-specific client map
+func (h *Hub) removeClientFromGame(client *Client) {
+	gameID := client.gameID.String()
+
+	// Check if game exists
+	gameClients, exists := h.gameClients[gameID]
+	if !exists {
+		return
+	}
+
+	// Remove client from game
+	delete(gameClients, client)
+
+	// Clean up empty game map
+	if len(gameClients) == 0 {
+		delete(h.gameClients, gameID)
+	}
+}
+
+// cleanupDeadClient safely removes a dead client while handling lock transitions
+func (h *Hub) cleanupDeadClient(client *Client) {
+	// Remove from global clients map
+	delete(h.clients, client)
+	close(client.send)
+
+	// Remove from game-specific map
+	h.removeClientFromGame(client)
+
+	// Remove from matching queue if applicable
+	if client.isMatching {
+		h.removeFromMatchingQueue(client)
+	}
+}
+
+// handleStartMatching processes a matching request
+func (h *Hub) handleStartMatching(req *MatchingRequest) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	client := req.Client
+	difficulty := req.Difficulty
+
+	// Update client matching state
+	client.isMatching = true
+	client.difficulty = difficulty
+	client.matchStarted = time.Now()
+
+	// Add to matching queue
+	h.matchingClients[difficulty] = append(h.matchingClients[difficulty], client)
+
+	// Send queue status to client
+	queuePos := len(h.matchingClients[difficulty])
+	h.sendMatchingStatus(client, "searching", queuePos, 0)
+
+	// Try to find a match immediately
+	h.tryMatchmaking(difficulty)
+}
+
+// handleCancelMatching processes a cancel matching request
+func (h *Hub) handleCancelMatching(req *CancelRequest) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	client := req.Client
+	if !client.isMatching {
+		return
+	}
+
+	// Remove from matching queue
+	h.removeFromMatchingQueue(client)
+
+	// Update client state
+	client.isMatching = false
+	client.difficulty = ""
+
+	// Send cancellation confirmation
+	h.sendMatchingStatus(client, "canceled", 0, 0)
+}
+
+// removeFromMatchingQueue removes a client from all matching queues
+func (h *Hub) removeFromMatchingQueue(client *Client) {
+	for difficulty, clients := range h.matchingClients {
+		for i, c := range clients {
+			if c == client {
+				// Remove client from slice
+				h.matchingClients[difficulty] = append(clients[:i], clients[i+1:]...)
+				break
+			}
+		}
+		// Clean up empty queues
+		if len(h.matchingClients[difficulty]) == 0 {
+			delete(h.matchingClients, difficulty)
+		}
+	}
+}
+
+// tryMatchmaking attempts to match waiting clients
+func (h *Hub) tryMatchmaking(difficulty string) {
+	clients := h.matchingClients[difficulty]
+
+	// Need at least 2 clients to match
+	if len(clients) < 2 {
+		return
+	}
+
+	// Match first two clients (FIFO)
+	player1 := clients[0]
+	player2 := clients[1]
+
+	// Remove matched clients from queue
+	h.matchingClients[difficulty] = clients[2:]
+	if len(h.matchingClients[difficulty]) == 0 {
+		delete(h.matchingClients, difficulty)
+	}
+
+	// Create game and notify clients
+	go h.createMatchedGame(player1, player2, difficulty)
+}
+
+// sendMatchingStatus sends matching status to a client
+func (h *Hub) sendMatchingStatus(client *Client, status string, queuePos, waitTime int) {
+	msg := MatchingStatusMessage{
+		Type:     "matching_status",
+		Status:   status,
+		QueuePos: queuePos,
+		WaitTime: waitTime,
+	}
+
+	if msgBytes, err := json.Marshal(msg); err == nil {
+		select {
+		case client.send <- msgBytes:
+		default:
+			// Client disconnected, will be cleaned up elsewhere
+		}
+	}
+}
+
+// createMatchedGame creates a new game for matched players
+func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
+	// For now, create a simple game without GameService dependency
+	// TODO: Integrate with actual GameService later
+
+	// Generate a new game ID
+	gameID := uuid.New()
+
+	// Update client states
+	player1.isMatching = false
+	player1.gameID = gameID
+	player2.isMatching = false
+	player2.gameID = gameID
+
+	// Create match found message
+	matchMsg := MatchFoundMessage{
+		Type:   "match_found",
+		GameID: gameID.String(),
+		Problem: map[string]interface{}{
+			"title":      "Sample Problem",
+			"difficulty": difficulty,
+		},
+		Opponent: map[string]interface{}{
+			"id":   "opponent",
+			"name": "Anonymous",
+		},
+	}
+
+	// Send to both players
+	if msgBytes, err := json.Marshal(matchMsg); err == nil {
+		select {
+		case player1.send <- msgBytes:
+		default:
+		}
+
+		select {
+		case player2.send <- msgBytes:
+		default:
+		}
+	}
+
+	// Add both players to the game clients map
+	h.mu.Lock()
+	gameIDStr := gameID.String()
+	h.gameClients[gameIDStr] = make(map[*Client]bool)
+	h.gameClients[gameIDStr][player1] = true
+	h.gameClients[gameIDStr][player2] = true
+	h.mu.Unlock()
+}
+
+// broadcastToAllClients sends a message to all connected clients
+func (h *Hub) broadcastToAllClients(data []byte) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	var deadClients []*Client
+
+	for client := range h.clients {
+		select {
+		case client.send <- data:
+			// Message sent successfully
+		default:
+			// Client's send channel is blocked, mark as dead
+			deadClients = append(deadClients, client)
+		}
+	}
+
+	// Clean up dead clients
+	if len(deadClients) > 0 {
+		h.mu.RUnlock()
+		h.mu.Lock()
+		for _, deadClient := range deadClients {
+			h.cleanupDeadClient(deadClient)
+		}
+		h.mu.Unlock()
+		h.mu.RLock()
+	}
+}
+
+// broadcastToGameClients sends a message to all clients in a specific game
+func (h *Hub) broadcastToGameClients(gameID uuid.UUID, data []byte) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	gameIDStr := gameID.String()
+	gameClients, exists := h.gameClients[gameIDStr]
+	if !exists {
+		return
+	}
+
+	var deadClients []*Client
+
+	for client := range gameClients {
+		select {
+		case client.send <- data:
+			// Message sent successfully
+		default:
+			// Client's send channel is blocked, mark as dead
+			deadClients = append(deadClients, client)
+		}
+	}
+
+	// Clean up dead clients
+	if len(deadClients) > 0 {
+		h.mu.RUnlock()
+		h.mu.Lock()
+		for _, deadClient := range deadClients {
+			h.cleanupDeadClient(deadClient)
+		}
+		h.mu.Unlock()
+		h.mu.RLock()
+	}
 }
 
 // Run starts the WebSocket hub
@@ -131,89 +472,22 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
-			// Register client
-			h.mu.Lock()
-			h.clients[client] = true
-
-			// Add to game-specific client map
-			gameID := client.gameID.String()
-			if _, ok := h.gameClients[gameID]; !ok {
-				h.gameClients[gameID] = make(map[*Client]bool)
-			}
-			h.gameClients[gameID][client] = true
-			h.mu.Unlock()
+			h.registerClient(client)
 
 		case client := <-h.unregister:
-			// Unregister client
-			h.mu.Lock()
-			if _, ok := h.clients[client]; ok {
-				delete(h.clients, client)
-				close(client.send)
-
-				// Remove from game-specific client map
-				gameID := client.gameID.String()
-				if _, ok := h.gameClients[gameID]; ok {
-					delete(h.gameClients[gameID], client)
-					if len(h.gameClients[gameID]) == 0 {
-						delete(h.gameClients, gameID)
-					}
-				}
-			}
-			h.mu.Unlock()
+			h.unregisterClient(client)
 
 		case message := <-h.broadcast:
-			// Broadcast message to all clients
-			h.mu.RLock()
-			for client := range h.clients {
-				select {
-				case client.send <- message.data:
-				default:
-					h.mu.RUnlock()
-					h.mu.Lock()
-					delete(h.clients, client)
-					close(client.send)
-
-					// Remove from game-specific client map
-					gameID := client.gameID.String()
-					if _, ok := h.gameClients[gameID]; ok {
-						delete(h.gameClients[gameID], client)
-						if len(h.gameClients[gameID]) == 0 {
-							delete(h.gameClients, gameID)
-						}
-					}
-					h.mu.Unlock()
-					h.mu.RLock()
-				}
-			}
-			h.mu.RUnlock()
+			h.broadcastToAllClients(message.data)
 
 		case gameMessage := <-h.gameBroadcast:
-			// Broadcast message to specific game clients
-			gameID := gameMessage.gameID.String()
-			h.mu.RLock()
-			if clients, ok := h.gameClients[gameID]; ok {
-				for client := range clients {
-					select {
-					case client.send <- gameMessage.data:
-					default:
-						h.mu.RUnlock()
-						h.mu.Lock()
-						delete(h.clients, client)
-						close(client.send)
+			h.broadcastToGameClients(gameMessage.gameID, gameMessage.data)
 
-						// Remove from game-specific client map
-						if _, ok := h.gameClients[gameID]; ok {
-							delete(h.gameClients[gameID], client)
-							if len(h.gameClients[gameID]) == 0 {
-								delete(h.gameClients, gameID)
-							}
-						}
-						h.mu.Unlock()
-						h.mu.RLock()
-					}
-				}
-			}
-			h.mu.RUnlock()
+		case matchReq := <-h.startMatching:
+			h.handleStartMatching(matchReq)
+
+		case cancelReq := <-h.cancelMatching:
+			h.handleCancelMatching(cancelReq)
 		}
 	}
 }
@@ -392,6 +666,28 @@ func (c *Client) readPump(wsService *webSocketService) {
 			}
 			pongBytes, _ := json.Marshal(pongMsg)
 			c.send <- pongBytes
+
+		case "start_matching":
+			// Handle start matching request
+			if data, ok := msg["data"].(map[string]interface{}); ok {
+				if difficulty, ok := data["difficulty"].(string); ok {
+					// Validate difficulty
+					if difficulty == "Easy" || difficulty == "Medium" || difficulty == "Hard" {
+						matchReq := &MatchingRequest{
+							Client:     c,
+							Difficulty: difficulty,
+						}
+						c.hub.startMatching <- matchReq
+					}
+				}
+			}
+
+		case "cancel_matching":
+			// Handle cancel matching request
+			cancelReq := &CancelRequest{
+				Client: c,
+			}
+			c.hub.cancelMatching <- cancelReq
 
 		case "code_update":
 			// Handle code update message

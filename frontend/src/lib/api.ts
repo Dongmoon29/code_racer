@@ -196,27 +196,9 @@ export const authApi = {
 
 // 게임 관련 API
 export const gameApi = {
-  // 게임 방 목록 조회
-  listGames: async () => {
-    const response = await api.get('/games');
-    return response.data;
-  },
-
-  // 게임 방 생성
-  createGame: async (leetcodeId: string) => {
-    const response = await api.post('/games', { leetcode_id: leetcodeId });
-    return response.data;
-  },
-
-  // 게임 방 정보 조회
+  // 게임 정보 조회 (게임 진행 중 사용)
   getGame: async (gameId: string) => {
     const response = await api.get(`/games/${gameId}`);
-    return response.data;
-  },
-
-  // 게임 방 참가
-  joinGame: async (gameId: string) => {
-    const response = await api.post(`/games/${gameId}/join`);
     return response.data;
   },
 
@@ -229,11 +211,11 @@ export const gameApi = {
     return response.data;
   },
 
-  // 게임 방 닫기
-  closeGame: async (gameId: string) => {
-    const response = await api.post(`/games/${gameId}/close`);
-    return response.data;
-  },
+  // REMOVED: Room-based APIs (replaced by WebSocket matching)
+  // listGames - no longer needed
+  // createGame - replaced by automatic matching
+  // joinGame - replaced by automatic matching
+  // closeGame - no room concept
 };
 
 // LeetCode 문제 관련 API

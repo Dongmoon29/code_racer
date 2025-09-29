@@ -7,8 +7,9 @@ import WebSocketClient, {
 } from '../../lib/websocket';
 import { Spinner } from '../ui';
 import { Game, SubmitResult } from './types';
-import { WaitingToJoinGame } from './states/WaitingToJoinGame';
-import { WaitingForOpponent } from './states/WaitingForOpponent';
+// REMOVED: Room waiting states - replaced by automatic matching
+// import { WaitingToJoinGame } from './states/WaitingToJoinGame';
+// import { WaitingForOpponent } from './states/WaitingForOpponent';
 import { PlayingGame } from './states/PlayingGame';
 import { FinishedGame } from './states/FinishedGame';
 import { useAuthStore } from '@/stores/authStore';
@@ -174,38 +175,21 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
     return;
   }
 
-  const handleCloseGame = async () => {
-    try {
-      await gameApi.closeGame(gameId);
-      router.push('/dashboard'); // 게임 목록 페이지로 이동
-    } catch (err) {
-      console.error('Failed to close game:', err);
-      // 에러 처리 (예: 토스트 메시지 표시)
-    }
-  };
+  // REMOVED: handleCloseGame - no room concept in matching system
 
   const renderGameState = () => {
     if (!game) return null;
 
-    const isCreator = currentUser?.id === game.creator.id;
+    // REMOVED: isCreator check - no longer needed without room concept
 
     switch (game.status) {
       case 'waiting':
-        if (!isCreator && !game.is_full) {
-          return (
-            <WaitingToJoinGame
-              game={game}
-              loading={loading}
-              onJoinGame={handleJoinGame}
-            />
-          );
-        }
+        // REMOVED: Room waiting states - games start automatically after matching
         return (
-          <WaitingForOpponent
-            game={game}
-            gameId={gameId}
-            onCloseGame={handleCloseGame}
-          />
+          <Alert variant="warning">
+            <h3>Game Initializing</h3>
+            <p>Setting up your match...</p>
+          </Alert>
         );
 
       case 'finished':
@@ -272,23 +256,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
     }
   };
 
-  const handleJoinGame = async () => {
-    try {
-      setLoading(true);
-      await gameApi.joinGame(gameId);
-      fetchGame();
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        const axiosError = err as AxiosError<ApiErrorResponse>;
-        setError(axiosError.response?.data?.message || 'Failed to join game');
-      } else {
-        setError('An unexpected error occurred while joining the game');
-      }
-      console.error('Failed to join game:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // REMOVED: handleJoinGame - replaced by automatic matching
 
   const handleCodeChange = (code: string) => {
     setMyCode(code);

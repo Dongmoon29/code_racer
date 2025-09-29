@@ -135,3 +135,33 @@ func (c *WebSocketController) HandleWebSocket(ctx *gin.Context) {
 
 	c.wsService.HandleConnection(conn, userID.(uuid.UUID), gameID)
 }
+
+// HandleMatchmaking handles WebSocket connection requests for matchmaking
+func (c *WebSocketController) HandleMatchmaking(ctx *gin.Context) {
+	// JWT token validation
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		c.logger.Error().Msg("WebSocket authentication failed: userID not found in context")
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "User not authenticated",
+		})
+		return
+	}
+
+	// Attempt to upgrade HTTP connection to WebSocket connection
+	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	if err != nil {
+		c.logger.Error().Err(err).Msg("WebSocket upgrade failed")
+		return
+	}
+
+	// Handle WebSocket connection for matchmaking (use special UUID for matching)
+	matchingGameID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
+
+	c.logger.Info().
+		Str("userId", userID.(uuid.UUID).String()).
+		Msg("WebSocket matchmaking connection successful")
+
+	c.wsService.HandleConnection(conn, userID.(uuid.UUID), matchingGameID)
+}

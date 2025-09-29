@@ -25,43 +25,7 @@ func NewGameController(gameService service.GameService, logger logger.Logger) *G
 	}
 }
 
-// CreateGame 게임 방 생성 핸들러
-func (c *GameController) CreateGame(ctx *gin.Context) {
-	// 사용자 ID 가져오기
-	userID, exists := ctx.Get("userID")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": "User not authenticated",
-		})
-		return
-	}
-
-	// 요청 데이터 바인딩
-	var req model.CreateGameRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid request: " + err.Error(),
-		})
-		return
-	}
-
-	// 게임 방 생성
-	game, err := c.gameService.CreateGame(userID.(uuid.UUID), &req)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusCreated, gin.H{
-		"success": true,
-		"game":    game,
-	})
-}
+// REMOVED: CreateGame - replaced by automatic matching via WebSocket
 
 // GetGame 게임 방 정보 조회 핸들러
 func (c *GameController) GetGame(ctx *gin.Context) {
@@ -91,23 +55,7 @@ func (c *GameController) GetGame(ctx *gin.Context) {
 	})
 }
 
-// ListGames 게임 방 목록 조회 핸들러
-func (c *GameController) ListGames(ctx *gin.Context) {
-	// 게임 방 목록 조회
-	games, err := c.gameService.ListGames()
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"games":   games,
-	})
-}
+// REMOVED: ListGames - no longer needed with automatic matching
 
 // ListLeetCodes LeetCode 문제 목록 조회 핸들러
 func (c *GameController) ListLeetCodes(ctx *gin.Context) {
@@ -127,43 +75,7 @@ func (c *GameController) ListLeetCodes(ctx *gin.Context) {
 	})
 }
 
-// JoinGame 게임 방 참가 핸들러
-func (c *GameController) JoinGame(ctx *gin.Context) {
-	// 사용자 ID 가져오기
-	userID, exists := ctx.Get("userID")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": "User not authenticated",
-		})
-		return
-	}
-
-	// 게임 ID 파싱
-	gameID, err := uuid.Parse(ctx.Param("id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid game ID",
-		})
-		return
-	}
-
-	// 게임 방 참가
-	game, err := c.gameService.JoinGame(gameID, userID.(uuid.UUID))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"game":    game,
-	})
-}
+// REMOVED: JoinGame - replaced by automatic matching via WebSocket
 
 // SubmitSolution 코드 제출 핸들러
 func (c *GameController) SubmitSolution(ctx *gin.Context) {
@@ -224,39 +136,7 @@ func (c *GameController) SubmitSolution(ctx *gin.Context) {
 	})
 }
 
-// CloseGame 게임 방 닫기 핸들러
-func (c *GameController) CloseGame(ctx *gin.Context) {
-	userID, exists := ctx.Get("userID")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": "User not authenticated",
-		})
-		return
-	}
-
-	gameID, err := uuid.Parse(ctx.Param("id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid game ID",
-		})
-		return
-	}
-
-	if err := c.gameService.CloseGame(gameID, userID.(uuid.UUID)); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Game closed successfully",
-	})
-}
+// REMOVED: CloseGame - no room concept in matching system
 
 // GameController에 메서드 추가
 func (c *GameController) CreateLeetCode(ctx *gin.Context) {
