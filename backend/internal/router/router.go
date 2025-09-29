@@ -71,6 +71,7 @@ func Setup(
 			{
 				game.GET("/:id", gameController.GetGame)
 				game.POST("/:id/submit", gameController.SubmitSolution)
+				game.POST("/create-from-match", gameController.CreateGameFromMatch)
 			}
 
 			// users

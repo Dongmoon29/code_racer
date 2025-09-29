@@ -2,10 +2,8 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
@@ -18,24 +16,21 @@ import (
 
 // GameService 게임 관련 기능을 제공하는 인터페이스
 type GameService interface {
-	// Game management (active games only)
 	GetGame(gameID uuid.UUID) (*model.GameResponse, error)
 	SubmitSolution(gameID uuid.UUID, userID uuid.UUID, req *model.SubmitSolutionRequest) (*model.SubmitSolutionResponse, error)
 	UpdateCode(gameID uuid.UUID, userID uuid.UUID, code string) error
 	GetPlayerCode(gameID uuid.UUID, userID uuid.UUID) (string, error)
 
-	// LeetCode management
+	// Matchmaking methods
+	CreateGameForMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Game, error)
+	GetRandomLeetCodeByDifficulty(difficulty string) (*model.LeetCode, error)
+	CreateGameFromMatch(matchID string, userID uuid.UUID) (*model.GameResponse, error)
+
 	ListLeetCodes() ([]*model.LeetCodeSummary, error)
 	CreateLeetCode(req *model.CreateLeetCodeRequest) (*model.LeetCodeDetail, error)
 	UpdateLeetCode(id uuid.UUID, req *model.UpdateLeetCodeRequest) (*model.LeetCodeDetail, error)
 	DeleteLeetCode(id uuid.UUID) error
 	GetLeetCode(id uuid.UUID) (*model.LeetCodeDetail, error)
-
-	// REMOVED: Room-based APIs (replaced by WebSocket matching)
-	// CreateGame(userID uuid.UUID, req *model.CreateGameRequest) (*model.GameResponse, error)
-	// ListGames() ([]*model.GameListResponse, error)
-	// JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.GameResponse, error)
-	// CloseGame(gameID uuid.UUID, userID uuid.UUID) error
 }
 
 // gameService GameService 인터페이스 구현체
@@ -43,7 +38,6 @@ type gameService struct {
 	gameRepo     repository.GameRepository
 	leetCodeRepo repository.LeetCodeRepository
 	rdb          *redis.Client
-	wsService    WebSocketService
 	logger       logger.Logger
 	judgeService interfaces.JudgeService
 }
@@ -53,7 +47,6 @@ func NewGameService(
 	gameRepo repository.GameRepository,
 	leetCodeRepo repository.LeetCodeRepository,
 	rdb *redis.Client,
-	wsService WebSocketService,
 	judgeService interfaces.JudgeService,
 	logger logger.Logger,
 ) GameService {
@@ -61,7 +54,6 @@ func NewGameService(
 		gameRepo:     gameRepo,
 		leetCodeRepo: leetCodeRepo,
 		rdb:          rdb,
-		wsService:    wsService,
 		judgeService: judgeService,
 		logger:       logger,
 	}
@@ -180,20 +172,6 @@ func (s *gameService) JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.GameR
 		s.logger.Error().Err(err).Msg("Failed to update Redis after joining game")
 		// Redis 실패는 로그만 남기고 게임은 계속 진행 (DB 상태는 이미 업데이트됨)
 	}
-
-	// 게임 시작 메시지 브로드캐스트
-	gameStartMsg := map[string]interface{}{
-		"type":    "game_start",
-		"game_id": game.ID.String(),
-	}
-
-	msgBytes, err := json.Marshal(gameStartMsg)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to marshal game start message")
-		return game.ToResponse(), nil
-	}
-	s.wsService.BroadcastToGame(game.ID, msgBytes)
-
 	return game.ToResponse(), nil
 }
 
@@ -283,25 +261,8 @@ func (s *gameService) SubmitSolution(gameID uuid.UUID, userID uuid.UUID, req *mo
 			s.logger.Error().Err(err).Msg("Failed to update game status in Redis")
 		}
 
-		// 게임 종료 메시지 브로드캐스트
-		gameEndMsg := map[string]interface{}{
-			"type":      "game_end",
-			"game_id":   game.ID.String(),
-			"winner_id": userID.String(),
-		}
-
-		msgBytes, err := json.Marshal(gameEndMsg)
-		if err != nil {
-			s.logger.Error().Err(err).Msg("Failed to marshal game end message")
-			return &model.SubmitSolutionResponse{
-				Success:  true,
-				Message:  "Your solution passed all test cases",
-				IsWinner: true,
-			}, nil
-		}
-
-		s.wsService.BroadcastToGame(game.ID, msgBytes)
-		s.logger.Info().Msg("Game end message broadcasted")
+		// Game end notification will be handled by real-time WebSocket updates
+		s.logger.Info().Msg("Game completed - winner determined")
 
 		return &model.SubmitSolutionResponse{
 			Success:  true,
@@ -337,22 +298,6 @@ func (s *gameService) UpdateCode(gameID uuid.UUID, userID uuid.UUID, code string
 	if err := s.rdb.Set(ctx, codeKey, code, 24*time.Hour).Err(); err != nil {
 		return err
 	}
-
-	// 코드 업데이트 메시지 브로드캐스트
-	codeUpdateMsg := map[string]interface{}{
-		"type":    "code_update",
-		"game_id": gameID.String(),
-		"user_id": userID.String(),
-		"code":    code,
-	}
-
-	msgBytes, err := json.Marshal(codeUpdateMsg)
-	if err != nil {
-		log.Printf("Failed to marshal codeUpdate message: %v", err)
-		return nil
-	}
-
-	s.wsService.BroadcastToGame(game.ID, msgBytes)
 
 	return nil
 }
@@ -414,18 +359,7 @@ func (s *gameService) CloseGame(gameID uuid.UUID, userID uuid.UUID) error {
 		s.logger.Error().Err(err).Msg("Failed to cleanup Redis data")
 	}
 
-	// 게임 종료 메시지 브로드캐스트
-	gameClosedMsg := map[string]interface{}{
-		"type":    "game_closed",
-		"game_id": gameID.String(),
-	}
-
-	msgBytes, err := json.Marshal(gameClosedMsg)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to marshal game closed message")
-		return nil
-	}
-	s.wsService.BroadcastToGame(gameID, msgBytes)
+	// Game close notifications will be handled by WebSocket disconnection
 
 	return nil
 }
@@ -496,4 +430,144 @@ func (s *gameService) GetLeetCode(id uuid.UUID) (*model.LeetCodeDetail, error) {
 		return nil, err
 	}
 	return leetcode.ToDetailResponse(), nil
+}
+
+// CreateGameForMatch creates a new game for matched players
+func (s *gameService) CreateGameForMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Game, error) {
+	// Get a random LeetCode problem for the difficulty
+	leetcode, err := s.GetRandomLeetCodeByDifficulty(difficulty)
+	if err != nil {
+		s.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to get random LeetCode problem")
+		return nil, fmt.Errorf("failed to get problem for difficulty %s: %w", difficulty, err)
+	}
+
+	// Create new game
+	game := &model.Game{
+		CreatorID:  player1ID,
+		OpponentID: &player2ID,
+		LeetCodeID: leetcode.ID,
+		Status:     model.GameStatusPlaying, // Start immediately for matched games
+	}
+
+	// Save to database
+	if err := s.gameRepo.Create(game); err != nil {
+		s.logger.Error().Err(err).Msg("Failed to create matched game in database")
+		return nil, fmt.Errorf("failed to create game: %w", err)
+	}
+
+	// Load the complete game with LeetCode details
+	createdGame, err := s.gameRepo.FindByID(game.ID)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to load created game")
+		return nil, fmt.Errorf("failed to load game: %w", err)
+	}
+
+	// Initialize Redis data for both players
+	ctx := context.Background()
+	gameKey := fmt.Sprintf("game:%s", game.ID.String())
+	player1CodeKey := fmt.Sprintf("game:%s:user:%s:code", game.ID.String(), player1ID.String())
+	player2CodeKey := fmt.Sprintf("game:%s:user:%s:code", game.ID.String(), player2ID.String())
+	gameUsersKey := fmt.Sprintf("game:%s:users", game.ID.String())
+
+	// Use Redis pipeline for atomic operations
+	pipe := s.rdb.Pipeline()
+	pipe.HSet(ctx, gameKey, "status", string(game.Status))
+	pipe.Set(ctx, player1CodeKey, "", 24*time.Hour)
+	pipe.Set(ctx, player2CodeKey, "", 24*time.Hour)
+	pipe.SAdd(ctx, gameUsersKey, player1ID.String(), player2ID.String())
+	pipe.Expire(ctx, gameUsersKey, 24*time.Hour)
+
+	if _, err := pipe.Exec(ctx); err != nil {
+		s.logger.Error().Err(err).Msg("Failed to initialize Redis data for matched game")
+		// Try to clean up the database record
+		if deleteErr := s.gameRepo.Delete(game.ID); deleteErr != nil {
+			s.logger.Error().Err(deleteErr).Msg("Failed to rollback game creation")
+		}
+		return nil, fmt.Errorf("failed to initialize game data: %w", err)
+	}
+
+	s.logger.Info().
+		Str("gameID", game.ID.String()).
+		Str("player1ID", player1ID.String()).
+		Str("player2ID", player2ID.String()).
+		Str("difficulty", difficulty).
+		Str("problem", leetcode.Title).
+		Msg("Successfully created matched game")
+
+	return createdGame, nil
+}
+
+// GetRandomLeetCodeByDifficulty gets a random LeetCode problem by difficulty
+func (s *gameService) GetRandomLeetCodeByDifficulty(difficulty string) (*model.LeetCode, error) {
+	problems, err := s.leetCodeRepo.FindByDifficulty(difficulty)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find problems for difficulty %s: %w", difficulty, err)
+	}
+
+	if len(problems) == 0 {
+		return nil, fmt.Errorf("no problems found for difficulty %s", difficulty)
+	}
+
+	// Select a random problem
+	randomIndex := time.Now().UnixNano() % int64(len(problems))
+	selectedProblem := &problems[randomIndex]
+
+	s.logger.Debug().
+		Str("difficulty", difficulty).
+		Str("selectedProblem", selectedProblem.Title).
+		Int("totalProblems", len(problems)).
+		Msg("Selected random LeetCode problem")
+
+	return selectedProblem, nil
+}
+
+// CreateGameFromMatch creates a game from a completed match
+func (s *gameService) CreateGameFromMatch(matchID string, userID uuid.UUID) (*model.GameResponse, error) {
+	// Get match info from Redis
+	ctx := context.Background()
+	matchKey := fmt.Sprintf("match:%s", matchID)
+
+	matchData, err := s.rdb.HGetAll(ctx, matchKey).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get match data: %w", err)
+	}
+
+	if len(matchData) == 0 {
+		return nil, fmt.Errorf("match not found or expired")
+	}
+
+	// Parse match data
+	player1ID, err := uuid.Parse(matchData["player1_id"])
+	if err != nil {
+		return nil, fmt.Errorf("invalid player1 ID in match")
+	}
+
+	player2ID, err := uuid.Parse(matchData["player2_id"])
+	if err != nil {
+		return nil, fmt.Errorf("invalid player2 ID in match")
+	}
+
+	difficulty := matchData["difficulty"]
+
+	// Verify user is part of this match
+	if userID != player1ID && userID != player2ID {
+		return nil, fmt.Errorf("user not authorized for this match")
+	}
+
+	// Create the game
+	game, err := s.CreateGameForMatch(player1ID, player2ID, difficulty)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create game: %w", err)
+	}
+
+	// Clean up match data
+	s.rdb.Del(ctx, matchKey)
+
+	s.logger.Info().
+		Str("matchID", matchID).
+		Str("gameID", game.ID.String()).
+		Str("userID", userID.String()).
+		Msg("Successfully created game from match")
+
+	return game.ToResponse(), nil
 }

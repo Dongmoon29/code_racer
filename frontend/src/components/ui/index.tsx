@@ -40,17 +40,23 @@ export const Spinner: React.FC<SpinnerProps> = ({
   );
 };
 
-// Legacy Tailwind CSS components
+// UI Components
 export { Button } from './Button';
-export { Card } from './Card';
+export {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from './Card';
 export { Alert, AlertTitle, AlertDescription } from './alert';
 export { default as Loading } from './Loading';
 export { Select } from './Select';
 export { ThemeToggle } from './ThemeToggle';
 
-// New Styled Components
+// Styled Components (if still needed)
 export { default as ButtonStyled } from './Button.new';
-export { default as CardStyled } from './Card.new';
 export { default as AlertStyled } from './Alert.new';
 export { default as LoadingStyled } from './Loading.new';
 export { default as SelectStyled } from './Select.new';
@@ -58,8 +64,8 @@ export { default as ThemeToggleStyled } from './ThemeToggle.new';
 
 // Styled Components exports
 export * from './Button.styled';
-export * from './Card.styled';
 export * from './Alert.styled';
 export * from './Loading.styled';
 export * from './Select.styled';
 export * from './ThemeToggle.styled';
+// Card.styled는 통합된 Card.tsx로 대체됨

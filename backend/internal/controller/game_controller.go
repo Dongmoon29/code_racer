@@ -237,3 +237,54 @@ func (c *GameController) GetLeetCode(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, leetcode)
 }
+
+// CreateGameFromMatch creates a game from a completed match
+func (c *GameController) CreateGameFromMatch(ctx *gin.Context) {
+	var req struct {
+		MatchID string `json:"match_id" binding:"required"`
+	}
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid request format",
+		})
+		return
+	}
+
+	// Get user ID from context
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "User not authenticated",
+		})
+		return
+	}
+
+	// Convert to UUID
+	userUUID, ok := userID.(uuid.UUID)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Invalid user ID format",
+		})
+		return
+	}
+
+	// Create game from match
+	game, err := c.gameService.CreateGameFromMatch(req.MatchID, userUUID)
+	if err != nil {
+		c.logger.Error().Err(err).Str("matchID", req.MatchID).Msg("Failed to create game from match")
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"game":    game,
+	})
+}

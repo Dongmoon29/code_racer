@@ -115,8 +115,18 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 	authService := service.NewAuthService(userRepository, cfg.JWTSecret, appLogger)
 	userService := service.NewUserService(userRepository, appLogger)
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger)
-	wsService := service.NewWebSocketService(rdb, appLogger)
-	gameService := service.NewGameService(gameRepository, leetCodeRepo, rdb, wsService, judgeService, appLogger)
+
+	// GameService without WebSocket dependency
+	gameService := service.NewGameService(gameRepository, leetCodeRepo, rdb, judgeService, appLogger)
+
+	// Matchmaking service as mediator (without WebSocket initially)
+	matchmakingService := service.NewMatchmakingService(gameService, nil, rdb, appLogger)
+
+	// WebSocket service with matchmaking dependency
+	wsService := service.NewWebSocketService(rdb, appLogger, matchmakingService)
+
+	// Set WebSocket service in matchmaking service (avoid circular reference)
+	matchmakingService.SetWebSocketService(wsService)
 
 	// init web socket hub
 	wsHub := wsService.InitHub()

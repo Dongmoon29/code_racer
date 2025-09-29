@@ -1,6 +1,6 @@
 import React from 'react';
 import Layout from '../components/layout/Layout';
-// REMOVED: RoomList - replaced by automatic matching system
+import MatchingScreen from '@/components/game/MatchingScreen';
 import { GetServerSideProps } from 'next';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
@@ -17,7 +17,16 @@ const DashboardPage: React.FC = () => {
   }, [isLoading, isLoggedIn, router]);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <Layout
+        title="Dashboard | Code Racer"
+        description="Find opponents and start coding challenges"
+      >
+        <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </Layout>
+    );
   }
 
   if (!isLoggedIn) {
@@ -29,19 +38,13 @@ const DashboardPage: React.FC = () => {
       title="Dashboard | Code Racer"
       description="Find opponents and start coding challenges"
     >
-      <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center p-4">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-[hsl(var(--foreground))] mb-4">
-            Welcome to Code Racer
-          </h1>
-          <p className="text-[hsl(var(--muted-foreground))] mb-8">
-            Automatic matching system coming soon!
-          </p>
-          <div className="text-sm text-[hsl(var(--muted-foreground))]">
-            The new matching system will automatically pair you with opponents
-            based on difficulty.
-          </div>
-        </div>
+      <div className="min-h-screen bg-[hsl(var(--background))] py-8">
+        <MatchingScreen
+          onMatchFound={(gameId) => {
+            // 매칭 완료 시 게임 페이지로 이동
+            router.push(`/game/${gameId}`);
+          }}
+        />
       </div>
     </Layout>
   );

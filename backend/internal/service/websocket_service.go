@@ -53,6 +53,9 @@ type Hub struct {
 	startMatching  chan *MatchingRequest
 	cancelMatching chan *CancelRequest
 
+	// Matchmaking service for handling matches
+	matchmakingService MatchmakingService
+
 	// Mutex lock
 	mu sync.RWMutex
 }
@@ -143,32 +146,36 @@ type WebSocketService interface {
 
 // webSocketService implements WebSocketService interface
 type webSocketService struct {
-	rdb    *redis.Client
-	logger logger.Logger
-	hub    *Hub
-	// TODO: Add gameService GameServiceInterface when needed
+	rdb                *redis.Client
+	logger             logger.Logger
+	hub                *Hub
+	matchmakingService MatchmakingService
 }
 
 // NewWebSocketService creates a new WebSocketService instance
-func NewWebSocketService(rdb *redis.Client, logger logger.Logger) WebSocketService {
-	return &webSocketService{
-		rdb:    rdb,
-		logger: logger,
+func NewWebSocketService(rdb *redis.Client, logger logger.Logger, matchmakingService MatchmakingService) WebSocketService {
+	service := &webSocketService{
+		rdb:                rdb,
+		logger:             logger,
+		matchmakingService: matchmakingService,
 	}
+	service.InitHub()
+	return service
 }
 
 // InitHub initializes the WebSocket hub
 func (s *webSocketService) InitHub() *Hub {
 	s.hub = &Hub{
-		clients:         make(map[*Client]bool),
-		gameClients:     make(map[string]map[*Client]bool),
-		matchingClients: make(map[string][]*Client),
-		register:        make(chan *Client),
-		unregister:      make(chan *Client),
-		broadcast:       make(chan *Message),
-		gameBroadcast:   make(chan *GameMessage),
-		startMatching:   make(chan *MatchingRequest),
-		cancelMatching:  make(chan *CancelRequest),
+		clients:            make(map[*Client]bool),
+		gameClients:        make(map[string]map[*Client]bool),
+		matchingClients:    make(map[string][]*Client),
+		register:           make(chan *Client),
+		unregister:         make(chan *Client),
+		broadcast:          make(chan *Message),
+		gameBroadcast:      make(chan *GameMessage),
+		startMatching:      make(chan *MatchingRequest),
+		cancelMatching:     make(chan *CancelRequest),
+		matchmakingService: s.matchmakingService,
 	}
 	return s.hub
 }
@@ -353,54 +360,21 @@ func (h *Hub) sendMatchingStatus(client *Client, status string, queuePos, waitTi
 	}
 }
 
-// createMatchedGame creates a new game for matched players
+// createMatchedGame delegates match creation to MatchmakingService
 func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
-	// For now, create a simple game without GameService dependency
-	// TODO: Integrate with actual GameService later
-
-	// Generate a new game ID
-	gameID := uuid.New()
-
 	// Update client states
 	player1.isMatching = false
-	player1.gameID = gameID
 	player2.isMatching = false
-	player2.gameID = gameID
 
-	// Create match found message
-	matchMsg := MatchFoundMessage{
-		Type:   "match_found",
-		GameID: gameID.String(),
-		Problem: map[string]interface{}{
-			"title":      "Sample Problem",
-			"difficulty": difficulty,
-		},
-		Opponent: map[string]interface{}{
-			"id":   "opponent",
-			"name": "Anonymous",
-		},
+	// Delegate to matchmaking service
+	if err := h.matchmakingService.CreateMatch(player1.userID, player2.userID, difficulty); err != nil {
+		// Return players to matching queue on error
+		h.mu.Lock()
+		h.matchingClients[difficulty] = append([]*Client{player1, player2}, h.matchingClients[difficulty]...)
+		player1.isMatching = true
+		player2.isMatching = true
+		h.mu.Unlock()
 	}
-
-	// Send to both players
-	if msgBytes, err := json.Marshal(matchMsg); err == nil {
-		select {
-		case player1.send <- msgBytes:
-		default:
-		}
-
-		select {
-		case player2.send <- msgBytes:
-		default:
-		}
-	}
-
-	// Add both players to the game clients map
-	h.mu.Lock()
-	gameIDStr := gameID.String()
-	h.gameClients[gameIDStr] = make(map[*Client]bool)
-	h.gameClients[gameIDStr][player1] = true
-	h.gameClients[gameIDStr][player2] = true
-	h.mu.Unlock()
 }
 
 // broadcastToAllClients sends a message to all connected clients
@@ -537,12 +511,6 @@ func (s *webSocketService) BroadcastToGame(gameID uuid.UUID, message []byte) {
 		gameID: gameID,
 		data:   message,
 	}
-}
-
-// getGameUsers gets the list of user IDs participating in a game
-func (s *webSocketService) getGameUsers(ctx context.Context, gameID uuid.UUID) ([]string, error) {
-	gameKey := fmt.Sprintf("game:%s:users", gameID.String())
-	return s.rdb.SMembers(ctx, gameKey).Result()
 }
 
 // cleanupUserData cleans up user data from Redis when WebSocket connection is closed

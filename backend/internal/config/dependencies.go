@@ -22,12 +22,14 @@ func InitializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *Config, appLogg
 	userRepository := repository.NewUserRepository(db, appLogger)
 	gameRepository := repository.NewGameRepository(db, appLogger)
 	leetCodeRepository := repository.NewLeetCodeRepository(db, appLogger)
-
 	authService := service.NewAuthService(userRepository, cfg.JWTSecret, appLogger)
 	userService := service.NewUserService(userRepository, appLogger)
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger)
-	wsService := service.NewWebSocketService(rdb, appLogger)
-	gameService := service.NewGameService(gameRepository, leetCodeRepository, rdb, wsService, judgeService, appLogger)
+	gameService := service.NewGameService(gameRepository, leetCodeRepository, rdb, judgeService, appLogger)
+	matchmakingService := service.NewMatchmakingService(gameService, nil, rdb, appLogger)
+	wsService := service.NewWebSocketService(rdb, appLogger, matchmakingService)
+
+	matchmakingService.SetWebSocketService(wsService)
 
 	wsHub := wsService.InitHub()
 	go wsHub.Run()
