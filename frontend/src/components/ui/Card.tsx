@@ -86,6 +86,7 @@ export const Card: React.FC<CardProps> = ({
         transition-all
         duration-300
         ease-in-out
+        p-3
         ${variantStyles}
         ${sizeStyles}
         ${onClick ? 'cursor-pointer hover:scale-[1.02]' : ''}

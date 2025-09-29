@@ -17,7 +17,7 @@ const difficultyOptions: DifficultyOption[] = [
   {
     value: 'Easy',
     label: 'Easy',
-    description: '기본적인 문제들',
+    description: 'For beginners',
     color: 'text-green-600',
     bgColor: 'bg-green-50 hover:bg-green-100 border-green-200',
     icon: '🟢',
@@ -25,7 +25,7 @@ const difficultyOptions: DifficultyOption[] = [
   {
     value: 'Medium',
     label: 'Medium',
-    description: '중간 난이도 문제들',
+    description: 'For intermediate',
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200',
     icon: '🟡',
@@ -33,7 +33,7 @@ const difficultyOptions: DifficultyOption[] = [
   {
     value: 'Hard',
     label: 'Hard',
-    description: '고급 알고리즘 문제들',
+    description: 'For advanced',
     color: 'text-red-600',
     bgColor: 'bg-red-50 hover:bg-red-100 border-red-200',
     icon: '🔴',
@@ -56,10 +56,10 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
           Code Racer
         </h1>
         <p className="text-xl text-[hsl(var(--muted-foreground))] mb-2">
-          상대방과 실시간 코딩 대결
+          Compete against friends or other coders in real-time coding
         </p>
         <p className="text-[hsl(var(--muted-foreground))]">
-          난이도를 선택하여 매칭을 시작하세요
+          Select a difficulty to start matching
         </p>
       </div>
 
@@ -67,9 +67,8 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
         {difficultyOptions.map((option) => (
           <Card
             key={option.value}
-            className={`cursor-pointer transition-all duration-200 transform hover:scale-105 ${
-              option.bgColor
-            } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`cursor-pointer transition-all duration-200 transform hover:scale-105 
+              `}
             onClick={() => !disabled && onSelect(option.value)}
           >
             <CardContent className="p-6 text-center">
@@ -89,16 +88,11 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
                   if (!disabled) onSelect(option.value);
                 }}
               >
-                {option.label} 선택
+                select
               </Button>
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      <div className="mt-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
-        <p>🎯 매칭은 같은 난이도의 다른 플레이어와 진행됩니다</p>
-        <p>⚡ 평균 매칭 시간: Easy 30초, Medium 1분, Hard 2분</p>
       </div>
     </div>
   );
