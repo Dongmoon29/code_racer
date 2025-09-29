@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
@@ -79,17 +78,6 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
               <p className="text-[hsl(var(--muted-foreground))] mb-4">
                 {option.description}
               </p>
-              <Button
-                variant="outline"
-                className={`w-full ${option.color} border-current hover:bg-current hover:text-white`}
-                disabled={disabled}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!disabled) onSelect(option.value);
-                }}
-              >
-                select
-              </Button>
             </CardContent>
           </Card>
         ))}
