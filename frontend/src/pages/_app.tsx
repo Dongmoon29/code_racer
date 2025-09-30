@@ -4,6 +4,7 @@ import { ThemeProvider as NextThemeProvider } from 'next-themes';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import AdminLayout from '../components/admin/AdminLayout';
 import '../styles/globals.css';
 import { useAuthStore } from '../stores/authStore';
@@ -22,14 +23,29 @@ function MyApp({ Component, pageProps }: AppProps) {
   // SSR-safe route check to avoid hydration mismatch
   const isAdminRoute = router.pathname.startsWith('/admin');
 
+  // Derive admin page title
+  const adminTitle = (() => {
+    const path = router.pathname;
+    if (!path.startsWith('/admin')) return 'CRAdmin';
+    if (path === '/admin') return 'CRAdmin | Overview';
+    if (path.startsWith('/admin/users')) return 'CRAdmin | Users';
+    if (path.startsWith('/admin/leetcode')) return 'CRAdmin | LeetCode';
+    return 'CRAdmin';
+  })();
+
   return (
     <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <StyledThemeProvider theme={theme}>
         <QueryClientProvider client={queryClient}>
           {isAdminRoute ? (
-            <AdminLayout>
-              <Component {...pageProps} />
-            </AdminLayout>
+            <>
+              <Head>
+                <title>{adminTitle}</title>
+              </Head>
+              <AdminLayout>
+                <Component {...pageProps} />
+              </AdminLayout>
+            </>
           ) : (
             <Component {...pageProps} />
           )}

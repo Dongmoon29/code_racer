@@ -62,7 +62,7 @@ func (r *userRepository) Update(user *model.User) error {
 	return r.db.Save(user).Error
 }
 
-func (r *userRepository) ListUsers(offset int, limit int) ([]*model.User, int64, error) {
+func (r *userRepository) ListUsers(offset int, limit int, orderByField string, orderDir string) ([]*model.User, int64, error) {
 	var users []*model.User
 	var total int64
 
@@ -70,7 +70,27 @@ func (r *userRepository) ListUsers(offset int, limit int) ([]*model.User, int64,
 		return nil, 0, err
 	}
 
-	if err := r.db.Order("created_at DESC").Offset(offset).Limit(limit).Find(&users).Error; err != nil {
+	// whitelist fields to avoid SQL injection
+	allowed := map[string]string{
+		"created_at": "created_at",
+		"name":       "name",
+		"email":      "email",
+		"role":       "role",
+	}
+	field, ok := allowed[orderByField]
+	if !ok || field == "" {
+		field = "created_at"
+	}
+	dir := "DESC"
+	if orderDir == "asc" || orderDir == "ASC" {
+		dir = "ASC"
+	}
+
+	if err := r.db.
+		Order(field + " " + dir).
+		Order("id " + dir).
+		Offset(offset).Limit(limit).
+		Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 

@@ -126,7 +126,18 @@ func (c *UserController) AdminListUsers(ctx *gin.Context) {
 		}
 	}
 
-	users, total, err := c.userService.ListUsers(page, limit)
+	sortParam := ctx.Query("sort") // e.g., "created_at:desc"
+	orderBy := "created_at"
+	dir := "desc"
+	if sortParam != "" {
+		var f, d string
+		if _, err := fmt.Sscanf(sortParam, "%[^:]:%s", &f, &d); err == nil {
+			orderBy = f
+			dir = d
+		}
+	}
+
+	users, total, err := c.userService.ListUsers(page, limit, orderBy, dir)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,

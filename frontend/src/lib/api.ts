@@ -254,9 +254,9 @@ export const getCodeTemplate = (
 
 export const userApi = {
   // 관리자용 사용자 목록 조회 (offset pagination)
-  adminList: async (page: number, limit = 20) => {
+  adminList: async (page: number, limit = 20, sort?: string) => {
     const response = await api.get(`/admin/users`, {
-      params: { page, limit },
+      params: { page, limit, ...(sort ? { sort } : {}) },
     });
     return response.data as {
       success: boolean;
@@ -265,6 +265,7 @@ export const userApi = {
         name: string;
         email: string;
         role: string;
+        created_at: string;
       }>;
       page: number;
       limit: number;

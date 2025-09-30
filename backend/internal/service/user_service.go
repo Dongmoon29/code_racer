@@ -13,7 +13,7 @@ type UserService interface {
 	GetUserByID(userID uuid.UUID) (*model.UserResponse, error)
 	GetProfile(userID uuid.UUID) (*model.User, error)
 	UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRequest) (*model.User, error)
-	ListUsers(page int, limit int) ([]*model.User, int64, error)
+	ListUsers(page int, limit int, orderBy string, dir string) ([]*model.User, int64, error)
 }
 
 type userService struct {
@@ -80,7 +80,7 @@ func (s *userService) UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRe
 	}, nil
 }
 
-func (s *userService) ListUsers(page int, limit int) ([]*model.User, int64, error) {
+func (s *userService) ListUsers(page int, limit int, orderBy string, dir string) ([]*model.User, int64, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -88,7 +88,14 @@ func (s *userService) ListUsers(page int, limit int) ([]*model.User, int64, erro
 		page = 1
 	}
 	offset := (page - 1) * limit
-	users, total, err := s.userRepo.ListUsers(offset, limit)
+	// defaults
+	if orderBy == "" {
+		orderBy = "created_at"
+	}
+	if dir == "" {
+		dir = "desc"
+	}
+	users, total, err := s.userRepo.ListUsers(offset, limit, orderBy, dir)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to list users: %w", err)
 	}

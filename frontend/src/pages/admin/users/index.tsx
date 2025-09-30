@@ -10,6 +10,7 @@ export default function AdminUsersPage() {
   const PAGE_SIZE = 20;
 
   const [page, setPage] = useState<number>(1);
+  const [sort, setSort] = useState<string>('created_at:desc');
   const queryClient = useQueryClient();
 
   // Simple client-side guard (SSR layout handles sidebar)
@@ -20,8 +21,8 @@ export default function AdminUsersPage() {
   }, [user, isLoading, router]);
 
   const { data, isFetching, isError, error } = useQuery({
-    queryKey: ['admin-users', { page, limit: PAGE_SIZE }],
-    queryFn: () => userApi.adminList(page, PAGE_SIZE),
+    queryKey: ['admin-users', { page, limit: PAGE_SIZE, sort }],
+    queryFn: () => userApi.adminList(page, PAGE_SIZE, sort),
     enabled: !!user && user.role === 'admin',
     keepPreviousData: true,
   });
@@ -30,18 +31,10 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (!data?.has_next) return;
     queryClient.prefetchQuery({
-      queryKey: ['admin-users', { page: page + 1, limit: PAGE_SIZE }],
-      queryFn: () => userApi.adminList(page + 1, PAGE_SIZE),
+      queryKey: ['admin-users', { page: page + 1, limit: PAGE_SIZE, sort }],
+      queryFn: () => userApi.adminList(page + 1, PAGE_SIZE, sort),
     });
-  }, [data, page, queryClient]);
-
-  const rangeText = useMemo(() => {
-    const total = data?.total ?? 0;
-    const start = (page - 1) * PAGE_SIZE + 1;
-    const end = Math.min(page * PAGE_SIZE, total);
-    if (total === 0) return '0 of 0';
-    return `${start}–${end} of ${total}`;
-  }, [page, data]);
+  }, [data, page, sort, queryClient]);
 
   // Build pagination range like: 1 … 4 5 [6] 7 8 … 24
   const paginationRange = useMemo(() => {
@@ -92,6 +85,9 @@ export default function AdminUsersPage() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                ID
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Name
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -99,6 +95,28 @@ export default function AdminUsersPage() {
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Role
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <button
+                  className="inline-flex items-center gap-1 hover:text-gray-700"
+                  onClick={() => {
+                    setPage(1);
+                    const [, dir = 'desc'] = sort.startsWith('created_at')
+                      ? sort.split(':')
+                      : ['created_at', 'desc'];
+                    setSort(`created_at:${dir === 'desc' ? 'asc' : 'desc'}`);
+                  }}
+                  title="Sort by created date"
+                >
+                  Created
+                  <span className="text-gray-400">
+                    {sort === 'created_at:desc'
+                      ? '▼'
+                      : sort === 'created_at:asc'
+                      ? '▲'
+                      : '↕'}
+                  </span>
+                </button>
               </th>
               <th className="px-4 py-3" />
             </tr>
@@ -110,8 +128,12 @@ export default function AdminUsersPage() {
                 name: string;
                 email: string;
                 role: string;
+                created_at?: string;
               }) => (
                 <tr key={u.id}>
+                  <td className="px-4 py-3 text-xs text-gray-500 font-mono">
+                    {u.id}
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-900">{u.name}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">{u.email}</td>
                   <td className="px-4 py-3 text-sm">
@@ -124,6 +146,11 @@ export default function AdminUsersPage() {
                     >
                       {u.role}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-700">
+                    {u.created_at
+                      ? new Date(u.created_at).toLocaleDateString()
+                      : '-'}
                   </td>
                   <td className="px-4 py-3 text-right text-sm">
                     <button className="mr-2 text-blue-600 hover:text-blue-700">
@@ -139,47 +166,51 @@ export default function AdminUsersPage() {
           </tbody>
         </table>
       </div>
-
-      {/* Pagination */}
-      <div className="mt-4 flex items-center justify-between">
-        <span className="text-sm text-gray-600">{rangeText}</span>
-        <div className="flex items-center gap-2">
+      {/* Pagination - pill style */}
+      <div className="mt-6 flex items-center justify-center">
+        <div className="flex items-center gap-4 rounded-full bg-white px-5 py-3">
           <button
-            className="px-3 py-1 rounded border text-sm disabled:opacity-50"
+            className="inline-flex items-center gap-2 text-gray-700 disabled:text-gray-300"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={isFetching || page === 1}
+            aria-label="Previous page"
           >
-            Prev
+            <span className="text-lg">‹</span>
+            <span className="hidden sm:inline text-sm">Previous</span>
           </button>
-          {/* Numbered pages */}
-          <div className="flex items-center gap-1">
+
+          <div className="flex items-center gap-2">
             {paginationRange.map((item, idx) =>
               item === '…' ? (
-                <span key={`dots-${idx}`} className="px-2 text-gray-500">
+                <span key={`dots-${idx}`} className="px-2 text-gray-400">
                   …
                 </span>
               ) : (
                 <button
                   key={item}
-                  className={`px-3 py-1 rounded border text-sm ${
-                    item === page
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'hover:bg-gray-50'
-                  }`}
                   onClick={() => setPage(item as number)}
                   disabled={isFetching}
+                  className={`relative inline-flex items-center justify-center w-8 h-8 rounded-full text-sm transition-colors ${
+                    item === page
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                  aria-current={item === page ? 'page' : undefined}
                 >
                   {item}
                 </button>
               )
             )}
           </div>
+
           <button
-            className="px-3 py-1 rounded border text-sm disabled:opacity-50"
+            className="inline-flex items-center gap-2 text-gray-700 disabled:text-gray-300"
             onClick={() => setPage((p) => p + 1)}
             disabled={isFetching || !data?.has_next}
+            aria-label="Next page"
           >
-            Next
+            <span className="hidden sm:inline text-sm">Next</span>
+            <span className="text-lg">›</span>
           </button>
         </div>
       </div>
