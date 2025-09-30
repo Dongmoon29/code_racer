@@ -1,0 +1,264 @@
+# Code Racer Backend - Cursor Rules
+
+## 개발 원칙
+- **TDD (Test-Driven Development) 필수**: 모든 기능 개발 전에 테스트를 먼저 작성
+- **Clean Architecture**: 계층별 책임 분리, 의존성 역전 원칙 준수
+- **SOLID 원칙**: 단일 책임, 개방-폐쇄, 리스코프 치환, 인터페이스 분리, 의존성 역전
+- **Go 컨벤션**: 표준 Go 코딩 스타일과 네이밍 컨벤션 준수
+
+## 테스트 작성 규칙
+
+### TDD 사이클
+1. **Red**: 실패하는 테스트 작성
+2. **Green**: 테스트를 통과하는 최소한의 코드 작성
+3. **Refactor**: 코드 개선 및 중복 제거
+
+### 테스트 파일 구조
+```
+internal/
+├── service/
+│   ├── auth_service.go
+│   └── auth_service_test.go
+├── controller/
+│   ├── auth_controller.go
+│   └── auth_controller_test.go
+└── repository/
+    ├── user_repository.go
+    └── user_repository_test.go
+```
+
+### 테스트 작성 가이드라인
+- **테스트 함수명**: `TestFunctionName_Scenario_ExpectedResult` 형식
+- **Given-When-Then 패턴** 사용
+- **테이블 드리븐 테스트** 활용
+- **Mock 사용**: 외부 의존성은 반드시 Mock으로 처리
+- **커버리지 목표**: 최소 80% 이상
+
+### 테스트 예시
+```go
+func TestAuthService_Register_ValidUser_ReturnsToken(t *testing.T) {
+    // Given
+    mockRepo := &MockUserRepository{}
+    mockRepo.On("FindByEmail", "test@example.com").Return(nil, gorm.ErrRecordNotFound)
+    mockRepo.On("Create", mock.Anything).Return(&model.User{ID: 1}, nil)
+    
+    service := NewAuthService(mockRepo, mockJWT)
+    
+    // When
+    token, err := service.Register("test@example.com", "password")
+    
+    // Then
+    assert.NoError(t, err)
+    assert.NotEmpty(t, token)
+    mockRepo.AssertExpectations(t)
+}
+```
+
+## 코드 구조 규칙
+
+### 패키지 구조
+```
+internal/
+├── config/          # 설정 관리
+├── controller/      # HTTP 핸들러
+├── service/         # 비즈니스 로직
+├── repository/      # 데이터 접근
+├── model/           # 도메인 모델
+├── middleware/      # 미들웨어
+├── interfaces/      # 인터페이스 정의
+├── types/           # 타입 정의
+└── util/            # 유틸리티
+```
+
+### 네이밍 컨벤션
+- **파일명**: snake_case
+- **구조체**: PascalCase
+- **함수/메서드**: PascalCase (public), camelCase (private)
+- **변수**: camelCase
+- **상수**: PascalCase 또는 UPPER_SNAKE_CASE
+- **인터페이스**: PascalCase + "er" 접미사 (예: UserRepository)
+
+### 에러 처리
+```go
+// 좋은 예
+func (s *UserService) GetUser(id uint) (*model.User, error) {
+    if id == 0 {
+        return nil, errors.New("invalid user ID")
+    }
+    
+    user, err := s.repo.FindByID(id)
+    if err != nil {
+        return nil, fmt.Errorf("failed to get user: %w", err)
+    }
+    
+    return user, nil
+}
+```
+
+## 의존성 주입 규칙
+
+### 인터페이스 정의
+```go
+// interfaces/user_interfaces.go
+type UserRepository interface {
+    Create(user *model.User) error
+    FindByID(id uint) (*model.User, error)
+    FindByEmail(email string) (*model.User, error)
+    Update(user *model.User) error
+    Delete(id uint) error
+}
+```
+
+### 생성자 패턴
+```go
+// service/user_service.go
+type UserService struct {
+    repo UserRepository
+    logger Logger
+}
+
+func NewUserService(repo UserRepository, logger Logger) *UserService {
+    return &UserService{
+        repo:   repo,
+        logger: logger,
+    }
+}
+```
+
+## 데이터베이스 규칙
+
+### GORM 모델
+```go
+type User struct {
+    ID        uint      `json:"id" gorm:"primaryKey"`
+    Email     string    `json:"email" gorm:"uniqueIndex;not null"`
+    Password  string    `json:"-" gorm:"not null"`
+    CreatedAt time.Time `json:"created_at"`
+    UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (u *User) BeforeCreate(tx *gorm.DB) error {
+    // 비즈니스 로직
+    return nil
+}
+```
+
+### 마이그레이션
+- 모든 스키마 변경은 마이그레이션으로 관리
+- `migrations/` 디렉토리에 순차적으로 저장
+- Up/Down 마이그레이션 모두 작성
+
+## API 설계 규칙
+
+### RESTful API
+- **GET**: 조회
+- **POST**: 생성
+- **PUT**: 전체 업데이트
+- **PATCH**: 부분 업데이트
+- **DELETE**: 삭제
+
+### 응답 형식
+```go
+type APIResponse struct {
+    Success bool        `json:"success"`
+    Data    interface{} `json:"data,omitempty"`
+    Error   string      `json:"error,omitempty"`
+    Message string      `json:"message,omitempty"`
+}
+```
+
+### 컨트롤러 구조
+```go
+func (c *UserController) GetUser(w http.ResponseWriter, r *http.Request) {
+    // 1. 요청 검증
+    // 2. 서비스 호출
+    // 3. 응답 생성
+    // 4. 에러 처리
+}
+```
+
+## 보안 규칙
+
+### 인증/인가
+- JWT 토큰 사용
+- 비밀번호 해싱: bcrypt
+- CORS 설정
+- 입력 검증: validator 사용
+
+### 환경 변수
+```go
+type Config struct {
+    DatabaseURL string `env:"DATABASE_URL" envDefault:"postgres://localhost/coderacer"`
+    JWTSecret   string `env:"JWT_SECRET" envDefault:"secret"`
+    Port        string `env:"PORT" envDefault:"8080"`
+}
+```
+
+## 로깅 규칙
+
+### 구조화된 로깅
+```go
+logger.Info().
+    Str("user_id", userID).
+    Str("action", "user_created").
+    Msg("User created successfully")
+```
+
+### 로그 레벨
+- **DEBUG**: 개발 중 디버깅 정보
+- **INFO**: 일반적인 정보
+- **WARN**: 경고 메시지
+- **ERROR**: 에러 메시지
+- **FATAL**: 치명적 에러
+
+## 성능 최적화
+
+### 데이터베이스
+- 인덱스 최적화
+- N+1 쿼리 방지
+- 연결 풀 설정
+- 쿼리 최적화
+
+### 메모리 관리
+- 적절한 구조체 사용
+- 포인터 vs 값 타입 선택
+- 가비지 컬렉션 고려
+
+## 코드 리뷰 체크리스트
+
+### 필수 확인 사항
+- [ ] 테스트 커버리지 80% 이상
+- [ ] 모든 public 함수에 테스트 존재
+- [ ] 에러 처리 적절히 구현
+- [ ] 로깅 적절히 구현
+- [ ] 보안 취약점 없음
+- [ ] 성능 이슈 없음
+- [ ] 코드 중복 없음
+- [ ] 네이밍 컨벤션 준수
+
+## 개발 워크플로우
+
+1. **기능 요구사항 분석**
+2. **테스트 케이스 작성** (Red)
+3. **최소한의 구현** (Green)
+4. **리팩토링** (Refactor)
+5. **코드 리뷰**
+6. **통합 테스트**
+7. **배포**
+
+## 도구 설정
+
+### 필수 도구
+- **테스트**: testify, gomock
+- **검증**: validator
+- **로깅**: zerolog
+- **환경변수**: env
+- **마이그레이션**: golang-migrate
+
+### 개발 도구
+- **포맷팅**: gofmt, goimports
+- **린팅**: golangci-lint
+- **테스트 커버리지**: go test -cover
+- **벤치마크**: go test -bench
+
+이 규칙들을 따라 개발하면 일관성 있고 유지보수 가능한 Go 백엔드 코드를 작성할 수 있습니다.
