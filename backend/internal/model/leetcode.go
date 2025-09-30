@@ -43,7 +43,7 @@ func (tcs *TestCases) Scan(value interface{}) error {
 
 // LeetCode LeetCode 문제 정보를 담는 모델
 type LeetCode struct {
-	ID                 uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
+	ID                 uuid.UUID `json:"id" gorm:"type:uuid;primary_key"`
 	Title              string    `gorm:"type:varchar(255);not null" json:"title"`
 	Description        string    `gorm:"type:text;not null" json:"description"`
 	Examples           string    `gorm:"type:text;not null" json:"examples"`

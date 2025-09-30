@@ -19,7 +19,7 @@ const (
 
 // Game 게임 방 정보를 담는 모델
 type Game struct {
-	ID         uuid.UUID  `gorm:"type:uuid;primary_key;default:uuid_generate_v4()" json:"id"`
+	ID         uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
 	CreatorID  uuid.UUID  `gorm:"type:uuid;not null" json:"creator_id"`
 	Creator    User       `gorm:"foreignKey:CreatorID" json:"creator"`
 	OpponentID *uuid.UUID `gorm:"type:uuid" json:"opponent_id"`
