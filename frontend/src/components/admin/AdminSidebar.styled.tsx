@@ -13,7 +13,6 @@ export const Sidebar = styled.aside`
   top: 0;
   height: 100vh;
   background: #ffffff;
-  border-right: 1px solid hsl(var(--border));
   display: flex;
   flex-direction: column;
 `;
@@ -26,7 +25,6 @@ export const Brand = styled.div`
   justify-content: space-between;
   font-weight: 700;
   color: #111827;
-  border-bottom: 1px solid hsl(var(--border));
 `;
 
 export const Nav = styled.nav`

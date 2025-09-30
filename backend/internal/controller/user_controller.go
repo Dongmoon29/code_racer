@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
@@ -106,5 +107,41 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"profile": profile,
+	})
+}
+
+// AdminListUsers 관리자가 사용자 목록을 페이지네이션으로 조회
+func (c *UserController) AdminListUsers(ctx *gin.Context) {
+	// AdminRequired 미들웨어에서 권한 체크됨
+	page := 1
+	limit := 20
+	if p := ctx.Query("page"); p != "" {
+		if _, err := fmt.Sscanf(p, "%d", &page); err != nil {
+			page = 1
+		}
+	}
+	if l := ctx.Query("limit"); l != "" {
+		if _, err := fmt.Sscanf(l, "%d", &limit); err != nil {
+			limit = 20
+		}
+	}
+
+	users, total, err := c.userService.ListUsers(page, limit)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	hasNext := int64(page*limit) < total
+	ctx.JSON(http.StatusOK, gin.H{
+		"success":  true,
+		"items":    users,
+		"page":     page,
+		"limit":    limit,
+		"total":    total,
+		"has_next": hasNext,
 	})
 }

@@ -10,4 +10,6 @@ type UserRepository interface {
 	FindByID(id uuid.UUID) (*model.User, error)
 	FindByEmail(email string) (*model.User, error)
 	Update(user *model.User) error
+	// ListUsers returns users with offset/limit and total count
+	ListUsers(offset int, limit int) ([]*model.User, int64, error)
 }

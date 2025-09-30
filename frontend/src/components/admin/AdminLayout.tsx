@@ -31,16 +31,18 @@ export default function AdminLayout({ children }: Props) {
         <Nav>
           <NavSection>
             <SectionLabel>Management</SectionLabel>
-            {items.map((item) => (
-              <NavLink
-                key={item.href}
-                href={item.href}
-                $active={router.pathname.startsWith(item.href)}
-              >
-                <span style={{ fontSize: 18 }}>{item.icon}</span>
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
+            {items.map((item) => {
+              const isActive =
+                item.href === '/admin'
+                  ? router.pathname === '/admin'
+                  : router.pathname.startsWith(item.href);
+              return (
+                <NavLink key={item.href} href={item.href} $active={isActive}>
+                  <span style={{ fontSize: 18 }}>{item.icon}</span>
+                  <span>{item.label}</span>
+                </NavLink>
+              );
+            })}
           </NavSection>
         </Nav>
       </Sidebar>

@@ -82,6 +82,13 @@ func Setup(
 				user.PUT("/profile", userController.UpdateProfile)
 			}
 
+			// admin users
+			admin := secured.Group("/admin")
+			admin.Use(authMiddleware.AdminRequired())
+			{
+				admin.GET("/users", userController.AdminListUsers)
+			}
+
 			// leetcode
 			leetcode := secured.Group("/leetcode")
 			{

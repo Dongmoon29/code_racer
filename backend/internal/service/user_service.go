@@ -13,6 +13,7 @@ type UserService interface {
 	GetUserByID(userID uuid.UUID) (*model.UserResponse, error)
 	GetProfile(userID uuid.UUID) (*model.User, error)
 	UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRequest) (*model.User, error)
+	ListUsers(page int, limit int) ([]*model.User, int64, error)
 }
 
 type userService struct {
@@ -77,4 +78,19 @@ func (s *userService) UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRe
 		JobTitle:    user.JobTitle,
 		FavLanguage: user.FavLanguage,
 	}, nil
+}
+
+func (s *userService) ListUsers(page int, limit int) ([]*model.User, int64, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if page <= 0 {
+		page = 1
+	}
+	offset := (page - 1) * limit
+	users, total, err := s.userRepo.ListUsers(offset, limit)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to list users: %w", err)
+	}
+	return users, total, nil
 }

@@ -61,3 +61,18 @@ func (r *userRepository) FindByEmail(email string) (*model.User, error) {
 func (r *userRepository) Update(user *model.User) error {
 	return r.db.Save(user).Error
 }
+
+func (r *userRepository) ListUsers(offset int, limit int) ([]*model.User, int64, error) {
+	var users []*model.User
+	var total int64
+
+	if err := r.db.Model(&model.User{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := r.db.Order("created_at DESC").Offset(offset).Limit(limit).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
+}

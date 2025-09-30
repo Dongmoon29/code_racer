@@ -253,6 +253,25 @@ export const getCodeTemplate = (
 };
 
 export const userApi = {
+  // 관리자용 사용자 목록 조회 (offset pagination)
+  adminList: async (page: number, limit = 20) => {
+    const response = await api.get(`/admin/users`, {
+      params: { page, limit },
+    });
+    return response.data as {
+      success: boolean;
+      items: Array<{
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+      }>;
+      page: number;
+      limit: number;
+      total: number;
+      has_next: boolean;
+    };
+  },
   // 프로필 업데이트
   updateProfile: async (profile: UserProfile) => {
     const response = await api.put('/users/profile', profile);
