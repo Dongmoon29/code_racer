@@ -93,7 +93,7 @@ export const PlayingGame: React.FC<Props> = ({
           `}
         >
           {isDescriptionExpanded ? (
-            <div className="bg-[hsl(var(--muted))] rounded-lg">
+            <div className="bg-[hsl(var(--muted))] rounded-lg overflow-auto">
               <div className="px-4 py-2 border-b flex justify-between items-center">
                 <span className="font-medium">Problem Details</span>
                 <button
