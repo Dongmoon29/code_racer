@@ -8,19 +8,19 @@ export interface CreateLeetCodeRequest {
   description: string;
   examples: string;
   constraints: string;
-  testCases: TestCase[];
-  expectedOutputs: string;
+  test_cases: TestCase[];
+  expected_outputs: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
-  inputFormat: string;
-  outputFormat: string;
-  functionName: string;
-  javascriptTemplate: string;
-  pythonTemplate: string;
-  goTemplate: string;
-  javaTemplate: string;
-  cppTemplate: string;
-  timeLimit?: number;
-  memoryLimit?: number;
+  input_format: string;
+  output_format: string;
+  function_name: string;
+  javascript_template: string;
+  python_template: string;
+  go_template: string;
+  java_template: string;
+  cpp_template: string;
+  time_limit?: number;
+  memory_limit?: number;
 }
 
 export interface UpdateLeetCodeRequest extends Partial<CreateLeetCodeRequest> {
@@ -31,26 +31,26 @@ export interface LeetCodeSummary {
   id: string;
   title: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LeetCodeDetail extends LeetCodeSummary {
   description: string;
   examples: string;
   constraints: string;
-  testCases: TestCase[];
-  expectedOutputs: string;
-  inputFormat: string;
-  outputFormat: string;
-  functionName: string;
-  javascriptTemplate: string;
-  pythonTemplate: string;
-  goTemplate: string;
-  javaTemplate: string;
-  cppTemplate: string;
-  timeLimit: number;
-  memoryLimit: number;
+  test_cases: TestCase[];
+  expected_outputs: string;
+  input_format: string;
+  output_format: string;
+  function_name: string;
+  javascript_template: string;
+  python_template: string;
+  go_template: string;
+  java_template: string;
+  cpp_template: string;
+  time_limit: number;
+  memory_limit: number;
 }
 
 export interface LeetCodeFormData {
@@ -59,19 +59,19 @@ export interface LeetCodeFormData {
   description: string;
   examples: string;
   constraints: string;
-  testCases: TestCase[];
-  expectedOutputs: string;
+  test_cases: TestCase[];
+  expected_outputs: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
-  inputFormat: string;
-  outputFormat: string;
-  functionName: string;
-  javascriptTemplate: string;
-  pythonTemplate: string;
-  goTemplate: string;
-  javaTemplate: string;
-  cppTemplate: string;
-  timeLimit: number;
-  memoryLimit: number;
-  createdAt?: string;
-  updatedAt?: string;
+  input_format: string;
+  output_format: string;
+  function_name: string;
+  javascript_template: string;
+  python_template: string;
+  go_template: string;
+  java_template: string;
+  cpp_template: string;
+  time_limit: number;
+  memory_limit: number;
+  created_at?: string;
+  updated_at?: string;
 }

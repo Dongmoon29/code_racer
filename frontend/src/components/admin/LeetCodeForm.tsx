@@ -19,19 +19,19 @@ const defaultFormData: LeetCodeFormData = {
   description: '',
   examples: '',
   constraints: '',
-  testCases: [{ input: [], output: '' }],
-  expectedOutputs: '',
+  test_cases: [{ input: [], output: '' }],
+  expected_outputs: '',
   difficulty: 'Easy',
-  inputFormat: '',
-  outputFormat: '',
-  functionName: '',
-  javascriptTemplate: '',
-  pythonTemplate: '',
-  goTemplate: '',
-  javaTemplate: '',
-  cppTemplate: '',
-  timeLimit: 1000,
-  memoryLimit: 128,
+  input_format: '',
+  output_format: '',
+  function_name: '',
+  javascript_template: '',
+  python_template: '',
+  go_template: '',
+  java_template: '',
+  cpp_template: '',
+  time_limit: 1000,
+  memory_limit: 128,
 };
 
 const difficultyOptions = ['Easy', 'Medium', 'Hard'];
@@ -66,7 +66,7 @@ export default function LeetCodeForm({
     field: keyof TestCase,
     value: (string | number | boolean)[] | (string | number | boolean)
   ) => {
-    const newTestCases = [...formData.testCases];
+    const newTestCases = [...formData.test_cases];
     if (field === 'input') {
       newTestCases[index] = {
         ...newTestCases[index],
@@ -84,15 +84,15 @@ export default function LeetCodeForm({
   const addTestCase = () => {
     setFormData((prev) => ({
       ...prev,
-      testCases: [...prev.testCases, { input: [], output: '' }],
+      test_cases: [...prev.test_cases, { input: [], output: '' }],
     }));
   };
 
   const removeTestCase = (index: number) => {
-    if (formData.testCases.length > 1) {
+    if (formData.test_cases.length > 1) {
       setFormData((prev) => ({
         ...prev,
-        testCases: prev.testCases.filter((_, i) => i !== index),
+        testCases: prev.test_cases.filter((_, i) => i !== index),
       }));
     }
   };
@@ -127,7 +127,6 @@ export default function LeetCodeForm({
           ? 'Add New LeetCode Problem'
           : 'Edit LeetCode Problem'}
       </h2>
-
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
           <p className="text-red-600">{error}</p>
@@ -221,8 +220,10 @@ export default function LeetCodeForm({
             </label>
             <input
               type="text"
-              value={formData.inputFormat}
-              onChange={(e) => handleInputChange('inputFormat', e.target.value)}
+              value={formData.input_format}
+              onChange={(e) =>
+                handleInputChange('input_format', e.target.value)
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="array"
               required
@@ -235,9 +236,9 @@ export default function LeetCodeForm({
             </label>
             <input
               type="text"
-              value={formData.outputFormat}
+              value={formData.output_format}
               onChange={(e) =>
-                handleInputChange('outputFormat', e.target.value)
+                handleInputChange('output_format', e.target.value)
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="number"
@@ -253,8 +254,8 @@ export default function LeetCodeForm({
           </label>
           <input
             type="text"
-            value={formData.functionName}
-            onChange={(e) => handleInputChange('functionName', e.target.value)}
+            value={formData.function_name}
+            onChange={(e) => handleInputChange('function_name', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="twoSum"
             required
@@ -277,7 +278,7 @@ export default function LeetCodeForm({
           </div>
 
           <div className="space-y-3">
-            {formData.testCases.map((testCase, index) => (
+            {formData.test_cases.map((testCase, index) => (
               <div
                 key={index}
                 className="flex gap-3 items-center p-3 border border-gray-200 rounded-md"
@@ -316,7 +317,7 @@ export default function LeetCodeForm({
                     required
                   />
                 </div>
-                {formData.testCases.length > 1 && (
+                {formData.test_cases.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeTestCase(index)}
@@ -337,9 +338,9 @@ export default function LeetCodeForm({
           </label>
           <input
             type="text"
-            value={formData.expectedOutputs}
+            value={formData.expected_outputs}
             onChange={(e) =>
-              handleInputChange('expectedOutputs', e.target.value)
+              handleInputChange('expected_outputs', e.target.value)
             }
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="6"
@@ -359,12 +360,12 @@ export default function LeetCodeForm({
               <textarea
                 value={
                   formData[
-                    `${lang}Template` as keyof LeetCodeFormData
+                    `${lang}_template` as keyof LeetCodeFormData
                   ] as string
                 }
                 onChange={(e) =>
                   handleInputChange(
-                    `${lang}Template` as keyof LeetCodeFormData,
+                    `${lang}_template` as keyof LeetCodeFormData,
                     e.target.value
                   )
                 }
@@ -385,9 +386,9 @@ export default function LeetCodeForm({
             </label>
             <input
               type="number"
-              value={formData.timeLimit}
+              value={formData.time_limit}
               onChange={(e) =>
-                handleInputChange('timeLimit', parseInt(e.target.value))
+                handleInputChange('time_limit', parseInt(e.target.value))
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               min="100"
@@ -401,9 +402,9 @@ export default function LeetCodeForm({
             </label>
             <input
               type="number"
-              value={formData.memoryLimit}
+              value={formData.memory_limit}
               onChange={(e) =>
-                handleInputChange('memoryLimit', parseInt(e.target.value))
+                handleInputChange('memory_limit', parseInt(e.target.value))
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               min="16"

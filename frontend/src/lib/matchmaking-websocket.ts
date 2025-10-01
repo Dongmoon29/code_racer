@@ -90,7 +90,6 @@ export class MatchmakingWebSocketClient {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-          console.log('Matchmaking WebSocket connected');
           this.reconnectAttempts = 0;
           this.callbacks.onConnect?.();
           resolve();
@@ -98,9 +97,7 @@ export class MatchmakingWebSocketClient {
 
         this.ws.onmessage = (event) => {
           try {
-            console.log('📨 Received WebSocket message:', event.data);
             const message = JSON.parse(event.data) as MatchingWebSocketMessage;
-            console.log('📨 Parsed message:', message);
             this.handleMessage(message);
           } catch (error) {
             console.error('Failed to parse matchmaking message:', error);

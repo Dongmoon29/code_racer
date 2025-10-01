@@ -63,14 +63,12 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = ({
       // WebSocket 클라이언트 생성
       const wsClient = new MatchmakingWebSocketClient({
         onConnect: () => {
-          console.log('Matchmaking WebSocket connected');
           setMatchingState('searching');
           // 연결 후 즉시 매칭 요청
           wsClient.startMatching(difficulty);
         },
 
         onStatusUpdate: (message: MatchingStatusMessage) => {
-          console.log('Matching status update:', message);
           setQueuePosition(message.queue_position);
           setWaitTimeSeconds(message.wait_time_seconds || 0);
           setEstimatedWaitSeconds(message.estimated_wait_seconds);
@@ -82,7 +80,6 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = ({
         },
 
         onMatchFound: (message: MatchFoundMessage) => {
-          console.log('Match found:', message);
           setMatchingState('found');
 
           // WebSocket 연결 해제
@@ -101,7 +98,6 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = ({
         },
 
         onDisconnect: () => {
-          console.log('Matchmaking WebSocket disconnected');
           if (matchingState === 'searching') {
             setError('연결이 끊어졌습니다. 다시 시도해주세요.');
             setMatchingState('error');
@@ -119,8 +115,7 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = ({
 
       // WebSocket 연결 시도
       await wsClient.connect();
-    } catch (error) {
-      console.error('Failed to start matching:', error);
+    } catch {
       setError('매칭을 시작할 수 없습니다. 다시 시도해주세요.');
       setMatchingState('error');
     }
