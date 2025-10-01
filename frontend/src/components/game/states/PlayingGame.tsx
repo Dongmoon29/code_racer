@@ -42,7 +42,6 @@ export const PlayingGame: React.FC<Props> = ({
     'my' | 'opponent' | null
   >(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
-  const [myVimMode, setMyVimMode] = useState(false);
   const isCreator = currentUserId === game.creator.id;
 
   const handleMaximizeToggle = (editor: 'my' | 'opponent') => {
@@ -60,8 +59,6 @@ export const PlayingGame: React.FC<Props> = ({
               selectedLanguage={selectedLanguage}
               onChange={onLanguageChange}
             />
-            {/* TODO: theme selector는 에디터에만 적용되어야함 */}
-            {/* <ThemeSelector /> */}
           </div>
         </div>
         <div className="col-span-12 md:col-span-4 flex justify-end items-start">
@@ -85,21 +82,17 @@ export const PlayingGame: React.FC<Props> = ({
         </Alert>
       )}
 
-      {/* Main content - 고정 너비로 설정 */}
-      <div className="flex-1 px-4 flex min-h-0 game-editor-container" style={{ width: '100%' }}>
-        {/* Problem Description - flex-basis로 기본 너비 설정 */}
+      <div
+        className="flex-1 px-4 py-4 flex min-h-0 game-editor-container"
+        style={{ width: '100%' }}
+      >
         <div
           className={`
             transition-all duration-300 overflow-auto
-            ${
-              isDescriptionExpanded
-                ? 'w-[33.333%]' // 고정 너비 33.333%
-                : 'w-[40px]' // 고정 너비 40px
-            }
+            ${isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'}
           `}
         >
           {isDescriptionExpanded ? (
-            // 확장된 상태
             <div className="bg-[hsl(var(--muted))] rounded-lg">
               <div className="px-4 py-2 border-b flex justify-between items-center">
                 <span className="font-medium">Problem Details</span>
@@ -136,7 +129,6 @@ export const PlayingGame: React.FC<Props> = ({
               </div>
             </div>
           ) : (
-            // 최소화된 상태 - FileText 아이콘으로 변경
             <button
               onClick={() => setIsDescriptionExpanded(true)}
               className="w-full h-10 flex items-center justify-center text-[hsl(var(--muted-foreground))] rounded-lg hover:text-white hover:scale-110 transition-all duration-200"
@@ -146,9 +138,7 @@ export const PlayingGame: React.FC<Props> = ({
             </button>
           )}
         </div>
-
-        {/* Code Editors Container */}
-        <div className="flex gap-4 ml-4" style={{ width: 'calc(100% - 33.333% - 1rem)' }}>
+        <div className="flex-1 flex gap-4 ml-4">
           <div
             className={`
               transition-all duration-300 border border-gray-200 rounded-lg overflow-hidden
@@ -179,18 +169,6 @@ export const PlayingGame: React.FC<Props> = ({
                 Me
               </span>
               <div className="flex items-center space-x-2">
-                {/* Vim 모드 토글 버튼 */}
-                <button
-                  onClick={() => setMyVimMode(!myVimMode)}
-                  className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
-                    myVimMode
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                  } hover:opacity-80`}
-                  title={myVimMode ? 'Vim 모드' : '일반 모드'}
-                >
-                  {myVimMode ? 'VIM' : 'NORMAL'}
-                </button>
                 <button
                   onClick={() => handleMaximizeToggle('my')}
                   className="cursor-pointer p-1 hover:bg-gray-200 rounded-md transition-colors shrink-0"
@@ -214,7 +192,6 @@ export const PlayingGame: React.FC<Props> = ({
                 onChange={onCodeChange}
                 language={selectedLanguage}
                 theme={theme}
-                vimMode={myVimMode}
               />
             </div>
           </div>
