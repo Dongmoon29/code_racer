@@ -122,7 +122,7 @@ export const PlayingGame: React.FC<Props> = ({
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Constraints</h3>
-                  <pre className="p-3 rounded bg-[hsl(var(--muted))]">
+                  <pre className="p-3 rounded whitespace-pre-wrap bg-[hsl(var(--muted))]">
                     {game.leetcode.constraints}
                   </pre>
                 </div>
