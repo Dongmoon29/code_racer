@@ -59,54 +59,6 @@ func NewGameService(
 	}
 }
 
-// CreateGame 게임 방 생성
-func (s *gameService) CreateGame(userID uuid.UUID, req *model.CreateGameRequest) (*model.GameResponse, error) {
-	// LeetCode 문제 조회
-	leetcode, err := s.leetCodeRepo.FindByID(req.LeetCodeID)
-	if err != nil {
-		return nil, err
-	}
-
-	// 게임 방 생성
-	game := &model.Game{
-		CreatorID:  userID,
-		LeetCodeID: leetcode.ID,
-		Status:     model.GameStatusWaiting,
-	}
-
-	// DB에 게임 생성
-	if err := s.gameRepo.Create(game); err != nil {
-		return nil, err
-	}
-
-	// 생성된 게임 정보 다시 조회 (관계 데이터 포함)
-	createdGame, err := s.gameRepo.FindByID(game.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Redis에 게임 방 정보와 초기 코드를 원자적으로 저장
-	ctx := context.Background()
-	gameKey := fmt.Sprintf("game:%s", createdGame.ID.String())
-	creatorCodeKey := fmt.Sprintf("game:%s:user:%s:code", createdGame.ID.String(), userID.String())
-
-	// Redis 파이프라인을 사용한 원자적 처리
-	pipe := s.rdb.Pipeline()
-	pipe.HSet(ctx, gameKey, "status", string(createdGame.Status))
-	pipe.Set(ctx, creatorCodeKey, "", 24*time.Hour)
-
-	if _, err := pipe.Exec(ctx); err != nil {
-		// Redis 저장 실패 시 DB에서 게임 삭제 (롤백)
-		s.logger.Error().Err(err).Msg("Failed to store game data in Redis, rolling back")
-		if deleteErr := s.gameRepo.Delete(game.ID); deleteErr != nil {
-			s.logger.Error().Err(deleteErr).Msg("Failed to rollback game creation")
-		}
-		return nil, fmt.Errorf("failed to initialize game: %w", err)
-	}
-
-	return createdGame.ToResponse(), nil
-}
-
 // GetGame 게임 방 정보 조회
 func (s *gameService) GetGame(gameID uuid.UUID) (*model.GameResponse, error) {
 	game, err := s.gameRepo.FindByID(gameID)
@@ -115,21 +67,6 @@ func (s *gameService) GetGame(gameID uuid.UUID) (*model.GameResponse, error) {
 	}
 
 	return game.ToResponse(), nil
-}
-
-// ListGames 게임 방 목록 조회
-func (s *gameService) ListGames() ([]*model.GameListResponse, error) {
-	games, err := s.gameRepo.FindOpenGames()
-	if err != nil {
-		return nil, err
-	}
-
-	var result []*model.GameListResponse
-	for _, game := range games {
-		result = append(result, game.ToListResponse())
-	}
-
-	return result, nil
 }
 
 // ListLeetCodes LeetCode 문제 목록 조회
@@ -145,34 +82,6 @@ func (s *gameService) ListLeetCodes() ([]*model.LeetCodeSummary, error) {
 	}
 
 	return result, nil
-}
-
-// JoinGame 게임 방 참가
-func (s *gameService) JoinGame(gameID uuid.UUID, userID uuid.UUID) (*model.GameResponse, error) {
-	// 게임 방 참가 처리
-	game, err := s.gameRepo.JoinGame(gameID, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Redis에 게임 상태와 참가자 코드를 원자적으로 업데이트
-	ctx := context.Background()
-	gameKey := fmt.Sprintf("game:%s", game.ID.String())
-	opponentCodeKey := fmt.Sprintf("game:%s:user:%s:code", game.ID.String(), userID.String())
-	gameUsersKey := fmt.Sprintf("game:%s:users", game.ID.String())
-
-	// Redis 파이프라인을 사용한 원자적 처리
-	pipe := s.rdb.Pipeline()
-	pipe.HSet(ctx, gameKey, "status", string(game.Status))
-	pipe.Set(ctx, opponentCodeKey, "", 24*time.Hour)
-	pipe.SAdd(ctx, gameUsersKey, userID.String())
-	pipe.Expire(ctx, gameUsersKey, 24*time.Hour)
-
-	if _, err := pipe.Exec(ctx); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to update Redis after joining game")
-		// Redis 실패는 로그만 남기고 게임은 계속 진행 (DB 상태는 이미 업데이트됨)
-	}
-	return game.ToResponse(), nil
 }
 
 // SubmitSolution 코드 제출 및 평가
