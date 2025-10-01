@@ -183,10 +183,10 @@ export default function LeetCodeList() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(problem.createdAt).toLocaleDateString('en-US')}
+                      {new Date(problem.created_at).toLocaleDateString('en-US')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(problem.updatedAt).toLocaleDateString('en-US')}
+                      {new Date(problem.updated_at).toLocaleDateString('en-US')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
