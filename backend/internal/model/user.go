@@ -31,6 +31,7 @@ type User struct {
 	FavLanguage   string    `gorm:"type:varchar(50)" json:"fav_language"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
+	Rating        int       `gorm:"type:integer;default:1000" json:"rating"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {

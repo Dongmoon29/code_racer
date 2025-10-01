@@ -22,8 +22,11 @@ func SetupDatabase(db *gorm.DB) error {
 		{"Enable UUID extension", func() error {
 			return db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";").Error
 		}},
-		{"Auto migrate", func() error {
-			return db.AutoMigrate(&model.User{}, &model.Game{}, &model.LeetCode{})
+		{"Auto migrate (dev only)", func() error {
+			if !util.IsProduction() {
+				return db.AutoMigrate(&model.User{}, &model.Game{}, &model.LeetCode{})
+			}
+			return nil
 		}},
 		{"Seed data", func() error {
 			return seed.SeedLeetCodeProblem(db)
