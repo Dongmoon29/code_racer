@@ -188,6 +188,7 @@ func TestLeetCodeService_CreateProblem(t *testing.T) {
 			},
 		},
 		ExpectedOutputs: "6",
+		IOSchema:        model.IOSchema{ParamTypes: []string{"number", "number", "number"}, ReturnType: "number"},
 	}
 
 	// 모의 리포지토리 설정
@@ -226,6 +227,7 @@ func TestLeetCodeService_CreateProblem_InvalidTestCases(t *testing.T) {
 		CPPTemplate:        "int solve() {}",
 		TestCases:          model.TestCases{}, // 빈 테스트 케이스
 		ExpectedOutputs:    "6",
+		IOSchema:           model.IOSchema{ParamTypes: []string{"number"}, ReturnType: "number"},
 	}
 
 	// 서비스 메서드 호출
@@ -272,6 +274,7 @@ func TestLeetCodeService_UpdateProblem(t *testing.T) {
 			},
 		},
 		ExpectedOutputs: "10",
+		IOSchema:        model.IOSchema{ParamTypes: []string{"number", "number", "number", "number"}, ReturnType: "number"},
 	}
 
 	// 모의 리포지토리 설정
@@ -440,12 +443,12 @@ func TestLeetCodeService_ValidateTestCases(t *testing.T) {
 		},
 	}
 
-	err := service.ValidateTestCases(validTestCases, "solve")
+	err := service.ValidateTestCases(validTestCases, model.IOSchema{ParamTypes: []string{"number", "number", "number"}, ReturnType: "number"})
 	assert.NoError(t, err)
 
 	// 빈 테스트 케이스
 	emptyTestCases := model.TestCases{}
-	err = service.ValidateTestCases(emptyTestCases, "solve")
+	err = service.ValidateTestCases(emptyTestCases, model.IOSchema{ParamTypes: []string{"number"}, ReturnType: "number"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "at least one test case is required")
 
@@ -456,9 +459,9 @@ func TestLeetCodeService_ValidateTestCases(t *testing.T) {
 			Output: 6,
 		},
 	}
-	err = service.ValidateTestCases(invalidTestCases, "solve")
+	err = service.ValidateTestCases(invalidTestCases, model.IOSchema{ParamTypes: []string{"number"}, ReturnType: "number"})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "input cannot be empty")
+	assert.Contains(t, err.Error(), "does not match schema length")
 
 	// 출력이 nil인 테스트 케이스
 	nilOutputTestCases := model.TestCases{
@@ -467,7 +470,7 @@ func TestLeetCodeService_ValidateTestCases(t *testing.T) {
 			Output: nil,
 		},
 	}
-	err = service.ValidateTestCases(nilOutputTestCases, "solve")
+	err = service.ValidateTestCases(nilOutputTestCases, model.IOSchema{ParamTypes: []string{"number", "number", "number"}, ReturnType: "number"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "output cannot be nil")
 }

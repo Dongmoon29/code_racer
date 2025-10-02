@@ -17,7 +17,7 @@ type LeetCodeService interface {
 	DeleteProblem(id uuid.UUID) error
 	GetProblemsByDifficulty(difficulty string) ([]*model.LeetCodeSummary, error)
 	SearchProblems(query string) ([]*model.LeetCodeSummary, error)
-	ValidateTestCases(testCases model.TestCases, functionName string) error
+	ValidateTestCases(testCases model.TestCases, schema model.IOSchema) error
 }
 
 type leetCodeService struct {
@@ -58,8 +58,8 @@ func (s *leetCodeService) GetProblemByID(id uuid.UUID) (*model.LeetCodeDetail, e
 }
 
 func (s *leetCodeService) CreateProblem(req *model.CreateLeetCodeRequest) (*model.LeetCodeDetail, error) {
-	// 테스트 케이스 유효성 검사
-	if err := s.ValidateTestCases(req.TestCases, req.FunctionName); err != nil {
+	// 테스트 케이스 유효성 검사 (스키마 기반)
+	if err := s.ValidateTestCases(req.TestCases, req.IOSchema); err != nil {
 		return nil, fmt.Errorf("invalid test cases: %w", err)
 	}
 
@@ -69,6 +69,7 @@ func (s *leetCodeService) CreateProblem(req *model.CreateLeetCodeRequest) (*mode
 		Examples:           req.Examples,
 		Constraints:        req.Constraints,
 		TestCases:          req.TestCases,
+		IOSchema:           req.IOSchema,
 		ExpectedOutputs:    req.ExpectedOutputs,
 		Difficulty:         req.Difficulty,
 		InputFormat:        req.InputFormat,
@@ -100,8 +101,8 @@ func (s *leetCodeService) UpdateProblem(id uuid.UUID, req *model.UpdateLeetCodeR
 		return nil, fmt.Errorf("problem not found: %w", err)
 	}
 
-	// 테스트 케이스 유효성 검사
-	if err := s.ValidateTestCases(req.TestCases, req.FunctionName); err != nil {
+	// 테스트 케이스 유효성 검사 (스키마 기반)
+	if err := s.ValidateTestCases(req.TestCases, req.IOSchema); err != nil {
 		return nil, fmt.Errorf("invalid test cases: %w", err)
 	}
 
@@ -116,6 +117,7 @@ func (s *leetCodeService) UpdateProblem(id uuid.UUID, req *model.UpdateLeetCodeR
 	existingProblem.InputFormat = req.InputFormat
 	existingProblem.OutputFormat = req.OutputFormat
 	existingProblem.FunctionName = req.FunctionName
+	existingProblem.IOSchema = req.IOSchema
 	existingProblem.JavaScriptTemplate = req.JavaScriptTemplate
 	existingProblem.PythonTemplate = req.PythonTemplate
 	existingProblem.GoTemplate = req.GoTemplate
@@ -178,19 +180,24 @@ func (s *leetCodeService) SearchProblems(query string) ([]*model.LeetCodeSummary
 	return summaries, nil
 }
 
-func (s *leetCodeService) ValidateTestCases(testCases model.TestCases, functionName string) error {
+func (s *leetCodeService) ValidateTestCases(testCases model.TestCases, schema model.IOSchema) error {
 	if len(testCases) == 0 {
 		return fmt.Errorf("at least one test case is required")
 	}
+	if len(schema.ParamTypes) == 0 {
+		return fmt.Errorf("schema: at least one parameter type is required")
+	}
+	if schema.ReturnType == "" {
+		return fmt.Errorf("schema: return type is required")
+	}
 
 	for i, testCase := range testCases {
-		if len(testCase.Input) == 0 {
-			return fmt.Errorf("test case %d: input cannot be empty", i+1)
+		if len(testCase.Input) != len(schema.ParamTypes) {
+			return fmt.Errorf("test case %d: input length %d does not match schema length %d", i+1, len(testCase.Input), len(schema.ParamTypes))
 		}
 		if testCase.Output == nil {
 			return fmt.Errorf("test case %d: output cannot be nil", i+1)
 		}
 	}
-
 	return nil
 }
