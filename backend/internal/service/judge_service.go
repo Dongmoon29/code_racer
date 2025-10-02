@@ -3,7 +3,6 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
@@ -35,94 +34,127 @@ func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger) in
 }
 
 func (s *judgeService) EvaluateCode(code string, language string, problem *model.LeetCode) (*types.EvaluationResult, error) {
-	// 제출된 코드에서 함수 이름 추출
-	submittedFunctionName, err := s.functionExtractor.ExtractFunctionName(code, language)
-	if err != nil {
-		return nil, fmt.Errorf("failed to extract function name: %w", err)
+	if err := s.ensureFunctionNameMatches(code, language, problem.FunctionName); err != nil {
+		return nil, err
 	}
 
-	// 함수 이름이 다른 경우 코드 수정
-	if submittedFunctionName != problem.FunctionName {
-		code = s.replaceFunctionName(code, submittedFunctionName, problem.FunctionName)
-	}
-	s.logger.Debug().
-		Str("submittedFunctionName", submittedFunctionName).
-		Str("problemFunctionName", problem.FunctionName)
-
-	// 언어 ID 가져오기
 	languageID, err := s.getLanguageID(language)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get language ID: %w", err)
 	}
 
-	// 우선 배치 하니스 시도 (JS/Python 지원). 미지원 언어면 폴백.
-	if wrapped, err := func() (string, error) {
-		inputs := make([][]interface{}, 0, len(problem.TestCases))
-		for _, tc := range problem.TestCases {
-			inputs = append(inputs, tc.Input)
-		}
-		inputsJSON, _ := json.Marshal(inputs)
-		return s.codeWrapper.WrapCodeBatch(code, languageID, string(inputsJSON), problem)
-	}(); err == nil {
-		// 배치 실행
-		expected := make([]interface{}, 0, len(problem.TestCases))
-		for _, tc := range problem.TestCases {
-			expected = append(expected, tc.Output)
-		}
-		expectedJSON, _ := json.Marshal(expected)
-
-		request := types.Judge0Request{
-			SourceCode:       wrapped,
-			LanguageID:       languageID,
-			ExpectedOutput:   string(expectedJSON),
-			CompileTimeout:   10,
-			RunTimeout:       5,
-			MemoryLimit:      128000,
-			EnableNetworking: false,
-		}
-		response, err := s.judge0Client.SubmitCode(request)
-		if err != nil {
-			return nil, fmt.Errorf("Judge0 API error: %w", err)
-		}
-		if response.CompileError != "" {
-			return &types.EvaluationResult{Passed: false, ErrorMessage: fmt.Sprintf("Compilation error: %s", response.CompileError)}, nil
-		}
-		if response.Stderr != "" {
-			return &types.EvaluationResult{Passed: false, ErrorMessage: fmt.Sprintf("Runtime error: %s", response.Stderr)}, nil
-		}
-		actualTrimmed := strings.TrimSpace(response.Stdout)
-		var actual []interface{}
-		if err := json.Unmarshal([]byte(actualTrimmed), &actual); err != nil {
-			return &types.EvaluationResult{Passed: false, ErrorMessage: fmt.Sprintf("Invalid runner output: %v", err)}, nil
-		}
-		var results []types.TestCaseResult
-		allPassed := true
-		for i := range expected {
-			expBytes, _ := json.Marshal(expected[i])
-			actBytes, _ := json.Marshal(actual[i])
-			tr := types.TestCaseResult{
-				TestCaseIndex: i,
-				Input:         string(mustJSON(problem.TestCases[i].Input)),
-				Expected:      string(expBytes),
-				Actual:        strings.TrimSpace(string(actBytes)),
-				Passed:        strings.TrimSpace(string(actBytes)) == strings.TrimSpace(string(expBytes)),
-				ExecutionTime: getFloat64Time(response.Time),
-				MemoryUsage:   response.Memory,
-			}
-			if !tr.Passed {
-				allPassed = false
-			}
-			results = append(results, tr)
-		}
-		return &types.EvaluationResult{
-			Passed:        allPassed,
-			TestResults:   results,
-			ExecutionTime: getFloat64Time(response.Time),
-			MemoryUsage:   response.Memory,
-		}, nil
+	if res, ok, err := s.tryBatchEvaluate(code, languageID, problem); err != nil {
+		return nil, err
+	} else if ok {
+		return res, nil
 	}
 
-	// 폴백: 테스트 케이스별 개별 실행
+	return s.aggregatePerTest(code, languageID, problem)
+}
+
+// ensureFunctionNameMatches extracts and validates the function name (strict mode)
+func (s *judgeService) ensureFunctionNameMatches(code string, language string, expected string) error {
+	submittedFunctionName, err := s.functionExtractor.ExtractFunctionName(code, language)
+	if err != nil {
+		return fmt.Errorf("failed to extract function name: %w", err)
+	}
+	if submittedFunctionName != expected {
+		return fmt.Errorf("function name mismatch: submitted '%s', expected '%s'", submittedFunctionName, expected)
+	}
+	s.logger.Debug().Str("submittedFunctionName", submittedFunctionName).Str("problemFunctionName", expected)
+	return nil
+}
+
+// tryBatchEvaluate attempts batch harness path; returns (result, usedBatch, error)
+func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *model.LeetCode) (*types.EvaluationResult, bool, error) {
+	// build inputs
+	inputs := make([][]interface{}, 0, len(problem.TestCases))
+	expected := make([]interface{}, 0, len(problem.TestCases))
+	for _, tc := range problem.TestCases {
+		inputs = append(inputs, tc.Input)
+		expected = append(expected, tc.Output)
+	}
+	inputsJSON, _ := json.Marshal(inputs)
+
+	// wrap batch (may fail for unsupported languages)
+	wrappedCode, err := s.codeWrapper.WrapCodeBatch(code, languageID, string(inputsJSON), problem)
+	if err != nil {
+		return nil, false, nil
+	}
+
+	// submit
+	expectedJSON, _ := json.Marshal(expected)
+	resp, err := s.submitToJudge(wrappedCode, languageID, string(expectedJSON))
+	if err != nil {
+		return nil, false, err
+	}
+
+	// evaluate response
+	res, err := s.evaluateBatchResponse(resp, expected, inputs)
+	if err != nil {
+		return nil, false, nil // fall back on parse errors
+	}
+	return res, true, nil
+}
+
+func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expectedJSON string) (*types.Judge0Response, error) {
+	request := types.Judge0Request{
+		SourceCode:       wrappedCode,
+		LanguageID:       languageID,
+		ExpectedOutput:   expectedJSON,
+		CompileTimeout:   10,
+		RunTimeout:       5,
+		MemoryLimit:      128000,
+		EnableNetworking: false,
+	}
+	response, err := s.judge0Client.SubmitCode(request)
+	if err != nil {
+		return nil, fmt.Errorf("Judge0 API error: %w", err)
+	}
+	return response, nil
+}
+
+func (s *judgeService) evaluateBatchResponse(response *types.Judge0Response, expected []interface{}, inputs [][]interface{}) (*types.EvaluationResult, error) {
+	if response.CompileError != "" {
+		return &types.EvaluationResult{Passed: false, ErrorMessage: fmt.Sprintf("Compilation error: %s", response.CompileError)}, nil
+	}
+	if response.Stderr != "" {
+		return &types.EvaluationResult{Passed: false, ErrorMessage: fmt.Sprintf("Runtime error: %s", response.Stderr)}, nil
+	}
+	actualTrimmed := strings.TrimSpace(response.Stdout)
+	var actual []interface{}
+	if err := json.Unmarshal([]byte(actualTrimmed), &actual); err != nil {
+		return nil, fmt.Errorf("invalid runner output: %v", err)
+	}
+
+	var results []types.TestCaseResult
+	allPassed := true
+	for i := range expected {
+		expBytes, _ := json.Marshal(expected[i])
+		actBytes, _ := json.Marshal(actual[i])
+		tr := types.TestCaseResult{
+			TestCaseIndex: i,
+			Input:         string(mustJSON(inputs[i])),
+			Expected:      string(expBytes),
+			Actual:        strings.TrimSpace(string(actBytes)),
+			Passed:        strings.TrimSpace(string(actBytes)) == strings.TrimSpace(string(expBytes)),
+			ExecutionTime: getFloat64Time(response.Time),
+			MemoryUsage:   response.Memory,
+		}
+		if !tr.Passed {
+			allPassed = false
+		}
+		results = append(results, tr)
+	}
+	return &types.EvaluationResult{
+		Passed:        allPassed,
+		TestResults:   results,
+		ExecutionTime: getFloat64Time(response.Time),
+		MemoryUsage:   response.Memory,
+	}, nil
+}
+
+func (s *judgeService) aggregatePerTest(code string, languageID int, problem *model.LeetCode) (*types.EvaluationResult, error) {
 	var testResults []types.TestCaseResult
 	var totalTime float64
 	var totalMemory float64
@@ -185,104 +217,82 @@ func (s *judgeService) evaluateTestCase(
 		Interface("testCase", testCase).
 		Msg("Starting test case evaluation")
 
+	wrapped, expectedStr, early := s.buildSingleWrappedCode(code, languageID, testCase, problem, index)
+	if early != nil {
+		return early
+	}
+
+	response, early := s.submitSingle(wrapped, languageID, expectedStr, index)
+	if early != nil {
+		return early
+	}
+
+	return s.evaluateSingleResponse(response, testCase, expectedStr, index)
+}
+
+func (s *judgeService) buildSingleWrappedCode(code string, languageID int, testCase model.TestCase, problem *model.LeetCode, index int) (string, string, *types.TestCaseResult) {
 	testCaseJSON, err := json.Marshal(testCase.Input)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to marshal test case input")
-		return &types.TestCaseResult{
-			TestCaseIndex: index,
-			Passed:        false,
-			ErrorMessage:  fmt.Sprintf("Failed to marshal test case: %v", err),
-		}
+		return "", "", &types.TestCaseResult{TestCaseIndex: index, Passed: false, ErrorMessage: fmt.Sprintf("Failed to marshal test case: %v", err)}
 	}
-
 	expectedJSON, err := json.Marshal(testCase.Output)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to marshal expected output")
-		return &types.TestCaseResult{
-			TestCaseIndex: index,
-			Passed:        false,
-			ErrorMessage:  fmt.Sprintf("Failed to marshal expected output: %v", err),
-		}
+		return "", "", &types.TestCaseResult{TestCaseIndex: index, Passed: false, ErrorMessage: fmt.Sprintf("Failed to marshal expected output: %v", err)}
 	}
-
 	wrappedCode, err := s.codeWrapper.WrapCode(code, languageID, string(testCaseJSON), problem)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to wrap code")
-		return &types.TestCaseResult{
-			TestCaseIndex: index,
-			Passed:        false,
-			ErrorMessage:  fmt.Sprintf("Failed to wrap code: %v", err),
-		}
+		return "", "", &types.TestCaseResult{TestCaseIndex: index, Passed: false, ErrorMessage: fmt.Sprintf("Failed to wrap code: %v", err)}
 	}
+	s.logger.Debug().Int("testCaseIndex", index).Str("wrappedCode", wrappedCode).Msg("Code wrapped successfully")
+	return wrappedCode, string(expectedJSON), nil
+}
 
-	s.logger.Debug().
-		Int("testCaseIndex", index).
-		Str("wrappedCode", wrappedCode).
-		Msg("Code wrapped successfully")
-
+func (s *judgeService) submitSingle(wrappedCode string, languageID int, expectedJSON string, index int) (*types.Judge0Response, *types.TestCaseResult) {
 	request := types.Judge0Request{
 		SourceCode:       wrappedCode,
 		LanguageID:       languageID,
-		ExpectedOutput:   string(expectedJSON),
+		ExpectedOutput:   expectedJSON,
 		CompileTimeout:   10,
 		RunTimeout:       5,
 		MemoryLimit:      128000,
 		EnableNetworking: false,
 	}
-
 	response, err := s.judge0Client.SubmitCode(request)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Judge0 API request failed")
-		return &types.TestCaseResult{
-			TestCaseIndex: index,
-			Passed:        false,
-			ErrorMessage:  fmt.Sprintf("Judge0 API error: %v", err),
-		}
+		return nil, &types.TestCaseResult{TestCaseIndex: index, Passed: false, ErrorMessage: fmt.Sprintf("Judge0 API error: %v", err)}
 	}
+	s.logger.Debug().Int("testCaseIndex", index).Interface("response", response).Msg("Received Judge0 API response")
+	return response, nil
+}
 
-	s.logger.Debug().
-		Int("testCaseIndex", index).
-		Interface("response", response).
-		Msg("Received Judge0 API response")
-
+func (s *judgeService) evaluateSingleResponse(response *types.Judge0Response, testCase model.TestCase, expectedJSON string, index int) *types.TestCaseResult {
+	inputJSON, _ := json.Marshal(testCase.Input)
 	result := &types.TestCaseResult{
 		TestCaseIndex: index,
-		Input:         string(testCaseJSON),
-		Expected:      string(expectedJSON),
+		Input:         string(inputJSON),
+		Expected:      expectedJSON,
 		ExecutionTime: getFloat64Time(response.Time),
 		MemoryUsage:   response.Memory,
 	}
-
 	if response.CompileError != "" {
-		s.logger.Error().
-			Str("compileError", response.CompileError).
-			Msg("Compilation error occurred")
+		s.logger.Error().Str("compileError", response.CompileError).Msg("Compilation error occurred")
 		result.Passed = false
 		result.ErrorMessage = fmt.Sprintf("Compilation error: %s", response.CompileError)
 		return result
 	}
-
 	if response.Stderr != "" {
-		s.logger.Error().
-			Str("stderr", response.Stderr).
-			Msg("Runtime error occurred")
+		s.logger.Error().Str("stderr", response.Stderr).Msg("Runtime error occurred")
 		result.Passed = false
 		result.ErrorMessage = fmt.Sprintf("Runtime error: %s", response.Stderr)
 		return result
 	}
-
 	result.Actual = strings.TrimSpace(response.Stdout)
 	result.Passed = strings.TrimSpace(result.Actual) == strings.TrimSpace(result.Expected)
-
-	s.logger.Debug().
-		Int("testCaseIndex", index).
-		Bool("passed", result.Passed).
-		Str("actual", result.Actual).
-		Str("expected", result.Expected).
-		Float64("executionTime", result.ExecutionTime).
-		Float64("memoryUsage", result.MemoryUsage).
-		Msg("Test case evaluation completed")
-
+	s.logger.Debug().Int("testCaseIndex", index).Bool("passed", result.Passed).Str("actual", result.Actual).Str("expected", result.Expected).Float64("executionTime", result.ExecutionTime).Float64("memoryUsage", result.MemoryUsage).Msg("Test case evaluation completed")
 	return result
 }
 
@@ -308,20 +318,4 @@ func mustJSON(v interface{}) []byte {
 		return []byte("null")
 	}
 	return b
-}
-
-func (s *judgeService) replaceFunctionName(code, oldName, newName string) string {
-	// JavaScript: function answer() {} 또는 const/let answer = () => {} 패턴
-	jsPattern := fmt.Sprintf(`(function\s+)%s(\s*\()|(\b(?:const|let|var)\s+)%s(\s*=\s*(?:function|\()|\s*=\s*\(.*\)\s*=>)`, oldName, oldName)
-	code = regexp.MustCompile(jsPattern).ReplaceAllString(code, "${1}${3}"+newName+"${2}${4}")
-
-	// Python: def answer():
-	pythonPattern := fmt.Sprintf(`(def\s+)%s(\s*\()`, oldName)
-	code = regexp.MustCompile(pythonPattern).ReplaceAllString(code, "${1}"+newName+"${2}")
-
-	// Go: func answer()
-	goPattern := fmt.Sprintf(`(func\s+)%s(\s*\()`, oldName)
-	code = regexp.MustCompile(goPattern).ReplaceAllString(code, "${1}"+newName+"${2}")
-
-	return code
 }
