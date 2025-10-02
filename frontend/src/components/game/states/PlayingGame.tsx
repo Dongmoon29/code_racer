@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { FC, useState } from 'react';
 import { Spinner } from '../../ui';
 import CodeEditor from '../CodeEditor';
 import LanguageSelector from '../LanguageSelector';
@@ -8,7 +8,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/alert';
 
-interface Props {
+interface PlayingGameProps {
   game: Game;
   currentUserId: string;
   myCode: string;
@@ -25,7 +25,7 @@ interface Props {
   onToggleOpponentCode: () => void;
 }
 
-export const PlayingGame: React.FC<Props> = ({
+export const PlayingGame: FC<PlayingGameProps> = ({
   game,
   currentUserId,
   myCode,
