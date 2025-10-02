@@ -35,6 +35,105 @@ func (w *CodeWrapper) WrapCode(code string, languageID int, testCase string, pro
 	return wrapper(code, testCase, problem), nil
 }
 
+// WrapCodeBatch는 모든 테스트 케이스를 한 번에 실행하는 배치 하니스를 생성합니다
+func (w *CodeWrapper) WrapCodeBatch(code string, languageID int, testCasesJSON string, problem *model.LeetCode) (string, error) {
+	w.logger.Info().
+		Int("languageID", languageID).
+		Str("functionName", problem.FunctionName).
+		Msg("Wrapping code for batch testing")
+
+	switch languageID {
+	case constants.LanguageIDJavaScript:
+		template := `
+// user code
+%s
+
+function runAll() {
+  try {
+    const cases = %s;
+    const results = [];
+    for (let i = 0; i < cases.length; i++) {
+      const inputs = Array.isArray(cases[i]) ? cases[i] : [cases[i]];
+      const out = %s(...inputs);
+      results.push(out);
+    }
+    console.log(JSON.stringify(results));
+  } catch (e) {
+    console.error(String(e));
+    process.exit(1);
+  }
+}
+runAll();`
+		return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
+	case constants.LanguageIDPython:
+		template := `
+import json, sys
+
+# user code
+%s
+
+def run_all():
+    try:
+        cases = json.loads('''%s''')
+        results = []
+        for c in cases:
+            inputs = c if isinstance(c, list) else [c]
+            out = %s(*inputs)
+            results.append(out)
+        print(json.dumps(results))
+    except Exception as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    run_all()`
+		return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
+	case constants.LanguageIDGo:
+		template := `
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "os"
+)
+
+// user code
+%s
+
+func main() {
+    var cases [][]interface{}
+    if err := json.Unmarshal([]byte(%q), &cases); err != nil {
+        fmt.Fprintf(os.Stderr, "Error parsing cases: %v\n", err)
+        os.Exit(1)
+    }
+
+    defer func() {
+        if r := recover(); r != nil {
+            fmt.Fprintf(os.Stderr, "Runtime error: %v\n", r)
+            os.Exit(1)
+        }
+    }()
+
+    results := make([]interface{}, 0, len(cases))
+    for _, c := range cases {
+        out := %s(c...)
+        results = append(results, out)
+    }
+
+    outJSON, err := json.Marshal(results)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error marshaling results: %v\n", err)
+        os.Exit(1)
+    }
+    fmt.Println(string(outJSON))
+}`
+		return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
+	default:
+		return "", fmt.Errorf("unsupported batch wrapper for language ID: %d", languageID)
+	}
+}
+
 func (w *CodeWrapper) getLanguageWrapper(languageID int) (func(string, string, *model.LeetCode) string, error) {
 	switch languageID {
 	case constants.LanguageIDJavaScript:

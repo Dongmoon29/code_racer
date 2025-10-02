@@ -12,6 +12,7 @@ type JudgeService interface {
 
 type CodeWrapper interface {
 	WrapCode(code string, languageID int, testCase string, problem *model.LeetCode) (string, error)
+	WrapCodeBatch(code string, languageID int, testCasesJSON string, problem *model.LeetCode) (string, error)
 }
 
 type Judge0Client interface {
