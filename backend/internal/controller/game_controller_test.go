@@ -48,46 +48,12 @@ func (m *MockGameService) GetPlayerCode(gameID uuid.UUID, userID uuid.UUID) (str
 	return args.String(0), args.Error(1)
 }
 
-// LeetCode management
-func (m *MockGameService) ListLeetCodes() ([]*model.LeetCodeSummary, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]*model.LeetCodeSummary), args.Error(1)
-}
+// LeetCode CRUD removed from GameService
 
 // REMOVED: Room-based API mocks (replaced by WebSocket matching)
 // CreateGame, ListGames, JoinGame, CloseGame - no longer part of interface
 
-func (m *MockGameService) CreateLeetCode(req *model.CreateLeetCodeRequest) (*model.LeetCodeDetail, error) {
-	args := m.Called(req)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*model.LeetCodeDetail), args.Error(1)
-}
-
-func (m *MockGameService) UpdateLeetCode(id uuid.UUID, req *model.UpdateLeetCodeRequest) (*model.LeetCodeDetail, error) {
-	args := m.Called(id, req)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*model.LeetCodeDetail), args.Error(1)
-}
-
-func (m *MockGameService) DeleteLeetCode(id uuid.UUID) error {
-	args := m.Called(id)
-	return args.Error(0)
-}
-
-func (m *MockGameService) GetLeetCode(id uuid.UUID) (*model.LeetCodeDetail, error) {
-	args := m.Called(id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*model.LeetCodeDetail), args.Error(1)
-}
+// removed: Create/Update/Delete/Get LeetCode
 
 // Matchmaking methods
 func (m *MockGameService) CreateGameForMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Game, error) {

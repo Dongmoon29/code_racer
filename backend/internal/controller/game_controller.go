@@ -55,28 +55,6 @@ func (c *GameController) GetGame(ctx *gin.Context) {
 	})
 }
 
-// REMOVED: ListGames - no longer needed with automatic matching
-
-// ListLeetCodes LeetCode 문제 목록 조회 핸들러
-func (c *GameController) ListLeetCodes(ctx *gin.Context) {
-	// LeetCode 문제 목록 조회
-	leetcodes, err := c.gameService.ListLeetCodes()
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success":   true,
-		"leetcodes": leetcodes,
-	})
-}
-
-// REMOVED: JoinGame - replaced by automatic matching via WebSocket
-
 // SubmitSolution 코드 제출 핸들러
 func (c *GameController) SubmitSolution(ctx *gin.Context) {
 	// 사용자 ID 가져오기
@@ -134,108 +112,6 @@ func (c *GameController) SubmitSolution(ctx *gin.Context) {
 		"is_winner": result.IsWinner,
 		"message":   result.Message,
 	})
-}
-
-// REMOVED: CloseGame - no room concept in matching system
-
-// GameController에 메서드 추가
-func (c *GameController) CreateLeetCode(ctx *gin.Context) {
-	var req model.CreateLeetCodeRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid request: " + err.Error(),
-		})
-		return
-	}
-
-	leetcode, err := c.gameService.CreateLeetCode(&req)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusCreated, gin.H{
-		"success":  true,
-		"leetcode": leetcode,
-	})
-}
-
-func (c *GameController) UpdateLeetCode(ctx *gin.Context) {
-	id, err := uuid.Parse(ctx.Param("id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid ID format",
-		})
-		return
-	}
-
-	var req model.UpdateLeetCodeRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid request: " + err.Error(),
-		})
-		return
-	}
-
-	leetcode, err := c.gameService.UpdateLeetCode(id, &req)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success":  true,
-		"leetcode": leetcode,
-	})
-}
-
-func (c *GameController) DeleteLeetCode(ctx *gin.Context) {
-	id, err := uuid.Parse(ctx.Param("id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid ID format",
-		})
-		return
-	}
-
-	if err := c.gameService.DeleteLeetCode(id); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Successfully deleted",
-	})
-}
-
-func (c *GameController) GetLeetCode(ctx *gin.Context) {
-	id, err := uuid.Parse(ctx.Param("id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
-		return
-	}
-
-	leetcode, err := c.gameService.GetLeetCode(id)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, leetcode)
 }
 
 // CreateGameFromMatch creates a game from a completed match
