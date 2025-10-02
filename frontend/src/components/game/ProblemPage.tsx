@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import CodeEditor from './CodeEditor';
-import { LeetCodeDetail, getCodeTemplate } from '@/lib/api';
+import { getCodeTemplate } from '@/lib/api';
+import { LeetCodeDetail } from '@/types';
 
 interface ProblemPageProps {
   problem: LeetCodeDetail;

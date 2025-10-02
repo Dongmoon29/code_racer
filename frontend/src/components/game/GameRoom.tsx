@@ -6,7 +6,7 @@ import WebSocketClient, {
   CodeUpdateMessage,
 } from '../../lib/websocket';
 import { Spinner } from '../ui';
-import { Game, SubmitResult } from './types';
+import { Game, SubmitResult } from '@/types';
 // REMOVED: Room waiting states - replaced by automatic matching
 // import { WaitingToJoinGame } from './states/WaitingToJoinGame';
 // import { WaitingForOpponent } from './states/WaitingForOpponent';
@@ -14,7 +14,7 @@ import { PlayingGame } from './states/PlayingGame';
 import { FinishedGame } from './states/FinishedGame';
 import { useAuthStore } from '@/stores/authStore';
 import axios, { AxiosError } from 'axios';
-import { ApiErrorResponse } from '@/lib/types';
+import { ApiErrorResponse } from '@/types';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/alert';
 import { getCodeTemplate } from '@/lib/api';
@@ -106,6 +106,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
   }, [game?.leetcode, selectedLanguage, myCode]);
 
   // 게임이 종료되면 localStorage 정리
+  // TODO 컴포넌트가 닫히거나 웹소켓 닫혀도 정리해야할거 같음
   useEffect(() => {
     if (game?.status === 'finished' || game?.status === 'closed') {
       localStorage.removeItem(`game_${gameId}_code`);

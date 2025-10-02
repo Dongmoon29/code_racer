@@ -1,9 +1,10 @@
-export const WebSocketMessageType = {
-  CODE_UPDATE: 'code_update',
-  GAME_START: 'game_start',
-  GAME_END: 'game_end',
+export const MATCHING_STATE = {
+  IDLE: 'idle',
+  CONNECTING: 'connecting',
+  SEARCHING: 'searching',
+  FOUND: 'found',
+  ERROR: 'error',
 } as const;
 
-export type WebSocketMessageTypeKeys = keyof typeof WebSocketMessageType;
-export type WebSocketMessageTypeValues =
-  (typeof WebSocketMessageType)[WebSocketMessageTypeKeys];
+export type MatchingState =
+  (typeof MATCHING_STATE)[keyof typeof MATCHING_STATE];

@@ -1,25 +1,8 @@
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
+import type { LeetCodeDetail } from '@/types';
 
-// LeetCode 문제 상세 정보 인터페이스
-export interface LeetCodeDetail {
-  id: string;
-  title: string;
-  description: string;
-  examples: string;
-  constraints: string;
-  difficulty: string;
-  test_cases: string[];
-  expected_outputs: string[];
-  input_format: string;
-  output_format: string;
-  function_name: string;
-  javascript_template: string;
-  python_template: string;
-  go_template: string;
-  java_template: string;
-  cpp_template: string;
-}
+// LeetCodeDetail 타입은 중앙 타입에서 가져옵니다
 
 export interface UserProfile {
   homepage?: string;

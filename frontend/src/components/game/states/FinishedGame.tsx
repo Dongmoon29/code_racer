@@ -1,7 +1,7 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import CodeEditor from '../CodeEditor';
-import { Game } from '../types';
+import { Game } from '@/types';
 import { Button } from '../../ui/Button';
 import { Alert } from '@/components/ui/alert';
 

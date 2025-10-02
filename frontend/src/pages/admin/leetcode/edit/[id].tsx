@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../../../hooks/useAuth';
 import { getLeetCodeProblem } from '../../../../lib/leetcode-api';
-import { LeetCodeFormData } from '../../../../lib/leetcode-types';
+import { LeetCodeFormData } from '@/types';
 import LeetCodeForm from '../../../../components/admin/LeetCodeForm';
 
 export default function EditLeetCodePage() {

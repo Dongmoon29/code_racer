@@ -5,7 +5,7 @@ import { Eye, EyeOff, Mail, User } from 'lucide-react';
 import { authApi } from '@/lib/api';
 import { Spinner } from '../ui';
 import axios, { AxiosError } from 'axios';
-import { ApiErrorResponse } from '@/lib/types';
+import { ApiErrorResponse } from '@/types';
 import { Alert } from '../ui/alert';
 import { Button } from '../ui/Button';
 import Image from 'next/image';

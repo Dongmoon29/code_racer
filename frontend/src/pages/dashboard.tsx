@@ -1,12 +1,11 @@
-import React from 'react';
+import React, { FC } from 'react';
 import Layout from '../components/layout/Layout';
 import MatchingScreen from '@/components/game/MatchingScreen';
-import { GetServerSideProps } from 'next';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/useAuth';
 
-const DashboardPage: React.FC = () => {
+const DashboardPage: FC = () => {
   const router = useRouter();
   const { isLoggedIn, isLoading } = useAuth();
 
@@ -16,7 +15,7 @@ const DashboardPage: React.FC = () => {
     }
   }, [isLoading, isLoggedIn, router]);
 
-  if (isLoading) {
+  if (isLoading || !isLoggedIn) {
     return (
       <Layout
         title="Dashboard | Code Racer"
@@ -29,10 +28,6 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  if (!isLoggedIn) {
-    return null;
-  }
-
   return (
     <Layout
       title="Dashboard | Code Racer"
@@ -41,7 +36,6 @@ const DashboardPage: React.FC = () => {
       <div className="min-h-screen bg-[hsl(var(--background))] py-8">
         <MatchingScreen
           onMatchFound={(gameId) => {
-            // 매칭 완료 시 게임 페이지로 이동
             router.push(`/game/${gameId}`);
           }}
         />
@@ -51,8 +45,3 @@ const DashboardPage: React.FC = () => {
 };
 
 export default DashboardPage;
-
-// 클라이언트 사이드에서 인증 체크 (토큰 기반)
-export const getServerSideProps: GetServerSideProps = async () => {
-  return { props: {} };
-};
