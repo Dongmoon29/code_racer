@@ -4,6 +4,10 @@ import (
 	"fmt"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
+    "github.com/Dongmoon29/code_racer/internal/judge/languages"
+    golangWrapper "github.com/Dongmoon29/code_racer/internal/judge/languages/golang"
+    jsWrapper "github.com/Dongmoon29/code_racer/internal/judge/languages/javascript"
+    pyWrapper "github.com/Dongmoon29/code_racer/internal/judge/languages/python"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 )
@@ -11,12 +15,19 @@ import (
 // CodeWrapper는 각 프로그래밍 언어별 코드 래핑을 처리합니다
 type CodeWrapper struct {
 	logger logger.Logger
+    langWrappers map[int]languages.LanguageWrapper
 }
 
 func NewCodeWrapper(logger logger.Logger) *CodeWrapper {
-	return &CodeWrapper{
-		logger: logger,
-	}
+    cw := &CodeWrapper{
+        logger: logger,
+        langWrappers: map[int]languages.LanguageWrapper{
+            constants.LanguageIDGo:        golangWrapper.NewWrapper(),
+            constants.LanguageIDJavaScript: jsWrapper.NewWrapper(),
+            constants.LanguageIDPython:    pyWrapper.NewWrapper(),
+        },
+    }
+    return cw
 }
 
 // WrapCode는 주어진 코드를 언어에 맞는 테스트 코드로 래핑합니다
@@ -27,111 +38,30 @@ func (w *CodeWrapper) WrapCode(code string, languageID int, testCase string, pro
 		Str("functionName", problem.FunctionName).
 		Msg("Wrapping code for testing")
 
-	wrapper, err := w.getLanguageWrapper(languageID)
-	if err != nil {
-		return "", err
-	}
-
-	return wrapper(code, testCase, problem), nil
+    if impl, ok := w.langWrappers[languageID]; ok {
+        return impl.WrapSingle(code, testCase, problem), nil
+    }
+    // Fallback to legacy inline wrappers for languages not yet split out
+    switch languageID {
+    case constants.LanguageIDJava:
+        return w.wrapJava(code, testCase, problem), nil
+    case constants.LanguageIDCPP:
+        return w.wrapCPP(code, testCase, problem), nil
+    default:
+        return "", fmt.Errorf("unsupported programming language ID: %d", languageID)
+    }
 }
 
 // WrapCodeBatch는 모든 테스트 케이스를 한 번에 실행하는 배치 하니스를 생성합니다
 func (w *CodeWrapper) WrapCodeBatch(code string, languageID int, testCasesJSON string, problem *model.LeetCode) (string, error) {
-	w.logger.Info().
-		Int("languageID", languageID).
-		Str("functionName", problem.FunctionName).
-		Msg("Wrapping code for batch testing")
-
-	switch languageID {
-	case constants.LanguageIDJavaScript:
-		template := `
-// user code
-%s
-
-function runAll() {
-  try {
-    const cases = %s;
-    const results = [];
-    for (let i = 0; i < cases.length; i++) {
-      const inputs = Array.isArray(cases[i]) ? cases[i] : [cases[i]];
-      const out = %s(...inputs);
-      results.push(out);
+    w.logger.Info().
+        Int("languageID", languageID).
+        Str("functionName", problem.FunctionName).
+        Msg("Wrapping code for batch testing")
+    if impl, ok := w.langWrappers[languageID]; ok {
+        return impl.WrapBatch(code, testCasesJSON, problem)
     }
-    console.log(JSON.stringify(results));
-  } catch (e) {
-    console.error(String(e));
-    process.exit(1);
-  }
-}
-runAll();`
-		return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
-	case constants.LanguageIDPython:
-		template := `
-import json, sys
-
-# user code
-%s
-
-def run_all():
-    try:
-        cases = json.loads('''%s''')
-        results = []
-        for c in cases:
-            inputs = c if isinstance(c, list) else [c]
-            out = %s(*inputs)
-            results.append(out)
-        print(json.dumps(results))
-    except Exception as e:
-        print(str(e), file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    run_all()`
-		return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
-	case constants.LanguageIDGo:
-		template := `
-package main
-
-import (
-    "encoding/json"
-    "fmt"
-    "os"
-)
-
-// user code
-%s
-
-func main() {
-    var cases [][]interface{}
-    if err := json.Unmarshal([]byte(%q), &cases); err != nil {
-        fmt.Fprintf(os.Stderr, "Error parsing cases: %v\n", err)
-        os.Exit(1)
-    }
-
-    defer func() {
-        if r := recover(); r != nil {
-            fmt.Fprintf(os.Stderr, "Runtime error: %v\n", r)
-            os.Exit(1)
-        }
-    }()
-
-    results := make([]interface{}, 0, len(cases))
-    for _, c := range cases {
-        out := %s(c...)
-        results = append(results, out)
-    }
-
-    outJSON, err := json.Marshal(results)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "Error marshaling results: %v\n", err)
-        os.Exit(1)
-    }
-    fmt.Println(string(outJSON))
-}`
-		return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
-	default:
-		return "", fmt.Errorf("unsupported batch wrapper for language ID: %d", languageID)
-	}
+    return "", fmt.Errorf("unsupported batch wrapper for language ID: %d", languageID)
 }
 
 func (w *CodeWrapper) getLanguageWrapper(languageID int) (func(string, string, *model.LeetCode) string, error) {
@@ -152,6 +82,40 @@ func (w *CodeWrapper) getLanguageWrapper(languageID int) (func(string, string, *
 }
 
 // 각 언어별 래핑 함수들...
+func (w *CodeWrapper) goArgLines(varName string, paramTypes []string) (string, string) {
+	// Build variable declarations and call arguments based on param types
+	decl := ""
+	call := ""
+	for i, pt := range paramTypes {
+		idx := fmt.Sprintf("%s[%d]", varName, i)
+		argName := fmt.Sprintf("arg%d", i)
+		switch pt {
+		case "number", "int":
+			decl += fmt.Sprintf("    %s := toInt(%s)\n", argName, idx)
+			call += argName
+		case "float":
+			decl += fmt.Sprintf("    %s := toFloat(%s)\n", argName, idx)
+			call += argName
+		case "boolean", "bool":
+			decl += fmt.Sprintf("    %s := toBool(%s)\n", argName, idx)
+			call += argName
+		case "string":
+			decl += fmt.Sprintf("    %s := toString(%s)\n", argName, idx)
+			call += argName
+		case "array":
+			decl += fmt.Sprintf("    %s := toIntSlice(%s)\n", argName, idx)
+			call += argName
+		default:
+			// fallback: pass raw interface{}
+			decl += fmt.Sprintf("    %s := %s\n", argName, idx)
+			call += argName
+		}
+		if i < len(paramTypes)-1 {
+			call += ", "
+		}
+	}
+	return decl, call
+}
 func (w *CodeWrapper) wrapJavaScript(code, testCase string, problem *model.LeetCode) string {
 	template := `
 // 사용자 코드
@@ -203,7 +167,9 @@ if __name__ == "__main__":
 
 // wrapGo Go 코드 래핑
 func (w *CodeWrapper) wrapGo(code, testCase string, problem *model.LeetCode) string {
-	template := `
+	if len(problem.IOSchema.ParamTypes) == 0 {
+		// Fallback when schema missing: pass variadic args
+		template := `
 package main
 
 import (
@@ -240,8 +206,95 @@ func main() {
     }
     fmt.Println(string(output))
 }`
+		return fmt.Sprintf(template, code, testCase, problem.FunctionName)
+	}
 
-	return fmt.Sprintf(template, code, testCase, problem.FunctionName)
+	argDecl, callArgs := w.goArgLines("testCase", problem.IOSchema.ParamTypes)
+	template := `
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "os"
+)
+
+// 사용자 코드
+%s
+
+// helpers to coerce JSON-decoded values to expected types
+func toInt(v interface{}) int {
+    switch n := v.(type) {
+    case float64:
+        return int(n)
+    case int:
+        return n
+    case int64:
+        return int(n)
+    default:
+        return 0
+    }
+}
+
+func toFloat(v interface{}) float64 {
+    switch n := v.(type) {
+    case float64:
+        return n
+    case int:
+        return float64(n)
+    case int64:
+        return float64(n)
+    default:
+        return 0
+    }
+}
+
+func toBool(v interface{}) bool {
+    if b, ok := v.(bool); ok { return b }
+    return false
+}
+
+func toString(v interface{}) string {
+    if s, ok := v.(string); ok { return s }
+    return ""
+}
+
+func toIntSlice(v interface{}) []int {
+    arr, ok := v.([]interface{})
+    if !ok { return nil }
+    out := make([]int, 0, len(arr))
+    for _, it := range arr { out = append(out, toInt(it)) }
+    return out
+}
+
+func main() {
+    // 테스트 케이스 파싱
+    var testCase []interface{}
+    if err := json.Unmarshal([]byte(%q), &testCase); err != nil {
+        fmt.Fprintf(os.Stderr, "Error parsing test case: %%v\n", err)
+        os.Exit(1)
+    }
+
+    // 함수 실행 및 결과 출력
+    defer func() {
+        if r := recover(); r != nil {
+            fmt.Fprintf(os.Stderr, "Runtime error: %%v\n", r)
+            os.Exit(1)
+        }
+    }()
+
+    // 결과 실행 및 출력
+%s
+    result := %s(%s)
+    output, err := json.Marshal(result)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error marshaling result: %%v\n", err)
+        os.Exit(1)
+    }
+    fmt.Println(string(output))
+}`
+
+	return fmt.Sprintf(template, code, testCase, argDecl, problem.FunctionName, callArgs)
 }
 
 // wrapJava Java 코드 래핑
