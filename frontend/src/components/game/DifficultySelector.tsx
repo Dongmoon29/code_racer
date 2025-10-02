@@ -6,36 +6,28 @@ export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 interface DifficultyOption {
   value: Difficulty;
   label: string;
-  description: string;
   color: string;
   bgColor: string;
-  icon: string;
 }
 
 const difficultyOptions: DifficultyOption[] = [
   {
     value: 'Easy',
-    label: '🚗 Beginner Circuit',
-    description: 'Perfect warmup laps for new racers',
+    label: 'Beginner Circuit',
     color: 'text-green-600',
     bgColor: 'bg-green-50 hover:bg-green-100 border-green-200',
-    icon: '🏁',
   },
   {
     value: 'Medium',
-    label: '🏎️ Racing Circuit',
-    description: 'Pro-level racing with moderate challenges',
+    label: '️Racing Circuit',
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200',
-    icon: '🏆',
   },
   {
     value: 'Hard',
-    label: '🏔️ Championship Track',
-    description: 'Ultimate challenge for expert racers',
+    label: '️Championship Track',
     color: 'text-red-600',
     bgColor: 'bg-red-50 hover:bg-red-100 border-red-200',
-    icon: '👑',
   },
 ];
 
@@ -79,13 +71,9 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
             onClick={() => !disabled && onSelect(option.value)}
           >
             <CardContent className="p-6 text-center">
-              <div className="text-4xl mb-4">{option.icon}</div>
               <h3 className={`text-2xl font-bold mb-2 ${option.color}`}>
                 {option.label}
               </h3>
-              <p className="text-[hsl(var(--muted-foreground))] mb-4">
-                {option.description}
-              </p>
             </CardContent>
           </Card>
         ))}
