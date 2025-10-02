@@ -41,6 +41,26 @@ func (tcs *TestCases) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, tcs)
 }
 
+// IOSchema는 함수의 입력/출력 타입 스키마를 정의합니다
+type IOSchema struct {
+	ParamTypes []string `json:"param_types"`
+	ReturnType string   `json:"return_type"`
+}
+
+// Value GORM에서 데이터베이스에 저장하기 위한 메서드 (IOSchema)
+func (s IOSchema) Value() (driver.Value, error) {
+	return json.Marshal(s)
+}
+
+// Scan GORM에서 데이터베이스에서 읽기 위한 메서드 (IOSchema)
+func (s *IOSchema) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return nil
+	}
+	return json.Unmarshal(bytes, s)
+}
+
 // LeetCode LeetCode 문제 정보를 담는 모델
 type LeetCode struct {
 	ID                 uuid.UUID `json:"id" gorm:"type:uuid;primary_key"`
@@ -49,6 +69,7 @@ type LeetCode struct {
 	Examples           string    `gorm:"type:text;not null" json:"examples"`
 	Constraints        string    `gorm:"type:text;not null" json:"constraints"`
 	TestCases          TestCases `gorm:"type:jsonb;not null" json:"test_cases"`
+	IOSchema           IOSchema  `gorm:"type:jsonb;not null" json:"io_schema"`
 	ExpectedOutputs    string    `gorm:"type:text;not null" json:"expected_outputs"`
 	Difficulty         string    `gorm:"type:varchar(20);not null" json:"difficulty"`
 	InputFormat        string    `gorm:"type:varchar(50);not null" json:"input_format"`
@@ -102,6 +123,7 @@ type LeetCodeDetail struct {
 	InputFormat        string     `json:"input_format"`
 	OutputFormat       string     `json:"output_format"`
 	FunctionName       string     `json:"function_name"`
+	IOSchema           IOSchema   `json:"io_schema"`
 	JavaScriptTemplate string     `json:"javascript_template"`
 	PythonTemplate     string     `json:"python_template"`
 	GoTemplate         string     `json:"go_template"`
@@ -126,6 +148,7 @@ func (l *LeetCode) ToDetailResponse() *LeetCodeDetail {
 		InputFormat:        l.InputFormat,
 		OutputFormat:       l.OutputFormat,
 		FunctionName:       l.FunctionName,
+		IOSchema:           l.IOSchema,
 		JavaScriptTemplate: l.JavaScriptTemplate,
 		PythonTemplate:     l.PythonTemplate,
 		GoTemplate:         l.GoTemplate,
@@ -141,6 +164,7 @@ type CreateLeetCodeRequest struct {
 	Examples           string    `json:"examples" binding:"required"`
 	Constraints        string    `json:"constraints" binding:"required"`
 	TestCases          TestCases `json:"test_cases" binding:"required"`
+	IOSchema           IOSchema  `json:"io_schema" binding:"required"`
 	ExpectedOutputs    string    `json:"expected_outputs" binding:"required"`
 	Difficulty         string    `json:"difficulty" binding:"required,oneof=Easy Medium Hard"`
 	InputFormat        string    `json:"input_format" binding:"required"`

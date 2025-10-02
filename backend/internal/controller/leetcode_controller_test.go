@@ -56,8 +56,8 @@ func (m *MockLeetCodeService) SearchProblems(query string) ([]*model.LeetCodeSum
 	return args.Get(0).([]*model.LeetCodeSummary), args.Error(1)
 }
 
-func (m *MockLeetCodeService) ValidateTestCases(testCases model.TestCases, functionName string) error {
-	args := m.Called(testCases, functionName)
+func (m *MockLeetCodeService) ValidateTestCases(testCases model.TestCases, schema model.IOSchema) error {
+	args := m.Called(testCases, schema)
 	return args.Error(0)
 }
 
@@ -176,6 +176,7 @@ func TestLeetCodeController_CreateProblem(t *testing.T) {
 			},
 		},
 		ExpectedOutputs: "6",
+		IOSchema:        model.IOSchema{ParamTypes: []string{"number", "number", "number"}, ReturnType: "number"},
 	}
 
 	createdProblem := &model.LeetCodeDetail{
@@ -285,6 +286,7 @@ func TestLeetCodeController_UpdateProblem(t *testing.T) {
 			},
 		},
 		ExpectedOutputs: "10",
+		IOSchema:        model.IOSchema{ParamTypes: []string{"number", "number", "number", "number"}, ReturnType: "number"},
 	}
 
 	updatedProblem := &model.LeetCodeDetail{
