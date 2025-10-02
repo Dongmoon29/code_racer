@@ -57,7 +57,6 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
             className="object-cover opacity-20"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 via-purple-900/30 to-green-900/30 z-10"></div>
         </div>
 
         {/* Content */}
@@ -122,8 +121,6 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
           {FEATURES.map((feature) => (
             <FeatureCard
               key={feature.id}
-              icon={feature.icon}
-              iconColor={feature.iconColor}
               title={feature.title}
               description={feature.description}
             />
@@ -147,7 +144,6 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
             className="object-cover opacity-25"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-800/40 via-purple-800/40 to-green-800/40 z-10"></div>
         </div>
 
         {/* Content */}
