@@ -24,7 +24,15 @@ func NewLeetCodeController(leetCodeService service.LeetCodeService, logger logge
 	}
 }
 
-// GetAllProblems 모든 LeetCode 문제 목록 조회
+// GetAllProblems godoc
+// @Summary      Get all LeetCode problems
+// @Description  Retrieve all LeetCode problems registered in the system
+// @Tags         leetcode
+// @Produce      json
+// @Security     Bearer
+// @Success      200 {object} map[string]interface{} "List of problems"
+// @Failure      500 {object} map[string]interface{} "Server error"
+// @Router       /api/leetcode [get]
 func (c *LeetCodeController) GetAllProblems(ctx *gin.Context) {
 	problems, err := c.leetCodeService.GetAllProblems()
 	if err != nil {
@@ -42,7 +50,17 @@ func (c *LeetCodeController) GetAllProblems(ctx *gin.Context) {
 	})
 }
 
-// GetProblemByID 특정 LeetCode 문제 조회
+// GetProblemByID godoc
+// @Summary      Get specific LeetCode problem
+// @Description  Retrieve detailed information about a specific LeetCode problem by ID
+// @Tags         leetcode
+// @Produce      json
+// @Security     Bearer
+// @Param        id path string true "Problem ID"
+// @Success      200 {object} map[string]interface{} "Problem details"
+// @Failure      400 {object} map[string]interface{} "Bad request"
+// @Failure      404 {object} map[string]interface{} "Problem not found"
+// @Router       /api/leetcode/{id} [get]
 func (c *LeetCodeController) GetProblemByID(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := uuid.Parse(idStr)

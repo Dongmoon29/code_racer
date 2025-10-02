@@ -264,30 +264,6 @@ npm test
 npx tsc --noEmit
 ```
 
-## 📊 API Documentation
-
-### Authentication Endpoints
-
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/google` - Google OAuth login
-- `GET /api/auth/github` - GitHub OAuth login
-
-### Game Endpoints
-
-- `GET /api/games` - List available games
-- `POST /api/games` - Create new game
-- `GET /api/games/:id` - Get game details
-- `POST /api/games/:id/submit` - Submit code solution
-
-### WebSocket Events
-
-- `match_start` - Matchmaking begins
-- `match_found` - Opponent found
-- `game_start` - Game begins
-- `code_update` - Real-time code sharing
-- `game_end` - Game completed
-
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
