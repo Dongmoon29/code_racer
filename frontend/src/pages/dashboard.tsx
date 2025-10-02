@@ -1,6 +1,6 @@
 import React, { FC } from 'react';
-import Layout from '../components/layout/Layout';
 import MatchingScreen from '@/components/game/MatchingScreen';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,30 +17,22 @@ const DashboardPage: FC = () => {
 
   if (isLoading || !isLoggedIn) {
     return (
-      <Layout
-        title="Dashboard | Code Racer"
-        description="Find opponents and start coding challenges"
-      >
-        <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </Layout>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
     );
   }
 
   return (
-    <Layout
-      title="Dashboard | Code Racer"
-      description="Find opponents and start coding challenges"
-    >
-      <div className="min-h-screen bg-[hsl(var(--background))] py-8">
+    <DashboardLayout>
+      <div className="py-8">
         <MatchingScreen
           onMatchFound={(gameId) => {
             router.push(`/game/${gameId}`);
           }}
         />
       </div>
-    </Layout>
+    </DashboardLayout>
   );
 };
 
