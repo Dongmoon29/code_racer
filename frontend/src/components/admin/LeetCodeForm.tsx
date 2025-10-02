@@ -122,25 +122,22 @@ export default function LeetCodeForm({
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">
+    <div className="max-w-4xl mx-auto p-6 rounded-lg shadow-lg">
+      <h2 className="text-2xl font-bold mb-6 ">
         {mode === 'create'
           ? 'Add New LeetCode Problem'
           : 'Edit LeetCode Problem'}
       </h2>
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+        <div className="mb-4 p-4 border border-red-200 rounded-md">
           <p className="text-red-600">{error}</p>
         </div>
       )}
-
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Title *
-            </label>
+            <label className="block text-sm font-medium mb-2">Title *</label>
             <input
               type="text"
               value={formData.title}
@@ -151,7 +148,7 @@ export default function LeetCodeForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium  mb-2">
               Difficulty *
             </label>
             <select
@@ -171,7 +168,7 @@ export default function LeetCodeForm({
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium  mb-2">
             Problem Description *
           </label>
           <textarea
@@ -185,9 +182,7 @@ export default function LeetCodeForm({
 
         {/* Examples */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Examples *
-          </label>
+          <label className="block text-sm font-medium  mb-2">Examples *</label>
           <textarea
             value={formData.examples}
             onChange={(e) => handleInputChange('examples', e.target.value)}
@@ -200,7 +195,7 @@ export default function LeetCodeForm({
 
         {/* Constraints */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium  mb-2">
             Constraints *
           </label>
           <textarea
@@ -216,7 +211,7 @@ export default function LeetCodeForm({
         {/* Input/Output Format */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium  mb-2">
               Input Format *
             </label>
             <input
@@ -232,7 +227,7 @@ export default function LeetCodeForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium  mb-2">
               Output Format *
             </label>
             <input
@@ -251,7 +246,7 @@ export default function LeetCodeForm({
         {/* IO Schema */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium  mb-2">
               Param Types (comma-separated) *
             </label>
             <input
@@ -276,7 +271,7 @@ export default function LeetCodeForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium  mb-2">
               Return Type *
             </label>
             <input
@@ -297,7 +292,7 @@ export default function LeetCodeForm({
 
         {/* Function Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium  mb-2">
             Function Name *
           </label>
           <input
@@ -313,13 +308,11 @@ export default function LeetCodeForm({
         {/* Test Cases */}
         <div>
           <div className="flex justify-between items-center mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Test Cases *
-            </label>
+            <label className="block text-sm font-medium ">Test Cases *</label>
             <button
               type="button"
               onClick={addTestCase}
-              className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
+              className="px-3 py-1 bg-green-500 rounded-md hover:bg-green-600 text-sm"
             >
               + Add Test Case
             </button>
@@ -329,12 +322,10 @@ export default function LeetCodeForm({
             {formData.test_cases.map((testCase, index) => (
               <div
                 key={index}
-                className="flex gap-3 items-center p-3 border border-gray-200 rounded-md"
+                className="flex gap-3 items-center p-3 border rounded-md"
               >
                 <div className="flex-1">
-                  <label className="block text-xs text-gray-600 mb-1">
-                    Input
-                  </label>
+                  <label className="block text-xs  mb-1">Input</label>
                   <input
                     type="text"
                     value={testCase.input.join(', ')}
@@ -345,22 +336,20 @@ export default function LeetCodeForm({
                         e.target.value.split(',').map((s) => s.trim())
                       )
                     }
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="1, 2, 3"
                     required
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs text-gray-600 mb-1">
-                    Output
-                  </label>
+                  <label className="block text-xs  mb-1">Output</label>
                   <input
                     type="text"
                     value={String(testCase.output)}
                     onChange={(e) =>
                       handleTestCaseChange(index, 'output', e.target.value)
                     }
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="6"
                     required
                   />
@@ -369,7 +358,7 @@ export default function LeetCodeForm({
                   <button
                     type="button"
                     onClick={() => removeTestCase(index)}
-                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                    className="px-2 py-1 bg-red-500  rounded hover:bg-red-600 text-sm"
                   >
                     Delete
                   </button>
@@ -381,7 +370,7 @@ export default function LeetCodeForm({
 
         {/* Expected Output */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium  mb-2">
             Expected Output *
           </label>
           <input
@@ -402,7 +391,7 @@ export default function LeetCodeForm({
 
           {['javascript', 'python', 'go', 'java', 'cpp'].map((lang) => (
             <div key={lang}>
-              <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
+              <label className="block text-sm font-medium  mb-2 capitalize">
                 {lang} Template *
               </label>
               <textarea
@@ -429,7 +418,7 @@ export default function LeetCodeForm({
         {/* Limits */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium  mb-2">
               Time Limit (ms)
             </label>
             <input
@@ -445,7 +434,7 @@ export default function LeetCodeForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium  mb-2">
               Memory Limit (MB)
             </label>
             <input
@@ -466,14 +455,14 @@ export default function LeetCodeForm({
           <button
             type="button"
             onClick={onCancel}
-            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+            className="px-6 py-2 border border-gray-300  rounded-md hover:bg-gray-50"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-blue-600rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting
               ? 'Processing...'

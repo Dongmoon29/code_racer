@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuthStore } from '@/stores/authStore';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import Image from 'next/image';
 
-const Header: React.FC = () => {
+const Header: FC = () => {
   const router = useRouter();
   const { user, isLoggedIn, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -49,22 +49,32 @@ const Header: React.FC = () => {
 
   return (
     <header className="border-b border-border bg-[color:hsl(var(--header))]">
-      <div className="mx-auto px-4">
-        <div className="flex justify-between md:justify-around items-center py-1">
+      <div className="px-4">
+        <div className="flex justify-between items-center py-1">
           {/* 로고 */}
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/logo.png"
-              alt="CodeRacer Logo"
-              width={30}
-              height={20}
-              priority
-              className="h-auto w-auto mr-2"
-            />
-            <p className="text-md font-bold text-[hsl(var(--foreground))]">
-              codeRacer
-            </p>
-          </Link>
+          <div className="flex justify-between items-center gap-4">
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/logo.png"
+                alt="CodeRacer Logo"
+                width={30}
+                height={20}
+                priority
+                className="h-auto w-auto mr-2"
+              />
+              <p className="text-md font-bold text-[hsl(var(--foreground))]">
+                codeRacer
+              </p>
+            </Link>
+
+            <Link
+              href="/dashboard"
+              className="hover:text-primary text-sm"
+              style={{ color: 'hsl(var(--foreground))' }}
+            >
+              Dashboard
+            </Link>
+          </div>
 
           {/* 모바일 메뉴 버튼 */}
           <div className="md:hidden flex items-center space-x-2">
@@ -108,13 +118,6 @@ const Header: React.FC = () => {
             <ThemeToggle />
             {isLoggedIn && user ? (
               <>
-                <Link
-                  href="/dashboard"
-                  className="hover:text-primary text-sm"
-                  style={{ color: 'hsl(var(--foreground))' }}
-                >
-                  Dashboard
-                </Link>
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={toggleDropdown}

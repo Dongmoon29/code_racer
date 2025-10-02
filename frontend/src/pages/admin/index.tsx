@@ -32,16 +32,13 @@ export default function AdminPage() {
       description: 'Add new coding problems and edit/delete existing ones.',
       href: '/admin/leetcode',
       icon: '📝',
-      color: 'bg-blue-500',
     },
-    // Future admin features to be added
-    // {
-    //   title: 'User Management',
-    //   description: 'Manage user permissions and monitor accounts.',
-    //   href: '/admin/users',
-    //   icon: '👥',
-    //   color: 'bg-green-500'
-    // },
+    {
+      title: 'User Management',
+      description: 'Manage user permissions and monitor accounts.',
+      href: '/admin/users',
+      icon: '👥',
+    },
     // {
     //   title: 'System Analytics',
     //   description: 'View application usage statistics and performance metrics.',
@@ -52,7 +49,7 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -60,21 +57,19 @@ export default function AdminPage() {
             <Link
               key={feature.href}
               href={feature.href}
-              className="block group"
+              className="block group hover:-translate-y-2 transition-transform duration-200"
             >
-              <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
+              <div className="bg-[hsl(var(--card))] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
                 <div className="flex items-center mb-4">
                   <div
-                    className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl mr-4 ${feature.color} text-white`}
+                    className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl mr-4`}
                   >
                     {feature.icon}
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                    {feature.title}
-                  </h3>
+                  <h3 className="text-xl font-semibold">{feature.title}</h3>
                 </div>
-                <p className="text-gray-600 mb-4">{feature.description}</p>
-                <div className="flex items-center text-blue-600 group-hover:text-blue-700">
+                <p className="mb-4">{feature.description}</p>
+                <div className="flex items-center ">
                   <span className="text-sm font-medium">Manage</span>
                   <svg
                     className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform"

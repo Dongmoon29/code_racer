@@ -99,6 +99,8 @@ type LeetCodeSummary struct {
 	ID         uuid.UUID  `json:"id"`
 	Title      string     `json:"title"`
 	Difficulty Difficulty `json:"difficulty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 }
 
 // ToSummaryResponse LeetCode 모델을 LeetCodeSummary DTO로 변환
@@ -107,6 +109,8 @@ func (l *LeetCode) ToSummaryResponse() *LeetCodeSummary {
 		ID:         l.ID,
 		Title:      l.Title,
 		Difficulty: Difficulty(l.Difficulty),
+		CreatedAt:  l.CreatedAt,
+		UpdatedAt:  l.UpdatedAt,
 	}
 }
 
