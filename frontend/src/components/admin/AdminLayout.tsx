@@ -2,6 +2,7 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Shield } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 type Props = {
   children: React.ReactNode;
@@ -23,11 +24,16 @@ export default function AdminLayout({ children }: Props) {
         <div className="w-64 bg-card border-r border-border h-screen sticky top-0 overflow-y-auto">
           <div className="p-6">
             {/* Brand */}
-            <div className="flex items-center gap-2 mb-8">
-              <Shield className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-bold text-card-foreground">Admin Panel</h1>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-2">
+                <Shield className="w-6 h-6 text-primary" />
+                <h1 className="text-xl font-bold text-card-foreground">
+                  Admin Panel
+                </h1>
+              </div>
+              <ThemeToggle />
             </div>
-            
+
             {/* Navigation */}
             <nav className="space-y-6">
               <div>
@@ -40,16 +46,17 @@ export default function AdminLayout({ children }: Props) {
                       item.href === '/admin'
                         ? router.pathname === '/admin'
                         : router.pathname.startsWith(item.href);
-                    
+
                     return (
                       <Link
                         key={item.href}
                         href={item.href}
                         className={`
                           flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors
-                          ${isActive 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                          ${
+                            isActive
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                           }
                         `}
                       >
@@ -66,9 +73,7 @@ export default function AdminLayout({ children }: Props) {
 
         {/* Main Content */}
         <div className="flex-1 p-8">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+          <div className="max-w-7xl mx-auto">{children}</div>
         </div>
       </div>
     </div>

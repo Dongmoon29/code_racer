@@ -72,33 +72,33 @@ export default function AdminUsersPage() {
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+        <h1 className="text-2xl font-bold ">User Management</h1>
       </div>
 
-      <div className="overflow-hidden rounded-lg shadow bg-white">
+      <div className="overflow-hidden rounded-lg shadow ">
         {isError && (
           <div className="px-4 py-2 text-sm text-red-600 border-b border-red-200 bg-red-50">
             {error instanceof Error ? error.message : 'Failed to load users'}
           </div>
         )}
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y">
+          <thead>
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider">
                 ID
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider">
                 Name
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider">
                 Email
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider">
                 Role
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider">
                 <button
-                  className="inline-flex items-center gap-1 hover:text-gray-700"
+                  className="inline-flex items-center gap-1 "
                   onClick={() => {
                     setPage(1);
                     const [, dir = 'desc'] = sort.startsWith('created_at')
@@ -109,7 +109,7 @@ export default function AdminUsersPage() {
                   title="Sort by created date"
                 >
                   Created
-                  <span className="text-gray-400">
+                  <span>
                     {sort === 'created_at:desc'
                       ? '▼'
                       : sort === 'created_at:asc'
@@ -121,7 +121,7 @@ export default function AdminUsersPage() {
               <th className="px-4 py-3" />
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className=" divide-y ">
             {(data?.items || []).map(
               (u: {
                 id: string;
@@ -131,34 +131,26 @@ export default function AdminUsersPage() {
                 created_at?: string;
               }) => (
                 <tr key={u.id}>
-                  <td className="px-4 py-3 text-xs text-gray-500 font-mono">
-                    {u.id}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{u.name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{u.email}</td>
+                  <td className="px-4 py-3 text-xs font-mono">{u.id}</td>
+                  <td className="px-4 py-3 text-sm">{u.name}</td>
+                  <td className="px-4 py-3 text-sm">{u.email}</td>
                   <td className="px-4 py-3 text-sm">
                     <span
-                      className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${
-                        u.role === 'admin'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
+                      className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold`}
                     >
                       {u.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
+                  <td className="px-4 py-3 text-sm">
                     {u.created_at
                       ? new Date(u.created_at).toLocaleDateString()
                       : '-'}
                   </td>
                   <td className="px-4 py-3 text-right text-sm">
-                    <button className="mr-2 text-blue-600 hover:text-blue-700">
-                      Edit
-                    </button>
-                    <button className="text-red-600 hover:text-red-700">
-                      Delete
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button className="mr-2 ">Edit</button>
+                      <button>Delete</button>
+                    </div>
                   </td>
                 </tr>
               )
@@ -168,9 +160,9 @@ export default function AdminUsersPage() {
       </div>
       {/* Pagination - pill style */}
       <div className="mt-6 flex items-center justify-center">
-        <div className="flex items-center gap-4 rounded-full bg-white px-5 py-3">
+        <div className="flex items-center gap-4 rounded-full  px-5 py-3">
           <button
-            className="inline-flex items-center gap-2 text-gray-700 disabled:text-gray-300"
+            className="inline-flex items-center gap-2"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={isFetching || page === 1}
             aria-label="Previous page"
@@ -182,7 +174,7 @@ export default function AdminUsersPage() {
           <div className="flex items-center gap-2">
             {paginationRange.map((item, idx) =>
               item === '…' ? (
-                <span key={`dots-${idx}`} className="px-2 text-gray-400">
+                <span key={`dots-${idx}`} className="px-2">
                   …
                 </span>
               ) : (
@@ -204,7 +196,7 @@ export default function AdminUsersPage() {
           </div>
 
           <button
-            className="inline-flex items-center gap-2 text-gray-700 disabled:text-gray-300"
+            className="inline-flex items-center gap-2"
             onClick={() => setPage((p) => p + 1)}
             disabled={isFetching || !data?.has_next}
             aria-label="Next page"

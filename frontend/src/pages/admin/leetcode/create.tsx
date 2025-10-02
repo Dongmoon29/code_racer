@@ -35,7 +35,7 @@ export default function CreateLeetCodePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen py-8">
       <LeetCodeForm
         mode="create"
         onSuccess={handleSuccess}
