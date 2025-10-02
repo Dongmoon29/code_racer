@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Spinner } from '../../ui';
 import CodeEditor from '../CodeEditor';
 import LanguageSelector from '../LanguageSelector';
-import { Game, SubmitResult } from '../types';
+import { Game, SubmitResult } from '@/types';
 import { FileText, Maximize2, Minimize2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { LeetCodeFormData, TestCase } from '../../lib/leetcode-types';
+import { LeetCodeFormData, TestCase } from '@/types';
 import {
   createLeetCodeProblem,
   updateLeetCodeProblem,

@@ -6,7 +6,7 @@ import WebSocketClient, {
   CodeUpdateMessage,
 } from '../../lib/websocket';
 import { Spinner } from '../ui';
-import { Game, SubmitResult } from './types';
+import { Game, SubmitResult } from '@/types';
 // REMOVED: Room waiting states - replaced by automatic matching
 // import { WaitingToJoinGame } from './states/WaitingToJoinGame';
 // import { WaitingForOpponent } from './states/WaitingForOpponent';
@@ -14,7 +14,7 @@ import { PlayingGame } from './states/PlayingGame';
 import { FinishedGame } from './states/FinishedGame';
 import { useAuthStore } from '@/stores/authStore';
 import axios, { AxiosError } from 'axios';
-import { ApiErrorResponse } from '@/lib/types';
+import { ApiErrorResponse } from '@/types';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/alert';
 import { getCodeTemplate } from '@/lib/api';

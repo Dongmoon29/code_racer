@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { LeetCodeSummary } from '../../lib/leetcode-types';
+import { LeetCodeSummary } from '@/types';
 import {
   getAllLeetCodeProblems,
   deleteLeetCodeProblem,
