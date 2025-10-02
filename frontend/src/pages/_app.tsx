@@ -4,6 +4,7 @@ import { ThemeProvider as NextThemeProvider } from 'next-themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { Analytics } from '@vercel/analytics/react';
 import AdminLayout from '../components/admin/AdminLayout';
 import '../styles/globals.css';
 import { useAuthStore } from '../stores/authStore';
@@ -46,6 +47,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           <Component {...pageProps} />
         )}
       </QueryClientProvider>
+      <Analytics />
     </NextThemeProvider>
   );
 }
