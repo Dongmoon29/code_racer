@@ -106,6 +106,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
   }, [game?.leetcode, selectedLanguage, myCode]);
 
   // 게임이 종료되면 localStorage 정리
+  // TODO 컴포넌트가 닫히거나 웹소켓 닫혀도 정리해야할거 같음
   useEffect(() => {
     if (game?.status === 'finished' || game?.status === 'closed') {
       localStorage.removeItem(`game_${gameId}_code`);
