@@ -25,12 +25,6 @@ type GameService interface {
 	CreateGameForMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Game, error)
 	GetRandomLeetCodeByDifficulty(difficulty string) (*model.LeetCode, error)
 	CreateGameFromMatch(matchID string, userID uuid.UUID) (*model.GameResponse, error)
-
-	ListLeetCodes() ([]*model.LeetCodeSummary, error)
-	CreateLeetCode(req *model.CreateLeetCodeRequest) (*model.LeetCodeDetail, error)
-	UpdateLeetCode(id uuid.UUID, req *model.UpdateLeetCodeRequest) (*model.LeetCodeDetail, error)
-	DeleteLeetCode(id uuid.UUID) error
-	GetLeetCode(id uuid.UUID) (*model.LeetCodeDetail, error)
 }
 
 // gameService GameService 인터페이스 구현체
@@ -69,20 +63,7 @@ func (s *gameService) GetGame(gameID uuid.UUID) (*model.GameResponse, error) {
 	return game.ToResponse(), nil
 }
 
-// ListLeetCodes LeetCode 문제 목록 조회
-func (s *gameService) ListLeetCodes() ([]*model.LeetCodeSummary, error) {
-	leetcodes, err := s.leetCodeRepo.FindAll()
-	if err != nil {
-		return nil, err
-	}
-
-	var result []*model.LeetCodeSummary
-	for _, leetcode := range leetcodes {
-		result = append(result, leetcode.ToSummaryResponse())
-	}
-
-	return result, nil
-}
+// ListLeetCodes removed: LeetCode CRUD는 LeetCodeService로 통합
 
 // SubmitSolution 코드 제출 및 평가
 func (s *gameService) SubmitSolution(gameID uuid.UUID, userID uuid.UUID, req *model.SubmitSolutionRequest) (*model.SubmitSolutionResponse, error) {
@@ -273,73 +254,13 @@ func (s *gameService) CloseGame(gameID uuid.UUID, userID uuid.UUID) error {
 	return nil
 }
 
-func (s *gameService) CreateLeetCode(req *model.CreateLeetCodeRequest) (*model.LeetCodeDetail, error) {
-	leetcode := &model.LeetCode{
-		Title:              req.Title,
-		Description:        req.Description,
-		Examples:           req.Examples,
-		Constraints:        req.Constraints,
-		TestCases:          req.TestCases,
-		ExpectedOutputs:    req.ExpectedOutputs,
-		Difficulty:         req.Difficulty,
-		InputFormat:        req.InputFormat,
-		OutputFormat:       req.OutputFormat,
-		FunctionName:       req.FunctionName,
-		JavaScriptTemplate: req.JavaScriptTemplate,
-		PythonTemplate:     req.PythonTemplate,
-		GoTemplate:         req.GoTemplate,
-		JavaTemplate:       req.JavaTemplate,
-		CPPTemplate:        req.CPPTemplate,
-	}
+// CreateLeetCode removed: LeetCode CRUD는 LeetCodeService로 통합
 
-	if err := s.leetCodeRepo.Create(leetcode); err != nil {
-		return nil, err
-	}
+// UpdateLeetCode removed: LeetCode CRUD는 LeetCodeService로 통합
 
-	return leetcode.ToDetailResponse(), nil
-}
+// DeleteLeetCode removed: LeetCode CRUD는 LeetCodeService로 통합
 
-func (s *gameService) UpdateLeetCode(id uuid.UUID, req *model.UpdateLeetCodeRequest) (*model.LeetCodeDetail, error) {
-	leetcode, err := s.leetCodeRepo.FindByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	// 필드 업데이트
-	leetcode.Title = req.Title
-	leetcode.Description = req.Description
-	leetcode.Examples = req.Examples
-	leetcode.Constraints = req.Constraints
-	leetcode.TestCases = req.TestCases
-	leetcode.ExpectedOutputs = req.ExpectedOutputs
-	leetcode.Difficulty = req.Difficulty
-	leetcode.InputFormat = req.InputFormat
-	leetcode.OutputFormat = req.OutputFormat
-	leetcode.FunctionName = req.FunctionName
-	leetcode.JavaScriptTemplate = req.JavaScriptTemplate
-	leetcode.PythonTemplate = req.PythonTemplate
-	leetcode.GoTemplate = req.GoTemplate
-	leetcode.JavaTemplate = req.JavaTemplate
-	leetcode.CPPTemplate = req.CPPTemplate
-
-	if err := s.leetCodeRepo.Update(leetcode); err != nil {
-		return nil, err
-	}
-
-	return leetcode.ToDetailResponse(), nil
-}
-
-func (s *gameService) DeleteLeetCode(id uuid.UUID) error {
-	return s.leetCodeRepo.Delete(id)
-}
-
-func (s *gameService) GetLeetCode(id uuid.UUID) (*model.LeetCodeDetail, error) {
-	leetcode, err := s.leetCodeRepo.FindByID(id)
-	if err != nil {
-		return nil, err
-	}
-	return leetcode.ToDetailResponse(), nil
-}
+// GetLeetCode removed: LeetCode CRUD는 LeetCodeService로 통합
 
 // CreateGameForMatch creates a new game for matched players
 func (s *gameService) CreateGameForMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Game, error) {
