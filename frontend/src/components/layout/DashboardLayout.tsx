@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { useRouter } from 'next/router';
 import { Zap, Trophy, Clock, User } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Header from './Header';
 
 type Props = {
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 const items = [

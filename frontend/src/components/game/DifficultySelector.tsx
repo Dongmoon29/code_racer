@@ -15,27 +15,27 @@ interface DifficultyOption {
 const difficultyOptions: DifficultyOption[] = [
   {
     value: 'Easy',
-    label: 'Easy',
-    description: 'For beginners',
+    label: '🚗 Beginner Circuit',
+    description: 'Perfect warmup laps for new racers',
     color: 'text-green-600',
     bgColor: 'bg-green-50 hover:bg-green-100 border-green-200',
-    icon: '🟢',
+    icon: '🏁',
   },
   {
     value: 'Medium',
-    label: 'Medium',
-    description: 'For intermediate',
+    label: '🏎️ Racing Circuit',
+    description: 'Pro-level racing with moderate challenges',
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200',
-    icon: '🟡',
+    icon: '🏆',
   },
   {
     value: 'Hard',
-    label: 'Hard',
-    description: 'For advanced',
+    label: '🏔️ Championship Track',
+    description: 'Ultimate challenge for expert racers',
     color: 'text-red-600',
     bgColor: 'bg-red-50 hover:bg-red-100 border-red-200',
-    icon: '🔴',
+    icon: '👑',
   },
 ];
 
@@ -50,16 +50,24 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
 }) => {
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-[hsl(var(--foreground))] mb-4">
-          Code Racer
-        </h1>
-        <p className="text-xl text-[hsl(var(--muted-foreground))] mb-2">
-          Compete against friends or other coders in real-time coding
-        </p>
-        <p className="text-[hsl(var(--muted-foreground))]">
-          Select a difficulty to start matching
-        </p>
+      <div className="text-center mb-12">
+        <div className="mb-6">
+          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent">
+            🏁 Code Racer
+          </h1>
+          <h2 className="text-2xl font-semibold text-[hsl(var(--foreground))] mb-4">
+            Choose Your Racing Circuit
+          </h2>
+        </div>
+        <div className="space-y-3">
+          <p className="text-lg text-[hsl(var(--muted-foreground))] font-medium">
+            Compete against friends or racers worldwide!
+          </p>
+          <p className="text-[hsl(var(--muted-foreground))]">
+            💨 Select your preferred speed circuit and let the coding race
+            begin!
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

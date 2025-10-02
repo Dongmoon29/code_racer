@@ -11,49 +11,49 @@ export interface Feature {
 export const FEATURES: Feature[] = [
   {
     id: 'real-time',
-    title: 'Real-time Competitions',
+    title: '🏎️ Real-time Racing',
     description:
-      'Compete against friends or other coders in real-time coding challenges. See who can solve problems fastest!',
+      'Race against friends or coders globally in lightning-fast coding sprints! Watch the competition unfold in real-time.',
     icon: Clock,
     iconColor: 'text-blue-600 dark:text-blue-400',
   },
   {
     id: 'diverse-challenges',
-    title: 'Diverse Challenges',
+    title: '🎯 Challenging Tracks',
     description:
-      'From algorithms to data structures, our platform offers a wide range of coding problems to test your skills.',
+      'Tackle diverse coding tracks from algorithms to data structures. Each problem is a new lap in your coding journey!',
     icon: Code,
     iconColor: 'text-indigo-600 dark:text-indigo-400',
   },
   {
     id: 'leaderboards',
-    title: 'Leaderboards',
+    title: '🏆 Championship Ladder',
     description:
-      'Track your progress, earn points, and climb the ranks to become the ultimate Code Racer champion.',
+      'Climb the championship ladder! Track your racing stats, earn victory points, and become the ultimate Code Racer.',
     icon: Trophy,
     iconColor: 'text-purple-600 dark:text-purple-400',
   },
   {
     id: 'multiplayer',
-    title: 'Multiplayer Experience',
+    title: '🤝 Racing Teams',
     description:
-      'Create private rooms to challenge your friends or join public competitions with coders worldwide.',
+      'Create private racing circuits with friends or join the global racing community. Team up or compete solo!',
     icon: Users,
     iconColor: 'text-green-600 dark:text-green-400',
   },
   {
     id: 'skill-improvement',
-    title: 'Skill Improvement',
+    title: '⚡ Speed Training',
     description:
-      'Sharpen your programming skills through competitive practice and instant feedback.',
+      'Boost your coding velocity through intense racing sessions. Fast feedback and competitive practice make you unstoppable!',
     icon: Zap,
     iconColor: 'text-red-600 dark:text-red-400',
   },
   {
     id: 'multiple-languages',
-    title: 'Multiple Languages',
+    title: '🌍 Multi-Language Circuit',
     description:
-      'Solve problems in your preferred programming language, including Python, JavaScript, Java, and more.',
+      'Choose your racing machine! Support for Python, JavaScript, Java, Go, and more. Race in your favorite language!',
     icon: Code,
     iconColor: 'text-yellow-600 dark:text-yellow-400',
   },

@@ -51,16 +51,24 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Right Column - Image */}
-        <div className="hidden md:block md:w-1/2 bg-sky-100">
-          <div className="relative h-full w-full">
-            <Image
-              src="/coderacer.png"
-              alt="Code Racer illustration"
-              fill
-              style={{ objectFit: 'contain' }}
-              className="p-4"
-              priority
-            />
+        <div className="hidden md:block md:w-1/2 bg-gradient-to-br from-blue-50 via-purple-50 to-green-50">
+          <div className="relative h-full w-full flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <Image
+                src="/coderacer.png"
+                alt="Code Racer Racing Track"
+                width={400}
+                height={300}
+                className="mx-auto animate-bounce"
+                priority
+              />
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-bold text-gray-800">
+                  🏁 Join the Racing Circuit
+                </h3>
+                <p className="text-gray-600">Fast coding, faster learning!</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
