@@ -3,6 +3,11 @@ export interface TestCase {
   output: string | number | boolean;
 }
 
+export interface IOSchema {
+  param_types: string[];
+  return_type: string;
+}
+
 export interface CreateLeetCodeRequest {
   title: string;
   description: string;
@@ -14,6 +19,7 @@ export interface CreateLeetCodeRequest {
   input_format: string;
   output_format: string;
   function_name: string;
+  io_schema: IOSchema;
   javascript_template: string;
   python_template: string;
   go_template: string;
@@ -44,6 +50,7 @@ export interface LeetCodeDetail extends LeetCodeSummary {
   input_format: string;
   output_format: string;
   function_name: string;
+  io_schema: IOSchema;
   javascript_template: string;
   python_template: string;
   go_template: string;
@@ -65,6 +72,7 @@ export interface LeetCodeFormData {
   input_format: string;
   output_format: string;
   function_name: string;
+  io_schema: IOSchema;
   javascript_template: string;
   python_template: string;
   go_template: string;

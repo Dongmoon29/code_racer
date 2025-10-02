@@ -44,6 +44,7 @@ export default function EditLeetCodePage() {
         input_format: data.input_format,
         output_format: data.output_format,
         function_name: data.function_name,
+        io_schema: data.io_schema,
         javascript_template: data.javascript_template,
         python_template: data.python_template,
         go_template: data.go_template,
