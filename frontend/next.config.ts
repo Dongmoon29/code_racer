@@ -1,22 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Styled Components SSR 설정
-  compiler: {
-    styledComponents: {
-      displayName: true,
-      ssr: true,
-      fileName: true,
-      meaninglessFileNames: ['index', 'styles'],
-      minify: true,
-      transpileTemplateLiterals: true,
-      pure: false,
-    },
-  },
   images: {
-    domains: [
-      'avatars.githubusercontent.com',
-      'lh3.googleusercontent.com', // Google 프로필 이미지 도메인 추가
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   async rewrites() {
