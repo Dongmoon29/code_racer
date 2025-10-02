@@ -32,6 +32,7 @@ const defaultFormData: LeetCodeFormData = {
   cpp_template: '',
   time_limit: 1000,
   memory_limit: 128,
+  io_schema: { param_types: [], return_type: '' },
 };
 
 const difficultyOptions = ['Easy', 'Medium', 'Hard'];
@@ -78,7 +79,7 @@ export default function LeetCodeForm({
         output: value as string | number | boolean,
       };
     }
-    setFormData((prev) => ({ ...prev, testCases: newTestCases }));
+    setFormData((prev) => ({ ...prev, test_cases: newTestCases }));
   };
 
   const addTestCase = () => {
@@ -92,7 +93,7 @@ export default function LeetCodeForm({
     if (formData.test_cases.length > 1) {
       setFormData((prev) => ({
         ...prev,
-        testCases: prev.test_cases.filter((_, i) => i !== index),
+        test_cases: prev.test_cases.filter((_, i) => i !== index),
       }));
     }
   };
@@ -239,6 +240,53 @@ export default function LeetCodeForm({
               value={formData.output_format}
               onChange={(e) =>
                 handleInputChange('output_format', e.target.value)
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="number"
+              required
+            />
+          </div>
+        </div>
+
+        {/* IO Schema */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Param Types (comma-separated) *
+            </label>
+            <input
+              type="text"
+              value={formData.io_schema.param_types.join(', ')}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  io_schema: {
+                    ...prev.io_schema,
+                    param_types: e.target.value
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter((s) => s.length > 0),
+                  },
+                }))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="number, number"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Return Type *
+            </label>
+            <input
+              type="text"
+              value={formData.io_schema.return_type}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  io_schema: { ...prev.io_schema, return_type: e.target.value },
+                }))
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="number"
