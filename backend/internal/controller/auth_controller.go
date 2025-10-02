@@ -15,6 +15,8 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+// AuthController handles authentication-related endpoints
+// @Description Handles authentication-related endpoints including registration, login, OAuth
 type AuthController struct {
 	authService interfaces.AuthService
 	logger      logger.Logger
@@ -63,6 +65,17 @@ func getOAuth2Config(provider string) *oauth2.Config {
 	return config
 }
 
+// Register godoc
+// @Summary      User registration
+// @Description  Register a new user to the system
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body model.RegisterRequest true "Registration request"
+// @Success      201  {object}  map[string]interface{} "Registration successful"
+// @Failure      400  {object}  map[string]interface{} "Bad request"
+// @Failure      500  {object}  map[string]interface{} "Server error"
+// @Router       /api/auth/register [post]
 func (c *AuthController) Register(ctx *gin.Context) {
 	var req model.RegisterRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -82,6 +95,17 @@ func (c *AuthController) Register(ctx *gin.Context) {
 	})
 }
 
+// Login godoc
+// @Summary      User login
+// @Description  Login with email and password
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body model.LoginRequest true "Login request"
+// @Success      200 {object} map[string]interface{} "Login successful"
+// @Failure      400 {object} map[string]interface{} "Bad request"
+// @Failure      401 {object} map[string]interface{} "Authentication failed"
+// @Router       /api/auth/login [post]
 func (c *AuthController) Login(ctx *gin.Context) {
 	var req model.LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -105,6 +129,15 @@ func (c *AuthController) Login(ctx *gin.Context) {
 	})
 }
 
+// GetCurrentUser godoc
+// @Summary      Get current user information
+// @Description  Retrieve information about the currently logged in user
+// @Tags         auth
+// @Produce      json
+// @Security     Bearer
+// @Success      200 {object} map[string]interface{} "User information"
+// @Failure      401 {object} map[string]interface{} "Authentication required"
+// @Router       /api/auth/me [get]
 func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {

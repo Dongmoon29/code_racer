@@ -27,7 +27,17 @@ func NewGameController(gameService service.GameService, logger logger.Logger) *G
 
 // REMOVED: CreateGame - replaced by automatic matching via WebSocket
 
-// GetGame 게임 방 정보 조회 핸들러
+// GetGame godoc
+// @Summary      Get game room information
+// @Description  Retrieve information about a specific game room by ID
+// @Tags         games
+// @Produce      json
+// @Security     Bearer
+// @Param        id path string true "Game ID"
+// @Success      200 {object} map[string]interface{} "Game information"
+// @Failure      400 {object} map[string]interface{} "Bad request"
+// @Failure      404 {object} map[string]interface{} "Game not found"
+// @Router       /api/games/{id} [get]
 func (c *GameController) GetGame(ctx *gin.Context) {
 	// 게임 ID 파싱
 	gameID, err := uuid.Parse(ctx.Param("id"))

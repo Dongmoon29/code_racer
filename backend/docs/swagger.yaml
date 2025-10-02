@@ -1,0 +1,204 @@
+definitions:
+  model.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  model.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+info:
+  contact: {}
+paths:
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login with email and password
+      parameters:
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication failed
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User login
+      tags:
+      - auth
+  /api/auth/me:
+    get:
+      description: Retrieve information about the currently logged in user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User information
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get current user information
+      tags:
+      - auth
+  /api/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user to the system
+      parameters:
+      - description: Registration request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Registration successful
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User registration
+      tags:
+      - auth
+  /api/games/{id}:
+    get:
+      description: Retrieve information about a specific game room by ID
+      parameters:
+      - description: Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Game information
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Game not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get game room information
+      tags:
+      - games
+  /api/leetcode:
+    get:
+      description: Retrieve all LeetCode problems registered in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of problems
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all LeetCode problems
+      tags:
+      - leetcode
+  /api/leetcode/{id}:
+    get:
+      description: Retrieve detailed information about a specific LeetCode problem
+        by ID
+      parameters:
+      - description: Problem ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Problem details
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Problem not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get specific LeetCode problem
+      tags:
+      - leetcode
+swagger: "2.0"

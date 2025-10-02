@@ -4,12 +4,15 @@ import (
 	"net/http"
 	"time"
 
+	_ "github.com/Dongmoon29/code_racer/docs"
 	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/controller"
 	"github.com/Dongmoon29/code_racer/internal/middleware"
 	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // Setup initializes and returns the router with all routes configured
@@ -31,12 +34,17 @@ func Setup(
 			"status": "ok",
 		})
 	})
+
+	// Swagger documentation - 개발 환경에서만 활성화
+	if !util.IsProduction() {
+		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
+
 	// CORS config
 	allowedOrigins := util.GetCORSAllowedOrigins()
 	allowedMethods := []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions}
 	allowedHeaders := []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	exposeHeaders := []string{"Content-Length"}
-
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     allowedOrigins,
 		AllowMethods:     allowedMethods,
@@ -54,12 +62,12 @@ func Setup(
 			auth.POST("/register", authController.Register)
 			auth.POST("/login", authController.Login)
 			auth.POST("/logout", authController.Logout)
+
 			// OAuth routes
 			auth.GET("/google", authController.GoogleAuthHandler)
 			auth.GET("/google/callback", authController.GoogleCallback)
 			auth.GET("/github", authController.GitHubAuthHandler)
 			auth.GET("/github/callback", authController.GitHubCallback)
-
 			auth.POST("/exchange-token", authController.ExchangeToken)
 		}
 

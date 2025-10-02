@@ -15,6 +15,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/Dongmoon29/code_racer/internal/router"
 	"github.com/Dongmoon29/code_racer/internal/service"
+	_ "github.com/Dongmoon29/code_racer/docs" // Import docs for swagger
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
