@@ -55,30 +55,90 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 		return nil, fmt.Errorf("failed to get language ID: %w", err)
 	}
 
-	// 테스트 케이스 결과 저장
+	// 우선 배치 하니스 시도 (JS/Python 지원). 미지원 언어면 폴백.
+	if wrapped, err := func() (string, error) {
+		inputs := make([][]interface{}, 0, len(problem.TestCases))
+		for _, tc := range problem.TestCases {
+			inputs = append(inputs, tc.Input)
+		}
+		inputsJSON, _ := json.Marshal(inputs)
+		return s.codeWrapper.WrapCodeBatch(code, languageID, string(inputsJSON), problem)
+	}(); err == nil {
+		// 배치 실행
+		expected := make([]interface{}, 0, len(problem.TestCases))
+		for _, tc := range problem.TestCases {
+			expected = append(expected, tc.Output)
+		}
+		expectedJSON, _ := json.Marshal(expected)
+
+		request := types.Judge0Request{
+			SourceCode:       wrapped,
+			LanguageID:       languageID,
+			ExpectedOutput:   string(expectedJSON),
+			CompileTimeout:   10,
+			RunTimeout:       5,
+			MemoryLimit:      128000,
+			EnableNetworking: false,
+		}
+		response, err := s.judge0Client.SubmitCode(request)
+		if err != nil {
+			return nil, fmt.Errorf("Judge0 API error: %w", err)
+		}
+		if response.CompileError != "" {
+			return &types.EvaluationResult{Passed: false, ErrorMessage: fmt.Sprintf("Compilation error: %s", response.CompileError)}, nil
+		}
+		if response.Stderr != "" {
+			return &types.EvaluationResult{Passed: false, ErrorMessage: fmt.Sprintf("Runtime error: %s", response.Stderr)}, nil
+		}
+		actualTrimmed := strings.TrimSpace(response.Stdout)
+		var actual []interface{}
+		if err := json.Unmarshal([]byte(actualTrimmed), &actual); err != nil {
+			return &types.EvaluationResult{Passed: false, ErrorMessage: fmt.Sprintf("Invalid runner output: %v", err)}, nil
+		}
+		var results []types.TestCaseResult
+		allPassed := true
+		for i := range expected {
+			expBytes, _ := json.Marshal(expected[i])
+			actBytes, _ := json.Marshal(actual[i])
+			tr := types.TestCaseResult{
+				TestCaseIndex: i,
+				Input:         string(mustJSON(problem.TestCases[i].Input)),
+				Expected:      string(expBytes),
+				Actual:        strings.TrimSpace(string(actBytes)),
+				Passed:        strings.TrimSpace(string(actBytes)) == strings.TrimSpace(string(expBytes)),
+				ExecutionTime: getFloat64Time(response.Time),
+				MemoryUsage:   response.Memory,
+			}
+			if !tr.Passed {
+				allPassed = false
+			}
+			results = append(results, tr)
+		}
+		return &types.EvaluationResult{
+			Passed:        allPassed,
+			TestResults:   results,
+			ExecutionTime: getFloat64Time(response.Time),
+			MemoryUsage:   response.Memory,
+		}, nil
+	}
+
+	// 폴백: 테스트 케이스별 개별 실행
 	var testResults []types.TestCaseResult
 	var totalTime float64
 	var totalMemory float64
 	allPassed := true
-
-	// 각 테스트 케이스에 대해 평가 수행
 	for i, testCase := range problem.TestCases {
 		result := s.evaluateTestCase(code, languageID, testCase, problem, i)
 		testResults = append(testResults, *result)
-
 		if !result.Passed {
 			allPassed = false
 		}
-
 		totalTime += result.ExecutionTime
 		totalMemory += result.MemoryUsage
 	}
-
-	// 평균 실행 시간과 메모리 사용량 계산
 	testCount := float64(len(problem.TestCases))
 	avgTime := totalTime / testCount
 	avgMemory := totalMemory / testCount
-
 	return &types.EvaluationResult{
 		Passed:        allPassed,
 		TestResults:   testResults,
@@ -239,6 +299,15 @@ func getFloat64Time(timeValue interface{}) float64 {
 	default:
 		return 0
 	}
+}
+
+// mustJSON marshals value to JSON string or returns fallback
+func mustJSON(v interface{}) []byte {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return []byte("null")
+	}
+	return b
 }
 
 func (s *judgeService) replaceFunctionName(code, oldName, newName string) string {
