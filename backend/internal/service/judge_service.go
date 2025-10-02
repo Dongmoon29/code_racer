@@ -84,7 +84,7 @@ func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *mo
 
 	// submit
 	expectedJSON, _ := json.Marshal(expected)
-	resp, err := s.submitToJudge(wrappedCode, languageID, string(expectedJSON))
+	resp, err := s.submitToJudge(wrappedCode, languageID, string(expectedJSON), problem)
 	if err != nil {
 		return nil, false, err
 	}
@@ -97,14 +97,15 @@ func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *mo
 	return res, true, nil
 }
 
-func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expectedJSON string) (*types.Judge0Response, error) {
+func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expectedJSON string, problem *model.LeetCode) (*types.Judge0Response, error) {
+	compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
 	request := types.Judge0Request{
 		SourceCode:       wrappedCode,
 		LanguageID:       languageID,
 		ExpectedOutput:   expectedJSON,
-		CompileTimeout:   10,
-		RunTimeout:       5,
-		MemoryLimit:      128000,
+		CompileTimeout:   compileTimeout,
+		RunTimeout:       runTimeout,
+		MemoryLimit:      memoryLimit,
 		EnableNetworking: false,
 	}
 	response, err := s.judge0Client.SubmitCode(request)
@@ -112,6 +113,22 @@ func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expecte
 		return nil, fmt.Errorf("Judge0 API error: %w", err)
 	}
 	return response, nil
+}
+
+// deriveLimits converts model constraints to Judge0 limits
+func (s *judgeService) deriveLimits(problem *model.LeetCode) (compileTimeout int, runTimeout int, memoryLimit int) {
+	// Assume model.TimeLimit is in milliseconds and MemoryLimit in MB
+	// Compile timeout: 2x runTimeout cap, runTimeout from TimeLimit
+	run := problem.TimeLimit / 1000
+	if run <= 0 {
+		run = 5
+	}
+	comp := run * 2
+	mem := problem.MemoryLimit * 1000 // MB -> KB expected by Judge0 (uses kB)
+	if mem <= 0 {
+		mem = 128000
+	}
+	return comp, run, mem
 }
 
 func (s *judgeService) evaluateBatchResponse(response *types.Judge0Response, expected []interface{}, inputs [][]interface{}) (*types.EvaluationResult, error) {
@@ -222,7 +239,7 @@ func (s *judgeService) evaluateTestCase(
 		return early
 	}
 
-	response, early := s.submitSingle(wrapped, languageID, expectedStr, index)
+	response, early := s.submitSingle(wrapped, languageID, expectedStr, index, problem)
 	if early != nil {
 		return early
 	}
@@ -250,14 +267,15 @@ func (s *judgeService) buildSingleWrappedCode(code string, languageID int, testC
 	return wrappedCode, string(expectedJSON), nil
 }
 
-func (s *judgeService) submitSingle(wrappedCode string, languageID int, expectedJSON string, index int) (*types.Judge0Response, *types.TestCaseResult) {
+func (s *judgeService) submitSingle(wrappedCode string, languageID int, expectedJSON string, index int, problem *model.LeetCode) (*types.Judge0Response, *types.TestCaseResult) {
+	compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
 	request := types.Judge0Request{
 		SourceCode:       wrappedCode,
 		LanguageID:       languageID,
 		ExpectedOutput:   expectedJSON,
-		CompileTimeout:   10,
-		RunTimeout:       5,
-		MemoryLimit:      128000,
+		CompileTimeout:   compileTimeout,
+		RunTimeout:       runTimeout,
+		MemoryLimit:      memoryLimit,
 		EnableNetworking: false,
 	}
 	response, err := s.judge0Client.SubmitCode(request)
