@@ -36,16 +36,26 @@ const RegisterPage: React.FC = () => {
         </div>
 
         {/* Right Column - Image */}
-        <div className="hidden md:block md:w-1/2 bg-[hsl(var(--card))]">
-          <div className="relative h-full w-full">
-            <Image
-              src={'/coderacer.png'}
-              alt="Code Racer illustration"
-              fill
-              style={{ objectFit: 'contain' }}
-              className="p-4"
-              priority
-            />
+        <div className="hidden md:block md:w-1/2 bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
+          <div className="relative h-full w-full flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <Image
+                src="/coderacer.png"
+                alt="Code Racer Champion Track"
+                width={400}
+                height={300}
+                className="mx-auto animate-pulse hover:scale-105 transition-transform duration-300"
+                priority
+              />
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-bold text-gray-800">
+                  🏆 Become a Code Champion
+                </h3>
+                <p className="text-gray-600">
+                  Start your racing journey today!
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
