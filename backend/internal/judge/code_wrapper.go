@@ -160,12 +160,12 @@ func (w *CodeWrapper) wrapJavaScript(code, testCase string, problem *model.LeetC
 // 테스트 실행
 function runTest() {
     try {
-        const testCase = %s;
-        let inputs = Array.isArray(testCase) ? testCase : [testCase];
+        const testCase = JSON.parse(%q);
+        const inputs = Array.isArray(testCase) ? testCase : [testCase];
         const result = %s(...inputs);
         console.log(JSON.stringify(result));
     } catch (error) {
-        console.error("Error:", error.message);
+        console.error(String(error));
         process.exit(1);
     }
 }
@@ -187,12 +187,12 @@ import sys
 # 테스트 실행
 def run_test():
     try:
-        test_case = json.loads('''%s''')
+        test_case = json.loads('%s')
         inputs = test_case if isinstance(test_case, list) else [test_case]
         result = %s(*inputs)
         print(json.dumps(result))
     except Exception as e:
-        print("Error:", str(e), file=sys.stderr)
+        print(str(e), file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":

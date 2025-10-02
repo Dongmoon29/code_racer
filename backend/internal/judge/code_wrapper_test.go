@@ -164,12 +164,12 @@ function solution(arr) { return arr.map(x => x * 2); }
 // 테스트 실행
 function runTest() {
     try {
-        const testCase = [1,2,3];
-        let inputs = Array.isArray(testCase) ? testCase : [testCase];
+        const testCase = JSON.parse("[1,2,3]");
+        const inputs = Array.isArray(testCase) ? testCase : [testCase];
         const result = solution(...inputs);
         console.log(JSON.stringify(result));
     } catch (error) {
-        console.error("Error:", error.message);
+        console.error(String(error));
         process.exit(1);
     }
 }
@@ -191,12 +191,12 @@ def solution(arr):
 # 테스트 실행
 def run_test():
     try:
-        test_case = json.loads('''[1,2,3]''')
+        test_case = json.loads('[1,2,3]')
         inputs = test_case if isinstance(test_case, list) else [test_case]
         result = solution(*inputs)
         print(json.dumps(result))
     except Exception as e:
-        print("Error:", str(e), file=sys.stderr)
+        print(str(e), file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
