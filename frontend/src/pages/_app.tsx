@@ -1,15 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProps } from 'next/app';
 import { ThemeProvider as NextThemeProvider } from 'next-themes';
-import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import AdminLayout from '../components/admin/AdminLayout';
 import '../styles/globals.css';
 import { useAuthStore } from '../stores/authStore';
-import { useEffect } from 'react';
-import { theme } from '../lib/theme';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const { initializeAuth } = useAuthStore();
@@ -35,22 +32,20 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <StyledThemeProvider theme={theme}>
-        <QueryClientProvider client={queryClient}>
-          {isAdminRoute ? (
-            <>
-              <Head>
-                <title>{adminTitle}</title>
-              </Head>
-              <AdminLayout>
-                <Component {...pageProps} />
-              </AdminLayout>
-            </>
-          ) : (
-            <Component {...pageProps} />
-          )}
-        </QueryClientProvider>
-      </StyledThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        {isAdminRoute ? (
+          <>
+            <Head>
+              <title>{adminTitle}</title>
+            </Head>
+            <AdminLayout>
+              <Component {...pageProps} />
+            </AdminLayout>
+          </>
+        ) : (
+          <Component {...pageProps} />
+        )}
+      </QueryClientProvider>
     </NextThemeProvider>
   );
 }
