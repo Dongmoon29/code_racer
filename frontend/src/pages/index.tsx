@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import React, { FC, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Layout from '../components/layout/Layout';
@@ -8,6 +8,7 @@ import { GetStaticProps } from 'next';
 import { Contributor } from '@/types';
 import { FEATURES } from '@/lib/features';
 import { FeatureCard } from '@/components/pages/FeatureCard';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 interface HomeProps {
   contributors: Contributor[];
@@ -15,6 +16,24 @@ interface HomeProps {
 
 const HomePage: FC<HomeProps> = ({ contributors }) => {
   const { isLoggedIn } = useAuthStore();
+  // Framer Motion 스크롤 애니메이션
+  const heroRef = useRef(null);
+  const { scrollYProgress: heroScrollProgress } = useScroll({
+    target: heroRef,
+    offset: ['start end', 'end start'],
+  });
+  const heroScale = useTransform(heroScrollProgress, [0, 1], [1, 1.5]);
+  const heroX = useTransform(heroScrollProgress, [0, 1], [-120, 80]);
+  const heroY = useTransform(heroScrollProgress, [0, 1], [-80, 100]);
+
+  const hero2Ref = useRef(null);
+  const { scrollYProgress: hero2ScrollProgress } = useScroll({
+    target: hero2Ref,
+    offset: ['start end', 'end start'],
+  });
+  const hero2Scale = useTransform(hero2ScrollProgress, [0, 1], [1, 1.6]);
+  const hero2X = useTransform(hero2ScrollProgress, [0, 1], [-100, 70]);
+  const hero2Y = useTransform(hero2ScrollProgress, [0, 1], [-60, 90]);
 
   return (
     <Layout
@@ -43,17 +62,25 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
 
         {/* Content */}
         <div className="w-full relative z-20 flex flex-col items-center text-center py-24">
-          <div className="mb-8">
-            <Image
-              src="/code_racer_hero.png"
-              alt="CodeRacer Hero"
-              width={200}
-              height={128}
-              className="mx-auto animate-pulse hover:scale-110 transition-transform duration-300 drop-shadow-2xl"
-              priority
-            />
+          <div className="mb-8" ref={heroRef}>
+            <motion.div
+              style={{
+                scale: heroScale,
+                x: heroX,
+                y: heroY,
+              }}
+            >
+              <Image
+                src="/code_racer_hero.png"
+                alt="CodeRacer Hero"
+                width={300}
+                height={192}
+                className="mx-auto animate-pulse drop-shadow-2xl w-48 h-auto md:w-56 lg:w-64 xl:w-72"
+                priority
+              />
+            </motion.div>
           </div>
-          <h1 className="text-6xl font-bold mb-6 drop-shadow-lg ">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 drop-shadow-lg ">
             Welcome to CodeRacer
           </h1>
           <p className="text-xl mb-10 max-w-2xl drop-shadow-md font-medium">
@@ -125,17 +152,25 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
 
         {/* Content */}
         <div className="relative z-20 flex flex-col items-center text-center py-24">
-          <div className="mb-8">
-            <Image
-              src="/code_racer_hero2.png"
-              alt="CodeRacer Hero 2"
-              width={200}
-              height={128}
-              className="mx-auto animate-pulse hover:scale-110 transition-transform duration-300 drop-shadow-2xl"
-              priority
-            />
+          <div className="mb-8" ref={hero2Ref}>
+            <motion.div
+              style={{
+                scale: hero2Scale,
+                x: hero2X,
+                y: hero2Y,
+              }}
+            >
+              <Image
+                src="/code_racer_hero2.png"
+                alt="CodeRacer Hero 2"
+                width={300}
+                height={192}
+                className="mx-auto animate-pulse drop-shadow-2xl w-48 h-auto md:w-56 lg:w-64 xl:w-72"
+                priority
+              />
+            </motion.div>
           </div>
-          <h2 className="text-5xl font-bold mb-6 drop-shadow-lg ">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 drop-shadow-lg ">
             Ready to Race?
           </h2>
           <p className="text-xl mb-10 max-w-2xl text-gray-100 drop-shadow-md font-medium">
