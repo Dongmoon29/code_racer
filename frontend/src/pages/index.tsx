@@ -122,8 +122,6 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
           {FEATURES.map((feature) => (
             <FeatureCard
               key={feature.id}
-              icon={feature.icon}
-              iconColor={feature.iconColor}
               title={feature.title}
               description={feature.description}
             />
