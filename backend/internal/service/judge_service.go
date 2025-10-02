@@ -46,10 +46,53 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 	if res, ok, err := s.tryBatchEvaluate(code, languageID, problem); err != nil {
 		return nil, err
 	} else if ok {
+		// 운영 관측: 배치 경로 사용 로깅
+		passCount := 0
+		for _, tr := range res.TestResults {
+			if tr.Passed {
+				passCount++
+			}
+		}
+		compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
+		s.logger.Info().
+			Str("mode", "batch").
+			Int("languageID", languageID).
+			Int("testCases", len(res.TestResults)).
+			Int("passCount", passCount).
+			Bool("passed", res.Passed).
+			Float64("avgTime", res.ExecutionTime).
+			Float64("avgMemory", res.MemoryUsage).
+			Int("compileTimeout", compileTimeout).
+			Int("runTimeout", runTimeout).
+			Int("memoryLimitKB", memoryLimit).
+			Msg("Evaluation summary")
 		return res, nil
 	}
 
-	return s.aggregatePerTest(code, languageID, problem)
+	res, err := s.aggregatePerTest(code, languageID, problem)
+	if err == nil && res != nil {
+		// 운영 관측: 폴백 경로 로깅
+		passCount := 0
+		for _, tr := range res.TestResults {
+			if tr.Passed {
+				passCount++
+			}
+		}
+		compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
+		s.logger.Info().
+			Str("mode", "per_test").
+			Int("languageID", languageID).
+			Int("testCases", len(res.TestResults)).
+			Int("passCount", passCount).
+			Bool("passed", res.Passed).
+			Float64("avgTime", res.ExecutionTime).
+			Float64("avgMemory", res.MemoryUsage).
+			Int("compileTimeout", compileTimeout).
+			Int("runTimeout", runTimeout).
+			Int("memoryLimitKB", memoryLimit).
+			Msg("Evaluation summary")
+	}
+	return res, err
 }
 
 // ensureFunctionNameMatches extracts and validates the function name (strict mode)
@@ -110,7 +153,15 @@ func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expecte
 	}
 	response, err := s.judge0Client.SubmitCode(request)
 	if err != nil {
-		return nil, fmt.Errorf("Judge0 API error: %w", err)
+		// 쿼터 초과 식별 로깅
+		errMsg := fmt.Errorf("Judge0 API error: %w", err)
+		if strings.Contains(errMsg.Error(), "exceeded the DAILY quota") {
+			s.logger.Error().
+				Str("error_type", "judge0_quota_exceeded").
+				Int("languageID", languageID).
+				Msg("Judge0 quota exceeded")
+		}
+		return nil, errMsg
 	}
 	return response, nil
 }
