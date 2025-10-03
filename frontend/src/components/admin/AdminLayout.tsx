@@ -9,7 +9,8 @@ type Props = {
 };
 
 const items = [
-  { href: '/admin', label: 'Overview', icon: '🏠' },
+  { href: '/', label: 'Home', icon: '🏠' },
+  { href: '/admin', label: 'Overview', icon: '📋' },
   { href: '/admin/leetcode', label: 'LeetCode', icon: '📝' },
   { href: '/admin/users', label: 'Users', icon: '👥' },
 ];
