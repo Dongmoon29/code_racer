@@ -41,6 +41,13 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+// LeaderboardUser 리더보드용 사용자 정보 DTO
+type LeaderboardUser struct {
+	ID     uuid.UUID `json:"id"`
+	Name   string    `json:"name"`
+	Rating int       `json:"rating"`
+}
+
 type UserResponse struct {
 	ID            uuid.UUID `json:"id"`
 	Email         string    `json:"email"`

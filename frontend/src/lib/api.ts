@@ -289,10 +289,17 @@ export const userApi = {
     return response.data;
   },
 
-  // 프로필 조회
-  getProfile: async (userId: string) => {
-    const response = await api.get(`/users/${userId}/profile`);
-    return response.data;
+  // 리더보드 조회
+  getLeaderboard: async () => {
+    const response = await api.get('/users/leaderboard');
+    return response.data as {
+      success: boolean;
+      users: Array<{
+        id: string;
+        name: string;
+        rating: number;
+      }>;
+    };
   },
 };
 

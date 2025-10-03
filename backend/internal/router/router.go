@@ -87,6 +87,7 @@ func Setup(
 				user.GET("/me", userController.GetCurrentUser)
 				user.GET("/:userId/profile", userController.GetProfile)
 				user.PUT("/profile", userController.UpdateProfile)
+				user.GET("/leaderboard", userController.GetLeaderboard)
 			}
 
 			// admin users

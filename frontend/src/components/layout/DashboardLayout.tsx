@@ -1,6 +1,5 @@
 import React, { ReactNode } from 'react';
 import { Trophy, User } from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
 import Header from './Header';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -10,12 +9,11 @@ type Props = {
 };
 
 const items = [
-  //   { href: '/dashboard', label: 'Race Hub', icon: <Zap className="w-5 h-5" /> },
-  //   {
-  //     href: '/dashboard/history',
-  //     label: 'History',
-  //     icon: <Clock className="w-5 h-5" />,
-  //   },
+  {
+    href: '/dashboard/mypage',
+    label: 'My Page',
+    icon: <User className="w-5 h-5" />,
+  },
   {
     href: '/dashboard/leaderboard',
     label: 'Leaderboard',
@@ -30,7 +28,6 @@ const items = [
 
 export default function DashboardLayout({ children }: Props) {
   const router = useRouter();
-  const { user } = useAuthStore();
 
   return (
     <div className="min-h-screen bg-background">
@@ -39,25 +36,6 @@ export default function DashboardLayout({ children }: Props) {
         {/* Sidebar */}
         <div className="w-64 bg-card border-r border-border h-[calc(100vh-60px)] sticky top-0 overflow-y-auto">
           <div className="p-6">
-            {/* User Info */}
-            {user && (
-              <div className="mb-6 p-3 bg-accent rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-accent-foreground">
-                      {user.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {user.role === 'admin' ? 'Admin' : 'Player'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Navigation */}
             <nav className="space-y-6">
               <div>
@@ -86,7 +64,6 @@ export default function DashboardLayout({ children }: Props) {
                 </div>
               </div>
             </nav>
-            <div className="space-y-6">WIP</div>
           </div>
         </div>
 
