@@ -109,13 +109,13 @@ func (c *WebSocketController) HandleWebSocket(ctx *gin.Context) {
 		return
 	}
 
-	// Parse game ID
-	gameID, err := uuid.Parse(ctx.Param("gameId"))
+	// Parse match ID
+	matchID, err := uuid.Parse(ctx.Param("matchId"))
 	if err != nil {
-		c.logger.Error().Err(err).Str("gameId", ctx.Param("gameId")).Msg("Invalid game ID format")
+		c.logger.Error().Err(err).Str("matchId", ctx.Param("matchId")).Msg("Invalid match ID format")
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "Invalid game ID",
+			"message": "Invalid match ID",
 		})
 		return
 	}
@@ -130,10 +130,10 @@ func (c *WebSocketController) HandleWebSocket(ctx *gin.Context) {
 	// Handle WebSocket connection
 	c.logger.Info().
 		Str("userId", userID.(uuid.UUID).String()).
-		Str("gameId", gameID.String()).
+		Str("matchId", matchID.String()).
 		Msg("WebSocket connection successful")
 
-	c.wsService.HandleConnection(conn, userID.(uuid.UUID), gameID)
+	c.wsService.HandleConnection(conn, userID.(uuid.UUID), matchID)
 }
 
 // HandleMatchmaking handles WebSocket connection requests for matchmaking

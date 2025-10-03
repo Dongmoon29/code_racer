@@ -18,7 +18,7 @@ import (
 // Setup initializes and returns the router with all routes configured
 func Setup(
 	authController *controller.AuthController,
-	gameController *controller.GameController,
+	matchController *controller.MatchController,
 	userController *controller.UserController,
 	leetcodeController *controller.LeetCodeController,
 	wsController *controller.WebSocketController,
@@ -75,11 +75,10 @@ func Setup(
 		secured := api.Group("/")
 		secured.Use(authMiddleware.APIAuthRequired())
 		{
-			game := secured.Group("/games")
+			match := secured.Group("/matches")
 			{
-				game.GET("/:id", gameController.GetGame)
-				game.POST("/:id/submit", gameController.SubmitSolution)
-				game.POST("/create-from-match", gameController.CreateGameFromMatch)
+				match.GET("/:id", matchController.GetMatch)
+				match.POST("/:id/submit", matchController.SubmitSolution)
 			}
 
 			// users
@@ -118,7 +117,7 @@ func Setup(
 
 	// web socket
 	router.GET("/ws/matching", authMiddleware.WebSocketAuthRequired(), wsController.HandleMatchmaking)
-	router.GET("/ws/:gameId", authMiddleware.WebSocketAuthRequired(), wsController.HandleWebSocket)
+	router.GET("/ws/:matchId", authMiddleware.WebSocketAuthRequired(), wsController.HandleWebSocket)
 
 	return router
 }

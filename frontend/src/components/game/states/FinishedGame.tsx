@@ -7,7 +7,8 @@ import { Alert } from '@/components/ui/alert';
 
 interface Props {
   game: Game;
-  currentUserId: string;
+  me?: { id: string; name: string };
+  opponent?: { id: string; name: string };
   myCode: string;
   opponentCode: string;
   selectedLanguage: 'python' | 'javascript' | 'go';
@@ -15,19 +16,24 @@ interface Props {
 
 export const FinishedGame: React.FC<Props> = ({
   game,
-  currentUserId,
+  me,
+  opponent,
   myCode,
   opponentCode,
   selectedLanguage,
 }) => {
   const router = useRouter();
-  const isCreator = currentUserId === game.creator.id;
+  // perspective is provided by parent
 
   return (
     <div className="p-6 max-w-4xl mx-auto rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-4">{game.leetcode.title}</h1>
       <Alert
-        variant={game.winner?.id === currentUserId ? 'success' : 'warning'}
+        variant={
+          game.winner?.id && me?.id && game.winner.id === me.id
+            ? 'success'
+            : 'warning'
+        }
       >
         <h3>Game Finished</h3>
         <p>
@@ -38,11 +44,11 @@ export const FinishedGame: React.FC<Props> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
         <div>
           <h2 className="text-xl font-semibold mb-2">
-            {isCreator ? 'Your Code' : game.creator.name + "'s Code"}
+            {me?.id ? 'Your Code' : (me?.name || '') + "'s Code"}
           </h2>
           <div className="h-[400px] border border-gray-200 rounded overflow-hidden">
             <CodeEditor
-              value={isCreator ? myCode : opponentCode}
+              value={me?.id ? myCode : opponentCode}
               readOnly={true}
               language={selectedLanguage}
             />
@@ -50,11 +56,11 @@ export const FinishedGame: React.FC<Props> = ({
         </div>
         <div>
           <h2 className="text-xl font-semibold mb-2">
-            {!isCreator ? 'Your Code' : game.opponent?.name + "'s Code"}
+            {!me?.id ? 'Your Code' : (opponent?.name || '') + "'s Code"}
           </h2>
           <div className="h-[400px] border border-gray-200 rounded overflow-hidden">
             <CodeEditor
-              value={!isCreator ? myCode : opponentCode}
+              value={!me?.id ? myCode : opponentCode}
               readOnly={true}
               language={selectedLanguage}
             />

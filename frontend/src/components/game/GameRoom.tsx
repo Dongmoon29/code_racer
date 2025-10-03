@@ -1,15 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, FC } from 'react';
 import { useRouter } from 'next/router';
-import { gameApi } from '../../lib/api';
+import { matchApi } from '../../lib/api';
 import WebSocketClient, {
   WebSocketMessage,
   CodeUpdateMessage,
 } from '../../lib/websocket';
 import { Spinner } from '../ui';
 import { Game, SubmitResult } from '@/types';
-// REMOVED: Room waiting states - replaced by automatic matching
-// import { WaitingToJoinGame } from './states/WaitingToJoinGame';
-// import { WaitingForOpponent } from './states/WaitingForOpponent';
+
 import { PlayingGame } from './states/PlayingGame';
 import { FinishedGame } from './states/FinishedGame';
 import { useAuthStore } from '@/stores/authStore';
@@ -23,7 +21,7 @@ interface GameRoomProps {
   gameId: string;
 }
 
-const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
+const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
   const router = useRouter();
   const { user: currentUser, isLoading } = useAuthStore();
   const [game, setGame] = useState<Game | null>(null);
@@ -31,7 +29,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
   const [error, setError] = useState<string | null>(null);
   const [myCode, setMyCode] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(`game_${gameId}_code`) || '';
+      return localStorage.getItem(`match_${matchId}_code`) || '';
     }
     return '';
   });
@@ -43,7 +41,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
   >(() => {
     if (typeof window !== 'undefined') {
       return (
-        (localStorage.getItem(`game_${gameId}_language`) as
+        (localStorage.getItem(`match_${matchId}_language`) as
           | 'python'
           | 'javascript'
           | 'go') || 'javascript'
@@ -53,49 +51,47 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
   });
   const [showMyCode, setShowMyCode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(`game_${gameId}_showMyCode`) !== 'false';
+      return localStorage.getItem(`match_${matchId}_showMyCode`) !== 'false';
     }
     return true;
   });
   const [showOpponentCode, setShowOpponentCode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return (
-        localStorage.getItem(`game_${gameId}_showOpponentCode`) !== 'false'
+        localStorage.getItem(`match_${matchId}_showOpponentCode`) !== 'false'
       );
     }
     return true;
   });
   const wsRef = useRef<WebSocketClient | null>(null);
-  // 초기 템플릿 설정을 위한 ref
   const isTemplateSet = useRef(false);
 
-  // 상태 변경 시 localStorage에 저장
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`game_${gameId}_code`, myCode);
+      localStorage.setItem(`match_${matchId}_code`, myCode);
     }
-  }, [myCode, gameId]);
+  }, [myCode, matchId]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`game_${gameId}_language`, selectedLanguage);
+      localStorage.setItem(`match_${matchId}_language`, selectedLanguage);
     }
-  }, [selectedLanguage, gameId]);
+  }, [selectedLanguage, matchId]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`game_${gameId}_showMyCode`, String(showMyCode));
+      localStorage.setItem(`match_${matchId}_showMyCode`, String(showMyCode));
     }
-  }, [showMyCode, gameId]);
+  }, [showMyCode, matchId]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(
-        `game_${gameId}_showOpponentCode`,
+        `match_${matchId}_showOpponentCode`,
         String(showOpponentCode)
       );
     }
-  }, [showOpponentCode, gameId]);
+  }, [showOpponentCode, matchId]);
 
   useEffect(() => {
     if (game?.leetcode && !isTemplateSet.current && !myCode) {
@@ -109,18 +105,18 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
   // TODO 컴포넌트가 닫히거나 웹소켓 닫혀도 정리해야할거 같음
   useEffect(() => {
     if (game?.status === 'finished' || game?.status === 'closed') {
-      localStorage.removeItem(`game_${gameId}_code`);
-      localStorage.removeItem(`game_${gameId}_language`);
-      localStorage.removeItem(`game_${gameId}_showMyCode`);
-      localStorage.removeItem(`game_${gameId}_showOpponentCode`);
+      localStorage.removeItem(`match_${matchId}_code`);
+      localStorage.removeItem(`match_${matchId}_language`);
+      localStorage.removeItem(`match_${matchId}_showMyCode`);
+      localStorage.removeItem(`match_${matchId}_showOpponentCode`);
     }
-  }, [game?.status, gameId]);
+  }, [game?.status, matchId]);
 
   useEffect(() => {
     const fetchGame = async () => {
       try {
         setLoading(true);
-        const response = await gameApi.getGame(gameId);
+        const response = await matchApi.getGame(matchId);
         setGame(response.game);
         setError(null);
       } catch (err: unknown) {
@@ -139,12 +135,12 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
     fetchGame();
     const interval = setInterval(fetchGame, 5000);
     return () => clearInterval(interval);
-  }, [gameId]);
+  }, [matchId]);
 
   // WebSocket 효과
   useEffect(() => {
     if (game?.status === 'playing' || game?.status === 'waiting') {
-      wsRef.current = new WebSocketClient(gameId);
+      wsRef.current = new WebSocketClient(matchId);
 
       const handleMessage = (message: WebSocketMessage) => {
         if (message.type === 'code_update') {
@@ -170,22 +166,19 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
         }
       };
     }
-  }, [game?.status, gameId, currentUser?.id]);
+  }, [game?.status, matchId, currentUser?.id]);
 
   if (isLoading || !currentUser) {
     return;
   }
 
-  // REMOVED: handleCloseGame - no room concept in matching system
+  // No need to pass me/opponent; child components work with myCode/opponentCode.
 
   const renderGameState = () => {
     if (!game) return null;
 
-    // REMOVED: isCreator check - no longer needed without room concept
-
     switch (game.status) {
       case 'waiting':
-        // REMOVED: Room waiting states - games start automatically after matching
         return (
           <Alert variant="warning">
             <h3>Game Initializing</h3>
@@ -197,7 +190,6 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
         return (
           <FinishedGame
             game={game}
-            currentUserId={currentUser?.id || ''}
             myCode={myCode}
             opponentCode={opponentCode}
             selectedLanguage={selectedLanguage}
@@ -208,9 +200,13 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
         return (
           <PlayingGame
             game={game}
-            currentUserId={currentUser?.id || ''}
             myCode={myCode}
             opponentCode={opponentCode}
+            opponentName={
+              (game.playerA?.id === currentUser.id
+                ? game.playerB?.name
+                : game.playerA?.name) ?? ''
+            }
             selectedLanguage={selectedLanguage}
             showMyCode={showMyCode}
             showOpponentCode={showOpponentCode}
@@ -250,14 +246,12 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
 
   const fetchGame = async () => {
     try {
-      const response = await gameApi.getGame(gameId);
+      const response = await matchApi.getGame(matchId);
       setGame(response.game);
     } catch (err) {
       console.error('Failed to refresh game:', err);
     }
   };
-
-  // REMOVED: handleJoinGame - replaced by automatic matching
 
   const handleCodeChange = (code: string) => {
     setMyCode(code);
@@ -276,7 +270,6 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
       if (game?.leetcode) {
         const template = getCodeTemplate(game.leetcode, language);
         setMyCode(template);
-        // 언어 변경 시에도 WebSocket으로 코드 업데이트를 전송
         if (wsRef.current) {
           wsRef.current.sendCodeUpdate(template);
         }
@@ -297,8 +290,8 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
     try {
       setSubmitting(true);
       setSubmitResult(null);
-      const response = await gameApi.submitSolution(
-        gameId,
+      const response = await matchApi.submitSolution(
+        matchId,
         myCode,
         selectedLanguage
       );
@@ -310,7 +303,6 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
       if (axios.isAxiosError(err)) {
         const axiosError = err as AxiosError<ApiErrorResponse>;
 
-        // Judge0 API 할당량 초과 에러 처리
         if (
           axiosError.response?.status === 429 &&
           axiosError.response?.data?.error_type === 'judge0_quota_exceeded'
@@ -342,7 +334,6 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
     }
   };
 
-  // Loading and error states
   if (loading && !game) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -370,8 +361,6 @@ const GameRoom: React.FC<GameRoomProps> = ({ gameId }) => {
       </Alert>
     );
   }
-
-  // Render appropriate component based on game state
 
   return renderGameState();
 };

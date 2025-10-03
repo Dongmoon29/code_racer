@@ -10,9 +10,9 @@ import { Alert } from '@/components/ui/alert';
 
 interface PlayingGameProps {
   game: Game;
-  currentUserId: string;
   myCode: string;
   opponentCode: string;
+  opponentName?: string;
   selectedLanguage: 'python' | 'javascript' | 'go';
   showMyCode: boolean;
   showOpponentCode: boolean;
@@ -27,9 +27,9 @@ interface PlayingGameProps {
 
 export const PlayingGame: FC<PlayingGameProps> = ({
   game,
-  currentUserId,
   myCode,
   opponentCode,
+  opponentName,
   selectedLanguage,
   submitResult,
   submitting,
@@ -42,7 +42,6 @@ export const PlayingGame: FC<PlayingGameProps> = ({
     'my' | 'opponent' | null
   >(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
-  const isCreator = currentUserId === game.creator.id;
 
   const handleMaximizeToggle = (editor: 'my' | 'opponent') => {
     setMaximizedEditor((current) => (current === editor ? null : editor));
@@ -219,7 +218,7 @@ export const PlayingGame: FC<PlayingGameProps> = ({
                   maximizedEditor === 'my' ? 'hidden' : ''
                 }`}
               >
-                {isCreator ? game.opponent?.name : game.creator.name}
+                {opponentName ?? ''}
               </span>
               <button
                 onClick={() => handleMaximizeToggle('opponent')}
