@@ -39,13 +39,6 @@ export default function AdminPage() {
       href: '/admin/users',
       icon: '👥',
     },
-    // {
-    //   title: 'System Analytics',
-    //   description: 'View application usage statistics and performance metrics.',
-    //   href: '/admin/analytics',
-    //   icon: '📊',
-    //   color: 'bg-purple-500'
-    // }
   ];
 
   return (
