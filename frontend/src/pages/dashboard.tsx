@@ -4,7 +4,6 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/useAuth';
-import RecentCommits from '@/components/ui/RecentCommits';
 
 const DashboardPage: FC = () => {
   const router = useRouter();
@@ -27,20 +26,12 @@ const DashboardPage: FC = () => {
   return (
     <DashboardLayout>
       <div className="py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Matching Area */}
-          <div className="lg:col-span-2">
-            <MatchingScreen
-              onMatchFound={(gameId) => {
-                router.push(`/game/${gameId}`);
-              }}
-            />
-          </div>
-
-          {/* Recent Updates Sidebar */}
-          <div className="lg:col-span-1">
-            <RecentCommits maxCommits={3} />
-          </div>
+        <div className="py-8">
+          <MatchingScreen
+            onMatchFound={(gameId) => {
+              router.push(`/game/${gameId}`);
+            }}
+          />
         </div>
       </div>
     </DashboardLayout>
