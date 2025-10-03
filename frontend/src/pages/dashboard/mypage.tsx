@@ -1,4 +1,5 @@
 import React from 'react';
+import Head from 'next/head';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -62,6 +63,13 @@ const MyPage = () => {
 
   return (
     <DashboardLayout>
+      <Head>
+        <title>My Profile - CodeRacer</title>
+        <meta
+          name="description"
+          content="Manage your profile and account settings"
+        />
+      </Head>
       <div className="py-2">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">My Page</h1>

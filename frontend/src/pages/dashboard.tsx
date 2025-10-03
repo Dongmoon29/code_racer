@@ -1,4 +1,5 @@
 import React, { FC } from 'react';
+import Head from 'next/head';
 import MatchingScreen from '@/components/game/MatchingScreen';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useEffect } from 'react';
@@ -25,6 +26,13 @@ const DashboardPage: FC = () => {
 
   return (
     <DashboardLayout>
+      <Head>
+        <title>Dashboard - CodeRacer</title>
+        <meta
+          name="description"
+          content="Find coding matches and compete in real-time"
+        />
+      </Head>
       <div className="py-8">
         <div className="py-8">
           <MatchingScreen

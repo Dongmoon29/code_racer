@@ -1,4 +1,5 @@
 import React from 'react';
+import Head from 'next/head';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { userApi } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
@@ -48,6 +49,13 @@ const LeaderboardPage = () => {
 
   return (
     <DashboardLayout>
+      <Head>
+        <title>Leaderboard - CodeRacer</title>
+        <meta
+          name="description"
+          content="Compete for the top spot in coding challenges"
+        />
+      </Head>
       <div className="py-2">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
