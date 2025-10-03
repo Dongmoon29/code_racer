@@ -9,6 +9,7 @@ import { Contributor } from '@/types';
 import { FEATURES } from '@/lib/features';
 import { FeatureCard } from '@/components/pages/FeatureCard';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import RecentCommits from '@/components/ui/RecentCommits';
 
 interface HomeProps {
   contributors: Contributor[];
@@ -128,6 +129,57 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
         </div>
       </div>
 
+      {/* Recent Updates Section */}
+      <div className="w-full max-w-6xl mx-auto px-4 py-12">
+        <div className="grid lg:grid-cols-2 gap-8">
+          <div className="lg:col-span-1">
+            <RecentCommits maxCommits={5} />
+          </div>
+          <div className="lg:col-span-1">
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+              <h3 className="text-xl font-bold mb-4">🚀 Project Status</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span>Working on game creation & game deletion</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  <span>Working on dashboard UI</span>
+                </div>
+                <div className="text-md font-extrabold mb-4 mt-10">
+                  This project is still under development!! and it&apos;s open
+                  source so you can see the code and contribute to it!
+                </div>
+              </div>
+              <div className="mt-6">
+                <Link
+                  href="https://github.com/Dongmoon29/code_racer"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                >
+                  View on GitHub
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Second Hero Section - CTA */}
       <div className="relative w-full mt-16">
         {/* Background Track Image */}
@@ -169,7 +221,7 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 drop-shadow-lg ">
             Ready to Race?
           </h2>
-          <p className="text-xl mb-10 max-w-2xl text-gray-100 drop-shadow-md font-medium">
+          <p className="text-xl mb-10 max-w-2xl drop-shadow-md font-medium">
             🏁 Join thousands of coders who are improving their skills through
             fun, competitive coding challenges.
           </p>
