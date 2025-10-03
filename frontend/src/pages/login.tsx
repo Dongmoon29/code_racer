@@ -5,6 +5,7 @@ import LoginForm from '../components/auth/LoginForm';
 import Image from 'next/image';
 import { Alert } from '@/components/ui/alert';
 import { useAuthStore } from '@/stores/authStore';
+import { motion } from 'framer-motion';
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
@@ -32,43 +33,46 @@ const LoginPage: React.FC = () => {
     >
       <div className="flex w-full min-h-[calc(100vh-80px)]">
         {/* Left Column - Form */}
-        <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col">
+        <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col items-center justify-center">
           <div className="max-w-md mx-auto w-full">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">
                 Sign In to CodeRacer
               </h1>
             </div>
-
             {message && (
               <Alert variant="success" className="mb-6">
                 <p>{message}</p>
               </Alert>
             )}
-
             <LoginForm />
           </div>
         </div>
 
         {/* Right Column - Image */}
-        <div className="hidden md:block md:w-1/2 bg-gradient-to-br from-blue-50 via-purple-50 to-green-50">
-          <div className="relative h-full w-full flex items-center justify-center">
-            <div className="text-center space-y-4">
+        <div className="hidden md:block md:w-1/2 overflow-hidden">
+          <div className="relative h-full w-full">
+            <motion.div
+              className="relative h-full w-full"
+              animate={{
+                rotate: [0, 1, 0],
+                x: [0, 2, 0],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
               <Image
-                src="/coderacer.png"
-                alt="Code Racer Racing Track"
-                width={400}
-                height={300}
-                className="mx-auto animate-bounce"
+                src="/code_racer_hero.png"
+                alt="Code Racer illustration"
+                fill
+                style={{ objectFit: 'contain' }}
+                className="p-4"
                 priority
               />
-              <div className="text-center space-y-2">
-                <h3 className="text-xl font-bold text-gray-800">
-                  🏁 Join the Racing Circuit
-                </h3>
-                <p className="text-gray-600">Fast coding, faster learning!</p>
-              </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>

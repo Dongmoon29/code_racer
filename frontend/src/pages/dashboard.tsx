@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/useAuth';
+import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 
 const DashboardPage: FC = () => {
   const router = useRouter();
@@ -19,7 +20,7 @@ const DashboardPage: FC = () => {
   if (isLoading || !isLoggedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <CodeRacerLoader size="lg" />
       </div>
     );
   }
