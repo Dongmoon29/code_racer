@@ -36,7 +36,10 @@ const Header: FC = () => {
               <Logo />
               codeRacer
             </Link>
-            <Link href="/dashboard" className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="flex font-medium text-sm items-center gap-3"
+            >
               Dashboard
             </Link>
           </div>
