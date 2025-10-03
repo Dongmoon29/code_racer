@@ -10,6 +10,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ExternalLink, GitCommit, Clock, User } from 'lucide-react';
+import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 
 interface RecentCommitsProps {
   className?: string;
@@ -56,14 +57,7 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {[...Array(maxCommits)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            ))}
-          </div>
+          <CodeRacerLoader size="sm" />
         </CardContent>
       </Card>
     );

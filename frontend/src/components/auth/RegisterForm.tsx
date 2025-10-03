@@ -189,27 +189,30 @@ const RegisterForm: React.FC = () => {
         </div>
       </div>
 
-      {/* Google 회원가입 버튼 */}
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full h-12 flex items-center justify-center gap-3 bg-white mb-4"
-        onClick={() => authApi.loginWithGoogle()}
-      >
-        <Image src="/google-logo.svg" alt="Google" width={20} height={20} />
-        Sign up with Google
-      </Button>
+      <div className="flex gap-4 justify-center">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-12 w-12 flex items-center justify-center gap-3 bg-gray-300 mb-4 rounded-full"
+          onClick={() => {
+            window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+          }}
+        >
+          <Image src="/google-logo.svg" alt="Google" width={30} height={30} />
+        </Button>
 
-      {/* GitHub 회원가입 버튼 */}
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full h-12 flex items-center justify-center gap-3 bg-white"
-        onClick={() => authApi.loginWithGitHub()}
-      >
-        <Image src="/github-logo.svg" alt="GitHub" width={20} height={20} />
-        Sign up with GitHub
-      </Button>
+        {/* GitHub Login Button */}
+        <Button
+          type="button"
+          variant="outline"
+          className="h-12 w-12 flex items-center justify-center gap-3 bg-gray-300 mb-4 rounded-full"
+          onClick={() => {
+            window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/github`;
+          }}
+        >
+          <Image src="/github-logo.svg" alt="GitHub" width={30} height={30} />
+        </Button>
+      </div>
 
       <div className="mt-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
         <p>
