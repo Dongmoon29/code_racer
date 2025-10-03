@@ -48,7 +48,7 @@ const Header: FC = () => {
   }, []);
 
   return (
-    <header className="border-b border-border bg-[color:hsl(var(--header))]">
+    <header className="border-b border-border bg-[color:hsl(var(--header))] relative z-50">
       <div className="px-4">
         <div className="flex justify-between items-center py-1">
           {/* 로고 */}
@@ -118,7 +118,7 @@ const Header: FC = () => {
             <ThemeToggle />
             {isLoggedIn && user ? (
               <>
-                <div className="relative" ref={dropdownRef}>
+                <div className="relative z-50" ref={dropdownRef}>
                   <button
                     onClick={toggleDropdown}
                     className="flex items-center space-x-3 hover:text-primary focus:outline-none cursor-pointer"
@@ -152,14 +152,14 @@ const Header: FC = () => {
                   </button>
                   {dropdownOpen && (
                     <div
-                      className="absolute right-0 mt-2 w-48 rounded-md shadow-lg z-10 border border-border"
+                      className="absolute right-0 mt-2 w-48 rounded-md shadow-lg z-[59] border border-border"
                       style={{ backgroundColor: 'hsl(var(--background))' }}
                     >
                       <div className="py-1">
                         {user.role === 'admin' && (
                           <Link
                             href="/admin"
-                            className="block w-full text-left px-4 py-2 text-sm hover:bg-muted"
+                            className="block w-full text-left px-4 py-2 text-sm hover:bg-muted cursor-pointer"
                             style={{ color: 'hsl(var(--foreground))' }}
                             onClick={() => setDropdownOpen(false)}
                           >
@@ -168,7 +168,7 @@ const Header: FC = () => {
                         )}
                         <button
                           onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-sm hover:bg-muted"
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-muted cursor-pointer"
                           style={{ color: 'hsl(var(--foreground))' }}
                         >
                           Logout
@@ -194,7 +194,7 @@ const Header: FC = () => {
 
         {/* 모바일 메뉴 */}
         {menuOpen && (
-          <div className="md:hidden py-4">
+          <div className="md:hidden py-4 relative z-50">
             {isLoggedIn && user ? (
               <div className="space-y-3">
                 <div className="px-2 text-sm text-[hsl(var(--foreground))] flex items-center space-x-2">
