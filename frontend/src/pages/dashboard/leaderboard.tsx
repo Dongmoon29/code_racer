@@ -1,10 +1,54 @@
 import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { userApi } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+
+interface LeaderboardUser {
+  id: string;
+  name: string;
+  rating: number;
+}
+
+interface RankedUser extends LeaderboardUser {
+  rank: number;
+}
 
 const LeaderboardPage = () => {
+  const { data, isFetching } = useQuery({
+    queryKey: ['leaderboard'],
+    queryFn: () => userApi.getLeaderboard(),
+    keepPreviousData: true,
+  });
+
+  const leaderboardUsers: LeaderboardUser[] = data?.users || [];
+
+  const usersWithInitialRank: RankedUser[] = leaderboardUsers.map(
+    (user, index) => ({
+      ...user,
+      rank: index + 1,
+    })
+  );
+
+  // Post-process to handle same rating ranks
+  const finalRankedUsers: RankedUser[] = usersWithInitialRank.map(
+    (user, index) => {
+      // Find the first user with the same rating
+      const firstSameRatingIndex = usersWithInitialRank.findIndex(
+        (u) => u.rating === user.rating
+      );
+      if (firstSameRatingIndex !== -1 && firstSameRatingIndex < index) {
+        return {
+          ...user,
+          rank: usersWithInitialRank[firstSameRatingIndex].rank,
+        };
+      }
+      return user;
+    }
+  );
+
   return (
     <DashboardLayout>
-      <div className="py-8">
+      <div className="py-2">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Leaderboard
@@ -14,44 +58,38 @@ const LeaderboardPage = () => {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
-          <div className="bg-card rounded-lg border border-border p-6 text-center">
-            <div className="text-4xl mb-2">🥇</div>
-            <h3 className="text-lg font-semibold mb-2 text-foreground">
-              Gold League
-            </h3>
-            <p className="text-sm text-muted-foreground">Top 1% performers</p>
-          </div>
-          <div className="bg-card rounded-lg border border-border p-6 text-center">
-            <div className="text-4xl mb-2">🥈</div>
-            <h3 className="text-lg font-semibold mb-2 text-foreground">
-              Silver League
-            </h3>
-            <p className="text-sm text-muted-foreground">Top 10% performers</p>
-          </div>
-          <div className="bg-card rounded-lg border border-border p-6 text-center">
-            <div className="text-4xl mb-2">🥉</div>
-            <h3 className="text-lg font-semibold mb-2 text-foreground">
-              Bronze League
-            </h3>
-            <p className="text-sm text-muted-foreground">Top 25% performers</p>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-lg border border-border p-6">
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🏆</div>
-            <h3 className="text-xl font-semibold mb-2 text-foreground">
-              Leaderboard Coming Soon
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              Global rankings will be available when more players join the
-              platform
-            </p>
-            <div className="text-sm text-muted-foreground">
-              Play more games to improve your ranking
-            </div>
-          </div>
+        <div className="overflow-hidden rounded-lg shadow">
+          <table className="min-w-full divide-y">
+            <thead>
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Rank
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Rating
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {finalRankedUsers.map((user) => (
+                <tr key={user.id}>
+                  <td className="px-4 py-3 text-sm w-24">{user.rank}</td>
+                  <td className="px-4 py-3 text-sm">{user.name}</td>
+                  <td className="px-4 py-3 text-sm">{user.rating ?? '-'}</td>
+                </tr>
+              ))}
+              {finalRankedUsers.length === 0 && (
+                <tr>
+                  <td className="px-4 py-6 text-center text-sm" colSpan={3}>
+                    {isFetching ? 'Loading…' : 'No users'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </DashboardLayout>

@@ -156,3 +156,19 @@ func (c *UserController) AdminListUsers(ctx *gin.Context) {
 		"has_next": hasNext,
 	})
 }
+
+func (c *UserController) GetLeaderboard(ctx *gin.Context) {
+	users, err := c.userService.GetLeaderboard(20)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"users":   users,
+	})
+}
