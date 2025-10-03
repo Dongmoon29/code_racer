@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
-import type { LeetCodeDetail } from '@/types';
+import type { LeetCodeDetail, Game } from '@/types';
 
 // LeetCodeDetail 타입은 중앙 타입에서 가져옵니다
 
@@ -171,27 +171,61 @@ export const authApi = {
 };
 
 // 게임 관련 API
-export const gameApi = {
+export const matchApi = {
   // 게임 정보 조회 (게임 진행 중 사용)
-  getGame: async (gameId: string) => {
-    const response = await api.get(`/games/${gameId}`);
-    return response.data;
+  getGame: async (matchId: string): Promise<{ game: Game | null }> => {
+    const response = await api.get(`/matches/${matchId}`);
+    // 백엔드: { success: true, data: MatchResponse }
+    const payload = response.data?.data;
+    if (!payload) {
+      return { game: null };
+    }
+    const mapped: Game = {
+      id: payload.id,
+      // Preferred fields
+      playerA: payload.player_a
+        ? {
+            id: payload.player_a.id,
+            email: payload.player_a.email,
+            name: payload.player_a.name,
+            created_at: payload.player_a.created_at,
+          }
+        : undefined,
+      playerB: payload.player_b
+        ? {
+            id: payload.player_b.id,
+            email: payload.player_b.email,
+            name: payload.player_b.name,
+            created_at: payload.player_b.created_at,
+          }
+        : undefined,
+
+      winner: payload.winner
+        ? {
+            id: payload.winner.id,
+            email: payload.winner.email,
+            name: payload.winner.name,
+            created_at: payload.winner.created_at,
+          }
+        : undefined,
+      leetcode: payload.leetcode,
+      status: payload.status,
+      started_at: payload.started_at,
+      created_at: payload.created_at,
+      player_count: payload.player_b ? 2 : 1,
+      is_full: !!payload.player_b,
+    };
+    return { game: mapped };
   },
 
   // 코드 제출
-  submitSolution: async (gameId: string, code: string, language: string) => {
-    const response = await api.post(`/games/${gameId}/submit`, {
+  submitSolution: async (matchId: string, code: string, language: string) => {
+    const response = await api.post(`/matches/${matchId}/submit`, {
       code,
       language,
     });
     return response.data;
   },
-
-  // REMOVED: Room-based APIs (replaced by WebSocket matching)
-  // listGames - no longer needed
-  // createGame - replaced by automatic matching
-  // joinGame - replaced by automatic matching
-  // closeGame - no room concept
 };
 
 // LeetCode 문제 관련 API

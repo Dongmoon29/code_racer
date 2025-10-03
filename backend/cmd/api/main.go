@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/Dongmoon29/code_racer/docs" // Import docs for swagger
 	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/controller"
 	logger "github.com/Dongmoon29/code_racer/internal/logger"
@@ -15,7 +16,6 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/Dongmoon29/code_racer/internal/router"
 	"github.com/Dongmoon29/code_racer/internal/service"
-	_ "github.com/Dongmoon29/code_racer/docs" // Import docs for swagger
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
@@ -85,7 +85,7 @@ func main() {
 	// setup router
 	r := router.Setup(
 		deps.authController,
-		deps.gameController,
+		deps.matchController,
 		deps.userController,
 		deps.leetcodeController,
 		deps.wsController,
@@ -99,7 +99,7 @@ func main() {
 
 type dependencies struct {
 	authController     *controller.AuthController
-	gameController     *controller.GameController
+	matchController    *controller.MatchController
 	userController     *controller.UserController
 	leetcodeController *controller.LeetCodeController
 	wsController       *controller.WebSocketController
@@ -109,19 +109,17 @@ type dependencies struct {
 func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *dependencies {
 	// initialize repositories
 	userRepository := repository.NewUserRepository(db, appLogger)
-	gameRepository := repository.NewGameRepository(db, appLogger)
+	matchRepository := repository.NewMatchRepository(db, appLogger)
 	leetCodeRepo := repository.NewLeetCodeRepository(db, appLogger)
 
 	// initialize services
 	authService := service.NewAuthService(userRepository, cfg.JWTSecret, appLogger)
 	userService := service.NewUserService(userRepository, appLogger)
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger)
-
-	// GameService without WebSocket dependency
-	gameService := service.NewGameService(gameRepository, leetCodeRepo, rdb, judgeService, appLogger)
+	matchService := service.NewMatchService(matchRepository, leetCodeRepo, rdb, judgeService, appLogger)
 
 	// Matchmaking service as mediator (without WebSocket initially)
-	matchmakingService := service.NewMatchmakingService(gameService, nil, rdb, appLogger)
+	matchmakingService := service.NewMatchmakingService(matchService, nil, rdb, appLogger)
 
 	// WebSocket service with matchmaking dependency
 	wsService := service.NewWebSocketService(rdb, appLogger, matchmakingService)
@@ -139,7 +137,7 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 	// init controllers and middleware
 	return &dependencies{
 		authController:     controller.NewAuthController(authService, appLogger),
-		gameController:     controller.NewGameController(gameService, appLogger),
+		matchController:    controller.NewMatchController(matchService, appLogger),
 		userController:     controller.NewUserController(userService, appLogger),
 		leetcodeController: controller.NewLeetCodeController(leetCodeService, appLogger),
 		wsController:       controller.NewWebSocketController(wsService, appLogger),

@@ -16,10 +16,6 @@ export interface ApiResponse {
   data?: unknown;
   game?: {
     id: string;
-    creator: {
-      id: string;
-      name: string;
-    };
     leetcode: {
       id: string;
       title: string;
@@ -181,13 +177,14 @@ export interface AlertVariant {
 // 게임 관련 추가 타입
 export interface Game {
   id: string;
-  creator: {
+  // Preferred naming aligned with backend
+  playerA?: {
     id: string;
     email: string;
     name: string;
     created_at: string;
   };
-  opponent?: {
+  playerB?: {
     id: string;
     email: string;
     name: string;

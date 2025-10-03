@@ -24,7 +24,7 @@ func SetupDatabase(db *gorm.DB) error {
 		}},
 		{"Auto migrate (dev only)", func() error {
 			if !util.IsProduction() {
-				return db.AutoMigrate(&model.User{}, &model.Game{}, &model.LeetCode{})
+				return db.AutoMigrate(&model.User{}, &model.LeetCode{}, &model.Match{})
 			}
 			return nil
 		}},

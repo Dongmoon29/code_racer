@@ -84,12 +84,12 @@ func (m *MockWebSocketService) InitHub() *service.Hub {
 	return args.Get(0).(*service.Hub)
 }
 
-func (m *MockWebSocketService) HandleConnection(conn *websocket.Conn, userID uuid.UUID, gameID uuid.UUID) {
-	m.Called(conn, userID, gameID)
+func (m *MockWebSocketService) HandleConnection(conn *websocket.Conn, userID uuid.UUID, matchID uuid.UUID) {
+	m.Called(conn, userID, matchID)
 }
 
-func (m *MockWebSocketService) BroadcastToGame(gameID uuid.UUID, message []byte) {
-	m.Called(gameID, message)
+func (m *MockWebSocketService) BroadcastToMatch(matchID uuid.UUID, message []byte) {
+	m.Called(matchID, message)
 }
 
 // setupWebSocketTest performs setup configuration for WebSocket tests
@@ -126,7 +126,7 @@ func TestHandleWebSocket(t *testing.T) {
 			c.Abort()
 		}
 
-		router.GET("/ws/:gameId", mockAuthMiddleware, controller.HandleWebSocket)
+		router.GET("/ws/:matchId", mockAuthMiddleware, controller.HandleWebSocket)
 
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", "/ws/"+uuid.New().String(), nil)
@@ -150,7 +150,7 @@ func TestHandleWebSocket(t *testing.T) {
 			c.Next()
 		})
 
-		r.GET("/ws/:gameId", wsController.HandleWebSocket)
+		r.GET("/ws/:matchId", wsController.HandleWebSocket)
 
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", "/ws/invalid-game-id", nil)
@@ -179,7 +179,7 @@ func TestHandleWebSocket(t *testing.T) {
 
 		// Generate test UUIDs
 		userID := uuid.New()
-		gameID := uuid.New()
+		matchID := uuid.New()
 
 		// Explicitly expect HandleConnection to be called
 		mockService.On("HandleConnection",
@@ -188,7 +188,7 @@ func TestHandleWebSocket(t *testing.T) {
 				return u == userID
 			}),
 			mock.MatchedBy(func(g uuid.UUID) bool {
-				return g == gameID
+				return g == matchID
 			}),
 		).Return()
 
@@ -199,7 +199,7 @@ func TestHandleWebSocket(t *testing.T) {
 		})
 
 		// Register WebSocket handler
-		router.GET("/ws/:gameId", controller.HandleWebSocket)
+		router.GET("/ws/:matchId", controller.HandleWebSocket)
 
 		// Create test server
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -208,7 +208,7 @@ func TestHandleWebSocket(t *testing.T) {
 		defer server.Close()
 
 		// Generate WebSocket URL
-		wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws/" + gameID.String()
+		wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws/" + matchID.String()
 
 		// Configure WebSocket client dialer
 		dialer := websocket.Dialer{
