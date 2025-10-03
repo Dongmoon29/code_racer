@@ -2,12 +2,11 @@ import { create } from 'zustand';
 import api, { authApi, extractUserFromResponse } from '@/lib/api';
 import { AxiosError } from 'axios';
 
-// User 타입 정의
-type User = {
+export type User = {
   id: string;
   name: string;
   email: string;
-  profile_image?: string; // 추가된 필드
+  profile_image?: string;
   homepage?: string;
   linkedin?: string;
   oauthProvider?: string;
