@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Trophy, User } from 'lucide-react';
+import { Car, Trophy, User } from 'lucide-react';
 import Header from './Header';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -19,11 +19,11 @@ const items = [
     label: 'Leaderboard',
     icon: <Trophy className="w-5 h-5" />,
   },
-  //   {
-  //     href: '/dashboard/profile',
-  //     label: 'Profile',
-  //     icon: <User className="w-5 h-5" />,
-  //   },
+  {
+    href: '/dashboard',
+    label: 'Dashboard',
+    icon: <Car className="w-5 h-5" />,
+  },
 ];
 
 export default function DashboardLayout({ children }: Props) {
