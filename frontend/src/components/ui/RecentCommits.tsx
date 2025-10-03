@@ -4,7 +4,6 @@ import Image from 'next/image';
 import {
   GitHubCommit,
   getRecentCommits,
-  getRecentCommitsFromBackend,
   truncateCommitMessage,
   formatRelativeTime,
 } from '@/lib/github-api';
@@ -15,13 +14,11 @@ import { ExternalLink, GitCommit, Clock, User } from 'lucide-react';
 interface RecentCommitsProps {
   className?: string;
   maxCommits?: number;
-  useBackend?: boolean; // 백엔드 API 사용 여부
 }
 
 export const RecentCommits: React.FC<RecentCommitsProps> = ({
   className = '',
   maxCommits = 5,
-  useBackend = false,
 }) => {
   const [commits, setCommits] = useState<GitHubCommit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,9 +28,11 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
     const fetchCommits = async () => {
       try {
         setLoading(true);
-        const recentCommits = useBackend
-          ? await getRecentCommitsFromBackend(maxCommits)
-          : await getRecentCommits('Dongmoon29', 'code_racer', maxCommits);
+        const recentCommits = await getRecentCommits(
+          'Dongmoon29',
+          'code_racer',
+          maxCommits
+        );
         setCommits(recentCommits);
         setError(null);
       } catch (err) {
@@ -45,7 +44,7 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
     };
 
     fetchCommits();
-  }, [maxCommits, useBackend]);
+  }, [maxCommits]);
 
   if (loading) {
     return (
