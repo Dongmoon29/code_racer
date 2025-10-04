@@ -30,6 +30,7 @@ type matchService struct {
 	matchRepo    repository.MatchRepository
 	leetCodeRepo repository.LeetCodeRepository
 	rdb          *redis.Client
+	redisManager *RedisManager
 	logger       logger.Logger
 	judgeService interfaces.JudgeService
 }
@@ -45,6 +46,7 @@ func NewMatchService(
 		matchRepo:    matchRepo,
 		leetCodeRepo: leetCodeRepo,
 		rdb:          rdb,
+		redisManager: NewRedisManager(rdb, logger),
 		judgeService: judgeService,
 		logger:       logger,
 	}
@@ -167,9 +169,7 @@ func (s *matchService) UpdateCode(matchID uuid.UUID, userID uuid.UUID, code stri
 	}
 
 	// Redis에 코드 저장
-	ctx := context.Background()
-	codeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID.String())
-	if err := s.rdb.Set(ctx, codeKey, code, 24*time.Hour).Err(); err != nil {
+	if err := s.redisManager.UpdateUserCode(matchID, userID, code); err != nil {
 		return err
 	}
 
@@ -178,18 +178,7 @@ func (s *matchService) UpdateCode(matchID uuid.UUID, userID uuid.UUID, code stri
 
 // GetPlayerCode 플레이어 코드 조회
 func (s *matchService) GetPlayerCode(matchID uuid.UUID, userID uuid.UUID) (string, error) {
-	ctx := context.Background()
-	codeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID.String())
-
-	code, err := s.rdb.Get(ctx, codeKey).Result()
-	if err != nil {
-		if err == redis.Nil {
-			return "", nil // 코드가 없는 경우 빈 문자열 반환
-		}
-		return "", err
-	}
-
-	return code, nil
+	return s.redisManager.GetUserCode(matchID, userID)
 }
 
 func (s *matchService) CloseMatch(matchID uuid.UUID, userID uuid.UUID) error {
@@ -198,39 +187,35 @@ func (s *matchService) CloseMatch(matchID uuid.UUID, userID uuid.UUID) error {
 		return err
 	}
 
-	// Redis에서 게임 관련 데이터 원자적 정리
+	// Redis에서 게임 관련 데이터 정리
 	ctx := context.Background()
-	matchKey := fmt.Sprintf("match:%s", matchID.String())
-	matchUsersKey := fmt.Sprintf("match:%s:users", matchID.String())
 
 	// 게임에 참가한 사용자 목록 가져오기
-	users, err := s.rdb.SMembers(ctx, matchUsersKey).Result()
+	users, err := s.redisManager.GetMatchUsers(matchID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to get match users from Redis")
 	}
 
-	// Redis 파이프라인을 사용한 원자적 정리
-	pipe := s.rdb.Pipeline()
-
-	// 게임 상태 업데이트
-	pipe.HSet(ctx, matchKey, "status", string(model.MatchStatusClosed))
-
-	// 각 사용자의 코드 데이터 삭제
+	// 각 사용자를 매치에서 제거
 	for _, uid := range users {
-		codeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), uid)
-		pipe.Del(ctx, codeKey)
+		userID, err := uuid.Parse(uid)
+		if err != nil {
+			s.logger.Error().Err(err).Str("userID", uid).Msg("Failed to parse user ID")
+			continue
+		}
+		if err := s.redisManager.RemoveUserFromMatch(matchID, userID); err != nil {
+			s.logger.Error().Err(err).Str("userID", uid).Msg("Failed to remove user from match")
+		}
 	}
 
-	// 게임 관련 키들 삭제
-	pipe.Del(ctx, matchKey, matchUsersKey)
+	// 매치 완전 정리
+	if err := s.redisManager.CleanupMatch(matchID); err != nil {
+		s.logger.Error().Err(err).Msg("Failed to cleanup match")
+	}
 
 	// 승자 락 키도 정리
 	lockKey := fmt.Sprintf("match:%s:winner_lock", matchID.String())
-	pipe.Del(ctx, lockKey)
-
-	if _, err := pipe.Exec(ctx); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to cleanup Redis data")
-	}
+	s.rdb.Del(ctx, lockKey)
 
 	return nil
 }
@@ -272,22 +257,8 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 		return nil, fmt.Errorf("failed to load match: %w", err)
 	}
 
-	// Initialize Redis data for both players
-	ctx := context.Background()
-	gameKey := fmt.Sprintf("match:%s", match.ID.String())
-	player1CodeKey := fmt.Sprintf("match:%s:user:%s:code", match.ID.String(), player1ID.String())
-	player2CodeKey := fmt.Sprintf("match:%s:user:%s:code", match.ID.String(), player2ID.String())
-	matchUsersKey := fmt.Sprintf("match:%s:users", match.ID.String())
-
-	// Use Redis pipeline for atomic operations
-	pipe := s.rdb.Pipeline()
-	pipe.HSet(ctx, gameKey, "status", string(match.Status))
-	pipe.Set(ctx, player1CodeKey, "", 24*time.Hour)
-	pipe.Set(ctx, player2CodeKey, "", 24*time.Hour)
-	pipe.SAdd(ctx, matchUsersKey, player1ID.String(), player2ID.String())
-	pipe.Expire(ctx, matchUsersKey, 24*time.Hour)
-
-	if _, err := pipe.Exec(ctx); err != nil {
+	// Initialize Redis data using RedisManager
+	if err := s.redisManager.CreateMatch(match.ID, player1ID, player2ID, leetcode.ID, difficulty); err != nil {
 		s.logger.Error().Err(err).Msg("Failed to initialize Redis data for match")
 		// Try to clean up the database record
 		if deleteErr := s.matchRepo.Delete(match.ID); deleteErr != nil {

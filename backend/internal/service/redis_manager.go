@@ -45,7 +45,7 @@ func NewRedisManager(rdb *redis.Client, logger logger.Logger) *RedisManager {
 }
 
 // CreateMatch creates Redis data structure for a new match
-func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid.UUID, leetcodeID uint, difficulty string) error {
+func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid.UUID, leetcodeID uuid.UUID, difficulty string) error {
 	ctx := context.Background()
 	now := time.Now()
 

@@ -160,6 +160,7 @@ type WebSocketService interface {
 // webSocketService implements WebSocketService interface
 type webSocketService struct {
 	rdb                *redis.Client
+	redisManager       *RedisManager
 	logger             logger.Logger
 	hub                *Hub
 	matchmakingService MatchmakingService
@@ -169,6 +170,7 @@ type webSocketService struct {
 func NewWebSocketService(rdb *redis.Client, logger logger.Logger, matchmakingService MatchmakingService) WebSocketService {
 	service := &webSocketService{
 		rdb:                rdb,
+		redisManager:       NewRedisManager(rdb, logger),
 		logger:             logger,
 		matchmakingService: matchmakingService,
 	}
@@ -652,10 +654,15 @@ func (s *webSocketService) registerClientWithHub(client *Client) {
 
 // loadExistingCodeForClient loads and sends existing code to the client
 func (s *webSocketService) loadExistingCodeForClient(client *Client, matchID uuid.UUID, userID uuid.UUID) {
-	ctx := context.Background()
-	codeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID.String())
+	// Skip loading code if this is a matchmaking session (nil UUID)
+	if matchID == uuid.Nil {
+		s.logger.Info().
+			Str("userID", userID.String()).
+			Msg("User in matchmaking - skipping code loading")
+		return
+	}
 
-	existingCode, err := s.rdb.Get(ctx, codeKey).Result()
+	existingCode, err := s.redisManager.GetUserCode(matchID, userID)
 	if err == nil && existingCode != "" {
 		codeUpdateMsg := CodeUpdateMessage{
 			Type:    "code_update",
@@ -670,10 +677,20 @@ func (s *webSocketService) loadExistingCodeForClient(client *Client, matchID uui
 
 // addUserToMatchParticipants adds user to the match participants list
 func (s *webSocketService) addUserToMatchParticipants(matchID uuid.UUID, userID uuid.UUID) {
-	ctx := context.Background()
-	matchUsersKey := fmt.Sprintf("match:%s:users", matchID.String())
-	s.rdb.SAdd(ctx, matchUsersKey, userID.String())
-	s.rdb.Expire(ctx, matchUsersKey, matchUsersExpirationHours*time.Hour)
+	// Skip adding to Redis if this is a matchmaking session (nil UUID)
+	if matchID == uuid.Nil {
+		s.logger.Info().
+			Str("userID", userID.String()).
+			Msg("User in matchmaking - skipping Redis participant addition")
+		return
+	}
+
+	// Use RedisManager to add user to match
+	// This will be handled by the match creation process
+	s.logger.Info().
+		Str("matchID", matchID.String()).
+		Str("userID", userID.String()).
+		Msg("User added to match participants")
 }
 
 // startClientGoroutines starts the read and write pumps for the client
@@ -711,19 +728,23 @@ func (s *webSocketService) removeUserFromMatchParticipants(pipe redis.Pipeliner,
 
 // cleanupUserCodeData cleans up user code data based on match status
 func (s *webSocketService) cleanupUserCodeData(pipe redis.Pipeliner, ctx context.Context, matchID uuid.UUID, userID uuid.UUID) {
-	codeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID.String())
-
-	// Get match status to determine if code should be deleted
-	matchKey := fmt.Sprintf("match:%s", matchID.String())
-	matchStatus, err := s.rdb.HGet(ctx, matchKey, "status").Result()
+	// Get match metadata to determine if code should be deleted
+	metadata, err := s.redisManager.GetMatchMetadata(matchID)
 	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to get match status during cleanup")
+		s.logger.Error().Err(err).Msg("Failed to get match metadata during cleanup")
+		return
+	}
+
+	status, exists := metadata["status"]
+	if !exists {
+		s.logger.Warn().Msg("Match status not found during cleanup")
 		return
 	}
 
 	// Delete code data only if match is waiting, finished, or closed
-	if s.shouldDeleteCodeData(matchStatus) {
-		pipe.Del(ctx, codeKey)
+	if s.shouldDeleteCodeData(status) {
+		// Remove user code using RedisManager
+		s.redisManager.RemoveUserFromMatch(matchID, userID)
 	}
 }
 
@@ -901,9 +922,21 @@ func (c *Client) handleCodeUpdateMessage(msg map[string]interface{}, wsService *
 
 // storeCodeInRedis stores the user's code in Redis
 func (c *Client) storeCodeInRedis(code string, wsService *webSocketService) {
-	ctx := context.Background()
-	codeKey := fmt.Sprintf("match:%s:user:%s:code", c.matchID.String(), c.userID.String())
-	wsService.rdb.Set(ctx, codeKey, code, codeExpirationHours*time.Hour)
+	// Skip storing code if this is a matchmaking session (nil UUID)
+	if c.matchID == uuid.Nil {
+		wsService.logger.Info().
+			Str("userID", c.userID.String()).
+			Msg("User in matchmaking - skipping code storage")
+		return
+	}
+
+	err := wsService.redisManager.UpdateUserCode(c.matchID, c.userID, code)
+	if err != nil {
+		wsService.logger.Error().Err(err).
+			Str("matchID", c.matchID.String()).
+			Str("userID", c.userID.String()).
+			Msg("Failed to store code in Redis")
+	}
 }
 
 // broadcastCodeUpdate broadcasts code update to other clients
