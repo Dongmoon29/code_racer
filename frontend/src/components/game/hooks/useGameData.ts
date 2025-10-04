@@ -42,7 +42,7 @@ export const useGameData = ({ matchId }: UseGameDataProps): UseGameDataReturn =>
         const errorMessage = axiosError.response?.data?.message || 'Failed to load game';
         setError(errorMessage);
         
-        // 404 에러인 경우 대시보드로 리다이렉트
+        // Redirect to dashboard for 404 errors
         if (axiosError.response?.status === 404) {
           router.push('/dashboard');
         }

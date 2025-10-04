@@ -9,7 +9,7 @@ export const useAuth = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // 토큰이 있는지 확인
+        // Check if token exists
         const token = localStorage.getItem('authToken');
 
         if (!token) {
@@ -24,7 +24,7 @@ export const useAuth = () => {
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        // 인증 실패 시 토큰 제거
+        // Remove token on authentication failure
         localStorage.removeItem('authToken');
       } finally {
         setIsLoading(false);

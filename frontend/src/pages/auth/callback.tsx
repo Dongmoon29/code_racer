@@ -28,13 +28,13 @@ const AuthCallback: React.FC = () => {
         const response = await authApi.exchangeToken(code, state, provider);
 
         if (response.success) {
-          // 토큰 저장
+          // Save token
           localStorage.setItem('authToken', response.token);
 
-          // 사용자 정보 설정
+          // Set user information
           useAuthStore.getState().login(response.user);
 
-          // 대시보드로 이동
+          // Navigate to dashboard
           router.push('/dashboard');
         } else {
           setError(response.message || 'Token exchange failed.');

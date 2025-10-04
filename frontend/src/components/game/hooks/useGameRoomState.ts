@@ -7,7 +7,7 @@ interface UseGameRoomStateProps {
 }
 
 interface UseGameRoomStateReturn {
-  // 게임 상태
+  // Game state
   game: Game | null;
   setGame: (game: Game | null) => void;
   loading: boolean;
@@ -15,19 +15,19 @@ interface UseGameRoomStateReturn {
   error: string | null;
   setError: (error: string | null) => void;
   
-  // 코드 상태
+  // Code state
   myCode: string;
   setMyCode: (code: string) => void;
   opponentCode: string;
   setOpponentCode: (code: string) => void;
   
-  // 제출 상태
+  // Submission state
   submitResult: SubmitResult | null;
   setSubmitResult: (result: SubmitResult | null) => void;
   submitting: boolean;
   setSubmitting: (submitting: boolean) => void;
   
-  // 언어 및 UI 상태
+  // Language and UI state
   selectedLanguage: 'python' | 'javascript' | 'go';
   setSelectedLanguage: (language: 'python' | 'javascript' | 'go') => void;
   showMyCode: boolean;
@@ -35,17 +35,17 @@ interface UseGameRoomStateReturn {
   showOpponentCode: boolean;
   setShowOpponentCode: (show: boolean) => void;
   
-  // 템플릿 설정 상태
+  // Template setup state
   isTemplateSet: React.MutableRefObject<boolean>;
 }
 
 export const useGameRoomState = ({ matchId }: UseGameRoomStateProps): UseGameRoomStateReturn => {
-  // 게임 상태
+  // Game state
   const [game, setGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  // 코드 상태
+  // Code state
   const [myCode, setMyCode] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const key = createSessionStorageKey(matchId, GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.CODE);
@@ -56,11 +56,11 @@ export const useGameRoomState = ({ matchId }: UseGameRoomStateProps): UseGameRoo
   
   const [opponentCode, setOpponentCode] = useState<string>(GAME_ROOM_CONSTANTS.DEFAULTS.EMPTY_CODE);
   
-  // 제출 상태
+  // Submission state
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   
-  // 언어 및 UI 상태
+  // Language and UI state
   const [selectedLanguage, setSelectedLanguage] = useState<'python' | 'javascript' | 'go'>(() => {
     if (typeof window !== 'undefined') {
       const key = createSessionStorageKey(matchId, GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.LANGUAGE);
@@ -86,10 +86,10 @@ export const useGameRoomState = ({ matchId }: UseGameRoomStateProps): UseGameRoo
     return GAME_ROOM_CONSTANTS.DEFAULTS.SHOW_OPPONENT_CODE;
   });
   
-  // 템플릿 설정 상태
+  // Template setup state
   const isTemplateSet = useRef(false);
   
-  // 세션 스토리지 동기화
+  // Session storage synchronization
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const key = createSessionStorageKey(matchId, GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.CODE);
@@ -119,7 +119,7 @@ export const useGameRoomState = ({ matchId }: UseGameRoomStateProps): UseGameRoo
   }, [showOpponentCode, matchId]);
   
   return {
-    // 게임 상태
+    // Game state
     game,
     setGame,
     loading,
@@ -127,19 +127,19 @@ export const useGameRoomState = ({ matchId }: UseGameRoomStateProps): UseGameRoo
     error,
     setError,
     
-    // 코드 상태
+    // Code state
     myCode,
     setMyCode,
     opponentCode,
     setOpponentCode,
     
-    // 제출 상태
+    // Submission state
     submitResult,
     setSubmitResult,
     submitting,
     setSubmitting,
     
-    // 언어 및 UI 상태
+    // Language and UI state
     selectedLanguage,
     setSelectedLanguage,
     showMyCode,
@@ -147,7 +147,7 @@ export const useGameRoomState = ({ matchId }: UseGameRoomStateProps): UseGameRoo
     showOpponentCode,
     setShowOpponentCode,
     
-    // 템플릿 설정 상태
+    // Template setup state
     isTemplateSet,
   };
 };

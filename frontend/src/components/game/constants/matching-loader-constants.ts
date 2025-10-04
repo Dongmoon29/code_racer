@@ -1,6 +1,6 @@
-// Matching Loader 관련 상수 정의
+// Matching Loader related constants
 export const MATCHING_LOADER_CONSTANTS = {
-  // 난이도별 설정
+  // Difficulty-specific configuration
   DIFFICULTY_CONFIG: {
     Easy: {
       color: 'text-green-600 dark:text-green-400',
@@ -19,20 +19,20 @@ export const MATCHING_LOADER_CONSTANTS = {
     },
   } as const,
   
-  // 타이머 설정
+  // Timer settings
   TIMER: {
     INTERVAL_MS: 1000,
     INCREMENT_VALUE: 1,
   },
   
-  // 메시지
+  // Messages
   MESSAGES: {
     SEARCHING_FOR_OPPONENT: 'Searching for opponent...',
     WAIT_TIME_PREFIX: 'Wait time:',
     CANCEL_MATCHMAKING: 'Cancel Matchmaking',
   },
   
-  // 스타일링
+  // Styling
   STYLES: {
     CONTAINER_MAX_WIDTH: 'max-w-2xl',
     CONTAINER_PADDING: 'p-6',

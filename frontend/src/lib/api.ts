@@ -2,7 +2,7 @@ import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import type { LeetCodeDetail, Game } from '@/types';
 
-// LeetCodeDetail 타입은 중앙 타입에서 가져옵니다
+// LeetCodeDetail type is imported from central types
 
 export interface UserProfile {
   homepage?: string;
@@ -13,7 +13,7 @@ export interface UserProfile {
   fav_language?: string;
 }
 
-// User 타입 정의 (authStore와 일치)
+// User type definition (matches authStore)
 interface User {
   id: string;
   name: string;
@@ -25,7 +25,7 @@ interface User {
   oauthProvider?: string;
 }
 
-// User 객체인지 확인하는 타입 가드
+// Type guard to check if object is User
 const isUser = (obj: unknown): obj is User => {
   return (
     obj !== null &&
@@ -37,16 +37,16 @@ const isUser = (obj: unknown): obj is User => {
   );
 };
 
-// API 클라이언트 기본 설정
+// API client basic configuration
 const api = axios.create({
   baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: false, // 쿠키 방식 제거
+  withCredentials: false, // Remove cookie-based authentication
 });
 
-// 요청 인터셉터 - Authorization 헤더 추가
+// Request interceptor - Add Authorization header
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
@@ -64,12 +64,12 @@ api.interceptors.request.use(
   }
 );
 
-// 응답 인터셉터
+// Response interceptor
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // 로그인 시도 중인 경우는 리다이렉트하지 않음
+      // Don't redirect during login attempts
       if (!error.config.url?.includes('/auth/login')) {
         await useAuthStore.getState().logout();
         window.location.href = '/login';
@@ -79,7 +79,7 @@ api.interceptors.response.use(
   }
 );
 
-// API 응답에서 사용자 정보를 일관성 있게 추출하는 헬퍼 함수
+// Helper function to consistently extract user information from API responses
 export const extractUserFromResponse = (response: unknown): User | null => {
   // Login API: { success: true, data: { user, token } }
   if (
@@ -112,9 +112,9 @@ export const extractUserFromResponse = (response: unknown): User | null => {
   return null;
 };
 
-// 인증 관련 API
+// Authentication related API
 export const authApi = {
-  // 회원가입
+  // User registration
   register: async (email: string, password: string, name: string) => {
     const response = await api.post('/auth/register', {
       email,
@@ -124,13 +124,13 @@ export const authApi = {
     return response.data;
   },
 
-  // 로그인
+  // User login
   login: async (email: string, password: string) => {
     const response = await api.post('/auth/login', { email, password });
     return response.data;
   },
 
-  // OAuth 코드를 토큰으로 교환
+  // Exchange OAuth code for token
   exchangeToken: async (code: string, state: string, provider: string) => {
     const response = await api.post('/auth/exchange-token', {
       code,
@@ -140,7 +140,7 @@ export const authApi = {
     return response.data;
   },
 
-  // 현재 사용자 정보 조회
+  // Get current user information
   getCurrentUser: async () => {
     try {
       const response = await api.get('/users/me');
@@ -150,19 +150,19 @@ export const authApi = {
     }
   },
 
-  // 로그아웃
+  // User logout
   logout: async () => {
     await api.post('/auth/logout');
   },
 
-  // Google 로그인
+  // Google login
   loginWithGoogle: () => {
     const backendURL =
       process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
     window.location.href = `${backendURL}/auth/google`;
   },
 
-  // GitHub 로그인 추가
+  // GitHub login
   loginWithGitHub: () => {
     const backendURL =
       process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
@@ -170,12 +170,12 @@ export const authApi = {
   },
 };
 
-// 게임 관련 API
+// Game related API
 export const matchApi = {
-  // 게임 정보 조회 (게임 진행 중 사용)
+  // Get game information (used during game play)
   getGame: async (matchId: string): Promise<{ game: Game | null }> => {
     const response = await api.get(`/matches/${matchId}`);
-    // 백엔드: { success: true, data: MatchResponse }
+    // Backend: { success: true, data: MatchResponse }
     const payload = response.data?.data;
     if (!payload) {
       return { game: null };

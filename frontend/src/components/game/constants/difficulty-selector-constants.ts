@@ -1,6 +1,6 @@
-// Difficulty Selector 관련 상수 정의
+// Difficulty Selector related constants
 export const DIFFICULTY_SELECTOR_CONSTANTS = {
-  // 난이도 옵션
+  // Difficulty options
   DIFFICULTY_OPTIONS: [
     {
       value: 'Easy',
@@ -22,7 +22,7 @@ export const DIFFICULTY_SELECTOR_CONSTANTS = {
     },
   ] as const,
   
-  // 메시지
+  // Messages
   MESSAGES: {
     TITLE: '🏁 Code Racer',
     SUBTITLE: 'Choose Your Racing Circuit',
@@ -30,7 +30,7 @@ export const DIFFICULTY_SELECTOR_CONSTANTS = {
     SUB_DESCRIPTION: '💨 Select your preferred speed circuit and let the coding race begin!',
   },
   
-  // 레이아웃
+  // Layout
   LAYOUT: {
     CONTAINER_MAX_WIDTH: 'max-w-4xl',
     CONTAINER_PADDING: 'p-6',
@@ -44,7 +44,7 @@ export const DIFFICULTY_SELECTOR_CONSTANTS = {
     CARD_TITLE_SIZE: 'text-2xl font-bold mb-2',
   },
   
-  // 스타일링
+  // Styling
   STYLES: {
     GRADIENT_TEXT: 'bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent',
     CARD_HOVER: 'hover:scale-105',

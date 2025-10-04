@@ -1,8 +1,8 @@
-// LeetCode Form 관련 상수 정의
+// LeetCode Form related constants
 import { LeetCodeFormData, TestCase } from '@/types';
 
 export const LEETCODE_FORM_CONSTANTS = {
-  // 기본값
+  // Default values
   DEFAULTS: {
     TITLE: '',
     DESCRIPTION: '',
@@ -24,16 +24,16 @@ export const LEETCODE_FORM_CONSTANTS = {
     TEST_CASES: [{ input: [], output: '' }] as TestCase[],
   },
   
-  // 난이도 옵션
+  // Difficulty options
   DIFFICULTY_OPTIONS: ['Easy', 'Medium', 'Hard'] as const,
   
-  // 폼 모드
+  // Form modes
   FORM_MODES: {
     CREATE: 'create' as const,
     EDIT: 'edit' as const,
   },
   
-  // 메시지
+  // Messages
   MESSAGES: {
     SUBMITTING: 'Submitting...',
     CREATE_SUCCESS: 'Problem created successfully!',
@@ -41,7 +41,7 @@ export const LEETCODE_FORM_CONSTANTS = {
     ERROR_OCCURRED: 'An error occurred. Please try again.',
   },
   
-  // 유효성 검사
+  // Validation
   VALIDATION: {
     MIN_TITLE_LENGTH: 1,
     MIN_DESCRIPTION_LENGTH: 1,
@@ -49,7 +49,7 @@ export const LEETCODE_FORM_CONSTANTS = {
   },
 } as const;
 
-// 기본 폼 데이터 생성 함수
+// Default form data creation function
 export const createDefaultFormData = (): LeetCodeFormData => ({
   title: LEETCODE_FORM_CONSTANTS.DEFAULTS.TITLE,
   description: LEETCODE_FORM_CONSTANTS.DEFAULTS.DESCRIPTION,

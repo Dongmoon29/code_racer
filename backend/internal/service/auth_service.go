@@ -56,10 +56,10 @@ func (s *authService) Register(req *model.RegisterRequest) (*model.UserResponse,
 		Email:    req.Email,
 		Password: hashedPassword,
 		Name:     req.Name,
-		Role:     model.RoleUser, // 기본 role을 'user'로 설정
+		Role:     model.RoleUser, // Set default role to 'user'
 	}
 
-	// 사용자 저장
+	// Save user
 	if err := s.userRepo.Create(user); err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (s *authService) Register(req *model.RegisterRequest) (*model.UserResponse,
 	return user.ToResponse(), nil
 }
 
-// Login 로그인 서비스
+// Login login service
 func (s *authService) Login(req *model.LoginRequest) (*model.LoginResponse, error) {
 	s.logger.Debug().
 		Str("email", req.Email).
@@ -82,12 +82,12 @@ func (s *authService) Login(req *model.LoginRequest) (*model.LoginResponse, erro
 		return nil, errors.New("invalid email or password")
 	}
 
-	// 패스워드 검증
+	// Password verification
 	if !util.CheckPasswordHash(req.Password, user.Password) {
 		return nil, errors.New("invalid email or password")
 	}
 
-	// JWT 토큰 생성
+	// JWT token generation
 	token, err := s.generateToken(user.ID, user.Email, string(user.Role))
 	if err != nil {
 		return nil, err
@@ -99,9 +99,9 @@ func (s *authService) Login(req *model.LoginRequest) (*model.LoginResponse, erro
 	}, nil
 }
 
-// ValidateToken JWT 토큰 검증
+// ValidateToken JWT token validation
 func (s *authService) ValidateToken(tokenString string) (*types.JWTClaims, error) {
-	// JWT 토큰 검증
+	// JWT token validation
 	token, err := jwt.ParseWithClaims(tokenString, &types.JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.jwtSecret), nil
 	})

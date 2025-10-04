@@ -66,7 +66,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
   }, []);
 
   const startMatching = async (difficulty: Difficulty) => {
-    // 중복 시작 방지: 진행 중이거나 기존 소켓이 있으면 무시
+    // Prevent duplicate start: ignore if in progress or existing socket
     if (matchingState !== MATCHING_STATE.IDLE || wsClientRef.current) {
       return;
     }
@@ -114,13 +114,13 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
         },
 
         onMatchmakingDisconnect: () => {
-          // 매치메이킹 완료 후 의도적 disconnect - 에러 처리 안함
+          // Intentional disconnect after matchmaking completion - no error handling
           console.log('Matchmaking completed, disconnecting intentionally');
         },
 
         onDisconnect: () => {
-          // ref를 사용하여 최신 matchingState 확인
-          // 검색 중일 때만 에러 표시
+          // Use ref to check latest matchingState
+          // Show error only when searching
           if (
             matchingStateRef.current === MATCHING_STATE.CONNECTING ||
             matchingStateRef.current === MATCHING_STATE.SEARCHING
@@ -146,7 +146,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
     }
   };
 
-  // 라우트 이동 시작 시 자동 취소
+  // Auto-cancel when route navigation starts
   useEffect(() => {
     const handleRouteStart = () => {
       cancelMatching();
@@ -157,7 +157,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
     };
   }, [cancelMatching, router.events]);
 
-  // 탭 종료/새로고침 시 자동 취소
+  // Auto-cancel when tab closes/refreshes
   useEffect(() => {
     const onBeforeUnload = () => {
       cancelMatching();
@@ -166,7 +166,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [cancelMatching]);
 
-  // 페이지 숨김 시 자동 취소(백그라운드 전환) - 다시 활성화
+  // Auto-cancel when page is hidden (background switch) - re-enabled
   useEffect(() => {
     const onVisibility = () => {
       if (document.hidden) {

@@ -13,10 +13,10 @@ interface GameRoomProps {
 const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
   const { user: currentUser, isLoading: isAuthLoading } = useAuthStore();
   
-  // 게임 데이터 관리
+  // Game data management
   const { game, loading: gameLoading, error: gameError, fetchGame } = useGameData({ matchId });
   
-  // 게임룸 상태 관리
+  // Game room state management
   const {
     myCode,
     setMyCode,
@@ -34,7 +34,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     isTemplateSet,
   } = useGameRoomState({ matchId });
   
-  // WebSocket 연결 및 이벤트 핸들링
+  // WebSocket connection and event handling
   const {
     handleCodeChange,
     handleLanguageChange,
@@ -51,10 +51,10 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     setSubmitting,
   });
   
-  // 페이지 떠날 때 경고 및 캐시 정리
+  // Warning and cache cleanup when leaving page
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      // 게임이 진행 중일 때만 경고 표시
+      // Show warning only when game is in progress
       if (game?.status === 'playing' || game?.status === 'waiting') {
         event.preventDefault();
         event.returnValue = 'Your written code will be lost if you leave this page.';
@@ -62,11 +62,11 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       }
     };
     
-    // 브라우저 기본 경고창 등록
+    // Register browser default warning dialog
     window.addEventListener('beforeunload', handleBeforeUnload);
     
     return () => {
-      // 컴포넌트가 언마운트될 때 게임 관련 캐시 정리
+      // Clean up game-related cache when component unmounts
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem(`match_${matchId}_code`);
         sessionStorage.removeItem(`match_${matchId}_language`);
@@ -74,12 +74,12 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
         sessionStorage.removeItem(`match_${matchId}_showOpponentCode`);
       }
       
-      // 이벤트 리스너 제거
+      // Remove event listener
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [matchId, game?.status]);
   
-  // 로딩 상태 처리
+  // Loading state handling
   if (isAuthLoading || gameLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -88,12 +88,12 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     );
   }
   
-  // 인증되지 않은 사용자 처리
+  // Unauthenticated user handling
   if (!currentUser) {
     return null;
   }
   
-  // 에러 상태 처리
+  // Error state handling
   if (gameError) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -111,7 +111,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     );
   }
   
-  // 게임이 없는 경우
+  // No game case
   if (!game) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -123,7 +123,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     );
   }
   
-  // 게임 상태별 렌더링
+  // Game state-based rendering
   return (
     <GameStateRenderer
       game={game}

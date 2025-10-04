@@ -1,12 +1,12 @@
-// Problem Page 관련 상수 정의
+// Problem Page related constants
 export const PROBLEM_PAGE_CONSTANTS = {
-  // 기본값
+  // Default values
   DEFAULTS: {
     LANGUAGE: 'javascript' as const,
     THEME: 'dark' as const,
   },
   
-  // 언어 옵션
+  // Language options
   LANGUAGE_OPTIONS: [
     { value: 'javascript', label: 'JavaScript' },
     { value: 'python', label: 'Python' },
@@ -15,12 +15,12 @@ export const PROBLEM_PAGE_CONSTANTS = {
     { value: 'cpp', label: 'C++' },
   ] as const,
   
-  // 메시지
+  // Messages
   MESSAGES: {
     LANGUAGE_CHANGE_CONFIRMATION: 'Changing language will reset your code to template. Continue?',
   },
   
-  // 레이아웃
+  // Layout
   LAYOUT: {
     CONTAINER_CLASS: 'flex h-full',
     PROBLEM_SECTION_CLASS: 'w-1/2 p-4',

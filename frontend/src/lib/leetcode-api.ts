@@ -8,12 +8,12 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
-// API 요청 헬퍼 함수
+// API request helper function
 async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = localStorage.getItem('authToken'); // accessToken → authToken으로 수정
+  const token = localStorage.getItem('authToken'); // Changed from accessToken to authToken
 
   console.log('LeetCode API Request:', {
     endpoint: `${API_BASE_URL}${endpoint}`,
@@ -46,7 +46,7 @@ async function apiRequest<T>(
   return response.json();
 }
 
-// LeetCode 문제 생성 (Admin only)
+// Create LeetCode problem (Admin only)
 export async function createLeetCodeProblem(
   data: CreateLeetCodeRequest
 ): Promise<LeetCodeDetail> {
@@ -56,7 +56,7 @@ export async function createLeetCodeProblem(
   });
 }
 
-// LeetCode 문제 수정 (Admin only)
+// Update LeetCode problem (Admin only)
 export async function updateLeetCodeProblem(
   id: string,
   data: UpdateLeetCodeRequest
@@ -67,14 +67,14 @@ export async function updateLeetCodeProblem(
   });
 }
 
-// LeetCode 문제 삭제 (Admin only)
+// Delete LeetCode problem (Admin only)
 export async function deleteLeetCodeProblem(id: string): Promise<void> {
   return apiRequest<void>(`/leetcode/${id}`, {
     method: 'DELETE',
   });
 }
 
-// 모든 LeetCode 문제 조회
+// Get all LeetCode problems
 export async function getAllLeetCodeProblems(): Promise<{
   success: boolean;
   data: LeetCodeSummary[];
@@ -82,7 +82,7 @@ export async function getAllLeetCodeProblems(): Promise<{
   return apiRequest<{ success: boolean; data: LeetCodeSummary[] }>('/leetcode');
 }
 
-// 특정 LeetCode 문제 조회
+// Get specific LeetCode problem
 export async function getLeetCodeProblem(id: string): Promise<LeetCodeDetail> {
   const response = await apiRequest<{ success: boolean; data: LeetCodeDetail }>(
     `/leetcode/${id}`
@@ -90,7 +90,7 @@ export async function getLeetCodeProblem(id: string): Promise<LeetCodeDetail> {
   return response.data;
 }
 
-// 난이도별 LeetCode 문제 조회
+// Get LeetCode problems by difficulty
 export async function getLeetCodeProblemsByDifficulty(
   difficulty: string
 ): Promise<LeetCodeSummary[]> {
@@ -99,7 +99,7 @@ export async function getLeetCodeProblemsByDifficulty(
   );
 }
 
-// LeetCode 문제 검색
+// Search LeetCode problems
 export async function searchLeetCodeProblems(
   query: string
 ): Promise<LeetCodeSummary[]> {
@@ -108,7 +108,7 @@ export async function searchLeetCodeProblems(
   );
 }
 
-// 페이지네이션으로 LeetCode 문제 조회
+// Get LeetCode problems with pagination
 export async function getLeetCodeProblemsWithPagination(
   page: number = 1,
   limit: number = 10

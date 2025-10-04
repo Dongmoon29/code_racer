@@ -91,7 +91,7 @@ func TestGetLanguageWrapper(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, wrapperFunc)
 
-				// 반환된 래퍼 함수가 실제로 실행 가능한지 테스트
+				// Test if the returned wrapper function is actually executable
 				problem := &model.LeetCode{
 					FunctionName: "testFunc",
 					InputFormat:  "array",
@@ -158,10 +158,10 @@ func TestLanguageWrappers(t *testing.T) {
 			code:       "function solution(arr) { return arr.map(x => x * 2); }",
 			languageID: 63,
 			want: `
-// 사용자 코드
+// User code
 function solution(arr) { return arr.map(x => x * 2); }
 
-// 테스트 실행
+// Test execution
 function runTest() {
     try {
         const testCase = JSON.parse("[1,2,3]");
@@ -215,20 +215,20 @@ import (
     "os"
 )
 
-// 사용자 코드
+// User code
 func solution(arr ...interface{}) interface{} {
     return arr
 }
 
 func main() {
-    // 테스트 케이스 파싱
+    // Test case parsing
     var testCase []interface{}
     if err := json.Unmarshal([]byte("[1,2,3]"), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %v\n", err)
         os.Exit(1)
     }
 
-    // 함수 실행 및 결과 출력
+    // Function execution and result output
     defer func() {
         if r := recover(); r != nil {
             fmt.Fprintf(os.Stderr, "Runtime error: %v\n", r)
@@ -236,7 +236,7 @@ func main() {
         }
     }()
 
-    // 결과 실행 및 출력
+    // Result execution and output
     result := solution(testCase...)
     output, err := json.Marshal(result)
     if err != nil {
@@ -264,13 +264,13 @@ public class Solution {
             ObjectMapper mapper = new ObjectMapper();
             Solution solution = new Solution();
             
-            // 테스트 케이스 파싱
+            // Test case parsing
             List<Object> inputs = mapper.readValue("[1,2,3]", List.class);
             
-            // 함수 실행
+            // Function execution
             Object result = solution.solution(inputs.toArray());
             
-            // 결과 출력
+            // Result output
             System.out.println(mapper.writeValueAsString(result));
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
@@ -291,7 +291,7 @@ public class Solution {
 
 using json = nlohmann::json;
 
-// 사용자 코드
+// User code
 class Solution {
 public:
     json solution(json& arr) {
@@ -301,15 +301,15 @@ public:
 
 int main() {
     try {
-        // 테스트 케이스 파싱
+        // Test case parsing
         json test_case = json::parse(R"([1,2,3])");
         
         Solution solution;
         
-        // 함수 실행
+        // Function execution
         auto result = solution.solution(test_case);
         
-        // 결과 출력
+        // Result output
         std::cout << result.dump() << std::endl;
         
         return 0;
@@ -327,7 +327,7 @@ int main() {
 			assert.NoError(t, err)
 
 			got := wrapperFunc(tt.code, testCase, problem)
-			// 공백을 무시하고 비교
+			// Compare ignoring whitespace
 			assert.Equal(t,
 				strings.ReplaceAll(strings.TrimSpace(tt.want), " ", ""),
 				strings.ReplaceAll(strings.TrimSpace(got), " ", ""),

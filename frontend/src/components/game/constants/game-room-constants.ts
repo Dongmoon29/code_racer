@@ -1,6 +1,6 @@
-// GameRoom 관련 상수 정의
+// GameRoom related constants
 export const GAME_ROOM_CONSTANTS = {
-  // 세션 스토리지 키
+  // Session storage keys
   SESSION_STORAGE_KEYS: {
     CODE: 'code',
     LANGUAGE: 'language',
@@ -8,7 +8,7 @@ export const GAME_ROOM_CONSTANTS = {
     SHOW_OPPONENT_CODE: 'showOpponentCode',
   },
   
-  // 기본값
+  // Default values
   DEFAULTS: {
     LANGUAGE: 'javascript' as const,
     SHOW_MY_CODE: true,
@@ -16,7 +16,7 @@ export const GAME_ROOM_CONSTANTS = {
     EMPTY_CODE: '',
   },
   
-  // 게임 상태
+  // Game status
   GAME_STATUS: {
     WAITING: 'waiting',
     PLAYING: 'playing',
@@ -24,10 +24,10 @@ export const GAME_ROOM_CONSTANTS = {
     CLOSED: 'closed',
   } as const,
   
-  // 언어 옵션
+  // Language options
   SUPPORTED_LANGUAGES: ['python', 'javascript', 'go'] as const,
   
-  // 메시지
+  // Messages
   MESSAGES: {
     GAME_INITIALIZING: 'Setting up your match...',
     GAME_CLOSED: 'This game room has been closed by the creator.',
@@ -36,6 +36,6 @@ export const GAME_ROOM_CONSTANTS = {
   },
 } as const;
 
-// 세션 스토리지 키 생성 헬퍼
+// Session storage key generation helper
 export const createSessionStorageKey = (matchId: string, key: string): string => 
   `match_${matchId}_${key}`;

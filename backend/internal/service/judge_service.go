@@ -35,7 +35,7 @@ type judgeService struct {
 	functionExtractor *judge.FunctionExtractor
 }
 
-// 인터페이스 구현 확인
+// Interface implementation check
 var _ interfaces.JudgeService = (*judgeService)(nil)
 
 func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger) interfaces.JudgeService {
@@ -165,7 +165,7 @@ func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expecte
 	}
 	judgeResponse, err := s.judge0Client.SubmitCode(judgeRequest)
 	if err != nil {
-		// 쿼터 초과 식별 로깅
+		// Log quota exceeded identification
 		errorMessage := fmt.Errorf("Judge0 API error: %w", err)
 		if strings.Contains(errorMessage.Error(), "exceeded the DAILY quota") {
 			s.logger.Error().
@@ -327,7 +327,7 @@ func (s *judgeService) WrapCodeWithTestCase(code string, languageID int, testCas
 	return s.codeWrapper.WrapCode(code, languageID, testCase, problem)
 }
 
-// getLanguageID는 문자열 언어 이름을 Judge0 API의 언어 ID로 변환합니다
+// getLanguageID converts string language name to Judge0 API language ID
 func (s *judgeService) getLanguageID(language string) (int, error) {
 	switch strings.ToLower(language) {
 	case "javascript":
@@ -347,7 +347,7 @@ func (s *judgeService) getLanguageID(language string) (int, error) {
 	}
 }
 
-// evaluateTestCase는 단일 테스트 케이스에 대해 코드를 평가합니다
+// evaluateTestCase evaluates code for a single test case
 func (s *judgeService) evaluateTestCase(
 	// user code
 	code string,

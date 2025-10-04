@@ -30,7 +30,7 @@ export const useGameRoomWebSocket = ({
   const router = useRouter();
   const wsRef = useRef<WebSocketClient | null>(null);
   
-  // 템플릿 설정
+  // Template setup
   useEffect(() => {
     if (game?.leetcode && !isTemplateSet.current && !myCode) {
       const template = getCodeTemplate(game.leetcode, selectedLanguage);
@@ -39,7 +39,7 @@ export const useGameRoomWebSocket = ({
     }
   }, [game?.leetcode, isTemplateSet, myCode, selectedLanguage, setMyCode]);
   
-  // WebSocket 메시지 핸들러
+  // WebSocket message handler
   const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
     switch (message.type) {
       case 'code_update':
@@ -72,7 +72,7 @@ export const useGameRoomWebSocket = ({
     }
   }, [setOpponentCode, setSubmitResult]);
   
-  // WebSocket 연결 설정
+  // WebSocket connection setup
   useEffect(() => {
     if (!game) return;
     
@@ -86,7 +86,7 @@ export const useGameRoomWebSocket = ({
     
     wsClient.addMessageHandler(handleWebSocketMessage);
     
-    // 에러 핸들러는 WebSocketClient 내부에서 처리되므로 별도 설정 불필요
+    // Error handler is handled internally by WebSocketClient, no separate setup needed
     
     wsRef.current = wsClient;
     
@@ -98,7 +98,7 @@ export const useGameRoomWebSocket = ({
     };
   }, [game, matchId, router, handleWebSocketMessage, setSubmitResult]);
   
-  // 코드 변경 핸들러
+  // Code change handler
   const handleCodeChange = useCallback((newCode: string) => {
     setMyCode(newCode);
     
@@ -107,7 +107,7 @@ export const useGameRoomWebSocket = ({
     }
   }, [setMyCode]);
   
-  // 언어 변경 핸들러
+  // Language change handler
   const handleLanguageChange = useCallback((newLanguage: 'python' | 'javascript' | 'go') => {
     setSubmitting(false);
     setSubmitResult(null);
@@ -122,7 +122,7 @@ export const useGameRoomWebSocket = ({
     }
   }, [game?.leetcode, setMyCode, setSubmitting, setSubmitResult]);
   
-  // 코드 제출 핸들러
+  // Code submission handler
   const handleSubmitCode = useCallback(async () => {
     if (!game) return;
     

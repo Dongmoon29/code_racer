@@ -1,4 +1,3 @@
-// 매치메이킹 전용 WebSocket 클라이언트
 export interface MatchingRequest {
   type: 'start_matching';
   difficulty: 'Easy' | 'Medium' | 'Hard';
@@ -59,7 +58,6 @@ export class MatchmakingWebSocketClient {
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        // WebSocket URL 구성
         const wsProtocol =
           window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
@@ -75,7 +73,6 @@ export class MatchmakingWebSocketClient {
           wsHost = wsHost.replace(/^https?:\/\//, '');
         }
 
-        // JWT 토큰 가져오기
         const token =
           localStorage.getItem('authToken') || localStorage.getItem('token');
         if (!token) {
@@ -83,7 +80,6 @@ export class MatchmakingWebSocketClient {
           return;
         }
 
-        // 매치메이킹 전용 엔드포인트로 연결
         const wsUrl = `${wsProtocol}//${wsHost}/ws/matching?token=${encodeURIComponent(
           token
         )}`;
@@ -113,7 +109,7 @@ export class MatchmakingWebSocketClient {
           );
           this.callbacks.onDisconnect?.();
 
-          // 의도적인 연결 해제가 아니면 재연결 시도
+          // Try reconnection if not intentional disconnect
           if (
             !this.isIntentionalDisconnect &&
             this.reconnectAttempts < this.maxReconnectAttempts
@@ -151,7 +147,7 @@ export class MatchmakingWebSocketClient {
 
   private attemptReconnect() {
     this.reconnectAttempts++;
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000); // 최대 10초
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000); // Maximum 10 seconds
 
     console.log(
       `Attempting to reconnect matchmaking WebSocket (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`
@@ -213,7 +209,7 @@ export class MatchmakingWebSocketClient {
     console.log('Matchmaking WebSocket disconnected intentionally');
   }
 
-  // 매치메이킹 완료 후 의도적 disconnect (에러 처리 안함)
+  // Intentional disconnect after matchmaking completion (no error handling)
   disconnectAfterMatch() {
     this.isIntentionalDisconnect = true;
 
@@ -227,7 +223,7 @@ export class MatchmakingWebSocketClient {
       this.ws = null;
     }
 
-    // 매치메이킹 완료 후 disconnect 콜백 호출
+    // Call disconnect callback after matchmaking completion
     this.callbacks.onMatchmakingDisconnect?.();
     console.log('Matchmaking WebSocket disconnected after match found');
   }

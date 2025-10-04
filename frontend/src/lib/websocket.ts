@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-// WebSocket 관련 타입 정의
+// WebSocket related type definitions
 export interface WebSocketMessage {
   type: string;
   game_id: string;
@@ -15,7 +15,7 @@ export interface CodeUpdateMessage extends WebSocketMessage {
   code: string;
 }
 
-// WebSocket 연결 관리 클래스
+// WebSocket connection management class
 export class WebSocketClient {
   private ws: WebSocket | null = null;
   private messageHandlers: ((message: WebSocketMessage) => void)[] = [];
@@ -30,24 +30,24 @@ export class WebSocketClient {
   }
 
   private connect() {
-    // WebSocket URL 구성
+    // WebSocket URL configuration
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
-    // 환경변수에서 WebSocket URL 가져오기
+    // Get WebSocket URL from environment variables
     let wsUrl: string;
     if (process.env.NEXT_PUBLIC_WS_URL) {
-      // 환경변수에 전체 URL이 설정된 경우
+      // Case when full URL is set in environment variables
       wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}/${this.gameId}`;
     } else {
-      // 환경변수가 없는 경우 기본 구성
+      // Default configuration when environment variables are not set
       let wsHost: string;
       if (process.env.NODE_ENV === 'production') {
-        // 프로덕션: 환경변수에서 백엔드 도메인 가져오기
+        // Production: get backend domain from environment variables
         wsHost =
           process.env.NEXT_PUBLIC_WS_HOST ||
           'code-racer-651798881748.asia-northeast3.run.app';
       } else {
-        // 개발환경: 환경변수 또는 기본값 사용
+        // Development: use environment variables or default values
         wsHost =
           process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
           'http://localhost:8080';
@@ -56,7 +56,7 @@ export class WebSocketClient {
       wsUrl = `${wsProtocol}//${wsHost}/ws/${this.gameId}`;
     }
 
-    // JWT 토큰 가져오기
+    // Get JWT token
     const token =
       localStorage.getItem('authToken') || localStorage.getItem('token');
 
@@ -65,17 +65,17 @@ export class WebSocketClient {
       return;
     }
 
-    // 토큰을 쿼리 파라미터로 추가 (브라우저 WebSocket에서는 헤더 설정 불가)
+    // Add token as query parameter (headers cannot be set in browser WebSocket)
     wsUrl = `${wsUrl}?token=${encodeURIComponent(token)}`;
 
-    // WebSocket 연결 생성
+    // Create WebSocket connection
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
       this.reconnectAttempts = 0;
       this.startPingInterval();
 
-      // 연결 후 인증 메시지 전송 (선택사항)
+      // Send authentication message after connection (optional)
       this.sendAuthMessage(token);
     };
 
@@ -119,11 +119,11 @@ export class WebSocketClient {
 
     this.pingInterval = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        // ping 메시지 전송 (브라우저 WebSocket에서는 ping 메서드가 지원되지 않음)
+        // Send ping message (browser WebSocket doesn't support ping method)
         this.ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
         this.lastPingTime = Date.now();
       }
-    }, 30000); // 30초마다 ping
+    }, 30000); // Ping every 30 seconds
   }
 
   private handleMessage(message: WebSocketMessage) {
@@ -142,7 +142,7 @@ export class WebSocketClient {
     this.messageHandlers = this.messageHandlers.filter((h) => h !== handler);
   }
 
-  // 코드 업데이트 메시지 전송
+  // Send code update message
   sendCodeUpdate(code: string) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       const message = {
@@ -174,7 +174,7 @@ export class WebSocketClient {
     }
   }
 
-  // 인증 메시지 전송
+  // Send authentication message
   private sendAuthMessage(token: string) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       const authMessage = {

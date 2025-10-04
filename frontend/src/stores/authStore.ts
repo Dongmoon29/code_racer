@@ -25,13 +25,13 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoggedIn: false,
-  isLoading: false, // 초기값을 false로 변경
+  isLoading: false, // Changed initial value to false
   login: (user: User) => {
     set({ user, isLoggedIn: true });
   },
   logout: async () => {
     try {
-      // 이미 로그아웃 상태면 API 호출 스킵
+      // Skip API call if already logged out
       if (!get().isLoggedIn) {
         return;
       }
@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('Logout failed', error);
     } finally {
-      // 로컬 스토리지에서 토큰 제거
+      // Remove token from local storage
       localStorage.removeItem('authToken');
 
       set({
@@ -52,14 +52,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
   initializeAuth: async () => {
-    // 로컬 스토리지에 토큰이 있는지 확인
+    // Check if token exists in local storage
     const token = localStorage.getItem('authToken');
     if (!token) {
       set({ user: null, isLoggedIn: false, isLoading: false });
       return;
     }
 
-    // 이미 로딩 중이면 스킵
+    // Skip if already loading
     if (get().isLoading) {
       return;
     }
@@ -71,13 +71,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (user) {
         set({ user, isLoggedIn: true });
       } else {
-        // 사용자 정보를 가져올 수 없으면 토큰 제거
+        // Remove token if user info cannot be retrieved
         localStorage.removeItem('authToken');
         set({ user: null, isLoggedIn: false });
       }
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 401) {
-        // 토큰이 유효하지 않으면 제거
+        // Remove token if invalid
         localStorage.removeItem('authToken');
         set({ user: null, isLoggedIn: false });
       } else {
