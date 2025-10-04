@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { matchApi } from '@/lib/api';
 import { Game } from '@/types';
@@ -22,7 +22,7 @@ export const useGameData = ({ matchId }: UseGameDataProps): UseGameDataReturn =>
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  const fetchGame = async (): Promise<void> => {
+  const fetchGame = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
@@ -52,11 +52,11 @@ export const useGameData = ({ matchId }: UseGameDataProps): UseGameDataReturn =>
     } finally {
       setLoading(false);
     }
-  };
+  }, [matchId, router]);
   
   useEffect(() => {
     fetchGame();
-  }, [matchId]);
+  }, [fetchGame]);
   
   return {
     game,

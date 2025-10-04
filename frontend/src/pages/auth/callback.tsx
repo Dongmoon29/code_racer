@@ -63,7 +63,7 @@ const AuthCallback: React.FC = () => {
     };
 
     exchangeToken();
-  }, []);
+  }, [router]);
 
   const handleRetry = () => {
     router.push('/login');

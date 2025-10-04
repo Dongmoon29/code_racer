@@ -1,4 +1,6 @@
 // LeetCode Form 관련 상수 정의
+import { LeetCodeFormData, TestCase } from '@/types';
+
 export const LEETCODE_FORM_CONSTANTS = {
   // 기본값
   DEFAULTS: {
@@ -18,8 +20,8 @@ export const LEETCODE_FORM_CONSTANTS = {
     CPP_TEMPLATE: '',
     TIME_LIMIT: 1000,
     MEMORY_LIMIT: 128,
-    IO_SCHEMA: { param_types: [], return_type: '' },
-    TEST_CASES: [{ input: [], output: '' }],
+    IO_SCHEMA: { param_types: [] as string[], return_type: '' },
+    TEST_CASES: [{ input: [], output: '' }] as TestCase[],
   },
   
   // 난이도 옵션

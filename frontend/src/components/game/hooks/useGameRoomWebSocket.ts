@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import WebSocketClient, { WebSocketMessage, CodeUpdateMessage } from '@/lib/websocket';
 import { Game, SubmitResult } from '@/types';
 import { getCodeTemplate } from '@/lib/api';
-import { GAME_ROOM_CONSTANTS } from '../constants/game-room-constants';
 
 interface UseGameRoomWebSocketProps {
   matchId: string;
@@ -55,6 +54,7 @@ export const useGameRoomWebSocket = ({
           setSubmitResult({
             success: true,
             message: 'Game finished!',
+            is_winner: false, // This will be determined by the actual game logic
           });
         }
         break;
@@ -63,6 +63,7 @@ export const useGameRoomWebSocket = ({
         setSubmitResult({
           success: false,
           message: 'An error occurred during the game.',
+          is_winner: false,
         });
         break;
         
@@ -81,17 +82,11 @@ export const useGameRoomWebSocket = ({
       return;
     }
     
-    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}/ws/${matchId}?token=${token}`;
-    const wsClient = new WebSocketClient(wsUrl);
+    const wsClient = new WebSocketClient(matchId);
     
-    wsClient.onMessage = handleWebSocketMessage;
-    wsClient.onError = (error) => {
-      console.error('WebSocket error:', error);
-      setSubmitResult({
-        success: false,
-        message: 'Connection error occurred.',
-      });
-    };
+    wsClient.addMessageHandler(handleWebSocketMessage);
+    
+    // 에러 핸들러는 WebSocketClient 내부에서 처리되므로 별도 설정 불필요
     
     wsRef.current = wsClient;
     
@@ -108,14 +103,9 @@ export const useGameRoomWebSocket = ({
     setMyCode(newCode);
     
     if (wsRef.current) {
-      const message: CodeUpdateMessage = {
-        type: 'code_update',
-        game_id: matchId,
-        code: newCode,
-      };
-      wsRef.current.sendMessage(message);
+      wsRef.current.sendCodeUpdate(newCode);
     }
-  }, [matchId, setMyCode]);
+  }, [setMyCode]);
   
   // 언어 변경 핸들러
   const handleLanguageChange = useCallback((newLanguage: 'python' | 'javascript' | 'go') => {
@@ -127,19 +117,14 @@ export const useGameRoomWebSocket = ({
       setMyCode(template);
       
       if (wsRef.current) {
-        const message: CodeUpdateMessage = {
-          type: 'code_update',
-          game_id: matchId,
-          code: template,
-        };
-        wsRef.current.sendMessage(message);
+        wsRef.current.sendCodeUpdate(template);
       }
     }
-  }, [game?.leetcode, matchId, setMyCode, setSubmitting, setSubmitResult]);
+  }, [game?.leetcode, setMyCode, setSubmitting, setSubmitResult]);
   
   // 코드 제출 핸들러
   const handleSubmitCode = useCallback(async () => {
-    if (!game || submitting) return;
+    if (!game) return;
     
     setSubmitting(true);
     setSubmitResult(null);
@@ -163,22 +148,25 @@ export const useGameRoomWebSocket = ({
         setSubmitResult({
           success: true,
           message: result.is_winner ? 'Congratulations! You won!' : 'Solution submitted successfully.',
+          is_winner: result.is_winner || false,
         });
       } else {
         setSubmitResult({
           success: false,
           message: result.message || 'Submission failed.',
+          is_winner: false,
         });
       }
-    } catch (error) {
+    } catch {
       setSubmitResult({
         success: false,
         message: 'Network error occurred.',
+        is_winner: false,
       });
     } finally {
       setSubmitting(false);
     }
-  }, [game, matchId, myCode, selectedLanguage, submitting, setSubmitting, setSubmitResult]);
+  }, [game, matchId, myCode, selectedLanguage, setSubmitting, setSubmitResult]);
   
   return {
     handleCodeChange,
