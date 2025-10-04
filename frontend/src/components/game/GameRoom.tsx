@@ -111,16 +111,31 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     }
   }, [game?.status, matchId]);
 
-  // 컴포넌트 언마운트 시 sessionStorage 정리 (페이지 이동 시)
+  // 페이지 떠날 때 경고 및 캐시 정리
   useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // 게임이 진행 중일 때만 경고 표시
+      if (game?.status === 'playing' || game?.status === 'waiting') {
+        event.preventDefault();
+        event.returnValue = 'Your written code will be lost if you leave this page.';
+        return 'Your written code will be lost if you leave this page.';
+      }
+    };
+
+    // 브라우저 기본 경고창 등록
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
       // 컴포넌트가 언마운트될 때 게임 관련 캐시 정리
       sessionStorage.removeItem(`match_${matchId}_code`);
       sessionStorage.removeItem(`match_${matchId}_language`);
       sessionStorage.removeItem(`match_${matchId}_showMyCode`);
       sessionStorage.removeItem(`match_${matchId}_showOpponentCode`);
+      
+      // 이벤트 리스너 제거
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [matchId]);
+  }, [matchId, game?.status]);
 
   useEffect(() => {
     const fetchGame = async () => {
