@@ -34,6 +34,34 @@
 - **Collections**: Use plural forms (e.g., `users`, `matches`, `sessions`)
 - **Temporary**: Even temp variables need meaningful names (e.g., `currentUser`, `nextMatch`)
 
+## Constants & Magic Values - CRITICAL RULES
+
+- **NO MAGIC NUMBERS**: Define constants for all numeric values (e.g., `const MaxRetryCount = 3`, `const DefaultTimeout = 30`)
+- **NO MAGIC STRINGS**: Define constants for all string literals (e.g., `const StatusActive = "active"`, `const ErrorMessage = "invalid input"`)
+- **CONSTANT NAMING**: Use descriptive names in UPPER_CASE (e.g., `MAX_CONNECTION_RETRIES`, `DEFAULT_SESSION_TIMEOUT`)
+- **GROUP RELATED CONSTANTS**: Use const blocks to group related constants
+- **CONFIG VALUES**: Move configuration values to config files, not hardcoded constants
+- **EXCEPTIONS**: Only allow magic numbers for obvious cases (e.g., `len(slice)`, `i++`, `0`, `1`)
+
+### Examples:
+
+```go
+// ❌ BAD - Magic numbers and strings
+if retryCount > 3 {
+    return errors.New("failed")
+}
+
+// ✅ GOOD - Named constants
+const (
+    MAX_RETRY_ATTEMPTS = 3
+    ERROR_MESSAGE_FAILED = "failed"
+)
+
+if retryCount > MAX_RETRY_ATTEMPTS {
+    return errors.New(ERROR_MESSAGE_FAILED)
+}
+```
+
 ## Error Handling
 
 - Always handle errors explicitly
@@ -103,6 +131,9 @@
 - [ ] All variables have descriptive names
 - [ ] No generic variable names (data, result, temp, etc.)
 - [ ] Boolean variables use proper prefixes
+- [ ] **No magic numbers - all numeric values are named constants**
+- [ ] **No magic strings - all string literals are named constants**
+- [ ] **Constants are grouped logically in const blocks**
 - [ ] Error handling is explicit
 - [ ] Code is readable and self-documenting
 - [ ] **Go lint passes with no errors or warnings**
