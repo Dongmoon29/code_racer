@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -163,13 +164,61 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 
 // initializeControllers creates all controller instances
 func initializeControllers(services *services, appLogger logger.Logger) *controllers {
+	// Get allowed origins from environment
+	allowedOrigins := getAllowedOrigins()
+	environment := getEnvironment()
+
+	// Create OAuth config provider
+	oauthConfigProvider := controller.NewOAuthConfigProvider()
+
 	return &controllers{
-		authController:     controller.NewAuthController(services.authService, appLogger),
+		authController:     controller.NewAuthController(services.authService, appLogger, oauthConfigProvider),
 		matchController:    controller.NewMatchController(services.matchService, appLogger),
 		userController:     controller.NewUserController(services.userService, appLogger),
 		leetcodeController: controller.NewLeetCodeController(services.leetCodeService, appLogger),
-		wsController:       controller.NewWebSocketController(services.wsService, appLogger),
+		wsController:       controller.NewWebSocketController(services.wsService, appLogger, allowedOrigins, environment),
 	}
+}
+
+// getAllowedOrigins gets allowed origins from environment variables
+func getAllowedOrigins() []string {
+	var origins []string
+
+	// Get additional origins from environment variable
+	if frontendURL := os.Getenv("FRONTEND_URL"); frontendURL != "" {
+		origins = append(origins, frontendURL)
+		// Also add HTTPS version
+		if strings.HasPrefix(frontendURL, "http://") {
+			httpsVersion := strings.Replace(frontendURL, "http://", "https://", 1)
+			origins = append(origins, httpsVersion)
+		}
+	}
+
+	// Get additional origins from CORS_ALLOWED_ORIGINS environment variable
+	if corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS"); corsOrigins != "" {
+		envOrigins := strings.Split(corsOrigins, ",")
+		for _, o := range envOrigins {
+			o = strings.TrimSpace(o)
+			if o != "" {
+				origins = append(origins, o)
+				// Also add HTTPS version
+				if strings.HasPrefix(o, "http://") {
+					httpsVersion := strings.Replace(o, "http://", "https://", 1)
+					origins = append(origins, httpsVersion)
+				}
+			}
+		}
+	}
+
+	return origins
+}
+
+// getEnvironment gets the current environment
+func getEnvironment() string {
+	if env := os.Getenv("ENVIRONMENT"); env != "" {
+		return env
+	}
+	return "production" // Default to production
 }
 
 // initializeMiddleware creates all middleware instances

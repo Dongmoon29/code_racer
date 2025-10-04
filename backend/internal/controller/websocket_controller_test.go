@@ -108,7 +108,7 @@ func setupWebSocketTest() (*gin.Engine, *MockWebSocketService, *WebSocketControl
 	mockLogger.On("Warn").Return((*zerolog.Event)(nil))
 	mockLogger.On("Error").Return((*zerolog.Event)(nil))
 
-	wsController := NewWebSocketController(mockService, mockLogger)
+	wsController := NewWebSocketController(mockService, mockLogger, []string{"http://localhost:3000"}, "development")
 
 	return r, mockService, wsController
 }
@@ -175,7 +175,7 @@ func TestHandleWebSocket(t *testing.T) {
 		mockEvent.On("Str", mock.Anything, mock.Anything).Return(mockEvent)
 		mockLogger.On("Info").Return((*zerolog.Event)(nil))
 
-		controller := NewWebSocketController(mockService, mockLogger)
+		controller := NewWebSocketController(mockService, mockLogger, []string{"http://localhost:3000"}, "development")
 
 		// Generate test UUIDs
 		userID := uuid.New()
@@ -236,8 +236,13 @@ func TestHandleWebSocket(t *testing.T) {
 
 func TestWebSocketUpgrader(t *testing.T) {
 	t.Run("check_origin_allows_all_in_development", func(t *testing.T) {
+		// Create a test controller to access the upgrader
+		mockService := new(MockWebSocketService)
+		mockLogger := new(MockLogger)
+		controller := NewWebSocketController(mockService, mockLogger, []string{"http://localhost:3000"}, "development")
+
 		// Test upgrader's CheckOrigin function
-		result := upgrader.CheckOrigin(&http.Request{
+		result := controller.upgrader.CheckOrigin(&http.Request{
 			Header: http.Header{
 				"Origin": []string{"http://localhost:3000"},
 			},
@@ -255,7 +260,7 @@ func TestNewWebSocketController(t *testing.T) {
 	mockEvent.On("Str", mock.Anything, mock.Anything).Return(mockEvent)
 	mockLogger.On("Info").Return((*zerolog.Event)(nil))
 
-	controller := NewWebSocketController(mockService, mockLogger)
+	controller := NewWebSocketController(mockService, mockLogger, []string{"http://localhost:3000"}, "development")
 
 	assert.NotNil(t, controller)
 	assert.Equal(t, mockService, controller.wsService)

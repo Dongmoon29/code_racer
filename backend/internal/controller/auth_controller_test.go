@@ -20,7 +20,29 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/oauth2"
 )
+
+// MockOAuthConfigProvider는 OAuthConfigProvider 인터페이스의 mock 구현체입니다
+type MockOAuthConfigProvider struct {
+	mock.Mock
+}
+
+func (m *MockOAuthConfigProvider) GetGoogleConfig() *oauth2.Config {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(*oauth2.Config)
+}
+
+func (m *MockOAuthConfigProvider) GetGitHubConfig() *oauth2.Config {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(*oauth2.Config)
+}
 
 // MockAuthService는 AuthService 인터페이스의 mock 구현체입니다
 type MockAuthService struct {
@@ -98,7 +120,8 @@ func setupTest(t *testing.T) (*gin.Engine, *MockAuthService, *AuthController) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	log := zerolog.New(os.Stdout).With().Timestamp().Logger()
 	testLogger := logger.NewZerologLogger(log)
-	authController := NewAuthController(mockAuthService, testLogger)
+	mockOAuthProvider := new(MockOAuthConfigProvider)
+	authController := NewAuthController(mockAuthService, testLogger, mockOAuthProvider)
 
 	// 라우트 설정
 	auth := r.Group("/api/auth")
@@ -242,7 +265,8 @@ func TestGetCurrentUser(t *testing.T) {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log := zerolog.New(os.Stdout).With().Timestamp().Logger()
 		testLogger := logger.NewZerologLogger(log)
-		authController := NewAuthController(mockService, testLogger)
+		mockOAuthProvider := new(MockOAuthConfigProvider)
+		authController := NewAuthController(mockService, testLogger, mockOAuthProvider)
 
 		userID := uuid.New()
 		expectedUser := &model.UserResponse{

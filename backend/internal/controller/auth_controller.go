@@ -15,17 +15,25 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+// OAuthConfigProvider provides OAuth configuration
+type OAuthConfigProvider interface {
+	GetGoogleConfig() *oauth2.Config
+	GetGitHubConfig() *oauth2.Config
+}
+
 // AuthController handles authentication-related endpoints
 // @Description Handles authentication-related endpoints including registration, login, OAuth
 type AuthController struct {
-	authService interfaces.AuthService
-	logger      logger.Logger
+	authService         interfaces.AuthService
+	logger              logger.Logger
+	oauthConfigProvider OAuthConfigProvider
 }
 
-func NewAuthController(authService interfaces.AuthService, logger logger.Logger) *AuthController {
+func NewAuthController(authService interfaces.AuthService, logger logger.Logger, oauthConfigProvider OAuthConfigProvider) *AuthController {
 	return &AuthController{
-		authService: authService,
-		logger:      logger,
+		authService:         authService,
+		logger:              logger,
+		oauthConfigProvider: oauthConfigProvider,
 	}
 }
 
@@ -36,33 +44,40 @@ func sendErrorResponse(ctx *gin.Context, statusCode int, message string) {
 	})
 }
 
-func getOAuth2Config(provider string) *oauth2.Config {
-	var config *oauth2.Config
-	switch provider {
-	case "google":
-		config = &oauth2.Config{
-			ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-			ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-			RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
-			Scopes: []string{
-				"https://www.googleapis.com/auth/userinfo.email",
-				"https://www.googleapis.com/auth/userinfo.profile",
-			},
-			Endpoint: google.Endpoint,
-		}
-	case "github":
-		config = &oauth2.Config{
-			ClientID:     os.Getenv("GH_CLIENT_ID"),
-			ClientSecret: os.Getenv("GH_CLIENT_SECRET"),
-			RedirectURL:  os.Getenv("GH_REDIRECT_URL"),
-			Scopes: []string{
-				"user:email",
-				"read:user",
-			},
-			Endpoint: github.Endpoint,
-		}
+// OAuthConfigProviderImpl implements OAuthConfigProvider using environment variables
+type OAuthConfigProviderImpl struct{}
+
+// NewOAuthConfigProvider creates a new OAuthConfigProvider instance
+func NewOAuthConfigProvider() OAuthConfigProvider {
+	return &OAuthConfigProviderImpl{}
+}
+
+// GetGoogleConfig returns Google OAuth configuration
+func (p *OAuthConfigProviderImpl) GetGoogleConfig() *oauth2.Config {
+	return &oauth2.Config{
+		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+		},
+		Endpoint: google.Endpoint,
 	}
-	return config
+}
+
+// GetGitHubConfig returns GitHub OAuth configuration
+func (p *OAuthConfigProviderImpl) GetGitHubConfig() *oauth2.Config {
+	return &oauth2.Config{
+		ClientID:     os.Getenv("GH_CLIENT_ID"),
+		ClientSecret: os.Getenv("GH_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("GH_REDIRECT_URL"),
+		Scopes: []string{
+			"user:email",
+			"read:user",
+		},
+		Endpoint: github.Endpoint,
+	}
 }
 
 // Register godoc
@@ -158,7 +173,7 @@ func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 }
 
 func (c *AuthController) GoogleAuthHandler(ctx *gin.Context) {
-	config := getOAuth2Config("google")
+	config := c.oauthConfigProvider.GetGoogleConfig()
 	if config == nil {
 		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get Google OAuth config")
 		return
@@ -206,7 +221,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 func (c *AuthController) GitHubAuthHandler(ctx *gin.Context) {
 	state := uuid.New().String()
 
-	config := getOAuth2Config("github")
+	config := c.oauthConfigProvider.GetGitHubConfig()
 	if config == nil {
 		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get GitHub OAuth config")
 		return
