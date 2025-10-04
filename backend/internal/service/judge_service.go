@@ -58,53 +58,53 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 	}
 
 	// Try batch evaluation first
-	batchResult, batchSuccess, batchErr := s.tryBatchEvaluate(code, languageID, problem)
-	if batchErr != nil {
-		return nil, batchErr
+	batchEvaluationResult, batchEvaluationSuccess, batchEvaluationError := s.tryBatchEvaluate(code, languageID, problem)
+	if batchEvaluationError != nil {
+		return nil, batchEvaluationError
 	}
-
-	if batchSuccess {
-		s.logEvaluationResult(batchResult, languageID, problem, "batch")
-		return batchResult, nil
+	
+	if batchEvaluationSuccess {
+		s.logEvaluationResult(batchEvaluationResult, languageID, problem, "batch")
+		return batchEvaluationResult, nil
 	}
 
 	// Fallback to per-test evaluation
-	perTestResult, perTestErr := s.aggregatePerTest(code, languageID, problem)
-	if perTestErr == nil && perTestResult != nil {
-		s.logEvaluationResult(perTestResult, languageID, problem, "per_test")
+	perTestEvaluationResult, perTestEvaluationError := s.aggregatePerTest(code, languageID, problem)
+	if perTestEvaluationError == nil && perTestEvaluationResult != nil {
+		s.logEvaluationResult(perTestEvaluationResult, languageID, problem, "per_test")
 	}
-
-	return perTestResult, perTestErr
+	
+	return perTestEvaluationResult, perTestEvaluationError
 }
 
 // logEvaluationResult logs the evaluation result with detailed metrics
-func (s *judgeService) logEvaluationResult(result *types.EvaluationResult, languageID int, problem *model.LeetCode, evaluationMode string) {
-	passedTestCount := s.countPassedTests(result.TestResults)
-	compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
-
+func (s *judgeService) logEvaluationResult(evaluationResult *types.EvaluationResult, languageID int, problem *model.LeetCode, evaluationMode string) {
+	passedTestCount := s.countPassedTests(evaluationResult.TestResults)
+	compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB := s.deriveLimits(problem)
+	
 	s.logger.Info().
 		Str("mode", evaluationMode).
 		Int("languageID", languageID).
-		Int("testCases", len(result.TestResults)).
+		Int("testCases", len(evaluationResult.TestResults)).
 		Int("passCount", passedTestCount).
-		Bool("passed", result.Passed).
-		Float64("avgTime", result.ExecutionTime).
-		Float64("avgMemory", result.MemoryUsage).
-		Int("compileTimeout", compileTimeout).
-		Int("runTimeout", runTimeout).
-		Int("memoryLimitKB", memoryLimit).
+		Bool("passed", evaluationResult.Passed).
+		Float64("avgTime", evaluationResult.ExecutionTime).
+		Float64("avgMemory", evaluationResult.MemoryUsage).
+		Int("compileTimeout", compileTimeoutSeconds).
+		Int("runTimeout", runTimeoutSeconds).
+		Int("memoryLimitKB", memoryLimitKB).
 		Msg("Evaluation summary")
 }
 
 // countPassedTests counts the number of passed test cases
 func (s *judgeService) countPassedTests(testResults []types.TestCaseResult) int {
-	passedCount := 0
-	for _, testResult := range testResults {
-		if testResult.Passed {
-			passedCount++
+	passedTestCount := 0
+	for _, testCaseResult := range testResults {
+		if testCaseResult.Passed {
+			passedTestCount++
 		}
 	}
-	return passedCount
+	return passedTestCount
 }
 
 // ensureFunctionNameMatches extracts and validates the function name (strict mode)
@@ -123,13 +123,13 @@ func (s *judgeService) ensureFunctionNameMatches(code string, language string, e
 // tryBatchEvaluate attempts batch harness path; returns (result, usedBatch, error)
 func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *model.LeetCode) (*types.EvaluationResult, bool, error) {
 	// build inputs
-	inputs := make([][]interface{}, 0, len(problem.TestCases))
-	expected := make([]interface{}, 0, len(problem.TestCases))
-	for _, tc := range problem.TestCases {
-		inputs = append(inputs, tc.Input)
-		expected = append(expected, tc.Output)
+	testCaseInputs := make([][]interface{}, 0, len(problem.TestCases))
+	expectedOutputs := make([]interface{}, 0, len(problem.TestCases))
+	for _, testCase := range problem.TestCases {
+		testCaseInputs = append(testCaseInputs, testCase.Input)
+		expectedOutputs = append(expectedOutputs, testCase.Output)
 	}
-	inputsJSON, _ := json.Marshal(inputs)
+	inputsJSON, _ := json.Marshal(testCaseInputs)
 
 	// wrap batch (may fail for unsupported languages)
 	wrappedCode, err := s.codeWrapper.WrapCodeBatch(code, languageID, string(inputsJSON), problem)
@@ -138,44 +138,44 @@ func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *mo
 	}
 
 	// submit
-	expectedJSON, _ := json.Marshal(expected)
-	resp, err := s.submitToJudge(wrappedCode, languageID, string(expectedJSON), problem)
+	expectedOutputsJSON, _ := json.Marshal(expectedOutputs)
+	judgeResponse, err := s.submitToJudge(wrappedCode, languageID, string(expectedOutputsJSON), problem)
 	if err != nil {
 		return nil, false, err
 	}
 
 	// evaluate response
-	res, err := s.evaluateBatchResponse(resp, expected, inputs)
+	evaluationResult, err := s.evaluateBatchResponse(judgeResponse, expectedOutputs, testCaseInputs)
 	if err != nil {
 		return nil, false, nil // fall back on parse errors
 	}
-	return res, true, nil
+	return evaluationResult, true, nil
 }
 
-func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expectedJSON string, problem *model.LeetCode) (*types.Judge0Response, error) {
-	compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
-	request := types.Judge0Request{
+func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expectedOutputsJSON string, problem *model.LeetCode) (*types.Judge0Response, error) {
+	compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB := s.deriveLimits(problem)
+	judgeRequest := types.Judge0Request{
 		SourceCode:       wrappedCode,
 		LanguageID:       languageID,
-		ExpectedOutput:   expectedJSON,
-		CompileTimeout:   compileTimeout,
-		RunTimeout:       runTimeout,
-		MemoryLimit:      memoryLimit,
+		ExpectedOutput:   expectedOutputsJSON,
+		CompileTimeout:   compileTimeoutSeconds,
+		RunTimeout:       runTimeoutSeconds,
+		MemoryLimit:      memoryLimitKB,
 		EnableNetworking: false,
 	}
-	response, err := s.judge0Client.SubmitCode(request)
+	judgeResponse, err := s.judge0Client.SubmitCode(judgeRequest)
 	if err != nil {
 		// 쿼터 초과 식별 로깅
-		errMsg := fmt.Errorf("Judge0 API error: %w", err)
-		if strings.Contains(errMsg.Error(), "exceeded the DAILY quota") {
+		errorMessage := fmt.Errorf("Judge0 API error: %w", err)
+		if strings.Contains(errorMessage.Error(), "exceeded the DAILY quota") {
 			s.logger.Error().
 				Str("error_type", "judge0_quota_exceeded").
 				Int("languageID", languageID).
 				Msg("Judge0 quota exceeded")
 		}
-		return nil, errMsg
+		return nil, errorMessage
 	}
-	return response, nil
+	return judgeResponse, nil
 }
 
 // deriveLimits converts model constraints to Judge0 limits
@@ -296,27 +296,30 @@ func (s *judgeService) checkAllTestsPassed(testResults []types.TestCaseResult) b
 }
 
 func (s *judgeService) aggregatePerTest(code string, languageID int, problem *model.LeetCode) (*types.EvaluationResult, error) {
-	var testResults []types.TestCaseResult
-	var totalTime float64
-	var totalMemory float64
-	allPassed := true
-	for i, testCase := range problem.TestCases {
-		result := s.evaluateTestCase(code, languageID, testCase, problem, i)
-		testResults = append(testResults, *result)
-		if !result.Passed {
-			allPassed = false
+	var testCaseResults []types.TestCaseResult
+	var totalExecutionTime float64
+	var totalMemoryUsage float64
+	allTestsPassed := true
+	
+	for testCaseIndex, testCase := range problem.TestCases {
+		testCaseResult := s.evaluateTestCase(code, languageID, testCase, problem, testCaseIndex)
+		testCaseResults = append(testCaseResults, *testCaseResult)
+		if !testCaseResult.Passed {
+			allTestsPassed = false
 		}
-		totalTime += result.ExecutionTime
-		totalMemory += result.MemoryUsage
+		totalExecutionTime += testCaseResult.ExecutionTime
+		totalMemoryUsage += testCaseResult.MemoryUsage
 	}
-	testCount := float64(len(problem.TestCases))
-	avgTime := totalTime / testCount
-	avgMemory := totalMemory / testCount
+	
+	testCaseCount := float64(len(problem.TestCases))
+	averageExecutionTime := totalExecutionTime / testCaseCount
+	averageMemoryUsage := totalMemoryUsage / testCaseCount
+	
 	return &types.EvaluationResult{
-		Passed:        allPassed,
-		TestResults:   testResults,
-		ExecutionTime: avgTime,
-		MemoryUsage:   avgMemory,
+		Passed:        allTestsPassed,
+		TestResults:   testCaseResults,
+		ExecutionTime: averageExecutionTime,
+		MemoryUsage:   averageMemoryUsage,
 	}, nil
 }
 
