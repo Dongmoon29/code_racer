@@ -1,9 +1,9 @@
 package javascript
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/model"
 )
 
 type Wrapper struct{}
@@ -11,7 +11,7 @@ type Wrapper struct{}
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
 func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
-    template := `
+	template := `
 // user code
 %s
 
@@ -31,15 +31,15 @@ function runAll() {
   }
 }
 runAll();`
-    return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
+	return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
 }
 
 func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
-    template := `
-// 사용자 코드
+	template := `
+// User code
 %s
 
-// 테스트 실행
+// Test execution
 function runTest() {
     try {
         const testCase = JSON.parse(%q);
@@ -53,7 +53,5 @@ function runTest() {
 }
 
 runTest();`
-    return fmt.Sprintf(template, code, testCase, problem.FunctionName)
+	return fmt.Sprintf(template, code, testCase, problem.FunctionName)
 }
-
-

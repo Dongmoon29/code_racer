@@ -4,30 +4,30 @@ import (
 	"fmt"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
-    "github.com/Dongmoon29/code_racer/internal/judge/languages"
-    golangWrapper "github.com/Dongmoon29/code_racer/internal/judge/languages/golang"
-    jsWrapper "github.com/Dongmoon29/code_racer/internal/judge/languages/javascript"
-    pyWrapper "github.com/Dongmoon29/code_racer/internal/judge/languages/python"
+	"github.com/Dongmoon29/code_racer/internal/judge/languages"
+	golangWrapper "github.com/Dongmoon29/code_racer/internal/judge/languages/golang"
+	jsWrapper "github.com/Dongmoon29/code_racer/internal/judge/languages/javascript"
+	pyWrapper "github.com/Dongmoon29/code_racer/internal/judge/languages/python"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 )
 
 // CodeWrapper는 각 프로그래밍 언어별 코드 래핑을 처리합니다
 type CodeWrapper struct {
-	logger logger.Logger
-    langWrappers map[int]languages.LanguageWrapper
+	logger       logger.Logger
+	langWrappers map[int]languages.LanguageWrapper
 }
 
 func NewCodeWrapper(logger logger.Logger) *CodeWrapper {
-    cw := &CodeWrapper{
-        logger: logger,
-        langWrappers: map[int]languages.LanguageWrapper{
-            constants.LanguageIDGo:        golangWrapper.NewWrapper(),
-            constants.LanguageIDJavaScript: jsWrapper.NewWrapper(),
-            constants.LanguageIDPython:    pyWrapper.NewWrapper(),
-        },
-    }
-    return cw
+	cw := &CodeWrapper{
+		logger: logger,
+		langWrappers: map[int]languages.LanguageWrapper{
+			constants.LanguageIDGo:         golangWrapper.NewWrapper(),
+			constants.LanguageIDJavaScript: jsWrapper.NewWrapper(),
+			constants.LanguageIDPython:     pyWrapper.NewWrapper(),
+		},
+	}
+	return cw
 }
 
 // WrapCode는 주어진 코드를 언어에 맞는 테스트 코드로 래핑합니다
@@ -38,30 +38,30 @@ func (w *CodeWrapper) WrapCode(code string, languageID int, testCase string, pro
 		Str("functionName", problem.FunctionName).
 		Msg("Wrapping code for testing")
 
-    if impl, ok := w.langWrappers[languageID]; ok {
-        return impl.WrapSingle(code, testCase, problem), nil
-    }
-    // Fallback to legacy inline wrappers for languages not yet split out
-    switch languageID {
-    case constants.LanguageIDJava:
-        return w.wrapJava(code, testCase, problem), nil
-    case constants.LanguageIDCPP:
-        return w.wrapCPP(code, testCase, problem), nil
-    default:
-        return "", fmt.Errorf("unsupported programming language ID: %d", languageID)
-    }
+	if impl, ok := w.langWrappers[languageID]; ok {
+		return impl.WrapSingle(code, testCase, problem), nil
+	}
+	// Fallback to legacy inline wrappers for languages not yet split out
+	switch languageID {
+	case constants.LanguageIDJava:
+		return w.wrapJava(code, testCase, problem), nil
+	case constants.LanguageIDCPP:
+		return w.wrapCPP(code, testCase, problem), nil
+	default:
+		return "", fmt.Errorf("unsupported programming language ID: %d", languageID)
+	}
 }
 
 // WrapCodeBatch는 모든 테스트 케이스를 한 번에 실행하는 배치 하니스를 생성합니다
 func (w *CodeWrapper) WrapCodeBatch(code string, languageID int, testCasesJSON string, problem *model.LeetCode) (string, error) {
-    w.logger.Info().
-        Int("languageID", languageID).
-        Str("functionName", problem.FunctionName).
-        Msg("Wrapping code for batch testing")
-    if impl, ok := w.langWrappers[languageID]; ok {
-        return impl.WrapBatch(code, testCasesJSON, problem)
-    }
-    return "", fmt.Errorf("unsupported batch wrapper for language ID: %d", languageID)
+	w.logger.Info().
+		Int("languageID", languageID).
+		Str("functionName", problem.FunctionName).
+		Msg("Wrapping code for batch testing")
+	if impl, ok := w.langWrappers[languageID]; ok {
+		return impl.WrapBatch(code, testCasesJSON, problem)
+	}
+	return "", fmt.Errorf("unsupported batch wrapper for language ID: %d", languageID)
 }
 
 func (w *CodeWrapper) getLanguageWrapper(languageID int) (func(string, string, *model.LeetCode) string, error) {
@@ -118,10 +118,10 @@ func (w *CodeWrapper) goArgLines(varName string, paramTypes []string) (string, s
 }
 func (w *CodeWrapper) wrapJavaScript(code, testCase string, problem *model.LeetCode) string {
 	template := `
-// 사용자 코드
+// User code
 %s
 
-// 테스트 실행
+// Test execution
 function runTest() {
     try {
         const testCase = JSON.parse(%q);
@@ -145,10 +145,10 @@ func (w *CodeWrapper) wrapPython(code, testCase string, problem *model.LeetCode)
 import json
 import sys
 
-# 사용자 코드
+# User code
 %s
 
-# 테스트 실행
+# Test execution
 def run_test():
     try:
         test_case = json.loads('%s')
@@ -178,18 +178,18 @@ import (
     "os"
 )
 
-// 사용자 코드
+// User code
 %s
 
 func main() {
-    // 테스트 케이스 파싱
+    // Test case parsing
     var testCase []interface{}
     if err := json.Unmarshal([]byte(%q), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %%v\n", err)
         os.Exit(1)
     }
 
-    // 함수 실행 및 결과 출력
+    // Function execution and result output
     defer func() {
         if r := recover(); r != nil {
             fmt.Fprintf(os.Stderr, "Runtime error: %%v\n", r)
@@ -197,7 +197,7 @@ func main() {
         }
     }()
 
-    // 결과 실행 및 출력
+    // Result execution and output
     result := %s(testCase...)
     output, err := json.Marshal(result)
     if err != nil {
@@ -219,7 +219,7 @@ import (
     "os"
 )
 
-// 사용자 코드
+// User code
 %s
 
 // helpers to coerce JSON-decoded values to expected types
@@ -268,14 +268,14 @@ func toIntSlice(v interface{}) []int {
 }
 
 func main() {
-    // 테스트 케이스 파싱
+    // Test case parsing
     var testCase []interface{}
     if err := json.Unmarshal([]byte(%q), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %%v\n", err)
         os.Exit(1)
     }
 
-    // 함수 실행 및 결과 출력
+    // Function execution and result output
     defer func() {
         if r := recover(); r != nil {
             fmt.Fprintf(os.Stderr, "Runtime error: %%v\n", r)
@@ -283,7 +283,7 @@ func main() {
         }
     }()
 
-    // 결과 실행 및 출력
+    // Result execution and output
 %s
     result := %s(%s)
     output, err := json.Marshal(result)
@@ -311,13 +311,13 @@ public class Solution {
             ObjectMapper mapper = new ObjectMapper();
             Solution solution = new Solution();
             
-            // 테스트 케이스 파싱
+            // Test case parsing
             List<Object> inputs = mapper.readValue("%s", List.class);
             
-            // 함수 실행
+            // Function execution
             Object result = solution.%s(inputs.toArray());
             
-            // 결과 출력
+            // Result output
             System.out.println(mapper.writeValueAsString(result));
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
@@ -339,20 +339,20 @@ func (w *CodeWrapper) wrapCPP(code, testCase string, problem *model.LeetCode) st
 
 using json = nlohmann::json;
 
-// 사용자 코드
+// User code
 %s
 
 int main() {
     try {
-        // 테스트 케이스 파싱
+        // Test case parsing
         json test_case = json::parse(R"(%s)");
         
         Solution solution;
         
-        // 함수 실행
+        // Function execution
         auto result = solution.%s(test_case);
         
-        // 결과 출력
+        // Result output
         std::cout << result.dump() << std::endl;
         
         return 0;

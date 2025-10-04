@@ -184,11 +184,11 @@ runTest();`,
 import json
 import sys
 
-# 사용자 코드
+# User code
 def solution(arr):
     return [x * 2 for x in arr]
 
-# 테스트 실행
+# Test execution
 def run_test():
     try:
         test_case = json.loads('[1,2,3]')
