@@ -26,9 +26,6 @@ import (
 const (
 	// Token expiration
 	tokenExpiryDays = 7
-	
-	// JWT signing method
-	jwtSigningMethod = "HS256"
 )
 
 var _ interfaces.AuthService = (*authService)(nil)

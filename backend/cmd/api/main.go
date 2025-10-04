@@ -112,7 +112,7 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 	services := initializeServices(repositories, rdb, cfg, appLogger)
 	controllers := initializeControllers(services, appLogger)
 	middleware := initializeMiddleware(services, repositories, appLogger)
-	
+
 	return &dependencies{
 		authController:     controllers.authController,
 		matchController:    controllers.matchController,
@@ -126,9 +126,9 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 // initializeRepositories creates all repository instances
 func initializeRepositories(db *gorm.DB, appLogger logger.Logger) *repositories {
 	return &repositories{
-		userRepository: repository.NewUserRepository(db, appLogger),
+		userRepository:  repository.NewUserRepository(db, appLogger),
 		matchRepository: repository.NewMatchRepository(db, appLogger),
-		leetCodeRepo: repository.NewLeetCodeRepository(db, appLogger),
+		leetCodeRepo:    repository.NewLeetCodeRepository(db, appLogger),
 	}
 }
 
@@ -138,37 +138,37 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 	userService := service.NewUserService(repos.userRepository, appLogger)
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger)
 	matchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, judgeService, appLogger)
-	
+
 	// Initialize WebSocket and matchmaking services
 	matchmakingService := service.NewMatchmakingService(matchService, nil, rdb, appLogger)
 	wsService := service.NewWebSocketService(rdb, appLogger, matchmakingService)
 	matchmakingService.SetWebSocketService(wsService)
-	
+
 	// Start WebSocket hub
 	wsHub := wsService.InitHub()
 	go wsHub.Run()
-	
+
 	leetCodeService := service.NewLeetCodeService(repos.leetCodeRepo, appLogger)
-	
+
 	return &services{
-		authService: authService,
-		userService: userService,
-		judgeService: judgeService,
-		matchService: matchService,
+		authService:        authService,
+		userService:        userService,
+		judgeService:       judgeService,
+		matchService:       matchService,
 		matchmakingService: matchmakingService,
-		wsService: wsService,
-		leetCodeService: leetCodeService,
+		wsService:          wsService,
+		leetCodeService:    leetCodeService,
 	}
 }
 
 // initializeControllers creates all controller instances
 func initializeControllers(services *services, appLogger logger.Logger) *controllers {
 	return &controllers{
-		authController: controller.NewAuthController(services.authService, appLogger),
-		matchController: controller.NewMatchController(services.matchService, appLogger),
-		userController: controller.NewUserController(services.userService, appLogger),
+		authController:     controller.NewAuthController(services.authService, appLogger),
+		matchController:    controller.NewMatchController(services.matchService, appLogger),
+		userController:     controller.NewUserController(services.userService, appLogger),
 		leetcodeController: controller.NewLeetCodeController(services.leetCodeService, appLogger),
-		wsController: controller.NewWebSocketController(services.wsService, appLogger),
+		wsController:       controller.NewWebSocketController(services.wsService, appLogger),
 	}
 }
 
@@ -181,27 +181,27 @@ func initializeMiddleware(services *services, repos *repositories, appLogger log
 
 // Helper structs for dependency injection
 type repositories struct {
-	userRepository interfaces.UserRepository
+	userRepository  interfaces.UserRepository
 	matchRepository repository.MatchRepository
-	leetCodeRepo repository.LeetCodeRepository
+	leetCodeRepo    repository.LeetCodeRepository
 }
 
 type services struct {
-	authService interfaces.AuthService
-	userService service.UserService
-	judgeService interfaces.JudgeService
-	matchService service.MatchService
+	authService        interfaces.AuthService
+	userService        service.UserService
+	judgeService       interfaces.JudgeService
+	matchService       service.MatchService
 	matchmakingService service.MatchmakingService
-	wsService service.WebSocketService
-	leetCodeService service.LeetCodeService
+	wsService          service.WebSocketService
+	leetCodeService    service.LeetCodeService
 }
 
 type controllers struct {
-	authController *controller.AuthController
-	matchController *controller.MatchController
-	userController *controller.UserController
+	authController     *controller.AuthController
+	matchController    *controller.MatchController
+	userController     *controller.UserController
 	leetcodeController *controller.LeetCodeController
-	wsController *controller.WebSocketController
+	wsController       *controller.WebSocketController
 }
 
 type middlewareInstances struct {

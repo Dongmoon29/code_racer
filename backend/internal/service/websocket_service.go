@@ -21,30 +21,19 @@ const (
 
 	// Ping/pong timeout
 	pongWait = 60 * time.Second
-	
+
 	// Channel buffer sizes
 	clientSendBufferSize = 256
-	
+
 	// Redis expiration times
-	codeExpirationHours = 24
+	codeExpirationHours       = 24
 	matchUsersExpirationHours = 24
-	
+
 	// Ping interval
 	pingIntervalSeconds = 54
-	
+
 	// Write deadline
 	writeDeadlineSeconds = 10
-	
-	// Default timeouts
-	defaultRunTimeoutSeconds = 5
-	defaultMemoryLimitKB = 128000
-	
-	// Time conversion factors
-	millisecondsToSeconds = 1000
-	megabytesToKilobytes = 1000
-	
-	// Compile timeout multiplier
-	compileTimeoutMultiplier = 2
 )
 
 // Hub manages WebSocket connections
@@ -76,6 +65,9 @@ type Hub struct {
 
 	// Matchmaking service for handling matches
 	matchmakingService MatchmakingService
+
+	// Logger for structured logging
+	logger logger.Logger
 
 	// Mutex lock
 	mu sync.RWMutex
@@ -197,6 +189,7 @@ func (s *webSocketService) InitHub() *Hub {
 		startMatching:      make(chan *MatchingRequest),
 		cancelMatching:     make(chan *CancelRequest),
 		matchmakingService: s.matchmakingService,
+		logger:             s.logger,
 	}
 	return s.hub
 }
@@ -293,7 +286,7 @@ func (h *Hub) cleanupDeadClient(client *Client) {
 // handleStartMatching processes a matching request
 func (h *Hub) handleStartMatching(req *MatchingRequest) {
 	h.logMatchingRequest(req)
-	
+
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -322,7 +315,7 @@ func (h *Hub) updateClientMatchingState(client *Client, difficulty string) {
 func (h *Hub) addClientToMatchingQueue(client *Client, difficulty string) {
 	// Prevent duplicate queue entries by removing any existing occurrence first
 	h.removeFromMatchingQueue(client)
-	
+
 	// Add to matching queue
 	h.matchingClients[difficulty] = append(h.matchingClients[difficulty], client)
 	h.logger.Info().Str("difficulty", difficulty).Int("queueSize", len(h.matchingClients[difficulty])).Msg("Client added to matching queue")
@@ -661,14 +654,14 @@ func (s *webSocketService) registerClientWithHub(client *Client) {
 func (s *webSocketService) loadExistingCodeForClient(client *Client, matchID uuid.UUID, userID uuid.UUID) {
 	ctx := context.Background()
 	codeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID.String())
-	
+
 	existingCode, err := s.rdb.Get(ctx, codeKey).Result()
 	if err == nil && existingCode != "" {
 		codeUpdateMsg := CodeUpdateMessage{
-			Type:   "code_update",
+			Type:    "code_update",
 			MatchID: matchID.String(),
 			UserID:  userID.String(),
-			Code:   existingCode,
+			Code:    existingCode,
 		}
 		msgBytes, _ := json.Marshal(codeUpdateMsg)
 		client.send <- msgBytes
@@ -719,7 +712,7 @@ func (s *webSocketService) removeUserFromMatchParticipants(pipe redis.Pipeliner,
 // cleanupUserCodeData cleans up user code data based on match status
 func (s *webSocketService) cleanupUserCodeData(pipe redis.Pipeliner, ctx context.Context, matchID uuid.UUID, userID uuid.UUID) {
 	codeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID.String())
-	
+
 	// Get match status to determine if code should be deleted
 	matchKey := fmt.Sprintf("match:%s", matchID.String())
 	matchStatus, err := s.rdb.HGet(ctx, matchKey, "status").Result()
@@ -766,14 +759,14 @@ func (s *webSocketService) cleanupEmptyMatchIfNeeded(pipe redis.Pipeliner, ctx c
 func (s *webSocketService) cleanupWaitingMatch(pipe redis.Pipeliner, ctx context.Context, matchID uuid.UUID, matchKey, matchUsersKey string) {
 	pipe.Del(ctx, matchKey)
 	pipe.Del(ctx, matchUsersKey)
-	
+
 	// Delete all user code data
 	remainingUsers, err := s.rdb.SMembers(ctx, matchUsersKey).Result()
 	if err != nil {
 		s.logger.Error().Err(err).Str("matchID", matchID.String()).Msg("Failed to get remaining users for cleanup")
 		return
 	}
-	
+
 	for _, userID := range remainingUsers {
 		userCodeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID)
 		pipe.Del(ctx, userCodeKey)
@@ -853,13 +846,19 @@ func (c *Client) readPump(wsService *webSocketService) {
 		case "code_update":
 			c.handleCodeUpdateMessage(msg, wsService)
 
+		default:
+			// Don't log unknown message types
+		}
+	}
+}
+
 // handleStartMatchingMessage processes start matching messages
 func (c *Client) handleStartMatchingMessage(msg map[string]interface{}) {
 	c.hub.logger.Info().Interface("message", msg).Str("userID", c.userID.String()).Msg("Received start matching message")
-	
+
 	if difficulty, ok := msg["difficulty"].(string); ok {
 		c.hub.logger.Info().Str("difficulty", difficulty).Str("userID", c.userID.String()).Msg("Extracted difficulty from message")
-		
+
 		if c.isValidDifficulty(difficulty) {
 			c.hub.logger.Info().Str("userID", c.userID.String()).Str("difficulty", difficulty).Msg("Creating match request")
 			matchReq := &MatchingRequest{
@@ -910,10 +909,10 @@ func (c *Client) storeCodeInRedis(code string, wsService *webSocketService) {
 // broadcastCodeUpdate broadcasts code update to other clients
 func (c *Client) broadcastCodeUpdate(code string, wsService *webSocketService) {
 	codeUpdateMsg := CodeUpdateMessage{
-		Type:   "code_update",
+		Type:    "code_update",
 		MatchID: c.matchID.String(),
 		UserID:  c.userID.String(),
-		Code:   code,
+		Code:    code,
 	}
 
 	msgBytes, _ := json.Marshal(codeUpdateMsg)

@@ -18,12 +18,12 @@ import (
 const (
 	// Time conversion factors
 	judgeMillisecondsToSeconds = 1000
-	judgeMegabytesToKilobytes = 1000
-	
+	judgeMegabytesToKilobytes  = 1000
+
 	// Default timeouts
 	judgeDefaultRunTimeoutSeconds = 5
-	judgeDefaultMemoryLimitKB = 128000
-	
+	judgeDefaultMemoryLimitKB     = 128000
+
 	// Compile timeout multiplier
 	judgeCompileTimeoutMultiplier = 2
 )
@@ -62,7 +62,7 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 	if batchEvaluationError != nil {
 		return nil, batchEvaluationError
 	}
-	
+
 	if batchEvaluationSuccess {
 		s.logEvaluationResult(batchEvaluationResult, languageID, problem, "batch")
 		return batchEvaluationResult, nil
@@ -73,7 +73,7 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 	if perTestEvaluationError == nil && perTestEvaluationResult != nil {
 		s.logEvaluationResult(perTestEvaluationResult, languageID, problem, "per_test")
 	}
-	
+
 	return perTestEvaluationResult, perTestEvaluationError
 }
 
@@ -81,7 +81,7 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 func (s *judgeService) logEvaluationResult(evaluationResult *types.EvaluationResult, languageID int, problem *model.LeetCode, evaluationMode string) {
 	passedTestCount := s.countPassedTests(evaluationResult.TestResults)
 	compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB := s.deriveLimits(problem)
-	
+
 	s.logger.Info().
 		Str("mode", evaluationMode).
 		Int("languageID", languageID).
@@ -198,16 +198,16 @@ func (s *judgeService) evaluateBatchResponse(response *types.Judge0Response, exp
 	if s.hasCompilationError(response) {
 		return s.createCompilationErrorResult(response), nil
 	}
-	
+
 	if s.hasRuntimeError(response) {
 		return s.createRuntimeErrorResult(response), nil
 	}
-	
+
 	actualResults, err := s.parseActualResults(response.Stdout)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	testResults := s.buildTestResults(expected, inputs, actualResults, response)
 	return s.createEvaluationResult(testResults, response), nil
 }
@@ -225,7 +225,7 @@ func (s *judgeService) hasRuntimeError(response *types.Judge0Response) bool {
 // createCompilationErrorResult creates an error result for compilation failures
 func (s *judgeService) createCompilationErrorResult(response *types.Judge0Response) *types.EvaluationResult {
 	return &types.EvaluationResult{
-		Passed: false, 
+		Passed:       false,
 		ErrorMessage: fmt.Sprintf("Compilation error: %s", response.CompileError),
 	}
 }
@@ -233,7 +233,7 @@ func (s *judgeService) createCompilationErrorResult(response *types.Judge0Respon
 // createRuntimeErrorResult creates an error result for runtime failures
 func (s *judgeService) createRuntimeErrorResult(response *types.Judge0Response) *types.EvaluationResult {
 	return &types.EvaluationResult{
-		Passed: false, 
+		Passed:       false,
 		ErrorMessage: fmt.Sprintf("Runtime error: %s", response.Stderr),
 	}
 }
@@ -262,7 +262,7 @@ func (s *judgeService) buildTestResults(expected []interface{}, inputs [][]inter
 func (s *judgeService) createTestCaseResult(index int, expected interface{}, input []interface{}, actual interface{}, response *types.Judge0Response) types.TestCaseResult {
 	expBytes, _ := json.Marshal(expected)
 	actBytes, _ := json.Marshal(actual)
-	
+
 	return types.TestCaseResult{
 		TestCaseIndex: index,
 		Input:         string(mustJSON(input)),
@@ -300,7 +300,7 @@ func (s *judgeService) aggregatePerTest(code string, languageID int, problem *mo
 	var totalExecutionTime float64
 	var totalMemoryUsage float64
 	allTestsPassed := true
-	
+
 	for testCaseIndex, testCase := range problem.TestCases {
 		testCaseResult := s.evaluateTestCase(code, languageID, testCase, problem, testCaseIndex)
 		testCaseResults = append(testCaseResults, *testCaseResult)
@@ -310,11 +310,11 @@ func (s *judgeService) aggregatePerTest(code string, languageID int, problem *mo
 		totalExecutionTime += testCaseResult.ExecutionTime
 		totalMemoryUsage += testCaseResult.MemoryUsage
 	}
-	
+
 	testCaseCount := float64(len(problem.TestCases))
 	averageExecutionTime := totalExecutionTime / testCaseCount
 	averageMemoryUsage := totalMemoryUsage / testCaseCount
-	
+
 	return &types.EvaluationResult{
 		Passed:        allTestsPassed,
 		TestResults:   testCaseResults,
