@@ -22,10 +22,8 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-// AuthService 인터페이스 구현 확인
 var _ interfaces.AuthService = (*authService)(nil)
 
-// authService AuthService 인터페이스 구현체
 type authService struct {
 	userRepo    interfaces.UserRepository
 	jwtSecret   string
@@ -33,7 +31,6 @@ type authService struct {
 	logger      logger.Logger
 }
 
-// NewAuthService AuthService 인스턴스 생성
 func NewAuthService(userRepo interfaces.UserRepository, jwtSecret string, logger logger.Logger) interfaces.AuthService {
 	return &authService{
 		userRepo:    userRepo,
@@ -43,15 +40,12 @@ func NewAuthService(userRepo interfaces.UserRepository, jwtSecret string, logger
 	}
 }
 
-// Register 회원가입 서비스
 func (s *authService) Register(req *model.RegisterRequest) (*model.UserResponse, error) {
-	// 패스워드 해싱
 	hashedPassword, err := util.HashPassword(req.Password)
 	if err != nil {
 		return nil, err
 	}
 
-	// 새 사용자 생성
 	user := &model.User{
 		Email:    req.Email,
 		Password: hashedPassword,
@@ -117,7 +111,6 @@ func (s *authService) ValidateToken(tokenString string) (*types.JWTClaims, error
 	return nil, errors.New("invalid token")
 }
 
-// GetUserByID 사용자 ID로 사용자 정보 조회
 func (s *authService) GetUserByID(id uuid.UUID) (*model.UserResponse, error) {
 	user, err := s.userRepo.FindByID(id)
 	if err != nil {
@@ -127,9 +120,7 @@ func (s *authService) GetUserByID(id uuid.UUID) (*model.UserResponse, error) {
 	return user.ToResponse(), nil
 }
 
-// generateToken JWT 토큰 생성
 func (s *authService) generateToken(userID uuid.UUID, email string, role string) (string, error) {
-	// 클레임 설정
 	claims := &types.JWTClaims{
 		UserID: userID.String(),
 		Email:  email,
@@ -140,10 +131,8 @@ func (s *authService) generateToken(userID uuid.UUID, email string, role string)
 		},
 	}
 
-	// 토큰 생성
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	// 토큰에 서명
 	signedToken, err := token.SignedString([]byte(s.jwtSecret))
 	if err != nil {
 		return "", err
@@ -153,27 +142,23 @@ func (s *authService) generateToken(userID uuid.UUID, email string, role string)
 }
 
 func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error) {
-	// Google OAuth 토큰 교환
 	token, err := s.exchangeGoogleCode(code)
 	if err != nil {
 		return nil, err
 	}
 
-	// Google 사용자 정보 가져오기
 	googleUser, err := s.getGoogleUserInfo(token.AccessToken)
 	if err != nil {
 		return nil, err
 	}
 
-	// 기존 사용자 확인 또는 새 사용자 생성
 	user, err := s.userRepo.FindByEmail(googleUser.Email)
 	if err != nil {
-		// 새 사용자 생성
 		user = &model.User{
 			Email:         googleUser.Email,
 			Name:          googleUser.Name,
 			ProfileImage:  googleUser.Picture,
-			Role:          model.RoleUser, // 기본 role을 'user'로 설정
+			Role:          model.RoleUser,
 			OAuthProvider: "google",
 			OAuthID:       googleUser.ID,
 		}
@@ -189,7 +174,6 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 		}
 	}
 
-	// JWT 토큰 생성
 	jwtToken, err := s.generateToken(user.ID, user.Email, string(user.Role))
 	if err != nil {
 		return nil, err
@@ -232,30 +216,26 @@ func (s *authService) getGoogleUserInfo(accessToken string) (*model.GoogleUser, 
 }
 
 func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error) {
-	// GitHub OAuth 토큰 교환
 	token, err := s.exchangeGitHubCode(code)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to exchange GitHub code")
 		return nil, err
 	}
 
-	// GitHub 사용자 정보 가져오기
 	githubUser, err := s.getGitHubUserInfo(token.AccessToken)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to get GitHub user info")
 		return nil, err
 	}
 
-	// 기존 사용자 확인 또는 새 사용자 생성
 	user, err := s.userRepo.FindByEmail(githubUser.Email)
 	if err != nil {
-		// 새 사용자 생성
 		user = &model.User{
 			ID:            uuid.New(),
 			Email:         githubUser.Email,
 			Name:          githubUser.Name,
-			ProfileImage:  githubUser.AvatarURL, // 프로필 이미지 추가
-			Role:          model.RoleUser,       // 기본 role을 'user'로 설정
+			ProfileImage:  githubUser.AvatarURL,
+			Role:          model.RoleUser,
 			OAuthProvider: "github",
 			OAuthID:       githubUser.ID,
 		}
@@ -264,7 +244,6 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 			return nil, err
 		}
 	} else {
-		// 기존 사용자의 경우 GitHub로 로그인한 사용자라면 프로필 이미지 업데이트
 		if user.OAuthProvider == "github" {
 			user.ProfileImage = githubUser.AvatarURL
 			if err := s.userRepo.Update(user); err != nil {
@@ -274,7 +253,6 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 		}
 	}
 
-	// JWT 토큰 생성
 	jwtToken, err := s.generateToken(user.ID, user.Email, string(user.Role))
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to generate JWT token")
@@ -307,7 +285,6 @@ func (s *authService) getGitHubUserInfo(accessToken string) (*model.GitHubUser, 
 		&oauth2.Token{AccessToken: accessToken},
 	))
 
-	// 사용자의 기본 이메일 대신 모든 이메일 목록을 먼저 가져옴
 	emailResp, err := httpClient.Get("https://api.github.com/user/emails")
 	if err != nil {
 		return nil, fmt.Errorf("GitHub API email error: %w", err)
@@ -323,7 +300,6 @@ func (s *authService) getGitHubUserInfo(accessToken string) (*model.GitHubUser, 
 		return nil, fmt.Errorf("failed to decode GitHub email response: %w", err)
 	}
 
-	// 검증된 주 이메일을 찾음
 	var primaryEmail string
 	for _, email := range emails {
 		if email.Primary && email.Verified {
@@ -336,7 +312,6 @@ func (s *authService) getGitHubUserInfo(accessToken string) (*model.GitHubUser, 
 		return nil, fmt.Errorf("no verified primary email found")
 	}
 
-	// 사용자 기본 정보 가져오기
 	userResp, err := httpClient.Get("https://api.github.com/user")
 	if err != nil {
 		return nil, fmt.Errorf("GitHub API error: %w", err)
@@ -347,13 +322,12 @@ func (s *authService) getGitHubUserInfo(accessToken string) (*model.GitHubUser, 
 		ID        int64  `json:"id"`
 		Login     string `json:"login"`
 		Name      string `json:"name"`
-		AvatarURL string `json:"avatar_url"` // 프로필 이미지 URL 추가
+		AvatarURL string `json:"avatar_url"`
 	}
 	if err := json.NewDecoder(userResp.Body).Decode(&githubUser); err != nil {
 		return nil, fmt.Errorf("failed to decode GitHub user response: %w", err)
 	}
 
-	// 이름이 없는 경우 username 사용
 	name := githubUser.Name
 	if name == "" {
 		name = githubUser.Login
@@ -363,6 +337,6 @@ func (s *authService) getGitHubUserInfo(accessToken string) (*model.GitHubUser, 
 		ID:        strconv.FormatInt(githubUser.ID, 10),
 		Email:     primaryEmail,
 		Name:      name,
-		AvatarURL: githubUser.AvatarURL, // 프로필 이미지 URL 반환
+		AvatarURL: githubUser.AvatarURL,
 	}, nil
 }

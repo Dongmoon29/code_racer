@@ -43,56 +43,54 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 		return nil, fmt.Errorf("failed to get language ID: %w", err)
 	}
 
-	if res, ok, err := s.tryBatchEvaluate(code, languageID, problem); err != nil {
-		return nil, err
-	} else if ok {
-		// 운영 관측: 배치 경로 사용 로깅
-		passCount := 0
-		for _, tr := range res.TestResults {
-			if tr.Passed {
-				passCount++
-			}
-		}
-		compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
-		s.logger.Info().
-			Str("mode", "batch").
-			Int("languageID", languageID).
-			Int("testCases", len(res.TestResults)).
-			Int("passCount", passCount).
-			Bool("passed", res.Passed).
-			Float64("avgTime", res.ExecutionTime).
-			Float64("avgMemory", res.MemoryUsage).
-			Int("compileTimeout", compileTimeout).
-			Int("runTimeout", runTimeout).
-			Int("memoryLimitKB", memoryLimit).
-			Msg("Evaluation summary")
-		return res, nil
+	// Try batch evaluation first
+	batchResult, batchSuccess, batchErr := s.tryBatchEvaluate(code, languageID, problem)
+	if batchErr != nil {
+		return nil, batchErr
+	}
+	
+	if batchSuccess {
+		s.logEvaluationResult(batchResult, languageID, problem, "batch")
+		return batchResult, nil
 	}
 
-	res, err := s.aggregatePerTest(code, languageID, problem)
-	if err == nil && res != nil {
-		// 운영 관측: 폴백 경로 로깅
-		passCount := 0
-		for _, tr := range res.TestResults {
-			if tr.Passed {
-				passCount++
-			}
-		}
-		compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
-		s.logger.Info().
-			Str("mode", "per_test").
-			Int("languageID", languageID).
-			Int("testCases", len(res.TestResults)).
-			Int("passCount", passCount).
-			Bool("passed", res.Passed).
-			Float64("avgTime", res.ExecutionTime).
-			Float64("avgMemory", res.MemoryUsage).
-			Int("compileTimeout", compileTimeout).
-			Int("runTimeout", runTimeout).
-			Int("memoryLimitKB", memoryLimit).
-			Msg("Evaluation summary")
+	// Fallback to per-test evaluation
+	perTestResult, perTestErr := s.aggregatePerTest(code, languageID, problem)
+	if perTestErr == nil && perTestResult != nil {
+		s.logEvaluationResult(perTestResult, languageID, problem, "per_test")
 	}
-	return res, err
+	
+	return perTestResult, perTestErr
+}
+
+// logEvaluationResult logs the evaluation result with detailed metrics
+func (s *judgeService) logEvaluationResult(result *types.EvaluationResult, languageID int, problem *model.LeetCode, evaluationMode string) {
+	passedTestCount := s.countPassedTests(result.TestResults)
+	compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
+	
+	s.logger.Info().
+		Str("mode", evaluationMode).
+		Int("languageID", languageID).
+		Int("testCases", len(result.TestResults)).
+		Int("passCount", passedTestCount).
+		Bool("passed", result.Passed).
+		Float64("avgTime", result.ExecutionTime).
+		Float64("avgMemory", result.MemoryUsage).
+		Int("compileTimeout", compileTimeout).
+		Int("runTimeout", runTimeout).
+		Int("memoryLimitKB", memoryLimit).
+		Msg("Evaluation summary")
+}
+
+// countPassedTests counts the number of passed test cases
+func (s *judgeService) countPassedTests(testResults []types.TestCaseResult) int {
+	passedCount := 0
+	for _, testResult := range testResults {
+		if testResult.Passed {
+			passedCount++
+		}
+	}
+	return passedCount
 }
 
 // ensureFunctionNameMatches extracts and validates the function name (strict mode)

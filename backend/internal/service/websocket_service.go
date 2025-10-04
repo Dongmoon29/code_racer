@@ -195,9 +195,12 @@ func (h *Hub) unregisterClient(client *Client) {
 	defer h.mu.Unlock()
 
 	// Check if client exists in global map
-	if _, exists := h.clients[client]; !exists {
+	if _, clientExists := h.clients[client]; !clientExists {
 		return
 	}
+
+	// Log disconnect reason for debugging
+	h.logClientDisconnectReason(client)
 
 	// Remove from global clients map
 	delete(h.clients, client)
@@ -212,6 +215,17 @@ func (h *Hub) unregisterClient(client *Client) {
 		h.removeFromMatchingQueue(client)
 		client.isMatching = false
 		client.difficulty = ""
+	}
+}
+
+// logClientDisconnectReason logs the reason for client disconnection
+func (h *Hub) logClientDisconnectReason(client *Client) {
+	if client.disconnectAfterMatch {
+		fmt.Printf("🔌 Client %s disconnected after successful match\n", client.userID.String())
+	} else if client.isMatching {
+		fmt.Printf("⚠️ Client %s disconnected while matching (difficulty: %s)\n", client.userID.String(), client.difficulty)
+	} else {
+		fmt.Printf("🔌 Client %s disconnected normally\n", client.userID.String())
 	}
 }
 
@@ -254,32 +268,51 @@ func (h *Hub) cleanupDeadClient(client *Client) {
 
 // handleStartMatching processes a matching request
 func (h *Hub) handleStartMatching(req *MatchingRequest) {
-	fmt.Printf("🔍 handleStartMatching called for user: %s, difficulty: %s\n", req.Client.userID.String(), req.Difficulty)
-
+	h.logMatchingRequest(req)
+	
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	client := req.Client
-	difficulty := req.Difficulty
+	matchingClient := req.Client
+	requestedDifficulty := req.Difficulty
 
-	// Update client matching state
+	h.updateClientMatchingState(matchingClient, requestedDifficulty)
+	h.addClientToMatchingQueue(matchingClient, requestedDifficulty)
+	h.sendMatchingStatusToClient(matchingClient, requestedDifficulty)
+	h.attemptImmediateMatchmaking(requestedDifficulty)
+}
+
+// logMatchingRequest logs the matching request details
+func (h *Hub) logMatchingRequest(req *MatchingRequest) {
+	fmt.Printf("🔍 handleStartMatching called for user: %s, difficulty: %s\n", req.Client.userID.String(), req.Difficulty)
+}
+
+// updateClientMatchingState updates the client's matching state
+func (h *Hub) updateClientMatchingState(client *Client, difficulty string) {
 	client.isMatching = true
 	client.difficulty = difficulty
 	client.matchStarted = time.Now()
+}
 
+// addClientToMatchingQueue adds client to the matching queue
+func (h *Hub) addClientToMatchingQueue(client *Client, difficulty string) {
 	// Prevent duplicate queue entries by removing any existing occurrence first
 	h.removeFromMatchingQueue(client)
-
+	
 	// Add to matching queue
 	h.matchingClients[difficulty] = append(h.matchingClients[difficulty], client)
 	fmt.Printf("🔍 Added to queue. Current queue size for %s: %d\n", difficulty, len(h.matchingClients[difficulty]))
+}
 
-	// Send queue status to client
-	queuePos := len(h.matchingClients[difficulty])
-	h.sendMatchingStatus(client, "searching", queuePos, 0)
+// sendMatchingStatusToClient sends matching status to the client
+func (h *Hub) sendMatchingStatusToClient(client *Client, difficulty string) {
+	queuePosition := len(h.matchingClients[difficulty])
+	h.sendMatchingStatus(client, "searching", queuePosition, 0)
 	fmt.Printf("🔍 Sent matching status to client\n")
+}
 
-	// Try to find a match immediately
+// attemptImmediateMatchmaking tries to find a match immediately
+func (h *Hub) attemptImmediateMatchmaking(difficulty string) {
 	h.tryMatchmaking(difficulty)
 }
 
@@ -556,7 +589,7 @@ func (h *Hub) broadcastToMatchClients(matchID uuid.UUID, data []byte) {
 	}
 }
 
-// Run starts the WebSocket hub
+// Run starts the hub's main event loop
 func (h *Hub) Run() {
 	for {
 		select {
@@ -583,34 +616,57 @@ func (h *Hub) Run() {
 
 // HandleConnection handles a new WebSocket connection
 func (s *webSocketService) HandleConnection(conn *websocket.Conn, userID uuid.UUID, matchID uuid.UUID) {
-	// Create client
-	client := &Client{
+	client := s.createWebSocketClient(conn, userID, matchID)
+	s.registerClientWithHub(client)
+	s.loadExistingCodeForClient(client, matchID, userID)
+	s.addUserToMatchParticipants(matchID, userID)
+	s.startClientGoroutines(client)
+}
+
+// createWebSocketClient creates a new WebSocket client
+func (s *webSocketService) createWebSocketClient(conn *websocket.Conn, userID uuid.UUID, matchID uuid.UUID) *Client {
+	return &Client{
 		hub:     s.hub,
 		conn:    conn,
 		send:    make(chan []byte, 256),
 		userID:  userID,
 		matchID: matchID,
 	}
+}
 
-	// Register client with hub
+// registerClientWithHub registers the client with the hub
+func (s *webSocketService) registerClientWithHub(client *Client) {
 	client.hub.register <- client
+}
 
-	// Load existing code and send to client
+// loadExistingCodeForClient loads and sends existing code to the client
+func (s *webSocketService) loadExistingCodeForClient(client *Client, matchID uuid.UUID, userID uuid.UUID) {
 	ctx := context.Background()
 	codeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID.String())
-	if existingCode, err := s.rdb.Get(ctx, codeKey).Result(); err == nil && existingCode != "" {
-		// Send existing code to client
-		codeUpdateMsg := CodeUpdateMessage{Type: "code_update", MatchID: matchID.String(), UserID: userID.String(), Code: existingCode}
+	
+	existingCode, err := s.rdb.Get(ctx, codeKey).Result()
+	if err == nil && existingCode != "" {
+		codeUpdateMsg := CodeUpdateMessage{
+			Type:   "code_update",
+			MatchID: matchID.String(),
+			UserID:  userID.String(),
+			Code:   existingCode,
+		}
 		msgBytes, _ := json.Marshal(codeUpdateMsg)
 		client.send <- msgBytes
 	}
+}
 
-	// Add user to game participants list
+// addUserToMatchParticipants adds user to the match participants list
+func (s *webSocketService) addUserToMatchParticipants(matchID uuid.UUID, userID uuid.UUID) {
+	ctx := context.Background()
 	matchUsersKey := fmt.Sprintf("match:%s:users", matchID.String())
 	s.rdb.SAdd(ctx, matchUsersKey, userID.String())
 	s.rdb.Expire(ctx, matchUsersKey, 24*time.Hour)
+}
 
-	// Start goroutines for client message reading and writing
+// startClientGoroutines starts the read and write pumps for the client
+func (s *webSocketService) startClientGoroutines(client *Client) {
 	go client.readPump(s)
 	go client.writePump()
 }
@@ -626,49 +682,83 @@ func (s *webSocketService) cleanupUserData(userID uuid.UUID, matchID uuid.UUID) 
 	if matchID == uuid.Nil {
 		return
 	}
+
 	ctx := context.Background()
+	cleanupPipeline := s.rdb.Pipeline()
 
-	// Use Redis pipeline for atomic cleanup
-	pipe := s.rdb.Pipeline()
+	s.removeUserFromMatchParticipants(cleanupPipeline, ctx, matchID, userID)
+	s.cleanupUserCodeData(cleanupPipeline, ctx, matchID, userID)
+	s.cleanupEmptyMatchIfNeeded(cleanupPipeline, ctx, matchID)
+	s.executeCleanupPipeline(cleanupPipeline, ctx, userID, matchID)
+}
 
-	// 게임 참가자 목록에서 사용자 제거
+// removeUserFromMatchParticipants removes user from match participants list
+func (s *webSocketService) removeUserFromMatchParticipants(pipe redis.Pipeliner, ctx context.Context, matchID uuid.UUID, userID uuid.UUID) {
 	matchUsersKey := fmt.Sprintf("match:%s:users", matchID.String())
 	pipe.SRem(ctx, matchUsersKey, userID.String())
+}
 
-	// 사용자 코드 데이터 삭제 (선택적 - 게임이 진행 중이면 보존할 수도 있음)
+// cleanupUserCodeData cleans up user code data based on match status
+func (s *webSocketService) cleanupUserCodeData(pipe redis.Pipeliner, ctx context.Context, matchID uuid.UUID, userID uuid.UUID) {
 	codeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID.String())
-
-	// 게임 상태 확인을 위해 게임 정보 조회
+	
+	// Get match status to determine if code should be deleted
 	matchKey := fmt.Sprintf("match:%s", matchID.String())
 	matchStatus, err := s.rdb.HGet(ctx, matchKey, "status").Result()
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to get match status during cleanup")
+		return
 	}
 
-	// 게임이 대기 중이거나 종료된 경우에만 코드 데이터 삭제
-	if matchStatus == string(model.MatchStatusWaiting) ||
-		matchStatus == string(model.MatchStatusFinished) ||
-		matchStatus == string(model.MatchStatusClosed) {
+	// Delete code data only if match is waiting, finished, or closed
+	if s.shouldDeleteCodeData(matchStatus) {
 		pipe.Del(ctx, codeKey)
 	}
+}
 
-	// 게임 참가자가 모두 나간 경우 게임 관련 데이터 정리
-	remainingUsers, err := s.rdb.SCard(ctx, matchUsersKey).Result()
-	if err == nil && remainingUsers <= 1 { // 현재 사용자 제거 후 0명 또는 1명 남음
-		// 대기 중인 게임이라면 완전 정리
-		if matchStatus == string(model.MatchStatusWaiting) {
-			pipe.Del(ctx, matchKey)
-			pipe.Del(ctx, matchUsersKey)
-			// 모든 사용자 코드 삭제
-			users, _ := s.rdb.SMembers(ctx, matchUsersKey).Result()
-			for _, uid := range users {
-				userCodeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), uid)
-				pipe.Del(ctx, userCodeKey)
-			}
-		}
+// shouldDeleteCodeData determines if code data should be deleted based on match status
+func (s *webSocketService) shouldDeleteCodeData(matchStatus string) bool {
+	return matchStatus == string(model.MatchStatusWaiting) ||
+		matchStatus == string(model.MatchStatusFinished) ||
+		matchStatus == string(model.MatchStatusClosed)
+}
+
+// cleanupEmptyMatchIfNeeded cleans up match data if no users remain
+func (s *webSocketService) cleanupEmptyMatchIfNeeded(pipe redis.Pipeliner, ctx context.Context, matchID uuid.UUID) {
+	matchUsersKey := fmt.Sprintf("match:%s:users", matchID.String())
+	remainingUserCount, err := s.rdb.SCard(ctx, matchUsersKey).Result()
+	if err != nil || remainingUserCount > 1 {
+		return
 	}
 
-	// Execute pipeline
+	// Get match status
+	matchKey := fmt.Sprintf("match:%s", matchID.String())
+	matchStatus, err := s.rdb.HGet(ctx, matchKey, "status").Result()
+	if err != nil {
+		return
+	}
+
+	// Clean up waiting matches completely
+	if matchStatus == string(model.MatchStatusWaiting) {
+		s.cleanupWaitingMatch(pipe, ctx, matchID, matchKey, matchUsersKey)
+	}
+}
+
+// cleanupWaitingMatch performs complete cleanup for waiting matches
+func (s *webSocketService) cleanupWaitingMatch(pipe redis.Pipeliner, ctx context.Context, matchID uuid.UUID, matchKey, matchUsersKey string) {
+	pipe.Del(ctx, matchKey)
+	pipe.Del(ctx, matchUsersKey)
+	
+	// Delete all user code data
+	remainingUsers, _ := s.rdb.SMembers(ctx, matchUsersKey).Result()
+	for _, userID := range remainingUsers {
+		userCodeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID)
+		pipe.Del(ctx, userCodeKey)
+	}
+}
+
+// executeCleanupPipeline executes the Redis pipeline and logs results
+func (s *webSocketService) executeCleanupPipeline(pipe redis.Pipeliner, ctx context.Context, userID uuid.UUID, matchID uuid.UUID) {
 	if _, err := pipe.Exec(ctx); err != nil {
 		s.logger.Error().Err(err).Str("userID", userID.String()).Str("matchID", matchID.String()).Msg("Failed to cleanup user data in Redis")
 	} else {
