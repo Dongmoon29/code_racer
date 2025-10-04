@@ -22,6 +22,15 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+// Auth service constants
+const (
+	// Token expiration
+	tokenExpiryDays = 7
+	
+	// JWT signing method
+	jwtSigningMethod = "HS256"
+)
+
 var _ interfaces.AuthService = (*authService)(nil)
 
 type authService struct {
@@ -35,7 +44,7 @@ func NewAuthService(userRepo interfaces.UserRepository, jwtSecret string, logger
 	return &authService{
 		userRepo:    userRepo,
 		jwtSecret:   jwtSecret,
-		tokenExpiry: 7 * 24 * time.Hour,
+		tokenExpiry: tokenExpiryDays * 24 * time.Hour,
 		logger:      logger,
 	}
 }

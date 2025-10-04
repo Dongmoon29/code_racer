@@ -14,6 +14,20 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/types"
 )
 
+// Judge service constants
+const (
+	// Time conversion factors
+	millisecondsToSeconds = 1000
+	megabytesToKilobytes = 1000
+	
+	// Default timeouts
+	defaultRunTimeoutSeconds = 5
+	defaultMemoryLimitKB = 128000
+	
+	// Compile timeout multiplier
+	compileTimeoutMultiplier = 2
+)
+
 type judgeService struct {
 	codeWrapper       interfaces.CodeWrapper
 	judge0Client      interfaces.Judge0Client
@@ -168,16 +182,16 @@ func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expecte
 func (s *judgeService) deriveLimits(problem *model.LeetCode) (compileTimeout int, runTimeout int, memoryLimit int) {
 	// Assume model.TimeLimit is in milliseconds and MemoryLimit in MB
 	// Compile timeout: 2x runTimeout cap, runTimeout from TimeLimit
-	run := problem.TimeLimit / 1000
-	if run <= 0 {
-		run = 5
+	runTimeoutSeconds := problem.TimeLimit / millisecondsToSeconds
+	if runTimeoutSeconds <= 0 {
+		runTimeoutSeconds = defaultRunTimeoutSeconds
 	}
-	comp := run * 2
-	mem := problem.MemoryLimit * 1000 // MB -> KB expected by Judge0 (uses kB)
-	if mem <= 0 {
-		mem = 128000
+	compileTimeoutSeconds := runTimeoutSeconds * compileTimeoutMultiplier
+	memoryLimitKB := problem.MemoryLimit * megabytesToKilobytes // MB -> KB expected by Judge0 (uses kB)
+	if memoryLimitKB <= 0 {
+		memoryLimitKB = defaultMemoryLimitKB
 	}
-	return comp, run, mem
+	return compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB
 }
 
 func (s *judgeService) evaluateBatchResponse(response *types.Judge0Response, expected []interface{}, inputs [][]interface{}) (*types.EvaluationResult, error) {

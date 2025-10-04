@@ -21,6 +21,30 @@ const (
 
 	// Ping/pong timeout
 	pongWait = 60 * time.Second
+	
+	// Channel buffer sizes
+	clientSendBufferSize = 256
+	
+	// Redis expiration times
+	codeExpirationHours = 24
+	matchUsersExpirationHours = 24
+	
+	// Ping interval
+	pingIntervalSeconds = 54
+	
+	// Write deadline
+	writeDeadlineSeconds = 10
+	
+	// Default timeouts
+	defaultRunTimeoutSeconds = 5
+	defaultMemoryLimitKB = 128000
+	
+	// Time conversion factors
+	millisecondsToSeconds = 1000
+	megabytesToKilobytes = 1000
+	
+	// Compile timeout multiplier
+	compileTimeoutMultiplier = 2
 )
 
 // Hub manages WebSocket connections
@@ -221,11 +245,11 @@ func (h *Hub) unregisterClient(client *Client) {
 // logClientDisconnectReason logs the reason for client disconnection
 func (h *Hub) logClientDisconnectReason(client *Client) {
 	if client.disconnectAfterMatch {
-		fmt.Printf("🔌 Client %s disconnected after successful match\n", client.userID.String())
+		h.logger.Info().Str("userID", client.userID.String()).Msg("Client disconnected after successful match")
 	} else if client.isMatching {
-		fmt.Printf("⚠️ Client %s disconnected while matching (difficulty: %s)\n", client.userID.String(), client.difficulty)
+		h.logger.Warn().Str("userID", client.userID.String()).Str("difficulty", client.difficulty).Msg("Client disconnected while matching")
 	} else {
-		fmt.Printf("🔌 Client %s disconnected normally\n", client.userID.String())
+		h.logger.Info().Str("userID", client.userID.String()).Msg("Client disconnected normally")
 	}
 }
 
@@ -284,7 +308,7 @@ func (h *Hub) handleStartMatching(req *MatchingRequest) {
 
 // logMatchingRequest logs the matching request details
 func (h *Hub) logMatchingRequest(req *MatchingRequest) {
-	fmt.Printf("🔍 handleStartMatching called for user: %s, difficulty: %s\n", req.Client.userID.String(), req.Difficulty)
+	h.logger.Info().Str("userID", req.Client.userID.String()).Str("difficulty", req.Difficulty).Msg("Starting matchmaking")
 }
 
 // updateClientMatchingState updates the client's matching state
@@ -301,14 +325,14 @@ func (h *Hub) addClientToMatchingQueue(client *Client, difficulty string) {
 	
 	// Add to matching queue
 	h.matchingClients[difficulty] = append(h.matchingClients[difficulty], client)
-	fmt.Printf("🔍 Added to queue. Current queue size for %s: %d\n", difficulty, len(h.matchingClients[difficulty]))
+	h.logger.Info().Str("difficulty", difficulty).Int("queueSize", len(h.matchingClients[difficulty])).Msg("Client added to matching queue")
 }
 
 // sendMatchingStatusToClient sends matching status to the client
 func (h *Hub) sendMatchingStatusToClient(client *Client, difficulty string) {
 	queuePosition := len(h.matchingClients[difficulty])
 	h.sendMatchingStatus(client, "searching", queuePosition, 0)
-	fmt.Printf("🔍 Sent matching status to client\n")
+	h.logger.Debug().Str("userID", client.userID.String()).Int("queuePosition", queuePosition).Msg("Sent matching status to client")
 }
 
 // attemptImmediateMatchmaking tries to find a match immediately
@@ -498,31 +522,25 @@ func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, match interf
 	}
 
 	// Send to both players
-	if msgBytes1, err := json.Marshal(matchMsg1); err == nil {
-		select {
-		case player1.send <- msgBytes1:
-			// Log successful message send
-			fmt.Printf("✅ Match found message sent to player1: %s\n", string(msgBytes1))
-		default:
-			fmt.Printf("❌ Failed to send match found message to player1 (channel blocked)\n")
-		}
-	} else {
-		fmt.Printf("❌ Failed to marshal match message for player1: %v\n", err)
-	}
-
-	if msgBytes2, err := json.Marshal(matchMsg2); err == nil {
-		select {
-		case player2.send <- msgBytes2:
-			fmt.Printf("✅ Match found message sent to player2: %s\n", string(msgBytes2))
-		default:
-			fmt.Printf("❌ Failed to send match found message to player2 (channel blocked)\n")
-		}
-	} else {
-		fmt.Printf("❌ Failed to marshal match message for player2: %v\n", err)
-	}
+	h.sendMatchFoundMessageToPlayer(player1, matchMsg1, "player1")
+	h.sendMatchFoundMessageToPlayer(player2, matchMsg2, "player2")
 
 	// Do not mutate matchmaking connections into game connections here.
 	// Clients should open a dedicated game WebSocket using /ws/:matchId after receiving match_found.
+}
+
+// sendMatchFoundMessageToPlayer sends match found message to a specific player
+func (h *Hub) sendMatchFoundMessageToPlayer(player *Client, message MatchFoundMessage, playerLabel string) {
+	if msgBytes, err := json.Marshal(message); err == nil {
+		select {
+		case player.send <- msgBytes:
+			h.logger.Info().Str("playerLabel", playerLabel).Str("userID", player.userID.String()).Msg("Match found message sent successfully")
+		default:
+			h.logger.Warn().Str("playerLabel", playerLabel).Str("userID", player.userID.String()).Msg("Failed to send match found message (channel blocked)")
+		}
+	} else {
+		h.logger.Error().Err(err).Str("playerLabel", playerLabel).Str("userID", player.userID.String()).Msg("Failed to marshal match found message")
+	}
 }
 
 // broadcastToAllClients sends a message to all connected clients
@@ -628,7 +646,7 @@ func (s *webSocketService) createWebSocketClient(conn *websocket.Conn, userID uu
 	return &Client{
 		hub:     s.hub,
 		conn:    conn,
-		send:    make(chan []byte, 256),
+		send:    make(chan []byte, clientSendBufferSize),
 		userID:  userID,
 		matchID: matchID,
 	}
@@ -662,7 +680,7 @@ func (s *webSocketService) addUserToMatchParticipants(matchID uuid.UUID, userID 
 	ctx := context.Background()
 	matchUsersKey := fmt.Sprintf("match:%s:users", matchID.String())
 	s.rdb.SAdd(ctx, matchUsersKey, userID.String())
-	s.rdb.Expire(ctx, matchUsersKey, 24*time.Hour)
+	s.rdb.Expire(ctx, matchUsersKey, matchUsersExpirationHours*time.Hour)
 }
 
 // startClientGoroutines starts the read and write pumps for the client
@@ -822,60 +840,84 @@ func (c *Client) readPump(wsService *webSocketService) {
 			c.send <- pongBytes
 
 		case "start_matching":
-			// Handle start matching request
-			fmt.Printf("🎯 Received start_matching message: %+v\n", msg)
-			// Frontend sends difficulty directly in the message, not nested in data
-			if difficulty, ok := msg["difficulty"].(string); ok {
-				fmt.Printf("🎯 Extracted difficulty: %s\n", difficulty)
-				// Validate difficulty
-				if difficulty == "Easy" || difficulty == "Medium" || difficulty == "Hard" {
-					fmt.Printf("🎯 Creating match request for user: %s\n", c.userID.String())
-					matchReq := &MatchingRequest{
-						Client:     c,
-						Difficulty: difficulty,
-					}
-					c.hub.startMatching <- matchReq
-					fmt.Printf("🎯 Match request sent to hub\n")
-				} else {
-					fmt.Printf("❌ Invalid difficulty: %s\n", difficulty)
-				}
-			} else {
-				fmt.Printf("❌ Failed to extract difficulty from message: %+v\n", msg)
-			}
+			c.handleStartMatchingMessage(msg)
 
 		case "cancel_matching":
-			// Handle cancel matching request
-			cancelReq := &CancelRequest{
-				Client: c,
-			}
-			c.hub.cancelMatching <- cancelReq
+			c.handleCancelMatchingMessage()
 
 		case "code_update":
-			// Handle code update message
-			if data, ok := msg["data"].(map[string]interface{}); ok {
-				if code, ok := data["code"].(string); ok {
-					// Store code in Redis
-					ctx := context.Background()
-					codeKey := fmt.Sprintf("match:%s:user:%s:code", c.matchID.String(), c.userID.String())
-					wsService.rdb.Set(ctx, codeKey, code, 24*time.Hour)
+			c.handleCodeUpdateMessage(msg, wsService)
 
-					// Broadcast to other clients
-					codeUpdateMsg := CodeUpdateMessage{Type: "code_update", MatchID: c.matchID.String(), UserID: c.userID.String(), Code: code}
-
-					msgBytes, _ := json.Marshal(codeUpdateMsg)
-					wsService.BroadcastToMatch(c.matchID, msgBytes)
-				}
+// handleStartMatchingMessage processes start matching messages
+func (c *Client) handleStartMatchingMessage(msg map[string]interface{}) {
+	c.hub.logger.Info().Interface("message", msg).Str("userID", c.userID.String()).Msg("Received start matching message")
+	
+	if difficulty, ok := msg["difficulty"].(string); ok {
+		c.hub.logger.Info().Str("difficulty", difficulty).Str("userID", c.userID.String()).Msg("Extracted difficulty from message")
+		
+		if c.isValidDifficulty(difficulty) {
+			c.hub.logger.Info().Str("userID", c.userID.String()).Str("difficulty", difficulty).Msg("Creating match request")
+			matchReq := &MatchingRequest{
+				Client:     c,
+				Difficulty: difficulty,
 			}
+			c.hub.startMatching <- matchReq
+			c.hub.logger.Info().Str("userID", c.userID.String()).Msg("Match request sent to hub")
+		} else {
+			c.hub.logger.Warn().Str("difficulty", difficulty).Str("userID", c.userID.String()).Msg("Invalid difficulty received")
+		}
+	} else {
+		c.hub.logger.Error().Interface("message", msg).Str("userID", c.userID.String()).Msg("Failed to extract difficulty from message")
+	}
+}
 
-		default:
-			// Don't log unknown message types
+// isValidDifficulty checks if the difficulty is valid
+func (c *Client) isValidDifficulty(difficulty string) bool {
+	return difficulty == "Easy" || difficulty == "Medium" || difficulty == "Hard"
+}
+
+// handleCancelMatchingMessage processes cancel matching messages
+func (c *Client) handleCancelMatchingMessage() {
+	c.hub.logger.Info().Str("userID", c.userID.String()).Msg("Handling cancel matching request")
+	cancelReq := &CancelRequest{
+		Client: c,
+	}
+	c.hub.cancelMatching <- cancelReq
+}
+
+// handleCodeUpdateMessage processes code update messages
+func (c *Client) handleCodeUpdateMessage(msg map[string]interface{}, wsService *webSocketService) {
+	if data, ok := msg["data"].(map[string]interface{}); ok {
+		if code, ok := data["code"].(string); ok {
+			c.storeCodeInRedis(code, wsService)
+			c.broadcastCodeUpdate(code, wsService)
 		}
 	}
 }
 
+// storeCodeInRedis stores the user's code in Redis
+func (c *Client) storeCodeInRedis(code string, wsService *webSocketService) {
+	ctx := context.Background()
+	codeKey := fmt.Sprintf("match:%s:user:%s:code", c.matchID.String(), c.userID.String())
+	wsService.rdb.Set(ctx, codeKey, code, codeExpirationHours*time.Hour)
+}
+
+// broadcastCodeUpdate broadcasts code update to other clients
+func (c *Client) broadcastCodeUpdate(code string, wsService *webSocketService) {
+	codeUpdateMsg := CodeUpdateMessage{
+		Type:   "code_update",
+		MatchID: c.matchID.String(),
+		UserID:  c.userID.String(),
+		Code:   code,
+	}
+
+	msgBytes, _ := json.Marshal(codeUpdateMsg)
+	wsService.BroadcastToMatch(c.matchID, msgBytes)
+}
+
 // writePump writes messages to the client
 func (c *Client) writePump() {
-	ticker := time.NewTicker(54 * time.Second)
+	ticker := time.NewTicker(pingIntervalSeconds * time.Second)
 	defer func() {
 		if r := recover(); r != nil {
 			// Log panic but don't crash the service
@@ -888,7 +930,7 @@ func (c *Client) writePump() {
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			c.conn.SetWriteDeadline(time.Now().Add(writeDeadlineSeconds * time.Second))
 			if !ok {
 				// Channel is closed
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
@@ -912,7 +954,7 @@ func (c *Client) writePump() {
 				return
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			c.conn.SetWriteDeadline(time.Now().Add(writeDeadlineSeconds * time.Second))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}

@@ -243,7 +243,7 @@ func main() {
         fmt.Fprintf(os.Stderr, "Error marshaling result: %v\n", err)
         os.Exit(1)
     }
-    fmt.Println(string(output))
+    // Remove debug prints - use proper logging instead
 }`,
 		},
 		{
