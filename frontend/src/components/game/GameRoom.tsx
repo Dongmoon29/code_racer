@@ -117,7 +117,8 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       // 게임이 진행 중일 때만 경고 표시
       if (game?.status === 'playing' || game?.status === 'waiting') {
         event.preventDefault();
-        event.returnValue = 'Your written code will be lost if you leave this page.';
+        event.returnValue =
+          'Your written code will be lost if you leave this page.';
         return 'Your written code will be lost if you leave this page.';
       }
     };
@@ -131,7 +132,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       sessionStorage.removeItem(`match_${matchId}_language`);
       sessionStorage.removeItem(`match_${matchId}_showMyCode`);
       sessionStorage.removeItem(`match_${matchId}_showOpponentCode`);
-      
+
       // 이벤트 리스너 제거
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
