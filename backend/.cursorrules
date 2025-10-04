@@ -83,12 +83,55 @@ if retryCount > MAX_RETRY_ATTEMPTS {
 - Implement proper reconnection logic
 - Log WebSocket events for debugging
 
-## Testing
+## Testing & Testability - CRITICAL RULES
 
-- Write unit tests for business logic
-- Use table-driven tests when appropriate
-- Mock external dependencies
-- Aim for high test coverage
+- **TESTABLE FUNCTIONS**: All functions must be designed with testability in mind
+- **DEPENDENCY INJECTION**: Use interfaces for all external dependencies (database, HTTP clients, etc.)
+- **PURE FUNCTIONS**: Prefer pure functions that don't depend on global state
+- **SINGLE RESPONSIBILITY**: Each function should have one clear purpose for easier testing
+- **SMALL FUNCTIONS**: Keep functions small (< 30 lines) for easier unit testing
+- **NO SIDE EFFECTS**: Minimize side effects, make them explicit and testable
+- **MOCKABLE DEPENDENCIES**: All external dependencies must be mockable via interfaces
+- **TESTABLE ERROR HANDLING**: Error conditions must be easily testable
+- **DETERMINISTIC BEHAVIOR**: Functions should produce predictable outputs for given inputs
+
+### Testability Guidelines:
+
+- **Unit Tests**: Write unit tests for all business logic functions
+- **Table-Driven Tests**: Use table-driven tests for functions with multiple scenarios
+- **Mock External Dependencies**: Mock database, HTTP clients, file system, etc.
+- **Test Coverage**: Aim for high test coverage (>80%)
+- **Integration Tests**: Write integration tests for critical workflows
+- **Test Data**: Use test fixtures and factories for consistent test data
+- **Test Isolation**: Each test should be independent and not affect others
+
+### Examples:
+
+```go
+// ❌ BAD - Hard to test (global state, side effects)
+var db *gorm.DB
+
+func ProcessUser(userID string) error {
+    user := db.Find(userID) // Global dependency
+    // ... processing
+    db.Save(user) // Side effect
+    return nil
+}
+
+// ✅ GOOD - Testable (dependency injection, pure function)
+type UserProcessor struct {
+    userRepo UserRepository
+}
+
+func (p *UserProcessor) ProcessUser(userID string) error {
+    user, err := p.userRepo.FindByID(userID)
+    if err != nil {
+        return err
+    }
+    // ... processing
+    return p.userRepo.Save(user)
+}
+```
 
 ## Security
 
@@ -136,6 +179,11 @@ if retryCount > MAX_RETRY_ATTEMPTS {
 - [ ] **Constants are grouped logically in const blocks**
 - [ ] Error handling is explicit
 - [ ] Code is readable and self-documenting
+- [ ] **Function is testable with dependency injection**
+- [ ] **External dependencies are mockable via interfaces**
+- [ ] **Function has minimal side effects**
+- [ ] **Function behavior is deterministic**
+- [ ] **Error conditions are easily testable**
 - [ ] **Go lint passes with no errors or warnings**
 - [ ] **No fmt.Print\* statements in production code**
 - [ ] **No unused variables or imports**
