@@ -1,0 +1,115 @@
+# CodeRacer Backend - Go Rules
+
+## Language & Framework
+
+- Use Go 1.21+
+- Follow Go standard library patterns
+- Use Gin framework for HTTP routing
+- Use GORM for database operations
+- Use Redis for caching and session management
+
+## Code Style - CRITICAL RULES
+
+- **FUNCTION SIZE**: Keep functions under 30 lines. If longer, break into smaller functions
+- **FUNCTION NAMING**: Use descriptive, action-oriented names (e.g., `validateUserInput`, `processPayment`, `sendNotification`)
+- **VARIABLE NAMING**: Use clear, descriptive names that explain purpose (e.g., `userID`, `isAuthenticated`, `maxRetryCount`)
+- **AVOID**: Generic names like `data`, `result`, `temp`, `val`, `obj`
+- Follow Go naming conventions (camelCase for private, PascalCase for public)
+- Use interfaces for dependency injection
+- Prefer composition over inheritance
+
+## Function Design Principles
+
+- **Single Responsibility**: Each function should do ONE thing well
+- **Clear Purpose**: Function name should clearly indicate what it does
+- **Small Size**: Break large functions into smaller, focused functions
+- **Descriptive Parameters**: Use meaningful parameter names
+- **Return Clarity**: Return values should be self-explanatory
+
+## Variable Naming Standards
+
+- **Boolean**: Use `is`, `has`, `can`, `should` prefixes (e.g., `isLoggedIn`, `hasPermission`, `canEdit`)
+- **Counters**: Use descriptive names (e.g., `retryCount`, `attemptNumber`, `userCount`)
+- **IDs**: Always include type (e.g., `userID`, `matchID`, `sessionID`)
+- **Collections**: Use plural forms (e.g., `users`, `matches`, `sessions`)
+- **Temporary**: Even temp variables need meaningful names (e.g., `currentUser`, `nextMatch`)
+
+## Error Handling
+
+- Always handle errors explicitly
+- Use custom error types when needed
+- Log errors with context using structured logging
+- Return errors from functions, don't panic unless absolutely necessary
+
+## Database
+
+- Use migrations for schema changes
+- Always use transactions for multi-table operations
+- Use prepared statements to prevent SQL injection
+- Follow repository pattern for data access
+
+## WebSocket
+
+- Handle connection cleanup properly
+- Use channels for communication between goroutines
+- Implement proper reconnection logic
+- Log WebSocket events for debugging
+
+## Testing
+
+- Write unit tests for business logic
+- Use table-driven tests when appropriate
+- Mock external dependencies
+- Aim for high test coverage
+
+## Security
+
+- Validate all input data
+- Use JWT for authentication
+- Implement proper CORS policies
+- Sanitize user inputs
+
+## Performance
+
+- Use connection pooling for database
+- Implement proper caching strategies
+- Monitor memory usage in goroutines
+- Use context for request cancellation
+
+## Project Structure
+
+- Keep controllers thin, move business logic to services
+- Use dependency injection
+- Separate concerns (auth, business logic, data access)
+- Follow clean architecture principles
+
+## Code Quality & Linting - MANDATORY
+
+- **Go Lint**: Use `golangci-lint` with strict configuration
+- **Go Format**: Use `gofmt` and `goimports` for consistent formatting
+- **Error Handling**: Always handle errors explicitly, no ignored errors
+- **No Print Statements**: Remove all `fmt.Print*` statements in production code
+- **Unused Variables**: Remove all unused variables and imports
+- **Go Vet**: Pass `go vet` checks for common mistakes
+- **Static Analysis**: Use `go mod tidy` and `go mod verify`
+- **Documentation**: Document all public functions and types
+- **Security**: Use `gosec` for security vulnerability scanning
+- **Performance**: Avoid memory leaks and inefficient operations
+
+## Code Review Checklist
+
+- [ ] Function is under 30 lines
+- [ ] Function name clearly describes its purpose
+- [ ] All variables have descriptive names
+- [ ] No generic variable names (data, result, temp, etc.)
+- [ ] Boolean variables use proper prefixes
+- [ ] Error handling is explicit
+- [ ] Code is readable and self-documenting
+- [ ] **Go lint passes with no errors or warnings**
+- [ ] **No fmt.Print\* statements in production code**
+- [ ] **No unused variables or imports**
+- [ ] **Go vet checks pass**
+- [ ] **go mod tidy and go mod verify pass**
+- [ ] **All public functions documented**
+- [ ] **Security scan passes (gosec)**
+- [ ] **Performance optimizations applied**

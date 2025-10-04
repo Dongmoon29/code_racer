@@ -1,0 +1,133 @@
+# CodeRacer Frontend - React/TypeScript Rules
+
+## Language & Framework
+
+- Use TypeScript for all code
+- Use React 18+ with functional components and hooks
+- Use Next.js for routing and SSR
+- Use Tailwind CSS for styling
+- Use Zustand for state management
+
+## Code Style - CRITICAL RULES
+
+- **FUNCTION SIZE**: Keep functions under 30 lines. If longer, break into smaller functions
+- **FUNCTION NAMING**: Use descriptive, action-oriented names (e.g., `validateUserInput`, `handleSubmit`, `fetchUserData`)
+- **VARIABLE NAMING**: Use clear, descriptive names that explain purpose (e.g., `userID`, `isLoading`, `maxRetryCount`)
+- **AVOID**: Generic names like `data`, `result`, `temp`, `val`, `obj`
+- Use camelCase for variables and functions
+- Use PascalCase for components and types
+- Use kebab-case for file names
+- Prefer const over let, avoid var
+
+## React Patterns
+
+- Use functional components with hooks
+- Use TypeScript interfaces for props
+- Implement proper error boundaries
+- Use React.memo for performance optimization when needed
+- Prefer custom hooks for reusable logic
+
+## Component Design Principles
+
+- **Single Responsibility**: Each component should do ONE thing well
+- **Clear Purpose**: Component name should clearly indicate what it renders
+- **Small Size**: Break large components into smaller, focused components
+- **Descriptive Props**: Use meaningful prop names and types
+- **Self-Documenting**: Code should be readable without comments
+
+## Variable Naming Standards
+
+- **Boolean**: Use `is`, `has`, `can`, `should` prefixes (e.g., `isLoading`, `hasPermission`, `canEdit`)
+- **Counters**: Use descriptive names (e.g., `retryCount`, `attemptNumber`, `userCount`)
+- **IDs**: Always include type (e.g., `userID`, `matchID`, `sessionID`)
+- **Collections**: Use plural forms (e.g., `users`, `matches`, `sessions`)
+- **Temporary**: Even temp variables need meaningful names (e.g., `currentUser`, `nextMatch`)
+
+## State Management
+
+- Use Zustand for global state
+- Keep component state local when possible
+- Use proper TypeScript types for state
+- Implement proper state updates
+
+## Styling
+
+- Use Tailwind CSS utility classes
+- Create reusable component variants
+- Use CSS modules for complex styles
+- Follow mobile-first responsive design
+
+## API Integration
+
+- Use axios for HTTP requests
+- Implement proper error handling
+- Use TypeScript interfaces for API responses
+- Handle loading and error states properly
+
+## WebSocket
+
+- Use custom hooks for WebSocket connections
+- Implement proper cleanup in useEffect
+- Handle connection states properly
+- Use TypeScript for message types
+
+## Performance
+
+- Use React.lazy for code splitting
+- Implement proper memoization
+- Optimize re-renders with useMemo and useCallback
+- Use proper dependency arrays in useEffect
+
+## Testing
+
+- Write unit tests for utility functions
+- Test component behavior, not implementation
+- Use React Testing Library
+- Mock external dependencies
+
+## Security
+
+- Validate all user inputs
+- Sanitize data before rendering
+- Use proper authentication patterns
+- Implement proper CORS handling
+
+## Project Structure
+
+- Organize components by feature
+- Use barrel exports (index.ts files)
+- Keep components small and focused
+- Separate business logic from UI components
+
+## Code Quality & Linting - MANDATORY
+
+- **ESLint**: Follow all ESLint rules from `next/core-web-vitals` and `next/typescript`
+- **Prettier**: Use Prettier for consistent code formatting
+- **Import Ordering**: Group imports in this order: React → Next.js → Third-party → Local
+- **TypeScript**: Use strict mode, no `any` types allowed
+- **Error Handling**: Always implement proper error handling
+- **No Console Logs**: Remove all `console.log` statements in production code
+- **Unused Variables**: Remove all unused variables and imports
+- **React Hooks**: Follow Rules of Hooks, proper dependency arrays
+- **Accessibility**: Use proper ARIA attributes and semantic HTML
+- **Performance**: Avoid unnecessary re-renders and memory leaks
+
+## Code Review Checklist
+
+- [ ] Function is under 30 lines
+- [ ] Function name clearly describes its purpose
+- [ ] All variables have descriptive names
+- [ ] No generic variable names (data, result, temp, etc.)
+- [ ] Boolean variables use proper prefixes
+- [ ] Component props are properly typed
+- [ ] Error handling is implemented
+- [ ] Code is readable and self-documenting
+- [ ] Proper cleanup in useEffect hooks
+- [ ] No unnecessary re-renders
+- [ ] **ESLint passes with no errors or warnings**
+- [ ] **No console.log statements in production code**
+- [ ] **No unused variables or imports**
+- [ ] **TypeScript strict mode compliance**
+- [ ] **Proper import ordering**
+- [ ] **Accessibility attributes included**
+- [ ] **Performance optimizations applied**

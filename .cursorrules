@@ -1,0 +1,58 @@
+# CodeRacer Project - General Rules
+
+## Project Overview
+
+- CodeRacer is a real-time competitive coding platform
+- Backend: Go with Gin, GORM, Redis
+- Frontend: React/TypeScript with Next.js, Tailwind CSS
+
+## General Principles
+
+- Write clean, readable, and maintainable code
+- Follow consistent naming conventions
+- Implement proper error handling
+- Write comprehensive tests
+- Document complex logic
+
+## Git Workflow
+
+- Use meaningful commit messages
+- Follow conventional commit format
+- Create feature branches for new features
+- Use pull requests for code review
+
+## Code Review
+
+- Review for logic correctness
+- Check for security vulnerabilities
+- Ensure proper error handling
+- Verify test coverage
+- Check performance implications
+
+## Documentation
+
+- Document API endpoints
+- Write clear README files
+- Document complex algorithms
+- Keep documentation up to date
+
+## Security
+
+- Never commit secrets or API keys
+- Validate all user inputs
+- Implement proper authentication
+- Follow security best practices
+
+## Performance
+
+- Optimize for real-time performance
+- Monitor resource usage
+- Implement proper caching
+- Use efficient algorithms
+
+## Deployment
+
+- Use Docker for containerization
+- Implement proper CI/CD
+- Monitor application health
+- Use proper logging
