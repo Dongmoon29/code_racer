@@ -5,12 +5,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	_ "github.com/Dongmoon29/code_racer/docs" // Import docs for swagger
 	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/controller"
+	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	logger "github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/middleware"
 	"github.com/Dongmoon29/code_racer/internal/repository"
@@ -107,42 +109,152 @@ type dependencies struct {
 }
 
 func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *dependencies {
-	// initialize repositories
-	userRepository := repository.NewUserRepository(db, appLogger)
-	matchRepository := repository.NewMatchRepository(db, appLogger)
-	leetCodeRepo := repository.NewLeetCodeRepository(db, appLogger)
+	repositories := initializeRepositories(db, appLogger)
+	services := initializeServices(repositories, rdb, cfg, appLogger)
+	controllers := initializeControllers(services, appLogger)
+	middleware := initializeMiddleware(services, repositories, appLogger)
 
-	// initialize services
-	authService := service.NewAuthService(userRepository, cfg.JWTSecret, appLogger)
-	userService := service.NewUserService(userRepository, appLogger)
+	return &dependencies{
+		authController:     controllers.authController,
+		matchController:    controllers.matchController,
+		userController:     controllers.userController,
+		leetcodeController: controllers.leetcodeController,
+		wsController:       controllers.wsController,
+		authMiddleware:     middleware.authMiddleware,
+	}
+}
+
+// initializeRepositories creates all repository instances
+func initializeRepositories(db *gorm.DB, appLogger logger.Logger) *repositories {
+	return &repositories{
+		userRepository:  repository.NewUserRepository(db, appLogger),
+		matchRepository: repository.NewMatchRepository(db, appLogger),
+		leetCodeRepo:    repository.NewLeetCodeRepository(db, appLogger),
+	}
+}
+
+// initializeServices creates all service instances
+func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *services {
+	authService := service.NewAuthService(repos.userRepository, cfg.JWTSecret, appLogger)
+	userService := service.NewUserService(repos.userRepository, appLogger)
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger)
-	matchService := service.NewMatchService(matchRepository, leetCodeRepo, rdb, judgeService, appLogger)
+	matchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, judgeService, appLogger)
 
-	// Matchmaking service as mediator (without WebSocket initially)
+	// Initialize WebSocket and matchmaking services
 	matchmakingService := service.NewMatchmakingService(matchService, nil, rdb, appLogger)
-
-	// WebSocket service with matchmaking dependency
 	wsService := service.NewWebSocketService(rdb, appLogger, matchmakingService)
-
-	// Set WebSocket service in matchmaking service (avoid circular reference)
 	matchmakingService.SetWebSocketService(wsService)
 
-	// init web socket hub
+	// Start WebSocket hub
 	wsHub := wsService.InitHub()
 	go wsHub.Run()
 
-	// initialize LeetCode service
-	leetCodeService := service.NewLeetCodeService(leetCodeRepo, appLogger)
+	leetCodeService := service.NewLeetCodeService(repos.leetCodeRepo, appLogger)
 
-	// init controllers and middleware
-	return &dependencies{
-		authController:     controller.NewAuthController(authService, appLogger),
-		matchController:    controller.NewMatchController(matchService, appLogger),
-		userController:     controller.NewUserController(userService, appLogger),
-		leetcodeController: controller.NewLeetCodeController(leetCodeService, appLogger),
-		wsController:       controller.NewWebSocketController(wsService, appLogger),
-		authMiddleware:     middleware.NewAuthMiddleware(authService, userRepository, appLogger),
+	return &services{
+		authService:        authService,
+		userService:        userService,
+		judgeService:       judgeService,
+		matchService:       matchService,
+		matchmakingService: matchmakingService,
+		wsService:          wsService,
+		leetCodeService:    leetCodeService,
 	}
+}
+
+// initializeControllers creates all controller instances
+func initializeControllers(services *services, appLogger logger.Logger) *controllers {
+	// Get allowed origins from environment
+	allowedOrigins := getAllowedOrigins()
+	environment := getEnvironment()
+
+	// Create OAuth config provider
+	oauthConfigProvider := controller.NewOAuthConfigProvider()
+
+	return &controllers{
+		authController:     controller.NewAuthController(services.authService, appLogger, oauthConfigProvider),
+		matchController:    controller.NewMatchController(services.matchService, appLogger),
+		userController:     controller.NewUserController(services.userService, appLogger),
+		leetcodeController: controller.NewLeetCodeController(services.leetCodeService, appLogger),
+		wsController:       controller.NewWebSocketController(services.wsService, appLogger, allowedOrigins, environment),
+	}
+}
+
+// getAllowedOrigins gets allowed origins from environment variables
+func getAllowedOrigins() []string {
+	var origins []string
+
+	// Get additional origins from environment variable
+	if frontendURL := os.Getenv("FRONTEND_URL"); frontendURL != "" {
+		origins = append(origins, frontendURL)
+		// Also add HTTPS version
+		if strings.HasPrefix(frontendURL, "http://") {
+			httpsVersion := strings.Replace(frontendURL, "http://", "https://", 1)
+			origins = append(origins, httpsVersion)
+		}
+	}
+
+	// Get additional origins from CORS_ALLOWED_ORIGINS environment variable
+	if corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS"); corsOrigins != "" {
+		envOrigins := strings.Split(corsOrigins, ",")
+		for _, o := range envOrigins {
+			o = strings.TrimSpace(o)
+			if o != "" {
+				origins = append(origins, o)
+				// Also add HTTPS version
+				if strings.HasPrefix(o, "http://") {
+					httpsVersion := strings.Replace(o, "http://", "https://", 1)
+					origins = append(origins, httpsVersion)
+				}
+			}
+		}
+	}
+
+	return origins
+}
+
+// getEnvironment gets the current environment
+func getEnvironment() string {
+	if env := os.Getenv("ENVIRONMENT"); env != "" {
+		return env
+	}
+	return "production" // Default to production
+}
+
+// initializeMiddleware creates all middleware instances
+func initializeMiddleware(services *services, repos *repositories, appLogger logger.Logger) *middlewareInstances {
+	return &middlewareInstances{
+		authMiddleware: middleware.NewAuthMiddleware(services.authService, repos.userRepository, appLogger),
+	}
+}
+
+// Helper structs for dependency injection
+type repositories struct {
+	userRepository  interfaces.UserRepository
+	matchRepository repository.MatchRepository
+	leetCodeRepo    repository.LeetCodeRepository
+}
+
+type services struct {
+	authService        interfaces.AuthService
+	userService        service.UserService
+	judgeService       interfaces.JudgeService
+	matchService       service.MatchService
+	matchmakingService service.MatchmakingService
+	wsService          service.WebSocketService
+	leetCodeService    service.LeetCodeService
+}
+
+type controllers struct {
+	authController     *controller.AuthController
+	matchController    *controller.MatchController
+	userController     *controller.UserController
+	leetcodeController *controller.LeetCodeController
+	wsController       *controller.WebSocketController
+}
+
+type middlewareInstances struct {
+	authMiddleware *middleware.AuthMiddleware
 }
 
 func startServer(router *gin.Engine, port string) {

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { EditorState, StateEffect } from '@codemirror/state';
 import {
   EditorView,
@@ -45,7 +45,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const initialValueRef = useRef(value);
 
   // Function to create all extensions
-  const createExtensions = (theme: string) => {
+  const createExtensions = useCallback((theme: string) => {
     const languageSupport = getLanguageSupport(language);
     const themeStyle =
       theme === 'light'
@@ -106,7 +106,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
 
     return extensions;
-  };
+  }, [language, readOnly, vimMode, onChange, value]);
 
   // Update all extensions when Vim mode or theme changes
   useEffect(() => {
@@ -116,12 +116,13 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     viewRef.current.dispatch({
       effects: StateEffect.reconfigure.of(extensions),
     });
-  }, [theme, language, readOnly, onChange, value, vimMode]);
+  }, [theme, createExtensions]);
 
   // Initial editor setup
   useEffect(() => {
     if (!editorRef.current) return;
 
+    const editorElement = editorRef.current;
     const state = EditorState.create({
       doc: initialValueRef.current,
       extensions: createExtensions(theme),
@@ -129,7 +130,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
     const view = new EditorView({
       state,
-      parent: editorRef.current,
+      parent: editorElement,
     });
 
     viewRef.current = view;
@@ -140,13 +141,13 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       }
     };
 
-    editorRef.current.addEventListener('contextmenu', disableContextMenu);
+    editorElement.addEventListener('contextmenu', disableContextMenu);
 
     return () => {
       view.destroy();
-      editorRef.current?.removeEventListener('contextmenu', disableContextMenu);
+      editorElement.removeEventListener('contextmenu', disableContextMenu);
     };
-  }, [language, readOnly]); // Remove theme dependency
+  }, [createExtensions, theme, readOnly]);
 
   // Update only when value changes externally
   useEffect(() => {

@@ -14,6 +14,20 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/types"
 )
 
+// Judge service constants
+const (
+	// Time conversion factors
+	judgeMillisecondsToSeconds = 1000
+	judgeMegabytesToKilobytes  = 1000
+
+	// Default timeouts
+	judgeDefaultRunTimeoutSeconds = 5
+	judgeDefaultMemoryLimitKB     = 128000
+
+	// Compile timeout multiplier
+	judgeCompileTimeoutMultiplier = 2
+)
+
 type judgeService struct {
 	codeWrapper       interfaces.CodeWrapper
 	judge0Client      interfaces.Judge0Client
@@ -43,56 +57,54 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 		return nil, fmt.Errorf("failed to get language ID: %w", err)
 	}
 
-	if res, ok, err := s.tryBatchEvaluate(code, languageID, problem); err != nil {
-		return nil, err
-	} else if ok {
-		// 운영 관측: 배치 경로 사용 로깅
-		passCount := 0
-		for _, tr := range res.TestResults {
-			if tr.Passed {
-				passCount++
-			}
-		}
-		compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
-		s.logger.Info().
-			Str("mode", "batch").
-			Int("languageID", languageID).
-			Int("testCases", len(res.TestResults)).
-			Int("passCount", passCount).
-			Bool("passed", res.Passed).
-			Float64("avgTime", res.ExecutionTime).
-			Float64("avgMemory", res.MemoryUsage).
-			Int("compileTimeout", compileTimeout).
-			Int("runTimeout", runTimeout).
-			Int("memoryLimitKB", memoryLimit).
-			Msg("Evaluation summary")
-		return res, nil
+	// Try batch evaluation first
+	batchEvaluationResult, batchEvaluationSuccess, batchEvaluationError := s.tryBatchEvaluate(code, languageID, problem)
+	if batchEvaluationError != nil {
+		return nil, batchEvaluationError
 	}
 
-	res, err := s.aggregatePerTest(code, languageID, problem)
-	if err == nil && res != nil {
-		// 운영 관측: 폴백 경로 로깅
-		passCount := 0
-		for _, tr := range res.TestResults {
-			if tr.Passed {
-				passCount++
-			}
-		}
-		compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
-		s.logger.Info().
-			Str("mode", "per_test").
-			Int("languageID", languageID).
-			Int("testCases", len(res.TestResults)).
-			Int("passCount", passCount).
-			Bool("passed", res.Passed).
-			Float64("avgTime", res.ExecutionTime).
-			Float64("avgMemory", res.MemoryUsage).
-			Int("compileTimeout", compileTimeout).
-			Int("runTimeout", runTimeout).
-			Int("memoryLimitKB", memoryLimit).
-			Msg("Evaluation summary")
+	if batchEvaluationSuccess {
+		s.logEvaluationResult(batchEvaluationResult, languageID, problem, "batch")
+		return batchEvaluationResult, nil
 	}
-	return res, err
+
+	// Fallback to per-test evaluation
+	perTestEvaluationResult, perTestEvaluationError := s.aggregatePerTest(code, languageID, problem)
+	if perTestEvaluationError == nil && perTestEvaluationResult != nil {
+		s.logEvaluationResult(perTestEvaluationResult, languageID, problem, "per_test")
+	}
+
+	return perTestEvaluationResult, perTestEvaluationError
+}
+
+// logEvaluationResult logs the evaluation result with detailed metrics
+func (s *judgeService) logEvaluationResult(evaluationResult *types.EvaluationResult, languageID int, problem *model.LeetCode, evaluationMode string) {
+	passedTestCount := s.countPassedTests(evaluationResult.TestResults)
+	compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB := s.deriveLimits(problem)
+
+	s.logger.Info().
+		Str("mode", evaluationMode).
+		Int("languageID", languageID).
+		Int("testCases", len(evaluationResult.TestResults)).
+		Int("passCount", passedTestCount).
+		Bool("passed", evaluationResult.Passed).
+		Float64("avgTime", evaluationResult.ExecutionTime).
+		Float64("avgMemory", evaluationResult.MemoryUsage).
+		Int("compileTimeout", compileTimeoutSeconds).
+		Int("runTimeout", runTimeoutSeconds).
+		Int("memoryLimitKB", memoryLimitKB).
+		Msg("Evaluation summary")
+}
+
+// countPassedTests counts the number of passed test cases
+func (s *judgeService) countPassedTests(testResults []types.TestCaseResult) int {
+	passedTestCount := 0
+	for _, testCaseResult := range testResults {
+		if testCaseResult.Passed {
+			passedTestCount++
+		}
+	}
+	return passedTestCount
 }
 
 // ensureFunctionNameMatches extracts and validates the function name (strict mode)
@@ -111,13 +123,13 @@ func (s *judgeService) ensureFunctionNameMatches(code string, language string, e
 // tryBatchEvaluate attempts batch harness path; returns (result, usedBatch, error)
 func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *model.LeetCode) (*types.EvaluationResult, bool, error) {
 	// build inputs
-	inputs := make([][]interface{}, 0, len(problem.TestCases))
-	expected := make([]interface{}, 0, len(problem.TestCases))
-	for _, tc := range problem.TestCases {
-		inputs = append(inputs, tc.Input)
-		expected = append(expected, tc.Output)
+	testCaseInputs := make([][]interface{}, 0, len(problem.TestCases))
+	expectedOutputs := make([]interface{}, 0, len(problem.TestCases))
+	for _, testCase := range problem.TestCases {
+		testCaseInputs = append(testCaseInputs, testCase.Input)
+		expectedOutputs = append(expectedOutputs, testCase.Output)
 	}
-	inputsJSON, _ := json.Marshal(inputs)
+	inputsJSON, _ := json.Marshal(testCaseInputs)
 
 	// wrap batch (may fail for unsupported languages)
 	wrappedCode, err := s.codeWrapper.WrapCodeBatch(code, languageID, string(inputsJSON), problem)
@@ -126,124 +138,188 @@ func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *mo
 	}
 
 	// submit
-	expectedJSON, _ := json.Marshal(expected)
-	resp, err := s.submitToJudge(wrappedCode, languageID, string(expectedJSON), problem)
+	expectedOutputsJSON, _ := json.Marshal(expectedOutputs)
+	judgeResponse, err := s.submitToJudge(wrappedCode, languageID, string(expectedOutputsJSON), problem)
 	if err != nil {
 		return nil, false, err
 	}
 
 	// evaluate response
-	res, err := s.evaluateBatchResponse(resp, expected, inputs)
+	evaluationResult, err := s.evaluateBatchResponse(judgeResponse, expectedOutputs, testCaseInputs)
 	if err != nil {
 		return nil, false, nil // fall back on parse errors
 	}
-	return res, true, nil
+	return evaluationResult, true, nil
 }
 
-func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expectedJSON string, problem *model.LeetCode) (*types.Judge0Response, error) {
-	compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
-	request := types.Judge0Request{
+func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expectedOutputsJSON string, problem *model.LeetCode) (*types.Judge0Response, error) {
+	compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB := s.deriveLimits(problem)
+	judgeRequest := types.Judge0Request{
 		SourceCode:       wrappedCode,
 		LanguageID:       languageID,
-		ExpectedOutput:   expectedJSON,
-		CompileTimeout:   compileTimeout,
-		RunTimeout:       runTimeout,
-		MemoryLimit:      memoryLimit,
+		ExpectedOutput:   expectedOutputsJSON,
+		CompileTimeout:   compileTimeoutSeconds,
+		RunTimeout:       runTimeoutSeconds,
+		MemoryLimit:      memoryLimitKB,
 		EnableNetworking: false,
 	}
-	response, err := s.judge0Client.SubmitCode(request)
+	judgeResponse, err := s.judge0Client.SubmitCode(judgeRequest)
 	if err != nil {
 		// 쿼터 초과 식별 로깅
-		errMsg := fmt.Errorf("Judge0 API error: %w", err)
-		if strings.Contains(errMsg.Error(), "exceeded the DAILY quota") {
+		errorMessage := fmt.Errorf("Judge0 API error: %w", err)
+		if strings.Contains(errorMessage.Error(), "exceeded the DAILY quota") {
 			s.logger.Error().
 				Str("error_type", "judge0_quota_exceeded").
 				Int("languageID", languageID).
 				Msg("Judge0 quota exceeded")
 		}
-		return nil, errMsg
+		return nil, errorMessage
 	}
-	return response, nil
+	return judgeResponse, nil
 }
 
 // deriveLimits converts model constraints to Judge0 limits
 func (s *judgeService) deriveLimits(problem *model.LeetCode) (compileTimeout int, runTimeout int, memoryLimit int) {
 	// Assume model.TimeLimit is in milliseconds and MemoryLimit in MB
 	// Compile timeout: 2x runTimeout cap, runTimeout from TimeLimit
-	run := problem.TimeLimit / 1000
-	if run <= 0 {
-		run = 5
+	runTimeoutSeconds := problem.TimeLimit / judgeMillisecondsToSeconds
+	if runTimeoutSeconds <= 0 {
+		runTimeoutSeconds = judgeDefaultRunTimeoutSeconds
 	}
-	comp := run * 2
-	mem := problem.MemoryLimit * 1000 // MB -> KB expected by Judge0 (uses kB)
-	if mem <= 0 {
-		mem = 128000
+	compileTimeoutSeconds := runTimeoutSeconds * judgeCompileTimeoutMultiplier
+	memoryLimitKB := problem.MemoryLimit * judgeMegabytesToKilobytes // MB -> KB expected by Judge0 (uses kB)
+	if memoryLimitKB <= 0 {
+		memoryLimitKB = judgeDefaultMemoryLimitKB
 	}
-	return comp, run, mem
+	return compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB
 }
 
 func (s *judgeService) evaluateBatchResponse(response *types.Judge0Response, expected []interface{}, inputs [][]interface{}) (*types.EvaluationResult, error) {
-	if response.CompileError != "" {
-		return &types.EvaluationResult{Passed: false, ErrorMessage: fmt.Sprintf("Compilation error: %s", response.CompileError)}, nil
+	if s.hasCompilationError(response) {
+		return s.createCompilationErrorResult(response), nil
 	}
-	if response.Stderr != "" {
-		return &types.EvaluationResult{Passed: false, ErrorMessage: fmt.Sprintf("Runtime error: %s", response.Stderr)}, nil
+
+	if s.hasRuntimeError(response) {
+		return s.createRuntimeErrorResult(response), nil
 	}
-	actualTrimmed := strings.TrimSpace(response.Stdout)
+
+	actualResults, err := s.parseActualResults(response.Stdout)
+	if err != nil {
+		return nil, err
+	}
+
+	testResults := s.buildTestResults(expected, inputs, actualResults, response)
+	return s.createEvaluationResult(testResults, response), nil
+}
+
+// hasCompilationError checks if the response has compilation errors
+func (s *judgeService) hasCompilationError(response *types.Judge0Response) bool {
+	return response.CompileError != ""
+}
+
+// hasRuntimeError checks if the response has runtime errors
+func (s *judgeService) hasRuntimeError(response *types.Judge0Response) bool {
+	return response.Stderr != ""
+}
+
+// createCompilationErrorResult creates an error result for compilation failures
+func (s *judgeService) createCompilationErrorResult(response *types.Judge0Response) *types.EvaluationResult {
+	return &types.EvaluationResult{
+		Passed:       false,
+		ErrorMessage: fmt.Sprintf("Compilation error: %s", response.CompileError),
+	}
+}
+
+// createRuntimeErrorResult creates an error result for runtime failures
+func (s *judgeService) createRuntimeErrorResult(response *types.Judge0Response) *types.EvaluationResult {
+	return &types.EvaluationResult{
+		Passed:       false,
+		ErrorMessage: fmt.Sprintf("Runtime error: %s", response.Stderr),
+	}
+}
+
+// parseActualResults parses the actual results from stdout
+func (s *judgeService) parseActualResults(stdout string) ([]interface{}, error) {
+	actualTrimmed := strings.TrimSpace(stdout)
 	var actual []interface{}
 	if err := json.Unmarshal([]byte(actualTrimmed), &actual); err != nil {
 		return nil, fmt.Errorf("invalid runner output: %v", err)
 	}
-
-	var results []types.TestCaseResult
-	allPassed := true
-	for i := range expected {
-		expBytes, _ := json.Marshal(expected[i])
-		actBytes, _ := json.Marshal(actual[i])
-		tr := types.TestCaseResult{
-			TestCaseIndex: i,
-			Input:         string(mustJSON(inputs[i])),
-			Expected:      string(expBytes),
-			Actual:        strings.TrimSpace(string(actBytes)),
-			Passed:        strings.TrimSpace(string(actBytes)) == strings.TrimSpace(string(expBytes)),
-			ExecutionTime: getFloat64Time(response.Time),
-			MemoryUsage:   response.Memory,
-		}
-		if !tr.Passed {
-			allPassed = false
-		}
-		results = append(results, tr)
-	}
-	return &types.EvaluationResult{
-		Passed:        allPassed,
-		TestResults:   results,
-		ExecutionTime: getFloat64Time(response.Time),
-		MemoryUsage:   response.Memory,
-	}, nil
+	return actual, nil
 }
 
-func (s *judgeService) aggregatePerTest(code string, languageID int, problem *model.LeetCode) (*types.EvaluationResult, error) {
-	var testResults []types.TestCaseResult
-	var totalTime float64
-	var totalMemory float64
-	allPassed := true
-	for i, testCase := range problem.TestCases {
-		result := s.evaluateTestCase(code, languageID, testCase, problem, i)
-		testResults = append(testResults, *result)
-		if !result.Passed {
-			allPassed = false
-		}
-		totalTime += result.ExecutionTime
-		totalMemory += result.MemoryUsage
+// buildTestResults builds test results from expected, inputs, and actual results
+func (s *judgeService) buildTestResults(expected []interface{}, inputs [][]interface{}, actual []interface{}, response *types.Judge0Response) []types.TestCaseResult {
+	var results []types.TestCaseResult
+	for i := range expected {
+		testResult := s.createTestCaseResult(i, expected[i], inputs[i], actual[i], response)
+		results = append(results, testResult)
 	}
-	testCount := float64(len(problem.TestCases))
-	avgTime := totalTime / testCount
-	avgMemory := totalMemory / testCount
+	return results
+}
+
+// createTestCaseResult creates a single test case result
+func (s *judgeService) createTestCaseResult(index int, expected interface{}, input []interface{}, actual interface{}, response *types.Judge0Response) types.TestCaseResult {
+	expBytes, _ := json.Marshal(expected)
+	actBytes, _ := json.Marshal(actual)
+
+	return types.TestCaseResult{
+		TestCaseIndex: index,
+		Input:         string(mustJSON(input)),
+		Expected:      string(expBytes),
+		Actual:        strings.TrimSpace(string(actBytes)),
+		Passed:        strings.TrimSpace(string(actBytes)) == strings.TrimSpace(string(expBytes)),
+		ExecutionTime: getFloat64Time(response.Time),
+		MemoryUsage:   response.Memory,
+	}
+}
+
+// createEvaluationResult creates the final evaluation result
+func (s *judgeService) createEvaluationResult(testResults []types.TestCaseResult, response *types.Judge0Response) *types.EvaluationResult {
+	allPassed := s.checkAllTestsPassed(testResults)
 	return &types.EvaluationResult{
 		Passed:        allPassed,
 		TestResults:   testResults,
-		ExecutionTime: avgTime,
-		MemoryUsage:   avgMemory,
+		ExecutionTime: getFloat64Time(response.Time),
+		MemoryUsage:   response.Memory,
+	}
+}
+
+// checkAllTestsPassed checks if all test cases passed
+func (s *judgeService) checkAllTestsPassed(testResults []types.TestCaseResult) bool {
+	for _, result := range testResults {
+		if !result.Passed {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *judgeService) aggregatePerTest(code string, languageID int, problem *model.LeetCode) (*types.EvaluationResult, error) {
+	var testCaseResults []types.TestCaseResult
+	var totalExecutionTime float64
+	var totalMemoryUsage float64
+	allTestsPassed := true
+
+	for testCaseIndex, testCase := range problem.TestCases {
+		testCaseResult := s.evaluateTestCase(code, languageID, testCase, problem, testCaseIndex)
+		testCaseResults = append(testCaseResults, *testCaseResult)
+		if !testCaseResult.Passed {
+			allTestsPassed = false
+		}
+		totalExecutionTime += testCaseResult.ExecutionTime
+		totalMemoryUsage += testCaseResult.MemoryUsage
+	}
+
+	testCaseCount := float64(len(problem.TestCases))
+	averageExecutionTime := totalExecutionTime / testCaseCount
+	averageMemoryUsage := totalMemoryUsage / testCaseCount
+
+	return &types.EvaluationResult{
+		Passed:        allTestsPassed,
+		TestResults:   testCaseResults,
+		ExecutionTime: averageExecutionTime,
+		MemoryUsage:   averageMemoryUsage,
 	}, nil
 }
 

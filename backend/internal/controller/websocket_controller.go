@@ -2,7 +2,6 @@ package controller
 
 import (
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
@@ -16,84 +15,75 @@ import (
 type WebSocketController struct {
 	wsService service.WebSocketService
 	logger    logger.Logger
+	upgrader  websocket.Upgrader
 }
 
-// WebSocket upgrader configuration
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		origin := r.Header.Get("Origin")
-		if origin == "" {
-			return true // Allow when Origin header is missing (some clients)
-		}
-
-		// List of allowed origins
-		allowedOrigins := []string{
-			"http://localhost:3000",
-			"http://localhost:3001",
-			"https://localhost:3000",
-			"https://localhost:3001",
-		}
-
-		// Get additional origins from environment variable
-		if frontendURL := os.Getenv("FRONTEND_URL"); frontendURL != "" {
-			allowedOrigins = append(allowedOrigins, frontendURL)
-			// Also add HTTPS version
-			if strings.HasPrefix(frontendURL, "http://") {
-				httpsVersion := strings.Replace(frontendURL, "http://", "https://", 1)
-				allowedOrigins = append(allowedOrigins, httpsVersion)
-			}
-		}
-
-		// Get additional origins from CORS_ALLOWED_ORIGINS environment variable
-		if corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS"); corsOrigins != "" {
-			origins := strings.Split(corsOrigins, ",")
-			for _, o := range origins {
-				o = strings.TrimSpace(o)
-				if o != "" {
-					allowedOrigins = append(allowedOrigins, o)
-					// Also add HTTPS version
-					if strings.HasPrefix(o, "http://") {
-						httpsVersion := strings.Replace(o, "http://", "https://", 1)
-						allowedOrigins = append(allowedOrigins, httpsVersion)
-					}
-				}
-			}
-		}
-
-		// Check origin
-		for _, allowed := range allowedOrigins {
-			if origin == allowed {
-				return true
-			}
-		}
-
-		// Allow all origins in development environment
-		if os.Getenv("ENVIRONMENT") == "development" {
-			return true
-		}
-
-		// Also allow Cloud Run domain in production environment
-		if strings.Contains(origin, "asia-northeast3.run.app") {
-			return true
-		}
-
-		// Allow coderacer.pro domain
-		if strings.Contains(origin, "coderacer.pro") {
-			return true
-		}
-
-		return false
-	},
-}
+// WebSocket configuration constants
+const (
+	defaultReadBufferSize  = 1024
+	defaultWriteBufferSize = 1024
+)
 
 // NewWebSocketController creates a new WebSocketController instance
-func NewWebSocketController(wsService service.WebSocketService, logger logger.Logger) *WebSocketController {
+func NewWebSocketController(wsService service.WebSocketService, logger logger.Logger, allowedOrigins []string, environment string) *WebSocketController {
 	return &WebSocketController{
 		wsService: wsService,
 		logger:    logger,
+		upgrader: websocket.Upgrader{
+			ReadBufferSize:  defaultReadBufferSize,
+			WriteBufferSize: defaultWriteBufferSize,
+			CheckOrigin:     createOriginChecker(allowedOrigins, environment),
+		},
 	}
+}
+
+// createOriginChecker creates a testable origin checker function
+func createOriginChecker(allowedOrigins []string, environment string) func(r *http.Request) bool {
+	return func(r *http.Request) bool {
+		return isOriginAllowed(r.Header.Get("Origin"), allowedOrigins, environment)
+	}
+}
+
+// isOriginAllowed checks if the origin is allowed (testable pure function)
+func isOriginAllowed(origin string, allowedOrigins []string, environment string) bool {
+	if origin == "" {
+		return true // Allow when Origin header is missing (some clients)
+	}
+
+	// Default allowed origins
+	defaultOrigins := []string{
+		"http://localhost:3000",
+		"http://localhost:3001",
+		"https://localhost:3000",
+		"https://localhost:3001",
+	}
+
+	// Combine default and configured origins
+	allOrigins := append(defaultOrigins, allowedOrigins...)
+
+	// Check against allowed origins
+	for _, allowed := range allOrigins {
+		if origin == allowed {
+			return true
+		}
+	}
+
+	// Allow all origins in development environment
+	if environment == "development" {
+		return true
+	}
+
+	// Allow Cloud Run domain in production environment
+	if strings.Contains(origin, "asia-northeast3.run.app") {
+		return true
+	}
+
+	// Allow coderacer.pro domain
+	if strings.Contains(origin, "coderacer.pro") {
+		return true
+	}
+
+	return false
 }
 
 // HandleWebSocket handles WebSocket connection requests
@@ -121,7 +111,7 @@ func (c *WebSocketController) HandleWebSocket(ctx *gin.Context) {
 	}
 
 	// Attempt to upgrade HTTP connection to WebSocket connection
-	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	conn, err := c.upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
 		c.logger.Error().Err(err).Msg("WebSocket upgrade failed")
 		return
@@ -150,7 +140,7 @@ func (c *WebSocketController) HandleMatchmaking(ctx *gin.Context) {
 	}
 
 	// Attempt to upgrade HTTP connection to WebSocket connection
-	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	conn, err := c.upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
 		c.logger.Error().Err(err).Msg("WebSocket upgrade failed")
 		return

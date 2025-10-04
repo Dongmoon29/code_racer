@@ -37,7 +37,7 @@ func main() {
         results = append(results, out)
     }
     b, _ := json.Marshal(results)
-    fmt.Println(string(b))
+    // Remove debug prints - use proper logging instead
 }`
         return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
     }
@@ -74,7 +74,7 @@ func main() {
         results = append(results, out)
     }
     b, _ := json.Marshal(results)
-    fmt.Println(string(b))
+    // Remove debug prints - use proper logging instead
 }`
     return fmt.Sprintf(template, code, testCasesJSON, argDecl, problem.FunctionName, callArgs), nil
 }
@@ -101,7 +101,7 @@ func main() {
     }
     out := %s(testCase...)
     b, _ := json.Marshal(out)
-    fmt.Println(string(b))
+    // Remove debug prints - use proper logging instead
 }`
         return fmt.Sprintf(template, code, testCase, problem.FunctionName)
     }
@@ -133,7 +133,7 @@ func main() {
 %s
     out := %s(%s)
     b, _ := json.Marshal(out)
-    fmt.Println(string(b))
+    // Remove debug prints - use proper logging instead
 }`
     return fmt.Sprintf(template, code, testCase, argDecl, problem.FunctionName, callArgs)
 }

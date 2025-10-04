@@ -21,6 +21,19 @@ const (
 
 	// Ping/pong timeout
 	pongWait = 60 * time.Second
+
+	// Channel buffer sizes
+	clientSendBufferSize = 256
+
+	// Redis expiration times
+	codeExpirationHours       = 24
+	matchUsersExpirationHours = 24
+
+	// Ping interval
+	pingIntervalSeconds = 54
+
+	// Write deadline
+	writeDeadlineSeconds = 10
 )
 
 // Hub manages WebSocket connections
@@ -52,6 +65,9 @@ type Hub struct {
 
 	// Matchmaking service for handling matches
 	matchmakingService MatchmakingService
+
+	// Logger for structured logging
+	logger logger.Logger
 
 	// Mutex lock
 	mu sync.RWMutex
@@ -173,6 +189,7 @@ func (s *webSocketService) InitHub() *Hub {
 		startMatching:      make(chan *MatchingRequest),
 		cancelMatching:     make(chan *CancelRequest),
 		matchmakingService: s.matchmakingService,
+		logger:             s.logger,
 	}
 	return s.hub
 }
@@ -195,9 +212,12 @@ func (h *Hub) unregisterClient(client *Client) {
 	defer h.mu.Unlock()
 
 	// Check if client exists in global map
-	if _, exists := h.clients[client]; !exists {
+	if _, clientExists := h.clients[client]; !clientExists {
 		return
 	}
+
+	// Log disconnect reason for debugging
+	h.logClientDisconnectReason(client)
 
 	// Remove from global clients map
 	delete(h.clients, client)
@@ -212,6 +232,17 @@ func (h *Hub) unregisterClient(client *Client) {
 		h.removeFromMatchingQueue(client)
 		client.isMatching = false
 		client.difficulty = ""
+	}
+}
+
+// logClientDisconnectReason logs the reason for client disconnection
+func (h *Hub) logClientDisconnectReason(client *Client) {
+	if client.disconnectAfterMatch {
+		h.logger.Info().Str("userID", client.userID.String()).Msg("Client disconnected after successful match")
+	} else if client.isMatching {
+		h.logger.Warn().Str("userID", client.userID.String()).Str("difficulty", client.difficulty).Msg("Client disconnected while matching")
+	} else {
+		h.logger.Info().Str("userID", client.userID.String()).Msg("Client disconnected normally")
 	}
 }
 
@@ -254,32 +285,51 @@ func (h *Hub) cleanupDeadClient(client *Client) {
 
 // handleStartMatching processes a matching request
 func (h *Hub) handleStartMatching(req *MatchingRequest) {
-	fmt.Printf("🔍 handleStartMatching called for user: %s, difficulty: %s\n", req.Client.userID.String(), req.Difficulty)
+	h.logMatchingRequest(req)
 
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	client := req.Client
-	difficulty := req.Difficulty
+	matchingClient := req.Client
+	requestedDifficulty := req.Difficulty
 
-	// Update client matching state
+	h.updateClientMatchingState(matchingClient, requestedDifficulty)
+	h.addClientToMatchingQueue(matchingClient, requestedDifficulty)
+	h.sendMatchingStatusToClient(matchingClient, requestedDifficulty)
+	h.attemptImmediateMatchmaking(requestedDifficulty)
+}
+
+// logMatchingRequest logs the matching request details
+func (h *Hub) logMatchingRequest(req *MatchingRequest) {
+	h.logger.Info().Str("userID", req.Client.userID.String()).Str("difficulty", req.Difficulty).Msg("Starting matchmaking")
+}
+
+// updateClientMatchingState updates the client's matching state
+func (h *Hub) updateClientMatchingState(client *Client, difficulty string) {
 	client.isMatching = true
 	client.difficulty = difficulty
 	client.matchStarted = time.Now()
+}
 
+// addClientToMatchingQueue adds client to the matching queue
+func (h *Hub) addClientToMatchingQueue(client *Client, difficulty string) {
 	// Prevent duplicate queue entries by removing any existing occurrence first
 	h.removeFromMatchingQueue(client)
 
 	// Add to matching queue
 	h.matchingClients[difficulty] = append(h.matchingClients[difficulty], client)
-	fmt.Printf("🔍 Added to queue. Current queue size for %s: %d\n", difficulty, len(h.matchingClients[difficulty]))
+	h.logger.Info().Str("difficulty", difficulty).Int("queueSize", len(h.matchingClients[difficulty])).Msg("Client added to matching queue")
+}
 
-	// Send queue status to client
-	queuePos := len(h.matchingClients[difficulty])
-	h.sendMatchingStatus(client, "searching", queuePos, 0)
-	fmt.Printf("🔍 Sent matching status to client\n")
+// sendMatchingStatusToClient sends matching status to the client
+func (h *Hub) sendMatchingStatusToClient(client *Client, difficulty string) {
+	queuePosition := len(h.matchingClients[difficulty])
+	h.sendMatchingStatus(client, "searching", queuePosition, 0)
+	h.logger.Debug().Str("userID", client.userID.String()).Int("queuePosition", queuePosition).Msg("Sent matching status to client")
+}
 
-	// Try to find a match immediately
+// attemptImmediateMatchmaking tries to find a match immediately
+func (h *Hub) attemptImmediateMatchmaking(difficulty string) {
 	h.tryMatchmaking(difficulty)
 }
 
@@ -465,31 +515,25 @@ func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, match interf
 	}
 
 	// Send to both players
-	if msgBytes1, err := json.Marshal(matchMsg1); err == nil {
-		select {
-		case player1.send <- msgBytes1:
-			// Log successful message send
-			fmt.Printf("✅ Match found message sent to player1: %s\n", string(msgBytes1))
-		default:
-			fmt.Printf("❌ Failed to send match found message to player1 (channel blocked)\n")
-		}
-	} else {
-		fmt.Printf("❌ Failed to marshal match message for player1: %v\n", err)
-	}
-
-	if msgBytes2, err := json.Marshal(matchMsg2); err == nil {
-		select {
-		case player2.send <- msgBytes2:
-			fmt.Printf("✅ Match found message sent to player2: %s\n", string(msgBytes2))
-		default:
-			fmt.Printf("❌ Failed to send match found message to player2 (channel blocked)\n")
-		}
-	} else {
-		fmt.Printf("❌ Failed to marshal match message for player2: %v\n", err)
-	}
+	h.sendMatchFoundMessageToPlayer(player1, matchMsg1, "player1")
+	h.sendMatchFoundMessageToPlayer(player2, matchMsg2, "player2")
 
 	// Do not mutate matchmaking connections into game connections here.
 	// Clients should open a dedicated game WebSocket using /ws/:matchId after receiving match_found.
+}
+
+// sendMatchFoundMessageToPlayer sends match found message to a specific player
+func (h *Hub) sendMatchFoundMessageToPlayer(player *Client, message MatchFoundMessage, playerLabel string) {
+	if msgBytes, err := json.Marshal(message); err == nil {
+		select {
+		case player.send <- msgBytes:
+			h.logger.Info().Str("playerLabel", playerLabel).Str("userID", player.userID.String()).Msg("Match found message sent successfully")
+		default:
+			h.logger.Warn().Str("playerLabel", playerLabel).Str("userID", player.userID.String()).Msg("Failed to send match found message (channel blocked)")
+		}
+	} else {
+		h.logger.Error().Err(err).Str("playerLabel", playerLabel).Str("userID", player.userID.String()).Msg("Failed to marshal match found message")
+	}
 }
 
 // broadcastToAllClients sends a message to all connected clients
@@ -556,7 +600,7 @@ func (h *Hub) broadcastToMatchClients(matchID uuid.UUID, data []byte) {
 	}
 }
 
-// Run starts the WebSocket hub
+// Run starts the hub's main event loop
 func (h *Hub) Run() {
 	for {
 		select {
@@ -583,34 +627,57 @@ func (h *Hub) Run() {
 
 // HandleConnection handles a new WebSocket connection
 func (s *webSocketService) HandleConnection(conn *websocket.Conn, userID uuid.UUID, matchID uuid.UUID) {
-	// Create client
-	client := &Client{
+	client := s.createWebSocketClient(conn, userID, matchID)
+	s.registerClientWithHub(client)
+	s.loadExistingCodeForClient(client, matchID, userID)
+	s.addUserToMatchParticipants(matchID, userID)
+	s.startClientGoroutines(client)
+}
+
+// createWebSocketClient creates a new WebSocket client
+func (s *webSocketService) createWebSocketClient(conn *websocket.Conn, userID uuid.UUID, matchID uuid.UUID) *Client {
+	return &Client{
 		hub:     s.hub,
 		conn:    conn,
-		send:    make(chan []byte, 256),
+		send:    make(chan []byte, clientSendBufferSize),
 		userID:  userID,
 		matchID: matchID,
 	}
+}
 
-	// Register client with hub
+// registerClientWithHub registers the client with the hub
+func (s *webSocketService) registerClientWithHub(client *Client) {
 	client.hub.register <- client
+}
 
-	// Load existing code and send to client
+// loadExistingCodeForClient loads and sends existing code to the client
+func (s *webSocketService) loadExistingCodeForClient(client *Client, matchID uuid.UUID, userID uuid.UUID) {
 	ctx := context.Background()
 	codeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID.String())
-	if existingCode, err := s.rdb.Get(ctx, codeKey).Result(); err == nil && existingCode != "" {
-		// Send existing code to client
-		codeUpdateMsg := CodeUpdateMessage{Type: "code_update", MatchID: matchID.String(), UserID: userID.String(), Code: existingCode}
+
+	existingCode, err := s.rdb.Get(ctx, codeKey).Result()
+	if err == nil && existingCode != "" {
+		codeUpdateMsg := CodeUpdateMessage{
+			Type:    "code_update",
+			MatchID: matchID.String(),
+			UserID:  userID.String(),
+			Code:    existingCode,
+		}
 		msgBytes, _ := json.Marshal(codeUpdateMsg)
 		client.send <- msgBytes
 	}
+}
 
-	// Add user to game participants list
+// addUserToMatchParticipants adds user to the match participants list
+func (s *webSocketService) addUserToMatchParticipants(matchID uuid.UUID, userID uuid.UUID) {
+	ctx := context.Background()
 	matchUsersKey := fmt.Sprintf("match:%s:users", matchID.String())
 	s.rdb.SAdd(ctx, matchUsersKey, userID.String())
-	s.rdb.Expire(ctx, matchUsersKey, 24*time.Hour)
+	s.rdb.Expire(ctx, matchUsersKey, matchUsersExpirationHours*time.Hour)
+}
 
-	// Start goroutines for client message reading and writing
+// startClientGoroutines starts the read and write pumps for the client
+func (s *webSocketService) startClientGoroutines(client *Client) {
 	go client.readPump(s)
 	go client.writePump()
 }
@@ -626,49 +693,88 @@ func (s *webSocketService) cleanupUserData(userID uuid.UUID, matchID uuid.UUID) 
 	if matchID == uuid.Nil {
 		return
 	}
+
 	ctx := context.Background()
+	cleanupPipeline := s.rdb.Pipeline()
 
-	// Use Redis pipeline for atomic cleanup
-	pipe := s.rdb.Pipeline()
+	s.removeUserFromMatchParticipants(cleanupPipeline, ctx, matchID, userID)
+	s.cleanupUserCodeData(cleanupPipeline, ctx, matchID, userID)
+	s.cleanupEmptyMatchIfNeeded(cleanupPipeline, ctx, matchID)
+	s.executeCleanupPipeline(cleanupPipeline, ctx, userID, matchID)
+}
 
-	// 게임 참가자 목록에서 사용자 제거
+// removeUserFromMatchParticipants removes user from match participants list
+func (s *webSocketService) removeUserFromMatchParticipants(pipe redis.Pipeliner, ctx context.Context, matchID uuid.UUID, userID uuid.UUID) {
 	matchUsersKey := fmt.Sprintf("match:%s:users", matchID.String())
 	pipe.SRem(ctx, matchUsersKey, userID.String())
+}
 
-	// 사용자 코드 데이터 삭제 (선택적 - 게임이 진행 중이면 보존할 수도 있음)
+// cleanupUserCodeData cleans up user code data based on match status
+func (s *webSocketService) cleanupUserCodeData(pipe redis.Pipeliner, ctx context.Context, matchID uuid.UUID, userID uuid.UUID) {
 	codeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID.String())
 
-	// 게임 상태 확인을 위해 게임 정보 조회
+	// Get match status to determine if code should be deleted
 	matchKey := fmt.Sprintf("match:%s", matchID.String())
 	matchStatus, err := s.rdb.HGet(ctx, matchKey, "status").Result()
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to get match status during cleanup")
+		return
 	}
 
-	// 게임이 대기 중이거나 종료된 경우에만 코드 데이터 삭제
-	if matchStatus == string(model.MatchStatusWaiting) ||
-		matchStatus == string(model.MatchStatusFinished) ||
-		matchStatus == string(model.MatchStatusClosed) {
+	// Delete code data only if match is waiting, finished, or closed
+	if s.shouldDeleteCodeData(matchStatus) {
 		pipe.Del(ctx, codeKey)
 	}
+}
 
-	// 게임 참가자가 모두 나간 경우 게임 관련 데이터 정리
-	remainingUsers, err := s.rdb.SCard(ctx, matchUsersKey).Result()
-	if err == nil && remainingUsers <= 1 { // 현재 사용자 제거 후 0명 또는 1명 남음
-		// 대기 중인 게임이라면 완전 정리
-		if matchStatus == string(model.MatchStatusWaiting) {
-			pipe.Del(ctx, matchKey)
-			pipe.Del(ctx, matchUsersKey)
-			// 모든 사용자 코드 삭제
-			users, _ := s.rdb.SMembers(ctx, matchUsersKey).Result()
-			for _, uid := range users {
-				userCodeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), uid)
-				pipe.Del(ctx, userCodeKey)
-			}
-		}
+// shouldDeleteCodeData determines if code data should be deleted based on match status
+func (s *webSocketService) shouldDeleteCodeData(matchStatus string) bool {
+	return matchStatus == string(model.MatchStatusWaiting) ||
+		matchStatus == string(model.MatchStatusFinished) ||
+		matchStatus == string(model.MatchStatusClosed)
+}
+
+// cleanupEmptyMatchIfNeeded cleans up match data if no users remain
+func (s *webSocketService) cleanupEmptyMatchIfNeeded(pipe redis.Pipeliner, ctx context.Context, matchID uuid.UUID) {
+	matchUsersKey := fmt.Sprintf("match:%s:users", matchID.String())
+	remainingUserCount, err := s.rdb.SCard(ctx, matchUsersKey).Result()
+	if err != nil || remainingUserCount > 1 {
+		return
 	}
 
-	// Execute pipeline
+	// Get match status
+	matchKey := fmt.Sprintf("match:%s", matchID.String())
+	matchStatus, err := s.rdb.HGet(ctx, matchKey, "status").Result()
+	if err != nil {
+		return
+	}
+
+	// Clean up waiting matches completely
+	if matchStatus == string(model.MatchStatusWaiting) {
+		s.cleanupWaitingMatch(pipe, ctx, matchID, matchKey, matchUsersKey)
+	}
+}
+
+// cleanupWaitingMatch performs complete cleanup for waiting matches
+func (s *webSocketService) cleanupWaitingMatch(pipe redis.Pipeliner, ctx context.Context, matchID uuid.UUID, matchKey, matchUsersKey string) {
+	pipe.Del(ctx, matchKey)
+	pipe.Del(ctx, matchUsersKey)
+
+	// Delete all user code data
+	remainingUsers, err := s.rdb.SMembers(ctx, matchUsersKey).Result()
+	if err != nil {
+		s.logger.Error().Err(err).Str("matchID", matchID.String()).Msg("Failed to get remaining users for cleanup")
+		return
+	}
+
+	for _, userID := range remainingUsers {
+		userCodeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID)
+		pipe.Del(ctx, userCodeKey)
+	}
+}
+
+// executeCleanupPipeline executes the Redis pipeline and logs results
+func (s *webSocketService) executeCleanupPipeline(pipe redis.Pipeliner, ctx context.Context, userID uuid.UUID, matchID uuid.UUID) {
 	if _, err := pipe.Exec(ctx); err != nil {
 		s.logger.Error().Err(err).Str("userID", userID.String()).Str("matchID", matchID.String()).Msg("Failed to cleanup user data in Redis")
 	} else {
@@ -732,50 +838,13 @@ func (c *Client) readPump(wsService *webSocketService) {
 			c.send <- pongBytes
 
 		case "start_matching":
-			// Handle start matching request
-			fmt.Printf("🎯 Received start_matching message: %+v\n", msg)
-			// Frontend sends difficulty directly in the message, not nested in data
-			if difficulty, ok := msg["difficulty"].(string); ok {
-				fmt.Printf("🎯 Extracted difficulty: %s\n", difficulty)
-				// Validate difficulty
-				if difficulty == "Easy" || difficulty == "Medium" || difficulty == "Hard" {
-					fmt.Printf("🎯 Creating match request for user: %s\n", c.userID.String())
-					matchReq := &MatchingRequest{
-						Client:     c,
-						Difficulty: difficulty,
-					}
-					c.hub.startMatching <- matchReq
-					fmt.Printf("🎯 Match request sent to hub\n")
-				} else {
-					fmt.Printf("❌ Invalid difficulty: %s\n", difficulty)
-				}
-			} else {
-				fmt.Printf("❌ Failed to extract difficulty from message: %+v\n", msg)
-			}
+			c.handleStartMatchingMessage(msg)
 
 		case "cancel_matching":
-			// Handle cancel matching request
-			cancelReq := &CancelRequest{
-				Client: c,
-			}
-			c.hub.cancelMatching <- cancelReq
+			c.handleCancelMatchingMessage()
 
 		case "code_update":
-			// Handle code update message
-			if data, ok := msg["data"].(map[string]interface{}); ok {
-				if code, ok := data["code"].(string); ok {
-					// Store code in Redis
-					ctx := context.Background()
-					codeKey := fmt.Sprintf("match:%s:user:%s:code", c.matchID.String(), c.userID.String())
-					wsService.rdb.Set(ctx, codeKey, code, 24*time.Hour)
-
-					// Broadcast to other clients
-					codeUpdateMsg := CodeUpdateMessage{Type: "code_update", MatchID: c.matchID.String(), UserID: c.userID.String(), Code: code}
-
-					msgBytes, _ := json.Marshal(codeUpdateMsg)
-					wsService.BroadcastToMatch(c.matchID, msgBytes)
-				}
-			}
+			c.handleCodeUpdateMessage(msg, wsService)
 
 		default:
 			// Don't log unknown message types
@@ -783,9 +852,76 @@ func (c *Client) readPump(wsService *webSocketService) {
 	}
 }
 
+// handleStartMatchingMessage processes start matching messages
+func (c *Client) handleStartMatchingMessage(msg map[string]interface{}) {
+	c.hub.logger.Info().Interface("message", msg).Str("userID", c.userID.String()).Msg("Received start matching message")
+
+	if difficulty, ok := msg["difficulty"].(string); ok {
+		c.hub.logger.Info().Str("difficulty", difficulty).Str("userID", c.userID.String()).Msg("Extracted difficulty from message")
+
+		if c.isValidDifficulty(difficulty) {
+			c.hub.logger.Info().Str("userID", c.userID.String()).Str("difficulty", difficulty).Msg("Creating match request")
+			matchReq := &MatchingRequest{
+				Client:     c,
+				Difficulty: difficulty,
+			}
+			c.hub.startMatching <- matchReq
+			c.hub.logger.Info().Str("userID", c.userID.String()).Msg("Match request sent to hub")
+		} else {
+			c.hub.logger.Warn().Str("difficulty", difficulty).Str("userID", c.userID.String()).Msg("Invalid difficulty received")
+		}
+	} else {
+		c.hub.logger.Error().Interface("message", msg).Str("userID", c.userID.String()).Msg("Failed to extract difficulty from message")
+	}
+}
+
+// isValidDifficulty checks if the difficulty is valid
+func (c *Client) isValidDifficulty(difficulty string) bool {
+	return difficulty == "Easy" || difficulty == "Medium" || difficulty == "Hard"
+}
+
+// handleCancelMatchingMessage processes cancel matching messages
+func (c *Client) handleCancelMatchingMessage() {
+	c.hub.logger.Info().Str("userID", c.userID.String()).Msg("Handling cancel matching request")
+	cancelReq := &CancelRequest{
+		Client: c,
+	}
+	c.hub.cancelMatching <- cancelReq
+}
+
+// handleCodeUpdateMessage processes code update messages
+func (c *Client) handleCodeUpdateMessage(msg map[string]interface{}, wsService *webSocketService) {
+	if data, ok := msg["data"].(map[string]interface{}); ok {
+		if code, ok := data["code"].(string); ok {
+			c.storeCodeInRedis(code, wsService)
+			c.broadcastCodeUpdate(code, wsService)
+		}
+	}
+}
+
+// storeCodeInRedis stores the user's code in Redis
+func (c *Client) storeCodeInRedis(code string, wsService *webSocketService) {
+	ctx := context.Background()
+	codeKey := fmt.Sprintf("match:%s:user:%s:code", c.matchID.String(), c.userID.String())
+	wsService.rdb.Set(ctx, codeKey, code, codeExpirationHours*time.Hour)
+}
+
+// broadcastCodeUpdate broadcasts code update to other clients
+func (c *Client) broadcastCodeUpdate(code string, wsService *webSocketService) {
+	codeUpdateMsg := CodeUpdateMessage{
+		Type:    "code_update",
+		MatchID: c.matchID.String(),
+		UserID:  c.userID.String(),
+		Code:    code,
+	}
+
+	msgBytes, _ := json.Marshal(codeUpdateMsg)
+	wsService.BroadcastToMatch(c.matchID, msgBytes)
+}
+
 // writePump writes messages to the client
 func (c *Client) writePump() {
-	ticker := time.NewTicker(54 * time.Second)
+	ticker := time.NewTicker(pingIntervalSeconds * time.Second)
 	defer func() {
 		if r := recover(); r != nil {
 			// Log panic but don't crash the service
@@ -798,7 +934,7 @@ func (c *Client) writePump() {
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			c.conn.SetWriteDeadline(time.Now().Add(writeDeadlineSeconds * time.Second))
 			if !ok {
 				// Channel is closed
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
@@ -822,7 +958,7 @@ func (c *Client) writePump() {
 				return
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			c.conn.SetWriteDeadline(time.Now().Add(writeDeadlineSeconds * time.Second))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
