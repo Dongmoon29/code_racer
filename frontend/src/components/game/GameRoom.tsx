@@ -29,7 +29,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
   const [error, setError] = useState<string | null>(null);
   const [myCode, setMyCode] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(`match_${matchId}_code`) || '';
+      return sessionStorage.getItem(`match_${matchId}_code`) || '';
     }
     return '';
   });
@@ -41,7 +41,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
   >(() => {
     if (typeof window !== 'undefined') {
       return (
-        (localStorage.getItem(`match_${matchId}_language`) as
+        (sessionStorage.getItem(`match_${matchId}_language`) as
           | 'python'
           | 'javascript'
           | 'go') || 'javascript'
@@ -51,14 +51,14 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
   });
   const [showMyCode, setShowMyCode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(`match_${matchId}_showMyCode`) !== 'false';
+      return sessionStorage.getItem(`match_${matchId}_showMyCode`) !== 'false';
     }
     return true;
   });
   const [showOpponentCode, setShowOpponentCode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return (
-        localStorage.getItem(`match_${matchId}_showOpponentCode`) !== 'false'
+        sessionStorage.getItem(`match_${matchId}_showOpponentCode`) !== 'false'
       );
     }
     return true;
@@ -68,25 +68,25 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`match_${matchId}_code`, myCode);
+      sessionStorage.setItem(`match_${matchId}_code`, myCode);
     }
   }, [myCode, matchId]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`match_${matchId}_language`, selectedLanguage);
+      sessionStorage.setItem(`match_${matchId}_language`, selectedLanguage);
     }
   }, [selectedLanguage, matchId]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`match_${matchId}_showMyCode`, String(showMyCode));
+      sessionStorage.setItem(`match_${matchId}_showMyCode`, String(showMyCode));
     }
   }, [showMyCode, matchId]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(
+      sessionStorage.setItem(
         `match_${matchId}_showOpponentCode`,
         String(showOpponentCode)
       );
@@ -101,16 +101,42 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     }
   }, [game?.leetcode, selectedLanguage, myCode]);
 
-  // 게임이 종료되면 localStorage 정리
-  // TODO 컴포넌트가 닫히거나 웹소켓 닫혀도 정리해야할거 같음
+  // 게임이 종료되면 sessionStorage 정리
   useEffect(() => {
     if (game?.status === 'finished' || game?.status === 'closed') {
-      localStorage.removeItem(`match_${matchId}_code`);
-      localStorage.removeItem(`match_${matchId}_language`);
-      localStorage.removeItem(`match_${matchId}_showMyCode`);
-      localStorage.removeItem(`match_${matchId}_showOpponentCode`);
+      sessionStorage.removeItem(`match_${matchId}_code`);
+      sessionStorage.removeItem(`match_${matchId}_language`);
+      sessionStorage.removeItem(`match_${matchId}_showMyCode`);
+      sessionStorage.removeItem(`match_${matchId}_showOpponentCode`);
     }
   }, [game?.status, matchId]);
+
+  // 페이지 떠날 때 경고 및 캐시 정리
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // 게임이 진행 중일 때만 경고 표시
+      if (game?.status === 'playing' || game?.status === 'waiting') {
+        event.preventDefault();
+        event.returnValue =
+          'Your written code will be lost if you leave this page.';
+        return 'Your written code will be lost if you leave this page.';
+      }
+    };
+
+    // 브라우저 기본 경고창 등록
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      // 컴포넌트가 언마운트될 때 게임 관련 캐시 정리
+      sessionStorage.removeItem(`match_${matchId}_code`);
+      sessionStorage.removeItem(`match_${matchId}_language`);
+      sessionStorage.removeItem(`match_${matchId}_showMyCode`);
+      sessionStorage.removeItem(`match_${matchId}_showOpponentCode`);
+
+      // 이벤트 리스너 제거
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [matchId, game?.status]);
 
   useEffect(() => {
     const fetchGame = async () => {
