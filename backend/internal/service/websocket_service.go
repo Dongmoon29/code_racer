@@ -768,7 +768,12 @@ func (s *webSocketService) cleanupWaitingMatch(pipe redis.Pipeliner, ctx context
 	pipe.Del(ctx, matchUsersKey)
 	
 	// Delete all user code data
-	remainingUsers, _ := s.rdb.SMembers(ctx, matchUsersKey).Result()
+	remainingUsers, err := s.rdb.SMembers(ctx, matchUsersKey).Result()
+	if err != nil {
+		s.logger.Error().Err(err).Str("matchID", matchID.String()).Msg("Failed to get remaining users for cleanup")
+		return
+	}
+	
 	for _, userID := range remainingUsers {
 		userCodeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID)
 		pipe.Del(ctx, userCodeKey)
