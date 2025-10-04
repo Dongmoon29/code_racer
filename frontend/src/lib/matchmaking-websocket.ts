@@ -40,6 +40,7 @@ export interface MatchingWebSocketCallbacks {
   onMatchFound?: (message: MatchFoundMessage) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
+  onMatchmakingDisconnect?: () => void;
   onError?: (error: Event) => void;
 }
 
@@ -210,6 +211,25 @@ export class MatchmakingWebSocketClient {
     }
 
     console.log('Matchmaking WebSocket disconnected intentionally');
+  }
+
+  // 매치메이킹 완료 후 의도적 disconnect (에러 처리 안함)
+  disconnectAfterMatch() {
+    this.isIntentionalDisconnect = true;
+
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+
+    // 매치메이킹 완료 후 disconnect 콜백 호출
+    this.callbacks.onMatchmakingDisconnect?.();
+    console.log('Matchmaking WebSocket disconnected after match found');
   }
 
   isConnected(): boolean {

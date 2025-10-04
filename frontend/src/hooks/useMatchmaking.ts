@@ -96,10 +96,11 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
         },
 
         onMatchFound: (message: MatchFoundMessage) => {
+          console.log('Match found:', message);
           setMatchingState(MATCHING_STATE.FOUND);
 
           if (wsClientRef.current) {
-            wsClientRef.current.disconnect();
+            wsClientRef.current.disconnectAfterMatch();
             wsClientRef.current = null;
           }
 
@@ -110,6 +111,11 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
               router.push(`/game/${message.game_id}`);
             }
           }, redirectDelayMs);
+        },
+
+        onMatchmakingDisconnect: () => {
+          // 매치메이킹 완료 후 의도적 disconnect - 에러 처리 안함
+          console.log('Matchmaking completed, disconnecting intentionally');
         },
 
         onDisconnect: () => {
@@ -160,7 +166,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [cancelMatching]);
 
-  // 페이지 숨김 시 자동 취소(백그라운드 전환)
+  // 페이지 숨김 시 자동 취소(백그라운드 전환) - 다시 활성화
   useEffect(() => {
     const onVisibility = () => {
       if (document.hidden) {
