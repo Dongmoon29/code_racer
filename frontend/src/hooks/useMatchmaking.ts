@@ -96,6 +96,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
         },
 
         onMatchFound: (message: MatchFoundMessage) => {
+          console.log('Match found:', message);
           setMatchingState(MATCHING_STATE.FOUND);
 
           if (wsClientRef.current) {
@@ -165,7 +166,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [cancelMatching]);
 
-  // 페이지 숨김 시 자동 취소(백그라운드 전환)
+  // 페이지 숨김 시 자동 취소(백그라운드 전환) - 다시 활성화
   useEffect(() => {
     const onVisibility = () => {
       if (document.hidden) {

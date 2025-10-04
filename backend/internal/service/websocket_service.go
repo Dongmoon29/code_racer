@@ -78,7 +78,7 @@ type Client struct {
 	isMatching   bool
 	difficulty   string
 	matchStarted time.Time
-	
+
 	// NEW: Flag to indicate if disconnect is after successful match
 	disconnectAfterMatch bool
 }
@@ -367,7 +367,7 @@ func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
 	// Update client states
 	player1.isMatching = false
 	player2.isMatching = false
-	
+
 	// Mark clients for disconnect after match (to avoid queue cleanup)
 	player1.disconnectAfterMatch = true
 	player2.disconnectAfterMatch = true
@@ -378,7 +378,7 @@ func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
 		// Reset flags on error
 		player1.disconnectAfterMatch = false
 		player2.disconnectAfterMatch = false
-		
+
 		// Send error to both players
 		errorMsg := map[string]interface{}{
 			"type":    "match_error",
