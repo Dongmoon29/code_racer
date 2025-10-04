@@ -102,7 +102,6 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
   }, [game?.leetcode, selectedLanguage, myCode]);
 
   // 게임이 종료되면 sessionStorage 정리
-  // TODO 컴포넌트가 닫히거나 웹소켓 닫혀도 정리해야할거 같음
   useEffect(() => {
     if (game?.status === 'finished' || game?.status === 'closed') {
       sessionStorage.removeItem(`match_${matchId}_code`);
@@ -111,6 +110,17 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       sessionStorage.removeItem(`match_${matchId}_showOpponentCode`);
     }
   }, [game?.status, matchId]);
+
+  // 컴포넌트 언마운트 시 sessionStorage 정리 (페이지 이동 시)
+  useEffect(() => {
+    return () => {
+      // 컴포넌트가 언마운트될 때 게임 관련 캐시 정리
+      sessionStorage.removeItem(`match_${matchId}_code`);
+      sessionStorage.removeItem(`match_${matchId}_language`);
+      sessionStorage.removeItem(`match_${matchId}_showMyCode`);
+      sessionStorage.removeItem(`match_${matchId}_showOpponentCode`);
+    };
+  }, [matchId]);
 
   useEffect(() => {
     const fetchGame = async () => {
