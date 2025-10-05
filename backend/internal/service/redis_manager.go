@@ -17,6 +17,12 @@ type RedisManager struct {
 	logger logger.Logger
 }
 
+// Redis expiration times
+const (
+	codeExpirationHours       = 24
+	matchUsersExpirationHours = 24
+)
+
 // Redis key patterns
 const (
 	MatchDataKey   = "match:%s:data"   // Hash: match metadata
@@ -50,7 +56,7 @@ func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid
 	now := time.Now()
 
 	// Calculate expiration time (24 hours from now)
-	expiresAt := now.Add(24 * time.Hour)
+	expiresAt := now.Add(codeExpirationHours * time.Hour)
 
 	pipe := rm.rdb.Pipeline()
 
@@ -63,22 +69,22 @@ func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid
 		FieldLeetCodeID: leetcodeID,
 		FieldDifficulty: difficulty,
 	})
-	pipe.Expire(ctx, matchDataKey, 24*time.Hour)
+	pipe.Expire(ctx, matchDataKey, codeExpirationHours*time.Hour)
 
 	// Add users to match
 	matchUsersKey := fmt.Sprintf(MatchUsersKey, matchID.String())
 	pipe.SAdd(ctx, matchUsersKey, player1ID.String(), player2ID.String())
-	pipe.Expire(ctx, matchUsersKey, 24*time.Hour)
+	pipe.Expire(ctx, matchUsersKey, matchUsersExpirationHours*time.Hour)
 
 	// Initialize empty codes for both players
 	matchCodesKey := fmt.Sprintf(MatchCodesKey, matchID.String())
 	pipe.HSet(ctx, matchCodesKey, player1ID.String(), "")
 	pipe.HSet(ctx, matchCodesKey, player2ID.String(), "")
-	pipe.Expire(ctx, matchCodesKey, 24*time.Hour)
+	pipe.Expire(ctx, matchCodesKey, codeExpirationHours*time.Hour)
 
 	// Set expiration timestamp
 	matchExpiryKey := fmt.Sprintf(MatchExpiryKey, matchID.String())
-	pipe.Set(ctx, matchExpiryKey, expiresAt.Unix(), 24*time.Hour)
+	pipe.Set(ctx, matchExpiryKey, expiresAt.Unix(), codeExpirationHours*time.Hour)
 
 	_, err := pipe.Exec(ctx)
 	if err != nil {

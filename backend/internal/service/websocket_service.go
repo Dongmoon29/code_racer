@@ -27,10 +27,6 @@ const (
 	// Channel buffer sizes
 	clientSendBufferSize = 256
 
-	// Redis expiration times
-	codeExpirationHours       = 24
-	matchUsersExpirationHours = 24
-
 	// Ping interval
 	pingIntervalSeconds = 54
 
