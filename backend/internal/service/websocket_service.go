@@ -766,8 +766,9 @@ func (s *webSocketService) cleanupUserCodeData(pipe redis.Pipeliner, ctx context
 
 	// Delete code data only if match is waiting, finished, or closed
 	if s.shouldDeleteCodeData(status) {
-		// Remove user code using RedisManager
-		s.redisManager.RemoveUserFromMatch(matchID, userID)
+		// Remove user code using pipeline for consistency
+		userCodeKey := fmt.Sprintf("match:%s:user:%s:code", matchID.String(), userID.String())
+		pipe.Del(ctx, userCodeKey)
 	}
 }
 
