@@ -1,13 +1,16 @@
+// Domain types
+import type { MatchMode, MatchStatus, Difficulty } from '@/types';
+
 export type GameHistoryItem = {
   id: string;
-  mode: 'ranked_pvp' | 'casual_pvp' | 'single';
-  status: 'waiting' | 'playing' | 'finished' | 'closed';
+  mode: MatchMode;
+  status: MatchStatus;
   playerA: { id: string; name: string };
   playerB?: { id: string; name: string };
   leetcode: {
     id: string;
     title: string;
-    difficulty: 'easy' | 'medium' | 'hard';
+    difficulty: Difficulty;
   };
   winner?: { id: string; name: string };
   startedAt?: string;
@@ -66,14 +69,17 @@ export function normalizeRecentGames(games: unknown[]): GameHistoryItem[] {
         : undefined);
 
     const difficulty = String(leet?.difficulty || '').toLowerCase();
-    const diffNorm = (
-      ['easy', 'medium', 'hard'].includes(difficulty) ? difficulty : 'easy'
-    ) as 'easy' | 'medium' | 'hard';
+    const difficultyMap: Record<string, Difficulty> = {
+      easy: 'easy',
+      medium: 'medium',
+      hard: 'hard',
+    };
+    const diffNorm: Difficulty = difficultyMap[difficulty] ?? 'easy';
 
     return {
       id: String(g.id || ''),
-      mode: String(g.mode || ''),
-      status: String(g.status || ''),
+      mode: String(g.mode || '') as MatchMode,
+      status: String(g.status || '') as MatchStatus,
       playerA: playerA
         ? { id: playerA.id, name: playerA.name }
         : { id: '', name: 'Unknown' },

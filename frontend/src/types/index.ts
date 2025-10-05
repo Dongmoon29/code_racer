@@ -204,6 +204,11 @@ export interface Game {
   is_full: boolean;
 }
 
+// Shared domain types (match and difficulty)
+export type MatchMode = 'ranked_pvp' | 'casual_pvp' | 'single';
+export type MatchStatus = 'waiting' | 'playing' | 'finished' | 'closed';
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
 export interface SubmitResult {
   success: boolean;
   message: string;
