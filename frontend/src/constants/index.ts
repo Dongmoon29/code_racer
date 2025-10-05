@@ -1,3 +1,27 @@
+// Supported programming languages
+export const SUPPORTED_LANGUAGES = {
+  PYTHON: 'python',
+  JAVASCRIPT: 'javascript',
+  GO: 'go',
+} as const;
+
+export type SupportedLanguage =
+  (typeof SUPPORTED_LANGUAGES)[keyof typeof SUPPORTED_LANGUAGES];
+
+// Language display names
+export const LANGUAGE_DISPLAY_NAMES = {
+  [SUPPORTED_LANGUAGES.PYTHON]: 'Python',
+  [SUPPORTED_LANGUAGES.JAVASCRIPT]: 'JavaScript',
+  [SUPPORTED_LANGUAGES.GO]: 'Go',
+} as const;
+
+// Language file extensions
+export const LANGUAGE_EXTENSIONS = {
+  [SUPPORTED_LANGUAGES.PYTHON]: 'py',
+  [SUPPORTED_LANGUAGES.JAVASCRIPT]: 'js',
+  [SUPPORTED_LANGUAGES.GO]: 'go',
+} as const;
+
 // WebSocket related constants
 export const WEBSOCKET_CONSTANTS = {
   // Connection settings
@@ -12,6 +36,7 @@ export const WEBSOCKET_CONSTANTS = {
 
   // Matchmaking settings
   MATCHMAKING: {
+    MAX_RECONNECT_ATTEMPTS: 3,
     REDIRECT_DELAY_MS: 1500,
     CANCEL_DISCONNECT_DELAY_MS: 50,
     RECONNECT_BASE_DELAY_MS: 1000,

@@ -6,6 +6,7 @@ import {
   useDeleteLeetCodeProblem,
 } from '@/hooks/useLeetCode';
 import Link from 'next/link';
+import { LeetCodeSummary } from '@/types';
 
 export default function LeetCodeList() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,7 +43,7 @@ export default function LeetCodeList() {
   };
 
   const filteredProblems = useMemo(() => {
-    return problems.filter((problem) => {
+    return problems.filter((problem: LeetCodeSummary) => {
       const matchesSearch = problem.title
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
@@ -146,7 +147,7 @@ export default function LeetCodeList() {
                   </td>
                 </tr>
               ) : (
-                filteredProblems.map((problem) => (
+                filteredProblems.map((problem: LeetCodeSummary) => (
                   <tr key={problem.id} className="">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium">{problem.title}</div>
@@ -198,21 +199,30 @@ export default function LeetCodeList() {
         <div className=" p-4 rounded-lg shadow bg-[hsl(var(--card))]">
           <div className="text-sm font-medium ">Easy</div>
           <div className="text-2xl font-bold text-green-600">
-            {problems.filter((p) => p.difficulty === 'Easy').length}
+            {
+              problems.filter((p: LeetCodeSummary) => p.difficulty === 'Easy')
+                .length
+            }
           </div>
         </div>
 
         <div className=" p-4 rounded-lg shadow bg-[hsl(var(--card))]">
           <div className="text-sm font-medium ">Medium</div>
           <div className="text-2xl font-bold text-yellow-600">
-            {problems.filter((p) => p.difficulty === 'Medium').length}
+            {
+              problems.filter((p: LeetCodeSummary) => p.difficulty === 'Medium')
+                .length
+            }
           </div>
         </div>
 
         <div className=" p-4 rounded-lg shadow bg-[hsl(var(--card))]">
           <div className="text-sm font-medium ">Hard</div>
           <div className="text-2xl font-bold text-red-600">
-            {problems.filter((p) => p.difficulty === 'Hard').length}
+            {
+              problems.filter((p: LeetCodeSummary) => p.difficulty === 'Hard')
+                .length
+            }
           </div>
         </div>
       </div>

@@ -7,12 +7,13 @@ import WebSocketClient, {
 import { Game, SubmitResult } from '@/types';
 import { getCodeTemplate } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { type SupportedLanguage } from '@/constants';
 
 interface UseGameRoomWebSocketProps {
   matchId: string;
   game: Game | null;
   myCode: string;
-  selectedLanguage: 'python' | 'javascript' | 'go';
+  selectedLanguage: SupportedLanguage;
   isTemplateSet: React.MutableRefObject<boolean>;
   setMyCode: (code: string) => void;
   setOpponentCode: (code: string) => void;
@@ -120,7 +121,7 @@ export const useGameRoomWebSocket = ({
 
   // Language change handler
   const handleLanguageChange = useCallback(
-    (newLanguage: 'python' | 'javascript' | 'go') => {
+    (newLanguage: SupportedLanguage) => {
       setSubmitting(false);
       setSubmitResult(null);
 

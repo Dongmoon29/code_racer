@@ -57,7 +57,7 @@ export const useDebouncedSessionStorage = (
   value: string,
   delay: number = 300
 ) => {
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

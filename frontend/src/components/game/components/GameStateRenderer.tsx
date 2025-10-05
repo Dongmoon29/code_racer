@@ -7,19 +7,20 @@ import { Button } from '../../ui/Button';
 import { Alert } from '../../ui/alert';
 import { GAME_ROOM_CONSTANTS } from '../constants/game-room-constants';
 import { useRouterHelper } from '@/lib/router';
+import { type SupportedLanguage } from '@/constants';
 
 interface GameStateRendererProps {
   game: Game;
   currentUser: { id: string };
   myCode: string;
   opponentCode: string;
-  selectedLanguage: 'python' | 'javascript' | 'go';
+  selectedLanguage: SupportedLanguage;
   showMyCode: boolean;
   showOpponentCode: boolean;
   submitResult: SubmitResult | null;
   submitting: boolean;
   onCodeChange: (code: string) => void;
-  onLanguageChange: (language: 'python' | 'javascript' | 'go') => void;
+  onLanguageChange: (language: SupportedLanguage) => void;
   onSubmitCode: () => void;
   onToggleMyCode: () => void;
   onToggleOpponentCode: () => void;

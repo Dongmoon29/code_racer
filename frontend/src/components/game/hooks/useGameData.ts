@@ -57,7 +57,7 @@ export const useGameData = ({
       }
     },
     enabled: !!matchId,
-    retry: (failureCount, error) => {
+    retry: (failureCount: number, error: Error) => {
       // Don't retry for 404 errors
       if (axios.isAxiosError(error) && error.response?.status === 404) {
         return false;

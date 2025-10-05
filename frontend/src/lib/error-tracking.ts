@@ -83,9 +83,9 @@ export class ErrorTracker {
     );
 
     // In production, you might want to send to external service like Sentry
-    if (process.env.NODE_ENV === 'production') {
-      this.sendToExternalService(errorInfo, severity, category);
-    }
+    // if (process.env.NODE_ENV === 'production') {
+    //   this.sendToExternalService(errorInfo, severity, category);
+    // }
   }
 
   // Extract error message from various error types
@@ -103,10 +103,14 @@ export class ErrorTracker {
   }
 
   // Send error to external service (Sentry, LogRocket, etc.)
-  private sendToExternalService(): void {
-    // TODO: Implement external error tracking service integration
-    // Example: Sentry.captureException(error, { extra: errorInfo.context });
-  }
+  // private sendToExternalService(
+  //   errorInfo: ErrorInfo,
+  //   severity: ErrorSeverity,
+  //   category: ErrorCategory
+  // ): void {
+  // TODO: Implement external error tracking service integration
+  // Example: Sentry.captureException(error, { extra: errorInfo.context });
+  // }
 
   // Get recent errors for debugging
   getRecentErrors(limit: number = 10): ErrorInfo[] {
@@ -172,7 +176,10 @@ export const createErrorHandler = (
   severity: ErrorSeverity = ErrorSeverity.MEDIUM,
   category: ErrorCategory = ErrorCategory.UI
 ) => {
-  return (error: Error | unknown, additionalContext?: Record<string, unknown>) => {
+  return (
+    error: Error | unknown,
+    additionalContext?: Record<string, unknown>
+  ) => {
     trackError(
       error,
       {

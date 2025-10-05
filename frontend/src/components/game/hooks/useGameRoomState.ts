@@ -8,6 +8,7 @@ import {
   useSessionStorageManager,
   useDebouncedSessionStorage,
 } from '@/hooks/useSessionStorage';
+import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '@/constants';
 
 interface UseGameRoomStateProps {
   matchId: string;
@@ -35,8 +36,8 @@ interface UseGameRoomStateReturn {
   setSubmitting: (submitting: boolean) => void;
 
   // Language and UI state
-  selectedLanguage: 'python' | 'javascript' | 'go';
-  setSelectedLanguage: (language: 'python' | 'javascript' | 'go') => void;
+  selectedLanguage: SupportedLanguage;
+  setSelectedLanguage: (language: SupportedLanguage) => void;
   showMyCode: boolean;
   setShowMyCode: (show: boolean) => void;
   showOpponentCode: boolean;
@@ -50,7 +51,7 @@ export const useGameRoomState = ({
   matchId,
 }: UseGameRoomStateProps): UseGameRoomStateReturn => {
   // Session storage manager
-  const storageManager = useSessionStorageManager(matchId);
+  const storageManager = useSessionStorageManager();
 
   // Game state
   const [game, setGame] = useState<Game | null>(null);
@@ -77,19 +78,16 @@ export const useGameRoomState = ({
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   // Language and UI state with session storage initialization
-  const [selectedLanguage, setSelectedLanguage] = useState<
-    'python' | 'javascript' | 'go'
-  >(() => {
-    const key = createSessionStorageKey(
-      matchId,
-      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.LANGUAGE
-    );
-    const stored = storageManager.getItem(key) as
-      | 'python'
-      | 'javascript'
-      | 'go';
-    return stored || GAME_ROOM_CONSTANTS.DEFAULTS.LANGUAGE;
-  });
+  const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguage>(
+    () => {
+      const key = createSessionStorageKey(
+        matchId,
+        GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.LANGUAGE
+      );
+      const stored = storageManager.getItem(key) as SupportedLanguage;
+      return stored || SUPPORTED_LANGUAGES.JAVASCRIPT;
+    }
+  );
 
   const [showMyCode, setShowMyCode] = useState<boolean>(() => {
     const key = createSessionStorageKey(

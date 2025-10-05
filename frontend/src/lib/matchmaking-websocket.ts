@@ -12,7 +12,7 @@ export interface CancelRequest {
 
 export interface MatchingStatusMessage {
   type: 'matching_status';
-  status: 'searching' | 'found' | 'cancelled';
+  status: 'searching' | 'found' | 'canceled';
   queue_position?: number;
   wait_time_seconds?: number;
   estimated_wait_seconds?: number;

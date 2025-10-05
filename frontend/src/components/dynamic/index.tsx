@@ -106,11 +106,3 @@ export const RecentCommits = dynamic(
     ssr: false,
   }
 );
-
-// Re-export types for convenience
-export type { GameRoomProps } from '@/components/game/GameRoom';
-export type { MatchingScreenProps } from '@/components/game/MatchingScreen';
-export type { DifficultySelectorProps } from '@/components/game/DifficultySelector';
-export type { LeetCodeFormProps } from '@/components/admin/LeetCodeForm';
-export type { LoginFormProps } from '@/components/auth/LoginForm';
-export type { RegisterFormProps } from '@/components/auth/RegisterForm';

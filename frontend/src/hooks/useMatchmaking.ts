@@ -7,7 +7,7 @@ import MatchmakingWebSocketClient, {
 import { useAuthStore } from '@/stores/authStore';
 import { MATCHING_STATE, MatchingState } from '@/lib/constants';
 import type { Difficulty } from '@/components/game/DifficultySelector';
-import { TIMER_CONSTANTS } from '@/constants';
+import { TIMER_CONSTANTS, WEBSOCKET_CONSTANTS } from '@/constants';
 import { useRouterHelper } from '@/lib/router';
 import { createErrorHandler } from '@/lib/error-tracking';
 
@@ -95,7 +95,9 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
         onStatusUpdate: (message: MatchingStatusMessage) => {
           setWaitTimeSeconds(message.wait_time_seconds || 0);
 
-          if (message.status === 'canceled') {
+          if (
+            message.status === WEBSOCKET_CONSTANTS.MATCHING_STATUSES.CANCELED
+          ) {
             setMatchingState(MATCHING_STATE.IDLE);
             setSelectedDifficulty(null);
             setWaitTimeSeconds(0);
