@@ -63,6 +63,7 @@ func (c *Judge0Client) SubmitCode(req types.Judge0Request) (*types.Judge0Respons
 	request.Header.Set("X-RapidAPI-Key", c.apiKey)
 	if parsed, perr := url.Parse(c.apiEndpoint); perr == nil {
 		if parsed.Host != "" {
+			fmt.Println("X-RapidAPI-Host ==================>", parsed.Host)
 			request.Header.Set("X-RapidAPI-Host", parsed.Host)
 		}
 	}
