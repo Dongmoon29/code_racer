@@ -1,5 +1,5 @@
 import { TIMER_CONSTANTS } from '@/constants';
-import { trackNetworkError, createErrorHandler } from '@/lib/error-tracking';
+import { createErrorHandler } from '@/lib/error-tracking';
 
 export interface GitHubCommit {
   sha: string;

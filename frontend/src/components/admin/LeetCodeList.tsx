@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { LeetCodeSummary } from '@/types';
 import {
   useLeetCodeProblems,
   useDeleteLeetCodeProblem,

@@ -9,7 +9,7 @@ import { MATCHING_STATE, MatchingState } from '@/lib/constants';
 import type { Difficulty } from '@/components/game/DifficultySelector';
 import { TIMER_CONSTANTS } from '@/constants';
 import { useRouterHelper } from '@/lib/router';
-import { trackWebSocketError, createErrorHandler } from '@/lib/error-tracking';
+import { createErrorHandler } from '@/lib/error-tracking';
 
 export interface UseMatchmakingOptions {
   onMatchFound?: (gameId: string) => void;

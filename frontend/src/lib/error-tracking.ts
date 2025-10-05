@@ -5,7 +5,7 @@ export interface ErrorContext {
   userId?: string;
   gameId?: string;
   matchId?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 export interface ErrorInfo {
@@ -97,17 +97,13 @@ export class ErrorTracker {
       return error;
     }
     if (error && typeof error === 'object' && 'message' in error) {
-      return String((error as any).message);
+      return String((error as Error).message);
     }
     return 'Unknown error occurred';
   }
 
   // Send error to external service (Sentry, LogRocket, etc.)
-  private sendToExternalService(
-    errorInfo: ErrorInfo,
-    severity: ErrorSeverity,
-    category: ErrorCategory
-  ): void {
+  private sendToExternalService(): void {
     // TODO: Implement external error tracking service integration
     // Example: Sentry.captureException(error, { extra: errorInfo.context });
   }
@@ -176,7 +172,7 @@ export const createErrorHandler = (
   severity: ErrorSeverity = ErrorSeverity.MEDIUM,
   category: ErrorCategory = ErrorCategory.UI
 ) => {
-  return (error: Error | unknown, additionalContext?: Record<string, any>) => {
+  return (error: Error | unknown, additionalContext?: Record<string, unknown>) => {
     trackError(
       error,
       {

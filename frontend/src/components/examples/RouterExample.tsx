@@ -30,8 +30,7 @@ const ExampleComponent: React.FC = () => {
   const handleValidation = () => {
     // Route validation
     const isValidGameId = routerHelper.isValidGameId('some-game-id');
-    const isValidLeetCodeId = routerHelper.isValidLeetCodeId('some-id');
-
+    
     if (isValidGameId) {
       routerHelper.goToGameRoom('some-game-id');
     }
@@ -39,9 +38,6 @@ const ExampleComponent: React.FC = () => {
 
   const handleCurrentRoute = () => {
     // Check current route
-    const isOnDashboard = routerHelper.isCurrentRoute(ROUTES.DASHBOARD);
-    const isOnGamePage = routerHelper.isCurrentRoutePattern('/game/');
-
     console.log('Current route:', routerHelper.getCurrentRoute());
     console.log('Query params:', routerHelper.getQuery());
   };

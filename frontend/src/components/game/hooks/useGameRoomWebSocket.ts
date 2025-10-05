@@ -80,7 +80,7 @@ export const useGameRoomWebSocket = ({
           console.log('Unknown message type:', message.type);
       }
     },
-    [setOpponentCode, setSubmitResult]
+    [setOpponentCode, setSubmitResult, currentUser?.id]
   );
 
   // WebSocket connection setup

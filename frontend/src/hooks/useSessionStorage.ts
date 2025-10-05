@@ -8,9 +8,7 @@ interface SessionStorageManager {
   cleanup: () => void;
 }
 
-export const useSessionStorageManager = (
-  matchId: string
-): SessionStorageManager => {
+export const useSessionStorageManager = (): SessionStorageManager => {
   const storageKeys = useRef<Set<string>>(new Set());
 
   const getItem = useCallback((key: string) => {

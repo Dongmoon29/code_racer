@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import type { LeetCodeDetail, Game } from '@/types';
-import { trackAPIError, createErrorHandler } from '@/lib/error-tracking';
+import { createErrorHandler } from '@/lib/error-tracking';
 
 // LeetCodeDetail type is imported from central types
 

@@ -1,5 +1,5 @@
-import { WEBSOCKET_CONSTANTS, TIMER_CONSTANTS } from '@/constants';
-import { trackWebSocketError, createErrorHandler } from '@/lib/error-tracking';
+import { WEBSOCKET_CONSTANTS } from '@/constants';
+import { createErrorHandler } from '@/lib/error-tracking';
 
 export interface MatchingRequest {
   type: 'start_matching';

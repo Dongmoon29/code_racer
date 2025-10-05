@@ -4,7 +4,7 @@ import { matchApi } from '@/lib/api';
 import { Game } from '@/types';
 import axios, { AxiosError } from 'axios';
 import { ApiErrorResponse } from '@/types';
-import { trackAPIError, createErrorHandler } from '@/lib/error-tracking';
+import { createErrorHandler } from '@/lib/error-tracking';
 
 interface UseGameDataProps {
   matchId: string;

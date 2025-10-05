@@ -19,7 +19,7 @@ const DashboardPage: FC = () => {
     if (!isLoading && !isLoggedIn) {
       routerHelper.replaceToLogin();
     }
-  }, [isLoading, isLoggedIn, router]);
+  }, [isLoading, isLoggedIn, routerHelper]);
 
   // Show loading while checking auth status
   if (isLoading) {

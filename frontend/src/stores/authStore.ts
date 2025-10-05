@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import api, { authApi, extractUserFromResponse } from '@/lib/api';
 import { AxiosError } from 'axios';
-import { trackAuthError, createErrorHandler } from '@/lib/error-tracking';
+import { createErrorHandler } from '@/lib/error-tracking';
 
 export type User = {
   id: string;
