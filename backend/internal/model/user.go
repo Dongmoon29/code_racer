@@ -41,7 +41,6 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// LeaderboardUser 리더보드용 사용자 정보 DTO
 type LeaderboardUser struct {
 	ID     uuid.UUID `json:"id"`
 	Name   string    `json:"name"`
@@ -63,6 +62,7 @@ type UserResponse struct {
 	JobTitle      string    `json:"job_title,omitempty"`
 	FavLanguage   string    `json:"fav_language,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`
+	Rating        int       `json:"rating"`
 }
 
 func (u *User) ToResponse() *UserResponse {
@@ -81,7 +81,38 @@ func (u *User) ToResponse() *UserResponse {
 		JobTitle:      u.JobTitle,
 		FavLanguage:   u.FavLanguage,
 		CreatedAt:     u.CreatedAt,
+		Rating:        u.Rating,
 	}
+}
+
+// RecentGameSummary is a compact DTO for recent matches displayed on My Page
+type RecentGameSummary struct {
+	ID       uuid.UUID   `json:"id"`
+	Mode     MatchMode   `json:"mode"`
+	Status   MatchStatus `json:"status"`
+	LeetCode struct {
+		ID         uuid.UUID `json:"id"`
+		Title      string    `json:"title"`
+		Difficulty string    `json:"difficulty"`
+	} `json:"leetcode"`
+	PlayerA struct {
+		ID   uuid.UUID `json:"id"`
+		Name string    `json:"name"`
+	} `json:"player_a"`
+	PlayerB *struct {
+		ID   uuid.UUID `json:"id"`
+		Name string    `json:"name"`
+	} `json:"player_b,omitempty"`
+	WinnerID  *uuid.UUID `json:"winner_id,omitempty"`
+	StartedAt *time.Time `json:"started_at,omitempty"`
+	EndedAt   *time.Time `json:"ended_at,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+}
+
+// CurrentUserMeResponse is a custom response for GET /users/me
+type CurrentUserMeResponse struct {
+	User        *UserResponse       `json:"user"`
+	RecentGames []RecentGameSummary `json:"recent_games"`
 }
 
 type RegisterRequest struct {
@@ -106,7 +137,7 @@ type UpdateProfileRequest struct {
 	GitHub      string `json:"github" binding:"omitempty,url"`
 	Company     string `json:"company" binding:"omitempty,max=255"`
 	JobTitle    string `json:"job_title" binding:"omitempty,max=255"`
-	FavLanguage string `json:"fav_language" binding:"omitempty,oneof=javascript python go java cpp rust"`
+	FavLanguage string `json:"fav_language" binding:"omitempty,max=50"`
 }
 
 type GitHubUser struct {

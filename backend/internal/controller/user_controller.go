@@ -23,7 +23,6 @@ func NewUserController(userService service.UserService, logger logger.Logger) *U
 	}
 }
 
-// GetCurrentUser 현재 로그인된 사용자 정보 조회
 func (c *UserController) GetCurrentUser(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
@@ -34,7 +33,8 @@ func (c *UserController) GetCurrentUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := c.userService.GetUserByID(userID.(uuid.UUID))
+	uid := userID.(uuid.UUID)
+	user, err := c.userService.GetUserByID(uid)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -42,14 +42,24 @@ func (c *UserController) GetCurrentUser(ctx *gin.Context) {
 		})
 		return
 	}
+	recent := []model.RecentGameSummary{}
+	if svc, ok := c.userService.(interface {
+		GetRecentGames(uuid.UUID, int) ([]model.RecentGameSummary, error)
+	}); ok {
+		if r, err := svc.GetRecentGames(uid, 5); err == nil {
+			recent = r
+		}
+	}
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"user":    user,
+		"data": model.CurrentUserMeResponse{
+			User:        user,
+			RecentGames: recent,
+		},
 	})
 }
 
-// GetProfile 사용자 프로필 조회
 func (c *UserController) GetProfile(ctx *gin.Context) {
 	userID, err := uuid.Parse(ctx.Param("userId"))
 	if err != nil {
@@ -75,7 +85,6 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 	})
 }
 
-// UpdateProfile 사용자 프로필 업데이트
 func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
@@ -110,9 +119,7 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	})
 }
 
-// AdminListUsers 관리자가 사용자 목록을 페이지네이션으로 조회
 func (c *UserController) AdminListUsers(ctx *gin.Context) {
-	// AdminRequired 미들웨어에서 권한 체크됨
 	page := 1
 	limit := 20
 	if p := ctx.Query("page"); p != "" {

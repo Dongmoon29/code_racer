@@ -16,6 +16,7 @@ type MatchRepository interface {
 	Update(match *model.Match) error
 	SetWinner(matchID uuid.UUID, userID uuid.UUID) error
 	FindByUserID(userID uuid.UUID) ([]model.Match, error)
+	FindRecentByUserID(userID uuid.UUID, limit int) ([]model.Match, error)
 	CloseMatch(matchID uuid.UUID, userID uuid.UUID) error
 	Delete(id uuid.UUID) error
 }
@@ -57,6 +58,24 @@ func (r *matchRepository) FindByUserID(userID uuid.UUID) ([]model.Match, error) 
 		Order("created_at DESC").
 		Find(&matches).Error
 	if err != nil {
+		return nil, err
+	}
+	return matches, nil
+}
+
+func (r *matchRepository) FindRecentByUserID(userID uuid.UUID, limit int) ([]model.Match, error) {
+	var matches []model.Match
+	q := r.db.
+		Preload("PlayerA").
+		Preload("PlayerB").
+		Preload("Winner").
+		Preload("LeetCode").
+		Where("(player_a_id = ? OR player_b_id = ?) AND status = ?", userID, userID, model.MatchStatusFinished).
+		Order("created_at DESC")
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+	if err := q.Find(&matches).Error; err != nil {
 		return nil, err
 	}
 	return matches, nil
