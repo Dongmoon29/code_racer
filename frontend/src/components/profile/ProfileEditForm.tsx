@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -31,10 +31,30 @@ type ProfileEditFormProps = {
 };
 
 const schema: yup.ObjectSchema<ProfileFormValues> = yup.object({
-  name: yup.string().min(2).max(100).optional(),
-  homepage: yup.string().url('Invalid URL').optional(),
-  linkedin: yup.string().url('Invalid URL').optional(),
-  github: yup.string().url('Invalid URL').optional(),
+  // Name must be required and within length bounds
+  name: yup.string().required('Name is required').min(2).max(100),
+  // Treat empty strings as undefined so optional URL fields don't invalidate the form
+  homepage: yup
+    .string()
+    .transform((v) =>
+      typeof v === 'string' && v.trim() === '' ? undefined : v
+    )
+    .url('Invalid URL')
+    .optional(),
+  linkedin: yup
+    .string()
+    .transform((v) =>
+      typeof v === 'string' && v.trim() === '' ? undefined : v
+    )
+    .url('Invalid URL')
+    .optional(),
+  github: yup
+    .string()
+    .transform((v) =>
+      typeof v === 'string' && v.trim() === '' ? undefined : v
+    )
+    .url('Invalid URL')
+    .optional(),
   company: yup.string().max(255, 'Too long').optional(),
   job_title: yup.string().max(255, 'Too long').optional(),
   fav_language: yup.string().optional(),
@@ -52,11 +72,19 @@ export default function ProfileEditForm({
     control,
     handleSubmit,
     formState: { errors, isSubmitting, isDirty, isValid },
+    reset,
   } = useForm<ProfileFormValues>({
     defaultValues: initial,
     resolver: yupResolver(schema),
     mode: 'onChange',
   });
+
+  // When initial props are populated/changed asynchronously, sync them into the form
+  useEffect(() => {
+    if (initial) {
+      reset(initial);
+    }
+  }, [initial, reset]);
 
   const onSubmit = async (values: ProfileFormValues) => {
     setSubmitError(null);

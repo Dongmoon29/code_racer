@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { authApi } from '../../lib/api';
+import { authApi, extractUserFromResponse } from '../../lib/api';
 
 const AuthCallback: React.FC = () => {
   const router = useRouter();
@@ -28,14 +28,23 @@ const AuthCallback: React.FC = () => {
         const response = await authApi.exchangeToken(code, state, provider);
 
         if (response.success) {
-          // Security: Store token in sessionStorage (more secure than localStorage)
-          // sessionStorage is cleared when browser tab is closed
-          if (response.token) {
-            sessionStorage.setItem('authToken', response.token);
+          // Store token (unified approach: token may be at root or inside data)
+          const token = response.token || response.data?.token;
+          if (token) {
+            sessionStorage.setItem('authToken', token);
           }
 
-          // Set user information
-          useAuthStore.getState().login(response.user);
+          // Always fetch fresh user from /users/me to avoid drift
+          try {
+            const me = await authApi.getCurrentUser();
+            const user = extractUserFromResponse(me);
+            if (user) {
+              useAuthStore.getState().login(user);
+            }
+          } catch (e) {
+            // If /users/me fails, ignore; user will be initialized later
+            console.error(e);
+          }
 
           // Navigate to dashboard
           router.push('/dashboard');

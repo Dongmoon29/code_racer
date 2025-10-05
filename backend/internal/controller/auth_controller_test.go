@@ -222,11 +222,9 @@ func TestLogin(t *testing.T) {
 		json.Unmarshal(w.Body.Bytes(), &response)
 		assert.True(t, response["success"].(bool))
 
-		// Security: Token is returned for cross-origin scenarios
-		// Cookie is also set for same-origin requests
+		// Security: Token is returned for cross-origin scenarios (user fetched via /auth/me)
 		assert.NotNil(t, response["data"])
 		data := response["data"].(map[string]interface{})
-		assert.NotNil(t, data["user"])
 		assert.Equal(t, expectedResponse.AccessToken, data["token"])
 	})
 

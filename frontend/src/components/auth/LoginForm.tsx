@@ -36,9 +36,20 @@ const LoginForm: React.FC = () => {
           sessionStorage.setItem('authToken', response.data.token);
         }
 
-        const user = extractUserFromResponse(response);
-        if (user) {
-          useAuthStore.getState().login(user);
+        // Always sync authStore with fresh /users/me to avoid drift
+        try {
+          const meResponse = await authApi.getCurrentUser();
+          const user = extractUserFromResponse(meResponse);
+          if (user) {
+            useAuthStore.getState().login(user);
+          }
+        } catch (e) {
+          // If /users/me fails, fall back to login response user
+          const fallbackUser = extractUserFromResponse(response);
+          if (fallbackUser) {
+            useAuthStore.getState().login(fallbackUser);
+          }
+          console.error(e);
         }
 
         const redirect = router.query.redirect as string;

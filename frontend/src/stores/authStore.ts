@@ -12,6 +12,12 @@ export type User = {
   linkedin?: string;
   oauthProvider?: string;
   role: string;
+  fav_language?: string;
+  github?: string;
+  company?: string;
+  job_title?: string;
+  rating?: number;
+  created_at?: string;
 };
 
 interface AuthState {

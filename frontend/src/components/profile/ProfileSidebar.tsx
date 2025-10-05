@@ -54,7 +54,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user }) => {
         </p>
 
         <Button className="w-full mb-4" onClick={() => setShowEdit((v) => !v)}>
-          Edit profile
+          {showEdit ? 'Cancel' : 'Edit Profile'}
         </Button>
       </div>
 
@@ -62,6 +62,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user }) => {
         <div className="mb-6">
           <ProfileEditForm
             initial={{
+              name: user?.name,
               homepage: user?.homepage,
               linkedin: user?.linkedin,
               github: user?.github,
