@@ -14,12 +14,64 @@
 - Write comprehensive tests
 - Document complex logic
 
+## Testing Requirements
+
+### Mandatory Testing Rules
+
+1. **Test-First Development**
+
+   - All new code MUST have corresponding tests
+   - If you write code without tests, you MUST create tests for it
+   - No code should be committed without proper test coverage
+
+2. **Test Execution After Code Changes**
+
+   - ALWAYS run tests after writing or modifying code
+   - Use `go test ./...` to run all tests
+   - Use `go test ./internal/service -v` for service layer tests
+   - Use `go test ./internal/controller -v` for controller tests
+   - Tests MUST pass before committing changes
+
+3. **Test Quality Standards**
+
+   - Unit tests for individual functions/methods
+   - Integration tests for service interactions
+   - Mock external dependencies (databases, APIs)
+   - Test both success and error scenarios
+   - Use descriptive test names (TestFunctionName_Scenario_ExpectedResult)
+
+4. **Test Coverage Requirements**
+   - Minimum 80% test coverage for new code
+   - Critical business logic must have 100% coverage
+   - WebSocket and matchmaking services require comprehensive testing
+
+### Testing Commands
+
+```bash
+# Run all tests
+go test ./...
+
+# Run tests with coverage
+go test ./... -cover
+
+# Run specific package tests
+go test ./internal/service -v
+go test ./internal/controller -v
+
+# Run tests with race detection
+go test ./... -race
+
+# Run tests with timeout (for WebSocket tests)
+go test ./internal/service -v -timeout 30s
+```
+
 ## Git Workflow
 
 - Use meaningful commit messages
 - Follow conventional commit format
 - Create feature branches for new features
 - Use pull requests for code review
+- **NEVER commit code without running tests first**
 
 ## Code Review
 
@@ -28,6 +80,7 @@
 - Ensure proper error handling
 - Verify test coverage
 - Check performance implications
+- **Verify that tests exist and pass**
 
 ## Documentation
 
@@ -35,6 +88,7 @@
 - Write clear README files
 - Document complex algorithms
 - Keep documentation up to date
+- Add godoc comments to exported functions
 
 ## Security
 
@@ -56,3 +110,87 @@
 - Implement proper CI/CD
 - Monitor application health
 - Use proper logging
+
+## Monitoring & Observability
+
+- Use Prometheus for metrics collection
+- Implement structured logging with zerolog
+- Add health check endpoints
+- Monitor WebSocket connections
+- Track business metrics (matchmaking success rate, game completion rate)
+
+## Code Quality Standards
+
+- Follow Go idioms and best practices
+- Use consistent formatting (gofmt)
+- Remove unused imports and variables
+- Use meaningful variable and function names
+- Implement proper error handling with context
+
+## Development Workflow
+
+1. **Before Writing Code**
+
+   - Understand requirements
+   - Plan test scenarios
+   - Design interfaces
+
+2. **While Writing Code**
+
+   - Write tests first (TDD approach)
+   - Follow naming conventions
+   - Add proper error handling
+   - Use structured logging
+
+3. **After Writing Code**
+
+   - Run all tests: `go test ./...`
+   - Check test coverage: `go test ./... -cover`
+   - Run linting: `golangci-lint run`
+   - Format code: `gofmt -w .`
+
+4. **Before Committing**
+   - Ensure all tests pass
+   - Verify no linting errors
+   - Check code formatting
+   - Review changes
+
+## Error Handling
+
+- Use structured error messages
+- Provide context in error logs
+- Handle errors gracefully
+- Log errors with appropriate levels
+- Return meaningful error responses
+
+## Database & Redis
+
+- Use transactions for data consistency
+- Implement proper connection pooling
+- Handle connection failures gracefully
+- Use Redis for caching and session management
+- Implement proper data validation
+
+## WebSocket Management
+
+- Handle connection drops gracefully
+- Implement reconnection logic
+- Monitor connection health
+- Clean up resources properly
+- Use proper message serialization
+
+## API Design
+
+- Follow RESTful principles
+- Use proper HTTP status codes
+- Implement request validation
+- Add rate limiting
+- Use proper authentication
+
+## Frontend Integration
+
+- Ensure CORS is properly configured
+- Handle WebSocket connections reliably
+- Implement proper error boundaries
+- Use TypeScript for type safety
+- Follow React best practices
