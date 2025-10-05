@@ -126,6 +126,9 @@ go test ./internal/service -v -timeout 30s
 - Remove unused imports and variables
 - Use meaningful variable and function names
 - Implement proper error handling with context
+- **Write all comments and documentation in English**
+- Use clear, descriptive English comments for complex logic
+- Follow English naming conventions for variables, functions, and types
 
 ## Development Workflow
 
