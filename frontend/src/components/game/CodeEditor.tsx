@@ -45,68 +45,69 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const initialValueRef = useRef(value);
 
   // Function to create all extensions
-  const createExtensions = useCallback((theme: string) => {
-    const languageSupport = getLanguageSupport(language);
-    const themeStyle =
-      theme === 'light'
-        ? [vscodeLightTheme, syntaxHighlighting(vscodeLightHighlightStyle)]
-        : [vscodeDarkTheme, syntaxHighlighting(vscodeDarkHighlightStyle)];
+  const createExtensions = useCallback(
+    (theme: string) => {
+      const languageSupport = getLanguageSupport(language);
+      const themeStyle =
+        theme === 'light'
+          ? [vscodeLightTheme, syntaxHighlighting(vscodeLightHighlightStyle)]
+          : [vscodeDarkTheme, syntaxHighlighting(vscodeDarkHighlightStyle)];
 
-    const extensions = [
-      lineNumbers(),
-      highlightActiveLineGutter(),
-      highlightActiveLine(),
-      bracketMatching(),
-      indentOnInput(),
-      ...themeStyle,
-      languageSupport,
-      EditorState.readOnly.of(readOnly),
-    ];
+      const extensions = [
+        lineNumbers(),
+        highlightActiveLineGutter(),
+        highlightActiveLine(),
+        bracketMatching(),
+        indentOnInput(),
+        ...themeStyle,
+        languageSupport,
+        EditorState.readOnly.of(readOnly),
+      ];
 
-    // Add Vim extension only when Vim mode is enabled and not read-only
-    if (vimMode && !readOnly) {
-      extensions.push(
-        vim({
-          status: false, // Disable default status bar (we implement custom one)
-        })
-      );
-    } else {
-      // Add autocompletion only in normal mode
-      extensions.push(
-        autocompletion({
-          defaultKeymap: true,
-          activateOnTyping: true,
-          maxRenderedOptions: 10,
-        }),
-        keymap.of([...completionKeymap])
-      );
-    }
-
-    if (!readOnly) {
-      // Add default keymaps only when Vim mode is disabled
-      if (!vimMode) {
-        extensions.push(keymap.of([indentWithTab, ...defaultKeymap]));
+      // Add Vim extension only when Vim mode is enabled and not read-only
+      if (vimMode && !readOnly) {
+        extensions.push(
+          vim({
+            status: false, // Disable default status bar (we implement custom one)
+          })
+        );
       } else {
-        // In Vim mode, only add Tab key (Vim handles other keymaps)
-        extensions.push(keymap.of([indentWithTab]));
+        // Add autocompletion only in normal mode
+        extensions.push(
+          autocompletion({
+            defaultKeymap: true,
+            activateOnTyping: true,
+            maxRenderedOptions: 10,
+          }),
+          keymap.of([...completionKeymap])
+        );
       }
-    }
 
-    if (onChange && !readOnly) {
-      extensions.push(
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged) {
-            const newValue = update.state.doc.toString();
-            if (newValue !== value) {
+      if (!readOnly) {
+        // Add default keymaps only when Vim mode is disabled
+        if (!vimMode) {
+          extensions.push(keymap.of([indentWithTab, ...defaultKeymap]));
+        } else {
+          // In Vim mode, only add Tab key (Vim handles other keymaps)
+          extensions.push(keymap.of([indentWithTab]));
+        }
+      }
+
+      if (onChange && !readOnly) {
+        extensions.push(
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              const newValue = update.state.doc.toString();
               onChange(newValue);
             }
-          }
-        })
-      );
-    }
+          })
+        );
+      }
 
-    return extensions;
-  }, [language, readOnly, vimMode, onChange, value]);
+      return extensions;
+    },
+    [language, readOnly, vimMode, onChange]
+  );
 
   // Update all extensions when Vim mode or theme changes
   useEffect(() => {
@@ -149,28 +150,48 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     };
   }, [createExtensions, theme, readOnly]);
 
-  // Update only when value changes externally
+  // Update only when value changes externally (preserve focus)
   useEffect(() => {
     const view = viewRef.current;
     if (view && value !== view.state.doc.toString()) {
-      const currentCursor = view.state.selection.main;
-      const newDocLength = value.length;
+      // Only update if the change is significant (not just a single character)
+      const currentDoc = view.state.doc.toString();
+      const isSignificantChange =
+        Math.abs(value.length - currentDoc.length) > 1 ||
+        (!currentDoc.includes(value) && !value.includes(currentDoc));
 
-      // Adjust cursor position to not exceed new document length
-      const newAnchor = Math.min(currentCursor.anchor, newDocLength);
-      const newHead = Math.min(currentCursor.head, newDocLength);
+      if (isSignificantChange) {
+        const currentCursor = view.state.selection.main;
+        const newDocLength = value.length;
 
-      view.dispatch({
-        changes: {
-          from: 0,
-          to: view.state.doc.length,
-          insert: value,
-        },
-        selection: {
-          anchor: newAnchor,
-          head: newHead,
-        },
-      });
+        // Adjust cursor position to not exceed new document length
+        const newAnchor = Math.min(currentCursor.anchor, newDocLength);
+        const newHead = Math.min(currentCursor.head, newDocLength);
+
+        // Check if the editor has focus before updating
+        const hasFocus = view.hasFocus;
+        const activeElement = document.activeElement;
+
+        view.dispatch({
+          changes: {
+            from: 0,
+            to: view.state.doc.length,
+            insert: value,
+          },
+          selection: {
+            anchor: newAnchor,
+            head: newHead,
+          },
+        });
+
+        // Restore focus if it was previously focused
+        if (hasFocus && activeElement === view.dom) {
+          // Use requestAnimationFrame for better timing
+          requestAnimationFrame(() => {
+            view.focus();
+          });
+        }
+      }
     }
   }, [value]);
 

@@ -961,7 +961,7 @@ func (c *Client) storeCodeInRedis(code string, wsService *webSocketService) {
 	}
 }
 
-// broadcastCodeUpdate broadcasts code update to other clients
+// broadcastCodeUpdate broadcasts code update to other clients (excluding sender)
 func (c *Client) broadcastCodeUpdate(code string, wsService *webSocketService) {
 	codeUpdateMsg := CodeUpdateMessage{
 		Type:    "code_update",
@@ -971,7 +971,25 @@ func (c *Client) broadcastCodeUpdate(code string, wsService *webSocketService) {
 	}
 
 	msgBytes, _ := json.Marshal(codeUpdateMsg)
-	wsService.BroadcastToMatch(c.matchID, msgBytes)
+
+	// Broadcast to all clients in the match except the sender
+	wsService.hub.mu.RLock()
+	matchIDStr := c.matchID.String()
+	matchClients, exists := wsService.hub.matchClients[matchIDStr]
+	if exists {
+		for client := range matchClients {
+			// Skip the sender
+			if client.userID != c.userID {
+				select {
+				case client.send <- msgBytes:
+					// Message sent successfully
+				default:
+					// Client's send channel is blocked, skip
+				}
+			}
+		}
+	}
+	wsService.hub.mu.RUnlock()
 }
 
 // writePump writes messages to the client

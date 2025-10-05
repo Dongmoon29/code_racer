@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/router';
 import { matchApi } from '@/lib/api';
 import { Game } from '@/types';
 import axios, { AxiosError } from 'axios';
 import { ApiErrorResponse } from '@/types';
+import { trackAPIError, createErrorHandler } from '@/lib/error-tracking';
 
 interface UseGameDataProps {
   matchId: string;
@@ -13,55 +14,64 @@ interface UseGameDataReturn {
   game: Game | null;
   loading: boolean;
   error: string | null;
-  fetchGame: () => Promise<void>;
+  refetch: () => void;
 }
 
-export const useGameData = ({ matchId }: UseGameDataProps): UseGameDataReturn => {
+export const useGameData = ({
+  matchId,
+}: UseGameDataProps): UseGameDataReturn => {
   const router = useRouter();
-  const [game, setGame] = useState<Game | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  const fetchGame = useCallback(async (): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await matchApi.getGame(matchId);
-      
-      if (response.game) {
-        setGame(response.game);
-      } else {
-        setError('Game not found');
-      }
-    } catch (err) {
-      console.error('Failed to fetch game:', err);
-      
-      if (axios.isAxiosError(err)) {
-        const axiosError = err as AxiosError<ApiErrorResponse>;
-        const errorMessage = axiosError.response?.data?.message || 'Failed to load game';
-        setError(errorMessage);
-        
-        // Redirect to dashboard for 404 errors
-        if (axiosError.response?.status === 404) {
-          router.push('/dashboard');
+  const errorHandler = createErrorHandler('useGameData', 'fetchGame');
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['game', matchId],
+    queryFn: async () => {
+      try {
+        const response = await matchApi.getGame(matchId);
+
+        if (!response.game) {
+          throw new Error('Game not found');
         }
-      } else {
-        setError('An unexpected error occurred');
+
+        return response.game;
+      } catch (err) {
+        errorHandler(err, {
+          matchId,
+          action: 'fetchGame',
+        });
+
+        if (axios.isAxiosError(err)) {
+          const axiosError = err as AxiosError<ApiErrorResponse>;
+          const errorMessage =
+            axiosError.response?.data?.message || 'Failed to load game';
+
+          // Redirect to dashboard for 404 errors
+          if (axiosError.response?.status === 404) {
+            router.push('/dashboard');
+          }
+
+          throw new Error(errorMessage);
+        } else {
+          throw new Error('An unexpected error occurred');
+        }
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [matchId, router]);
-  
-  useEffect(() => {
-    fetchGame();
-  }, [fetchGame]);
-  
+    },
+    enabled: !!matchId,
+    retry: (failureCount, error) => {
+      // Don't retry for 404 errors
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+  });
+
   return {
-    game,
-    loading,
-    error,
-    fetchGame,
+    game: data || null,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+    refetch,
   };
 };

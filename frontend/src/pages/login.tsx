@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/layout/Layout';
-import LoginForm from '../components/auth/LoginForm';
+import { LoginForm } from '../components/dynamic';
 import Image from 'next/image';
 import { Alert } from '@/components/ui/alert';
 import { useAuthStore } from '@/stores/authStore';

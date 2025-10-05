@@ -1,6 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Game, SubmitResult } from '@/types';
-import { GAME_ROOM_CONSTANTS, createSessionStorageKey } from '../constants/game-room-constants';
+import {
+  GAME_ROOM_CONSTANTS,
+  createSessionStorageKey,
+} from '../constants/game-room-constants';
+import {
+  useSessionStorageManager,
+  useDebouncedSessionStorage,
+} from '@/hooks/useSessionStorage';
 
 interface UseGameRoomStateProps {
   matchId: string;
@@ -14,19 +21,19 @@ interface UseGameRoomStateReturn {
   setLoading: (loading: boolean) => void;
   error: string | null;
   setError: (error: string | null) => void;
-  
+
   // Code state
   myCode: string;
   setMyCode: (code: string) => void;
   opponentCode: string;
   setOpponentCode: (code: string) => void;
-  
+
   // Submission state
   submitResult: SubmitResult | null;
   setSubmitResult: (result: SubmitResult | null) => void;
   submitting: boolean;
   setSubmitting: (submitting: boolean) => void;
-  
+
   // Language and UI state
   selectedLanguage: 'python' | 'javascript' | 'go';
   setSelectedLanguage: (language: 'python' | 'javascript' | 'go') => void;
@@ -34,90 +41,122 @@ interface UseGameRoomStateReturn {
   setShowMyCode: (show: boolean) => void;
   showOpponentCode: boolean;
   setShowOpponentCode: (show: boolean) => void;
-  
+
   // Template setup state
   isTemplateSet: React.MutableRefObject<boolean>;
 }
 
-export const useGameRoomState = ({ matchId }: UseGameRoomStateProps): UseGameRoomStateReturn => {
+export const useGameRoomState = ({
+  matchId,
+}: UseGameRoomStateProps): UseGameRoomStateReturn => {
+  // Session storage manager
+  const storageManager = useSessionStorageManager(matchId);
+
   // Game state
   const [game, setGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Code state
+
+  // Code state with session storage initialization
   const [myCode, setMyCode] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const key = createSessionStorageKey(matchId, GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.CODE);
-      return sessionStorage.getItem(key) || GAME_ROOM_CONSTANTS.DEFAULTS.EMPTY_CODE;
-    }
-    return GAME_ROOM_CONSTANTS.DEFAULTS.EMPTY_CODE;
+    const key = createSessionStorageKey(
+      matchId,
+      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.CODE
+    );
+    return (
+      storageManager.getItem(key) || GAME_ROOM_CONSTANTS.DEFAULTS.EMPTY_CODE
+    );
   });
-  
-  const [opponentCode, setOpponentCode] = useState<string>(GAME_ROOM_CONSTANTS.DEFAULTS.EMPTY_CODE);
-  
+
+  const [opponentCode, setOpponentCode] = useState<string>(
+    GAME_ROOM_CONSTANTS.DEFAULTS.EMPTY_CODE
+  );
+
   // Submission state
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
-  
-  // Language and UI state
-  const [selectedLanguage, setSelectedLanguage] = useState<'python' | 'javascript' | 'go'>(() => {
-    if (typeof window !== 'undefined') {
-      const key = createSessionStorageKey(matchId, GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.LANGUAGE);
-      const stored = sessionStorage.getItem(key) as 'python' | 'javascript' | 'go';
-      return stored || GAME_ROOM_CONSTANTS.DEFAULTS.LANGUAGE;
-    }
-    return GAME_ROOM_CONSTANTS.DEFAULTS.LANGUAGE;
+
+  // Language and UI state with session storage initialization
+  const [selectedLanguage, setSelectedLanguage] = useState<
+    'python' | 'javascript' | 'go'
+  >(() => {
+    const key = createSessionStorageKey(
+      matchId,
+      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.LANGUAGE
+    );
+    const stored = storageManager.getItem(key) as
+      | 'python'
+      | 'javascript'
+      | 'go';
+    return stored || GAME_ROOM_CONSTANTS.DEFAULTS.LANGUAGE;
   });
-  
+
   const [showMyCode, setShowMyCode] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const key = createSessionStorageKey(matchId, GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.SHOW_MY_CODE);
-      return sessionStorage.getItem(key) !== 'false';
-    }
-    return GAME_ROOM_CONSTANTS.DEFAULTS.SHOW_MY_CODE;
+    const key = createSessionStorageKey(
+      matchId,
+      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.SHOW_MY_CODE
+    );
+    return storageManager.getItem(key) !== 'false';
   });
-  
+
   const [showOpponentCode, setShowOpponentCode] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const key = createSessionStorageKey(matchId, GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.SHOW_OPPONENT_CODE);
-      return sessionStorage.getItem(key) !== 'false';
-    }
-    return GAME_ROOM_CONSTANTS.DEFAULTS.SHOW_OPPONENT_CODE;
+    const key = createSessionStorageKey(
+      matchId,
+      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.SHOW_OPPONENT_CODE
+    );
+    return storageManager.getItem(key) !== 'false';
   });
-  
+
   // Template setup state
   const isTemplateSet = useRef(false);
-  
-  // Session storage synchronization
+
+  // Debounced session storage updates to prevent excessive writes
+  useDebouncedSessionStorage(
+    createSessionStorageKey(
+      matchId,
+      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.CODE
+    ),
+    myCode,
+    300
+  );
+
+  useDebouncedSessionStorage(
+    createSessionStorageKey(
+      matchId,
+      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.LANGUAGE
+    ),
+    selectedLanguage,
+    300
+  );
+
+  useDebouncedSessionStorage(
+    createSessionStorageKey(
+      matchId,
+      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.SHOW_MY_CODE
+    ),
+    String(showMyCode),
+    300
+  );
+
+  useDebouncedSessionStorage(
+    createSessionStorageKey(
+      matchId,
+      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.SHOW_OPPONENT_CODE
+    ),
+    String(showOpponentCode),
+    300
+  );
+
+  // Cleanup function for external use
+  const cleanup = useCallback(() => {
+    storageManager.cleanup();
+  }, [storageManager]);
+
+  // Expose cleanup function
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const key = createSessionStorageKey(matchId, GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.CODE);
-      sessionStorage.setItem(key, myCode);
-    }
-  }, [myCode, matchId]);
-  
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const key = createSessionStorageKey(matchId, GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.LANGUAGE);
-      sessionStorage.setItem(key, selectedLanguage);
-    }
-  }, [selectedLanguage, matchId]);
-  
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const key = createSessionStorageKey(matchId, GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.SHOW_MY_CODE);
-      sessionStorage.setItem(key, String(showMyCode));
-    }
-  }, [showMyCode, matchId]);
-  
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const key = createSessionStorageKey(matchId, GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.SHOW_OPPONENT_CODE);
-      sessionStorage.setItem(key, String(showOpponentCode));
-    }
-  }, [showOpponentCode, matchId]);
-  
+    return cleanup;
+  }, [cleanup]);
+
   return {
     // Game state
     game,
@@ -126,19 +165,19 @@ export const useGameRoomState = ({ matchId }: UseGameRoomStateProps): UseGameRoo
     setLoading,
     error,
     setError,
-    
+
     // Code state
     myCode,
     setMyCode,
     opponentCode,
     setOpponentCode,
-    
+
     // Submission state
     submitResult,
     setSubmitResult,
     submitting,
     setSubmitting,
-    
+
     // Language and UI state
     selectedLanguage,
     setSelectedLanguage,
@@ -146,7 +185,7 @@ export const useGameRoomState = ({ matchId }: UseGameRoomStateProps): UseGameRoo
     setShowMyCode,
     showOpponentCode,
     setShowOpponentCode,
-    
+
     // Template setup state
     isTemplateSet,
   };

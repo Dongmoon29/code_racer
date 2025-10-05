@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/layout/Layout';
-import RegisterForm from '../components/auth/RegisterForm';
+import { RegisterForm } from '../components/dynamic';
 import Image from 'next/image';
 import { useAuthStore } from '@/stores/authStore';
 import { motion } from 'framer-motion';

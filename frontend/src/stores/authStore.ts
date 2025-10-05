@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import api, { authApi, extractUserFromResponse } from '@/lib/api';
 import { AxiosError } from 'axios';
+import { trackAuthError, createErrorHandler } from '@/lib/error-tracking';
 
 export type User = {
   id: string;
@@ -38,7 +39,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       await api.post('/auth/logout');
     } catch (error) {
-      console.error('Logout failed', error);
+      const errorHandler = createErrorHandler('authStore', 'logout');
+      errorHandler(error, { userId: get().user?.id });
     } finally {
       // Clear token from sessionStorage (more secure than localStorage)
       sessionStorage.removeItem('authToken');
@@ -75,12 +77,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ user: null, isLoggedIn: false });
       }
     } catch (error) {
+      const errorHandler = createErrorHandler('authStore', 'initializeAuth');
       if (error instanceof AxiosError && error.response?.status === 401) {
         // User is not authenticated - clear token
         sessionStorage.removeItem('authToken');
         set({ user: null, isLoggedIn: false });
       } else {
-        console.error('Failed to initialize auth', error);
+        errorHandler(error, {
+          hasToken: !!sessionStorage.getItem('authToken'),
+          userId: get().user?.id,
+        });
         set({ user: null, isLoggedIn: false });
       }
     } finally {

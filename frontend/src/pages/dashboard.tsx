@@ -6,16 +6,18 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/useAuth';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
+import { useRouterHelper } from '@/lib/router';
 
 const DashboardPage: FC = () => {
   const router = useRouter();
+  const routerHelper = useRouterHelper(router);
   const { isLoggedIn, isLoading } = useAuth();
 
   useEffect(() => {
     // Only redirect if we're sure the user is not logged in
     // and we're not still loading
     if (!isLoading && !isLoggedIn) {
-      router.replace('/login');
+      routerHelper.replaceToLogin();
     }
   }, [isLoading, isLoggedIn, router]);
 
@@ -50,7 +52,7 @@ const DashboardPage: FC = () => {
         <div className="py-8">
           <MatchingScreen
             onMatchFound={(gameId) => {
-              router.push(`/game/${gameId}`);
+              routerHelper.goToGameRoom(gameId);
             }}
           />
         </div>

@@ -1,6 +1,7 @@
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import type { LeetCodeDetail, Game } from '@/types';
+import { trackAPIError, createErrorHandler } from '@/lib/error-tracking';
 
 // LeetCodeDetail type is imported from central types
 
@@ -152,10 +153,12 @@ export const authApi = {
 
   // Get current user information
   getCurrentUser: async () => {
+    const errorHandler = createErrorHandler('authApi', 'getCurrentUser');
     try {
       const response = await api.get('/users/me');
       return response.data;
     } catch (error) {
+      errorHandler(error, { endpoint: '/users/me' });
       throw error;
     }
   },

@@ -7,6 +7,9 @@ import MatchmakingWebSocketClient, {
 import { useAuthStore } from '@/stores/authStore';
 import { MATCHING_STATE, MatchingState } from '@/lib/constants';
 import type { Difficulty } from '@/components/game/DifficultySelector';
+import { TIMER_CONSTANTS } from '@/constants';
+import { useRouterHelper } from '@/lib/router';
+import { trackWebSocketError, createErrorHandler } from '@/lib/error-tracking';
 
 export interface UseMatchmakingOptions {
   onMatchFound?: (gameId: string) => void;
@@ -14,8 +17,10 @@ export interface UseMatchmakingOptions {
 }
 
 export function useMatchmaking(options: UseMatchmakingOptions = {}) {
-  const { onMatchFound, redirectDelayMs = 1500 } = options;
+  const { onMatchFound, redirectDelayMs = TIMER_CONSTANTS.UI_DELAYS.REDIRECT } =
+    options;
   const router = useRouter();
+  const routerHelper = useRouterHelper(router);
   const { user } = useAuthStore();
 
   const [matchingState, setMatchingState] = useState<MatchingState>(
@@ -117,7 +122,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
             if (onMatchFound) {
               onMatchFound(message.game_id);
             } else {
-              router.push(`/game/${message.game_id}`);
+              routerHelper.goToGameRoom(message.game_id);
             }
           }, redirectDelayMs);
         },
@@ -149,7 +154,15 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
       wsClientRef.current = wsClient;
       await wsClient.connect();
     } catch (err) {
-      console.error('Failed to start matching:', err);
+      const errorHandler = createErrorHandler(
+        'useMatchmaking',
+        'startMatching'
+      );
+      errorHandler(err, {
+        difficulty,
+        userId: user?.id,
+        matchingState,
+      });
       setError('Matching failed. Please try again.');
       setMatchingState(MATCHING_STATE.ERROR);
     }

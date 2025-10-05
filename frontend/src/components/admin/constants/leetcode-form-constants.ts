@@ -1,5 +1,6 @@
 // LeetCode Form related constants
 import { LeetCodeFormData, TestCase } from '@/types';
+import { DEFAULT_VALUES } from '@/constants';
 
 export const LEETCODE_FORM_CONSTANTS = {
   // Default values
@@ -18,21 +19,21 @@ export const LEETCODE_FORM_CONSTANTS = {
     GO_TEMPLATE: '',
     JAVA_TEMPLATE: '',
     CPP_TEMPLATE: '',
-    TIME_LIMIT: 1000,
-    MEMORY_LIMIT: 128,
+    TIME_LIMIT: DEFAULT_VALUES.TIME_LIMIT,
+    MEMORY_LIMIT: DEFAULT_VALUES.MEMORY_LIMIT,
     IO_SCHEMA: { param_types: [] as string[], return_type: '' },
     TEST_CASES: [{ input: [], output: '' }] as TestCase[],
   },
-  
+
   // Difficulty options
   DIFFICULTY_OPTIONS: ['Easy', 'Medium', 'Hard'] as const,
-  
+
   // Form modes
   FORM_MODES: {
     CREATE: 'create' as const,
     EDIT: 'edit' as const,
   },
-  
+
   // Messages
   MESSAGES: {
     SUBMITTING: 'Submitting...',
@@ -40,12 +41,12 @@ export const LEETCODE_FORM_CONSTANTS = {
     UPDATE_SUCCESS: 'Problem updated successfully!',
     ERROR_OCCURRED: 'An error occurred. Please try again.',
   },
-  
+
   // Validation
   VALIDATION: {
-    MIN_TITLE_LENGTH: 1,
-    MIN_DESCRIPTION_LENGTH: 1,
-    MIN_FUNCTION_NAME_LENGTH: 1,
+    MIN_TITLE_LENGTH: DEFAULT_VALUES.MIN_TITLE_LENGTH,
+    MIN_DESCRIPTION_LENGTH: DEFAULT_VALUES.MIN_DESCRIPTION_LENGTH,
+    MIN_FUNCTION_NAME_LENGTH: DEFAULT_VALUES.MIN_FUNCTION_NAME_LENGTH,
   },
 } as const;
 

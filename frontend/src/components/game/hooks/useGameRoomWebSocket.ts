@@ -6,6 +6,7 @@ import WebSocketClient, {
 } from '@/lib/websocket';
 import { Game, SubmitResult } from '@/types';
 import { getCodeTemplate } from '@/lib/api';
+import { useAuthStore } from '@/stores/authStore';
 
 interface UseGameRoomWebSocketProps {
   matchId: string;
@@ -32,6 +33,7 @@ export const useGameRoomWebSocket = ({
 }: UseGameRoomWebSocketProps) => {
   const router = useRouter();
   const wsRef = useRef<WebSocketClient | null>(null);
+  const { user: currentUser } = useAuthStore();
 
   // Template setup
   useEffect(() => {
@@ -49,7 +51,10 @@ export const useGameRoomWebSocket = ({
         case 'code_update':
           const codeUpdateMessage = message as CodeUpdateMessage;
           if (codeUpdateMessage.code !== undefined) {
-            setOpponentCode(codeUpdateMessage.code);
+            // Only update opponent code if the message is from a different user
+            if (codeUpdateMessage.user_id !== currentUser?.id) {
+              setOpponentCode(codeUpdateMessage.code);
+            }
           }
           break;
 
