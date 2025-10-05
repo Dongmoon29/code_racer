@@ -136,7 +136,7 @@ func initializeRepositories(db *gorm.DB, appLogger logger.Logger) *repositories 
 // initializeServices creates all service instances
 func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *services {
 	authService := service.NewAuthService(repos.userRepository, cfg.JWTSecret, appLogger)
-	userService := service.NewUserService(repos.userRepository, appLogger)
+	userService := service.NewUserService(repos.userRepository, repos.matchRepository, appLogger)
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger)
 	matchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, judgeService, appLogger)
 

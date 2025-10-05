@@ -6,6 +6,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/google/uuid"
 )
 
@@ -18,17 +19,21 @@ type UserService interface {
 }
 
 type userService struct {
-	userRepo interfaces.UserRepository
-	logger   logger.Logger
+	userRepo  interfaces.UserRepository
+	matchRepo repository.MatchRepository
+	logger    logger.Logger
 }
 
 // NewUserService creates a new UserService instance with the provided dependencies
-func NewUserService(userRepo interfaces.UserRepository, logger logger.Logger) UserService {
+func NewUserService(userRepo interfaces.UserRepository, matchRepo repository.MatchRepository, logger logger.Logger) UserService {
 	return &userService{
-		userRepo: userRepo,
-		logger:   logger,
+		userRepo:  userRepo,
+		matchRepo: matchRepo,
+		logger:    logger,
 	}
 }
+
+// (no SetMatchRepo; matchRepo is provided via constructor)
 
 func (s *userService) GetUserByID(userID uuid.UUID) (*model.UserResponse, error) {
 	user, err := s.userRepo.FindByID(userID)
@@ -36,6 +41,54 @@ func (s *userService) GetUserByID(userID uuid.UUID) (*model.UserResponse, error)
 		return nil, fmt.Errorf("failed to find user: %w", err)
 	}
 	return user.ToResponse(), nil
+}
+
+// GetRecentGames returns latest N matches of the user mapped to RecentGameSummary
+func (s *userService) GetRecentGames(userID uuid.UUID, limit int) ([]model.RecentGameSummary, error) {
+	if s.matchRepo == nil {
+		return []model.RecentGameSummary{}, nil
+	}
+	if limit <= 0 {
+		limit = 5
+	}
+	matches, err := s.matchRepo.FindRecentByUserID(userID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recent games: %w", err)
+	}
+	out := make([]model.RecentGameSummary, 0, len(matches))
+	for _, m := range matches {
+		var pb *struct {
+			ID   uuid.UUID `json:"id"`
+			Name string    `json:"name"`
+		}
+		if m.PlayerB != nil {
+			pb = &struct {
+				ID   uuid.UUID `json:"id"`
+				Name string    `json:"name"`
+			}{ID: m.PlayerB.ID, Name: m.PlayerB.Name}
+		}
+		g := model.RecentGameSummary{
+			ID:        m.ID,
+			Mode:      m.Mode,
+			Status:    m.Status,
+			WinnerID:  m.WinnerID,
+			StartedAt: m.StartedAt,
+			EndedAt:   m.EndedAt,
+			CreatedAt: m.CreatedAt,
+		}
+		g.LeetCode = struct {
+			ID         uuid.UUID `json:"id"`
+			Title      string    `json:"title"`
+			Difficulty string    `json:"difficulty"`
+		}{ID: m.LeetCode.ID, Title: m.LeetCode.Title, Difficulty: m.LeetCode.Difficulty}
+		g.PlayerA = struct {
+			ID   uuid.UUID `json:"id"`
+			Name string    `json:"name"`
+		}{ID: m.PlayerA.ID, Name: m.PlayerA.Name}
+		g.PlayerB = pb
+		out = append(out, g)
+	}
+	return out, nil
 }
 
 func (s *userService) GetProfile(userID uuid.UUID) (*model.User, error) {

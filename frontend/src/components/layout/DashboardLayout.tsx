@@ -4,11 +4,11 @@ import Header from './Header';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
-type Props = {
+type DashboardLayoutProps = {
   children: ReactNode;
 };
 
-const items = [
+const navigationItems = [
   {
     href: '/dashboard/mypage',
     label: 'My Page',
@@ -26,7 +26,7 @@ const items = [
   },
 ];
 
-export default function DashboardLayout({ children }: Props) {
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
 
   return (
@@ -34,13 +34,13 @@ export default function DashboardLayout({ children }: Props) {
       <Header />
       <div className="flex">
         {/* Sidebar */}
-        <div className="w-64 bg-card border-r border-border h-[calc(100vh-60px)] sticky top-0 overflow-y-auto">
+        <div className="w-64 bg-card border-r border-border h-full min-h-dvh sticky top-0 overflow-y-auto">
           <div className="p-6">
             {/* Navigation */}
             <nav className="space-y-6">
               <div>
                 <div className="space-y-1">
-                  {items.map((item) => {
+                  {navigationItems.map((item) => {
                     const isActive = router.pathname === item.href;
 
                     return (
