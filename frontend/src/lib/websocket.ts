@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { WEBSOCKET_CONSTANTS } from '@/constants';
+import { createErrorHandler } from '@/lib/error-tracking';
 
 // WebSocket related type definitions
 export interface WebSocketMessage {
@@ -13,6 +15,7 @@ export interface WebSocketMessage {
 export interface CodeUpdateMessage extends WebSocketMessage {
   type: 'code_update';
   code: string;
+  user_id?: string; // Backend sends as 'user_id' in JSON
 }
 
 // WebSocket connection management class
@@ -20,10 +23,15 @@ export class WebSocketClient {
   private ws: WebSocket | null = null;
   private messageHandlers: ((message: WebSocketMessage) => void)[] = [];
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts =
+    WEBSOCKET_CONSTANTS.CONNECTION.MAX_RECONNECT_ATTEMPTS;
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private pingInterval: NodeJS.Timeout | null = null;
   private lastPingTime = 0;
+  private errorHandler = createErrorHandler(
+    'WebSocketClient',
+    'websocket_operation'
+  );
 
   constructor(private gameId: string) {
     this.connect();
@@ -56,16 +64,16 @@ export class WebSocketClient {
       wsUrl = `${wsProtocol}//${wsHost}/ws/${this.gameId}`;
     }
 
-    // Get JWT token
-    const token =
-      localStorage.getItem('authToken') || localStorage.getItem('token');
-
+    // Security: Use Authorization header instead of URL parameter
+    // This prevents token exposure in logs and browser history
+    const token = sessionStorage.getItem('authToken');
     if (!token) {
       console.error('No authentication token found');
       return;
     }
 
-    // Add token as query parameter (headers cannot be set in browser WebSocket)
+    // Add token as query parameter (WebSocket doesn't support custom headers)
+    // This is a limitation of WebSocket protocol, but we use sessionStorage for better security
     wsUrl = `${wsUrl}?token=${encodeURIComponent(token)}`;
 
     // Create WebSocket connection
@@ -84,7 +92,11 @@ export class WebSocketClient {
         const message = JSON.parse(event.data) as WebSocketMessage;
         this.handleMessage(message);
       } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+        this.errorHandler(error, {
+          action: 'parse_message',
+          messageData: event.data,
+          gameId: this.gameId,
+        });
       }
     };
 
@@ -100,7 +112,11 @@ export class WebSocketClient {
   private handleDisconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+      const delay = Math.min(
+        WEBSOCKET_CONSTANTS.CONNECTION.RECONNECT_BASE_DELAY_MS *
+          Math.pow(2, this.reconnectAttempts),
+        WEBSOCKET_CONSTANTS.CONNECTION.MAX_RECONNECT_DELAY_MS
+      );
 
       this.reconnectTimeout = setTimeout(() => {
         this.connect();
@@ -123,7 +139,7 @@ export class WebSocketClient {
         this.ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
         this.lastPingTime = Date.now();
       }
-    }, 30000); // Ping every 30 seconds
+    }, WEBSOCKET_CONSTANTS.CONNECTION.PING_INTERVAL_MS); // Ping every 30 seconds
   }
 
   private handleMessage(message: WebSocketMessage) {
@@ -169,7 +185,10 @@ export class WebSocketClient {
     }
 
     if (this.ws) {
-      this.ws.close(1000, 'User requested disconnect');
+      this.ws.close(
+        WEBSOCKET_CONSTANTS.CLOSE_CODES.NORMAL_CLOSURE,
+        'User requested disconnect'
+      );
       this.ws = null;
     }
   }

@@ -28,8 +28,11 @@ const AuthCallback: React.FC = () => {
         const response = await authApi.exchangeToken(code, state, provider);
 
         if (response.success) {
-          // Save token
-          localStorage.setItem('authToken', response.token);
+          // Security: Store token in sessionStorage (more secure than localStorage)
+          // sessionStorage is cleared when browser tab is closed
+          if (response.token) {
+            sessionStorage.setItem('authToken', response.token);
+          }
 
           // Set user information
           useAuthStore.getState().login(response.user);

@@ -1,4 +1,5 @@
 // Difficulty Selector related constants
+import { TIMER_CONSTANTS } from '@/constants';
 export const DIFFICULTY_SELECTOR_CONSTANTS = {
   // Difficulty options
   DIFFICULTY_OPTIONS: [
@@ -21,15 +22,16 @@ export const DIFFICULTY_SELECTOR_CONSTANTS = {
       description: 'Expert level',
     },
   ] as const,
-  
+
   // Messages
   MESSAGES: {
     TITLE: '🏁 Code Racer',
     SUBTITLE: 'Choose Your Racing Circuit',
     DESCRIPTION: 'Compete against friends or racers worldwide!',
-    SUB_DESCRIPTION: '💨 Select your preferred speed circuit and let the coding race begin!',
+    SUB_DESCRIPTION:
+      '💨 Select your preferred speed circuit and let the coding race begin!',
   },
-  
+
   // Layout
   LAYOUT: {
     CONTAINER_MAX_WIDTH: 'max-w-4xl',
@@ -43,11 +45,12 @@ export const DIFFICULTY_SELECTOR_CONSTANTS = {
     CARD_PADDING: 'p-6',
     CARD_TITLE_SIZE: 'text-2xl font-bold mb-2',
   },
-  
+
   // Styling
   STYLES: {
-    GRADIENT_TEXT: 'bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent',
+    GRADIENT_TEXT:
+      'bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent',
     CARD_HOVER: 'hover:scale-105',
-    TRANSITION: 'transition-all duration-200 transform',
+    TRANSITION: `transition-all duration-${TIMER_CONSTANTS.UI_DELAYS.MEDIUM} transform`,
   },
 } as const;

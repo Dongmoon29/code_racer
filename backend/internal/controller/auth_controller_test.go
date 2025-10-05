@@ -222,12 +222,12 @@ func TestLogin(t *testing.T) {
 		json.Unmarshal(w.Body.Bytes(), &response)
 		assert.True(t, response["success"].(bool))
 
-		// 토큰 검증 (JSON 응답에서 확인)
+		// Security: Token is returned for cross-origin scenarios
+		// Cookie is also set for same-origin requests
 		assert.NotNil(t, response["data"])
 		data := response["data"].(map[string]interface{})
-		assert.NotNil(t, data["token"])
-		assert.Equal(t, expectedResponse.AccessToken, data["token"])
 		assert.NotNil(t, data["user"])
+		assert.Equal(t, expectedResponse.AccessToken, data["token"])
 	})
 
 	t.Run("invalid credentials", func(t *testing.T) {
@@ -329,11 +329,11 @@ func TestLogout(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	// 로그아웃 성공 응답 확인 (토큰 기반으로 변경)
+	// 로그아웃 성공 응답 확인 (쿠키 기반으로 변경)
 	var response map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &response)
 	assert.True(t, response["success"].(bool))
-	assert.Equal(t, "Successfully logged out. Please remove the token from client storage.", response["message"])
+	assert.Equal(t, "Successfully logged out", response["message"])
 }
 
 func TestGoogleAuth(t *testing.T) {
@@ -503,7 +503,10 @@ func TestExchangeToken(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.Equal(t, true, response["success"])
+		// Security: Token is returned for cross-origin scenarios
+		// Cookie is also set for same-origin requests
 		assert.Equal(t, expectedResponse.AccessToken, response["token"])
+		assert.NotNil(t, response["user"])
 
 		mockService.AssertExpectations(t)
 	})

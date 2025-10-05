@@ -1,3 +1,9 @@
+import { TIMER_CONSTANTS } from '@/constants';
+import { createErrorHandler } from '@/lib/error-tracking';
+
+// GitHub API constants
+const GITHUB_API_BASE_URL = 'https://api.github.com';
+
 export interface GitHubCommit {
   sha: string;
   commit: {
@@ -33,7 +39,11 @@ interface CacheEntry<T> {
 class MemoryCache {
   private cache = new Map<string, CacheEntry<unknown>>();
 
-  set<T>(key: string, data: T, ttl: number = 5 * 60 * 1000): void {
+  set<T>(
+    key: string,
+    data: T,
+    ttl: number = TIMER_CONSTANTS.CACHE_TTL.SHORT
+  ): void {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -75,7 +85,7 @@ const cache = new MemoryCache();
 if (typeof window !== 'undefined') {
   setInterval(() => {
     cache.cleanup();
-  }, 5 * 60 * 1000);
+  }, TIMER_CONSTANTS.CACHE_TTL.SHORT);
 }
 
 export async function getRecentCommits(
@@ -92,7 +102,7 @@ export async function getRecentCommits(
 
   try {
     const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/commits?per_page=${perPage}`,
+      `${GITHUB_API_BASE_URL}/repos/${owner}/${repo}/commits?per_page=${perPage}`,
       {
         headers: {
           Accept: 'application/vnd.github.v3+json',
@@ -106,11 +116,17 @@ export async function getRecentCommits(
 
     const commits = await response.json();
 
-    cache.set(cacheKey, commits, 10 * 60 * 1000);
+    cache.set(cacheKey, commits, TIMER_CONSTANTS.CACHE_TTL.MEDIUM);
 
     return commits;
   } catch (error) {
-    console.error('Failed to fetch recent commits:', error);
+    const errorHandler = createErrorHandler('github-api', 'getRecentCommits');
+    errorHandler(error, {
+      owner,
+      repo,
+      perPage,
+      endpoint: `${GITHUB_API_BASE_URL}/repos/${owner}/${repo}/commits`,
+    });
     return [];
   }
 }
@@ -130,7 +146,7 @@ export async function getRepositoryInfo(
 
   try {
     const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}`,
+      `${GITHUB_API_BASE_URL}/repos/${owner}/${repo}`,
       {
         headers: {
           Accept: 'application/vnd.github.v3+json',
@@ -144,11 +160,16 @@ export async function getRepositoryInfo(
 
     const repoInfo = await response.json();
 
-    cache.set(cacheKey, repoInfo, 30 * 60 * 1000);
+    cache.set(cacheKey, repoInfo, TIMER_CONSTANTS.CACHE_TTL.LONG);
 
     return repoInfo;
   } catch (error) {
-    console.error('Failed to fetch repository info:', error);
+    const errorHandler = createErrorHandler('github-api', 'getRepositoryInfo');
+    errorHandler(error, {
+      owner,
+      repo,
+      endpoint: `${GITHUB_API_BASE_URL}/repos/${owner}/${repo}`,
+    });
     return null;
   }
 }
@@ -172,7 +193,9 @@ export function truncateCommitMessage(
 export function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const diffInSeconds = Math.floor(
+    (now.getTime() - date.getTime()) / TIMER_CONSTANTS.INTERVALS.SECOND
+  );
 
   if (diffInSeconds < 60) {
     return 'just now';

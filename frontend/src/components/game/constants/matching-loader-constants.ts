@@ -1,4 +1,5 @@
 // Matching Loader related constants
+import { TIMER_CONSTANTS } from '@/constants';
 export const MATCHING_LOADER_CONSTANTS = {
   // Difficulty-specific configuration
   DIFFICULTY_CONFIG: {
@@ -18,20 +19,20 @@ export const MATCHING_LOADER_CONSTANTS = {
       icon: '🔴',
     },
   } as const,
-  
+
   // Timer settings
   TIMER: {
-    INTERVAL_MS: 1000,
+    INTERVAL_MS: TIMER_CONSTANTS.INTERVALS.SECOND,
     INCREMENT_VALUE: 1,
   },
-  
+
   // Messages
   MESSAGES: {
     SEARCHING_FOR_OPPONENT: 'Searching for opponent...',
     WAIT_TIME_PREFIX: 'Wait time:',
     CANCEL_MATCHMAKING: 'Cancel Matchmaking',
   },
-  
+
   // Styling
   STYLES: {
     CONTAINER_MAX_WIDTH: 'max-w-2xl',

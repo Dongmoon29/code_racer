@@ -7,6 +7,9 @@ import MatchmakingWebSocketClient, {
 import { useAuthStore } from '@/stores/authStore';
 import { MATCHING_STATE, MatchingState } from '@/lib/constants';
 import type { Difficulty } from '@/components/game/DifficultySelector';
+import { TIMER_CONSTANTS, WEBSOCKET_CONSTANTS } from '@/constants';
+import { useRouterHelper } from '@/lib/router';
+import { createErrorHandler } from '@/lib/error-tracking';
 
 export interface UseMatchmakingOptions {
   onMatchFound?: (gameId: string) => void;
@@ -14,8 +17,10 @@ export interface UseMatchmakingOptions {
 }
 
 export function useMatchmaking(options: UseMatchmakingOptions = {}) {
-  const { onMatchFound, redirectDelayMs = 1500 } = options;
+  const { onMatchFound, redirectDelayMs = TIMER_CONSTANTS.UI_DELAYS.REDIRECT } =
+    options;
   const router = useRouter();
+  const routerHelper = useRouterHelper(router);
   const { user } = useAuthStore();
 
   const [matchingState, setMatchingState] = useState<MatchingState>(
@@ -37,15 +42,16 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
 
   const cancelMatching = useCallback(() => {
     if (wsClientRef.current) {
+      // Send cancel request and wait for server confirmation
       wsClientRef.current.cancelMatching();
-      wsClientRef.current.disconnect();
-      wsClientRef.current = null;
+      // Don't disconnect immediately - wait for server response
     }
     if (redirectTimeoutRef.current) {
       clearTimeout(redirectTimeoutRef.current);
       redirectTimeoutRef.current = null;
     }
 
+    // Update UI state immediately for better UX
     setMatchingState(MATCHING_STATE.IDLE);
     setSelectedDifficulty(null);
     setWaitTimeSeconds(0);
@@ -89,9 +95,19 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
         onStatusUpdate: (message: MatchingStatusMessage) => {
           setWaitTimeSeconds(message.wait_time_seconds || 0);
 
-          if (message.status === 'cancelled') {
+          if (
+            message.status === WEBSOCKET_CONSTANTS.MATCHING_STATUSES.CANCELED
+          ) {
             setMatchingState(MATCHING_STATE.IDLE);
             setSelectedDifficulty(null);
+            setWaitTimeSeconds(0);
+            setError(null);
+
+            // Disconnect after server confirmation
+            if (wsClientRef.current) {
+              wsClientRef.current.disconnect();
+              wsClientRef.current = null;
+            }
           }
         },
 
@@ -108,7 +124,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
             if (onMatchFound) {
               onMatchFound(message.game_id);
             } else {
-              router.push(`/game/${message.game_id}`);
+              routerHelper.goToGameRoom(message.game_id);
             }
           }, redirectDelayMs);
         },
@@ -140,7 +156,15 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
       wsClientRef.current = wsClient;
       await wsClient.connect();
     } catch (err) {
-      console.error('Failed to start matching:', err);
+      const errorHandler = createErrorHandler(
+        'useMatchmaking',
+        'startMatching'
+      );
+      errorHandler(err, {
+        difficulty,
+        userId: user?.id,
+        matchingState,
+      });
       setError('Matching failed. Please try again.');
       setMatchingState(MATCHING_STATE.ERROR);
     }

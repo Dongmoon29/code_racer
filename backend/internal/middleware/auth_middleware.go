@@ -27,18 +27,25 @@ func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var tokenString string
 
+		// Priority order: Authorization header > Cookie
 		authHeader := c.GetHeader("Authorization")
 		if authHeader != "" && len(authHeader) > 7 && authHeader[:7] == "Bearer " {
 			tokenString = authHeader[7:]
 			m.logger.Debug().Msg("Token found in Authorization header")
 		} else {
-			m.logger.Warn().Msg("No Authorization header found")
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"message": "Authorization header required: Bearer <token>",
-			})
-			c.Abort()
-			return
+			// Check for JWT token in cookies (for httpOnly cookie security)
+			if cookie, err := c.Cookie("auth_token"); err == nil && cookie != "" {
+				tokenString = cookie
+				m.logger.Debug().Str("tokenPrefix", cookie[:min(len(cookie), 20)]).Msg("Token found in cookie")
+			} else {
+				m.logger.Warn().Msg("No Authorization header or cookie found")
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"success": false,
+					"message": "Authentication required",
+				})
+				c.Abort()
+				return
+			}
 		}
 
 		claims, err := m.authService.ValidateToken(tokenString)
@@ -94,19 +101,25 @@ func (m *AuthMiddleware) WebSocketAuthRequired() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var tokenString string
 
+		// Priority order: Authorization header > Cookie > Query parameter
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader != "" && len(authHeader) > 7 && authHeader[:7] == "Bearer " {
 			tokenString = authHeader[7:]
 			m.logger.Debug().Msg("Token found in Authorization header")
 		} else {
-			if tokenParam := ctx.Query("token"); tokenParam != "" {
+			// Check for JWT token in cookies (for httpOnly cookie security)
+			if cookie, err := ctx.Cookie("auth_token"); err == nil && cookie != "" {
+				tokenString = cookie
+				m.logger.Debug().Str("tokenPrefix", cookie[:min(len(cookie), 20)]).Msg("Token found in cookie")
+			} else if tokenParam := ctx.Query("token"); tokenParam != "" {
+				// Fallback to query parameter for backward compatibility
 				tokenString = tokenParam
 				m.logger.Debug().Str("tokenPrefix", tokenParam[:min(len(tokenParam), 20)]).Msg("Token found in query parameter")
 			} else {
-				m.logger.Warn().Msg("No Authorization header or token parameter found for WebSocket connection")
+				m.logger.Warn().Msg("No Authorization header, cookie, or token parameter found for WebSocket connection")
 				ctx.JSON(http.StatusUnauthorized, gin.H{
 					"success": false,
-					"message": "Authorization header required: Bearer <token>",
+					"message": "Authentication required",
 				})
 				ctx.Abort()
 				return

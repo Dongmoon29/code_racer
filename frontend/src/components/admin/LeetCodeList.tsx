@@ -1,37 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { LeetCodeSummary } from '@/types';
+import React, { useState, useMemo } from 'react';
 import {
-  getAllLeetCodeProblems,
-  deleteLeetCodeProblem,
-} from '../../lib/leetcode-api';
+  useLeetCodeProblems,
+  useDeleteLeetCodeProblem,
+} from '@/hooks/useLeetCode';
 import Link from 'next/link';
+import { LeetCodeSummary } from '@/types';
 
 export default function LeetCodeList() {
-  const [problems, setProblems] = useState<LeetCodeSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
 
-  useEffect(() => {
-    loadProblems();
-  }, []);
-
-  const loadProblems = async () => {
-    try {
-      setIsLoading(true);
-      const result = await getAllLeetCodeProblems();
-      setProblems(result.data as LeetCodeSummary[]);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to load problem list.'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Use React Query hooks
+  const { data: problems = [], isLoading, error } = useLeetCodeProblems();
+  const deleteProblemMutation = useDeleteLeetCodeProblem();
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Are you sure you want to delete "${title}" problem?`)) {
@@ -39,10 +22,10 @@ export default function LeetCodeList() {
     }
 
     try {
-      await deleteLeetCodeProblem(id);
-      setProblems((prev) => prev.filter((p) => p.id !== id));
+      await deleteProblemMutation.mutateAsync(id);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete problem.');
+      console.error('Failed to delete problem:', err);
+      // Error is already handled by the mutation
     }
   };
 
@@ -59,14 +42,16 @@ export default function LeetCodeList() {
     }
   };
 
-  const filteredProblems = problems.filter((problem) => {
-    const matchesSearch = problem.title
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesDifficulty =
-      difficultyFilter === 'all' || problem.difficulty === difficultyFilter;
-    return matchesSearch && matchesDifficulty;
-  });
+  const filteredProblems = useMemo(() => {
+    return problems.filter((problem: LeetCodeSummary) => {
+      const matchesSearch = problem.title
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesDifficulty =
+        difficultyFilter === 'all' || problem.difficulty === difficultyFilter;
+      return matchesSearch && matchesDifficulty;
+    });
+  }, [problems, searchTerm, difficultyFilter]);
 
   if (isLoading) {
     return (
@@ -79,9 +64,13 @@ export default function LeetCodeList() {
   if (error) {
     return (
       <div className="text-center p-6">
-        <div className="text-red-600 mb-4">{error}</div>
+        <div className="text-red-600 mb-4">
+          {error instanceof Error
+            ? error.message
+            : 'Failed to load problem list.'}
+        </div>
         <button
-          onClick={loadProblems}
+          onClick={() => window.location.reload()}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
           Try Again
@@ -158,7 +147,7 @@ export default function LeetCodeList() {
                   </td>
                 </tr>
               ) : (
-                filteredProblems.map((problem) => (
+                filteredProblems.map((problem: LeetCodeSummary) => (
                   <tr key={problem.id} className="">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium">{problem.title}</div>
@@ -210,21 +199,30 @@ export default function LeetCodeList() {
         <div className=" p-4 rounded-lg shadow bg-[hsl(var(--card))]">
           <div className="text-sm font-medium ">Easy</div>
           <div className="text-2xl font-bold text-green-600">
-            {problems.filter((p) => p.difficulty === 'Easy').length}
+            {
+              problems.filter((p: LeetCodeSummary) => p.difficulty === 'Easy')
+                .length
+            }
           </div>
         </div>
 
         <div className=" p-4 rounded-lg shadow bg-[hsl(var(--card))]">
           <div className="text-sm font-medium ">Medium</div>
           <div className="text-2xl font-bold text-yellow-600">
-            {problems.filter((p) => p.difficulty === 'Medium').length}
+            {
+              problems.filter((p: LeetCodeSummary) => p.difficulty === 'Medium')
+                .length
+            }
           </div>
         </div>
 
         <div className=" p-4 rounded-lg shadow bg-[hsl(var(--card))]">
           <div className="text-sm font-medium ">Hard</div>
           <div className="text-2xl font-bold text-red-600">
-            {problems.filter((p) => p.difficulty === 'Hard').length}
+            {
+              problems.filter((p: LeetCodeSummary) => p.difficulty === 'Hard')
+                .length
+            }
           </div>
         </div>
       </div>

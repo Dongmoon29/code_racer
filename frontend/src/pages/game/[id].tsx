@@ -1,7 +1,7 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/layout/Layout';
-import GameRoom from '../../components/game/GameRoom';
+import { GameRoom } from '../../components/dynamic';
 import { Spinner } from '../../components/ui';
 import { Button } from '@/components/ui/Button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';

@@ -1,6 +1,7 @@
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import type { LeetCodeDetail, Game } from '@/types';
+import { createErrorHandler } from '@/lib/error-tracking';
 
 // LeetCodeDetail type is imported from central types
 
@@ -43,18 +44,24 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: false, // Remove cookie-based authentication
+  withCredentials: true, // Enable cookie-based authentication for same-origin requests
 });
 
-// Request interceptor - Add Authorization header
+// Request interceptor - Add Authorization header as fallback
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
+    // Try to get token from sessionStorage first (more secure than localStorage)
+    const token = sessionStorage.getItem('authToken');
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
       console.warn('No auth token found for request to:', config.url);
+    }
+
+    // Log request for debugging (remove in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('API Request:', config.method?.toUpperCase(), config.url);
     }
     return config;
   },
@@ -69,10 +76,14 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // Don't redirect during login attempts
-      if (!error.config.url?.includes('/auth/login')) {
-        await useAuthStore.getState().logout();
-        window.location.href = '/login';
+      // Don't redirect during login attempts or auth initialization
+      const url = error.config?.url || '';
+      if (!url.includes('/auth/login') && !url.includes('/users/me')) {
+        // Only logout if not already logged out to prevent infinite loops
+        const authState = useAuthStore.getState();
+        if (authState.isLoggedIn) {
+          await authState.logout();
+        }
       }
     }
     return Promise.reject(error);
@@ -142,10 +153,12 @@ export const authApi = {
 
   // Get current user information
   getCurrentUser: async () => {
+    const errorHandler = createErrorHandler('authApi', 'getCurrentUser');
     try {
       const response = await api.get('/users/me');
       return response.data;
     } catch (error) {
+      errorHandler(error, { endpoint: '/users/me' });
       throw error;
     }
   },

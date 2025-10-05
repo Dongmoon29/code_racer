@@ -8,10 +8,12 @@ import axios from 'axios';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/alert';
 import Image from 'next/image';
+import { useRouterHelper } from '@/lib/router';
 import { useAuthStore } from '../../stores/authStore';
 
 const LoginForm: React.FC = () => {
   const router = useRouter();
+  const routerHelper = useRouterHelper(router);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,8 +30,10 @@ const LoginForm: React.FC = () => {
       const response = await authApi.login(email, password);
 
       if (response.success) {
+        // Security: Store token in sessionStorage (more secure than localStorage)
+        // sessionStorage is cleared when browser tab is closed
         if (response.data?.token) {
-          localStorage.setItem('authToken', response.data.token);
+          sessionStorage.setItem('authToken', response.data.token);
         }
 
         const user = extractUserFromResponse(response);
@@ -38,7 +42,11 @@ const LoginForm: React.FC = () => {
         }
 
         const redirect = router.query.redirect as string;
-        await router.push(redirect || '/dashboard');
+        if (redirect) {
+          await routerHelper.push(redirect);
+        } else {
+          await routerHelper.goToDashboard();
+        }
       } else {
         setError(response.message || 'Login failed');
       }

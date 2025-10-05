@@ -1,3 +1,6 @@
+import { WEBSOCKET_CONSTANTS } from '@/constants';
+import { createErrorHandler } from '@/lib/error-tracking';
+
 export interface MatchingRequest {
   type: 'start_matching';
   difficulty: 'Easy' | 'Medium' | 'Hard';
@@ -9,7 +12,7 @@ export interface CancelRequest {
 
 export interface MatchingStatusMessage {
   type: 'matching_status';
-  status: 'searching' | 'found' | 'cancelled';
+  status: 'searching' | 'found' | 'canceled';
   queue_position?: number;
   wait_time_seconds?: number;
   estimated_wait_seconds?: number;
@@ -47,9 +50,14 @@ export class MatchmakingWebSocketClient {
   private ws: WebSocket | null = null;
   private callbacks: MatchingWebSocketCallbacks = {};
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 3;
+  private maxReconnectAttempts =
+    WEBSOCKET_CONSTANTS.MATCHMAKING.MAX_RECONNECT_ATTEMPTS;
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private isIntentionalDisconnect = false;
+  private errorHandler = createErrorHandler(
+    'MatchmakingWebSocketClient',
+    'websocket_operation'
+  );
 
   constructor(callbacks: MatchingWebSocketCallbacks = {}) {
     this.callbacks = callbacks;
@@ -73,18 +81,19 @@ export class MatchmakingWebSocketClient {
           wsHost = wsHost.replace(/^https?:\/\//, '');
         }
 
-        const token =
-          localStorage.getItem('authToken') || localStorage.getItem('token');
+        const wsUrl = `${wsProtocol}//${wsHost}/ws/matching`;
+
+        // Security: Use sessionStorage instead of localStorage
+        const token = sessionStorage.getItem('authToken');
         if (!token) {
           reject(new Error('No authentication token found'));
           return;
         }
 
-        const wsUrl = `${wsProtocol}//${wsHost}/ws/matching?token=${encodeURIComponent(
-          token
-        )}`;
+        // Add token as query parameter (WebSocket limitation)
+        const wsUrlWithToken = `${wsUrl}?token=${encodeURIComponent(token)}`;
 
-        this.ws = new WebSocket(wsUrl);
+        this.ws = new WebSocket(wsUrlWithToken);
 
         this.ws.onopen = () => {
           this.reconnectAttempts = 0;
@@ -97,7 +106,10 @@ export class MatchmakingWebSocketClient {
             const message = JSON.parse(event.data) as MatchingWebSocketMessage;
             this.handleMessage(message);
           } catch (error) {
-            console.error('Failed to parse matchmaking message:', error);
+            this.errorHandler(error, {
+              action: 'parse_message',
+              messageData: event.data,
+            });
           }
         };
 
@@ -124,6 +136,10 @@ export class MatchmakingWebSocketClient {
           reject(error);
         };
       } catch (error) {
+        this.errorHandler(error, {
+          action: 'connect',
+          reconnectAttempt: this.reconnectAttempts,
+        });
         reject(error);
       }
     });
@@ -135,6 +151,13 @@ export class MatchmakingWebSocketClient {
       case 'matching_status':
         console.log('📊 Matching status update:', message);
         this.callbacks.onStatusUpdate?.(message);
+
+        // If status is 'canceled', disconnect after a short delay
+        if (message.status === 'canceled') {
+          setTimeout(() => {
+            this.disconnect();
+          }, WEBSOCKET_CONSTANTS.MATCHMAKING.CANCEL_DISCONNECT_DELAY_MS);
+        }
         break;
       case 'match_found':
         console.log('🎉 Match found!:', message);
@@ -147,7 +170,11 @@ export class MatchmakingWebSocketClient {
 
   private attemptReconnect() {
     this.reconnectAttempts++;
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000); // Maximum 10 seconds
+    const delay = Math.min(
+      WEBSOCKET_CONSTANTS.MATCHMAKING.RECONNECT_BASE_DELAY_MS *
+        Math.pow(2, this.reconnectAttempts),
+      WEBSOCKET_CONSTANTS.MATCHMAKING.MAX_RECONNECT_DELAY_MS
+    ); // Maximum 10 seconds
 
     console.log(
       `Attempting to reconnect matchmaking WebSocket (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`
@@ -155,7 +182,11 @@ export class MatchmakingWebSocketClient {
 
     this.reconnectTimeout = setTimeout(() => {
       this.connect().catch((error) => {
-        console.error('Reconnection failed:', error);
+        this.errorHandler(error, {
+          action: 'reconnect',
+          reconnectAttempt: this.reconnectAttempts,
+          delay,
+        });
       });
     }, delay);
   }
