@@ -51,6 +51,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       setOpponentCode,
       setSubmitResult,
       setSubmitting,
+      refetchGame,
     });
 
   // Memoized values for performance optimization

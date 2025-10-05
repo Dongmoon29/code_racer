@@ -19,6 +19,7 @@ interface UseGameRoomWebSocketProps {
   setOpponentCode: (code: string) => void;
   setSubmitResult: (result: SubmitResult | null) => void;
   setSubmitting: (submitting: boolean) => void;
+  refetchGame: () => void;
 }
 
 export const useGameRoomWebSocket = ({
@@ -31,6 +32,7 @@ export const useGameRoomWebSocket = ({
   setOpponentCode,
   setSubmitResult,
   setSubmitting,
+  refetchGame,
 }: UseGameRoomWebSocketProps) => {
   const router = useRouter();
   const wsRef = useRef<WebSocketClient | null>(null);
@@ -66,6 +68,8 @@ export const useGameRoomWebSocket = ({
               message: 'Game finished!',
               is_winner: false, // This will be determined by the actual game logic
             });
+            // Refresh game data so status becomes 'finished' and UI renders FinishedGame
+            refetchGame();
           }
           break;
 
@@ -81,7 +85,7 @@ export const useGameRoomWebSocket = ({
           console.log('Unknown message type:', message.type);
       }
     },
-    [setOpponentCode, setSubmitResult, currentUser?.id]
+    [setOpponentCode, setSubmitResult, currentUser?.id, refetchGame]
   );
 
   // WebSocket connection setup
