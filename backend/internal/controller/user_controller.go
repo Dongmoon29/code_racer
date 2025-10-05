@@ -26,20 +26,14 @@ func NewUserController(userService service.UserService, logger logger.Logger) *U
 func (c *UserController) GetCurrentUser(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": "User not authenticated",
-		})
+		Unauthorized(ctx, "User not authenticated")
 		return
 	}
 
 	uid := userID.(uuid.UUID)
 	user, err := c.userService.GetUserByID(uid)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		InternalError(ctx, err.Error())
 		return
 	}
 	recent := []model.RecentGameSummary{}
@@ -51,31 +45,19 @@ func (c *UserController) GetCurrentUser(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data": model.CurrentUserMeResponse{
-			User:        user,
-			RecentGames: recent,
-		},
-	})
+	OK(ctx, model.CurrentUserMeResponse{User: user, RecentGames: recent})
 }
 
 func (c *UserController) GetProfile(ctx *gin.Context) {
 	userID, err := uuid.Parse(ctx.Param("userId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid user ID",
-		})
+		BadRequest(ctx, "Invalid user ID")
 		return
 	}
 
 	profile, err := c.userService.GetProfile(userID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		InternalError(ctx, err.Error())
 		return
 	}
 
@@ -88,28 +70,19 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": "User not authenticated",
-		})
+		Unauthorized(ctx, "User not authenticated")
 		return
 	}
 
 	var req model.UpdateProfileRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid request: " + err.Error(),
-		})
+		BadRequest(ctx, "Invalid request: "+err.Error())
 		return
 	}
 
 	profile, err := c.userService.UpdateProfile(userID.(uuid.UUID), &req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		InternalError(ctx, err.Error())
 		return
 	}
 

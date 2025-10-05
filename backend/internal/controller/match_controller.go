@@ -30,24 +30,18 @@ func (c *MatchController) GetMatch(ctx *gin.Context) {
 	// Parse match ID
 	matchID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid match ID",
-		})
+		BadRequest(ctx, "Invalid match ID")
 		return
 	}
 
 	// Service 호출
 	res, err := c.matchService.GetMatch(matchID)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"success": false,
-			"message": "Match not found",
-		})
+		NotFound(ctx, "Match not found")
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"success": true, "data": res})
+	OK(ctx, res)
 }
 
 // SubmitSolution 코드 제출 핸들러
@@ -55,30 +49,21 @@ func (c *MatchController) SubmitSolution(ctx *gin.Context) {
 	// 사용자 ID 가져오기
 	userID, exists := ctx.Get("userID")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": "User not authenticated",
-		})
+		Unauthorized(ctx, "User not authenticated")
 		return
 	}
 
 	// Parse match ID
 	matchID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid match ID",
-		})
+		BadRequest(ctx, "Invalid match ID")
 		return
 	}
 
 	// 요청 데이터 바인딩
 	var req model.SubmitSolutionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid request: " + err.Error(),
-		})
+		BadRequest(ctx, "Invalid request: "+err.Error())
 		return
 	}
 
@@ -87,18 +72,11 @@ func (c *MatchController) SubmitSolution(ctx *gin.Context) {
 	if err != nil {
 		// Judge0 API 할당량 초과 에러 확인
 		if strings.Contains(err.Error(), "exceeded the DAILY quota") {
-			ctx.JSON(http.StatusTooManyRequests, gin.H{
-				"success":    false,
-				"message":    "Code evaluation service is currently unavailable due to daily quota exceeded. Please try again later.",
-				"error_type": "judge0_quota_exceeded",
-			})
+			JSONError(ctx, http.StatusTooManyRequests, "Code evaluation service is currently unavailable due to daily quota exceeded. Please try again later.", "judge0_quota_exceeded")
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		InternalError(ctx, err.Error())
 		return
 	}
 

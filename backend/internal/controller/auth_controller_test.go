@@ -170,7 +170,10 @@ func TestRegister(t *testing.T) {
 		var response map[string]interface{}
 		json.Unmarshal(w.Body.Bytes(), &response)
 		assert.True(t, response["success"].(bool))
-		assert.NotNil(t, response["user"])
+		// unified format: user is under data
+		assert.NotNil(t, response["data"])
+		data := response["data"].(map[string]interface{})
+		assert.NotNil(t, data["id"])
 	})
 
 	t.Run("invalid request", func(t *testing.T) {
@@ -221,8 +224,7 @@ func TestLogin(t *testing.T) {
 		var response map[string]interface{}
 		json.Unmarshal(w.Body.Bytes(), &response)
 		assert.True(t, response["success"].(bool))
-
-		// Security: Token is returned for cross-origin scenarios (user fetched via /auth/me)
+		// Token and user are returned under data
 		assert.NotNil(t, response["data"])
 		data := response["data"].(map[string]interface{})
 		assert.Equal(t, expectedResponse.AccessToken, data["token"])
@@ -293,7 +295,10 @@ func TestGetCurrentUser(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.True(t, response["success"].(bool))
-		assert.NotNil(t, response["user"])
+		// unified format: user under data
+		assert.NotNil(t, response["data"])
+		data := response["data"].(map[string]interface{})
+		assert.NotNil(t, data["id"])
 
 		mockService.AssertExpectations(t)
 	})
@@ -501,10 +506,10 @@ func TestExchangeToken(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.Equal(t, true, response["success"])
-		// Security: Token is returned for cross-origin scenarios
-		// Cookie is also set for same-origin requests
-		assert.Equal(t, expectedResponse.AccessToken, response["token"])
-		assert.NotNil(t, response["user"])
+		// unified format: user and token under data
+		data := response["data"].(map[string]interface{})
+		assert.Equal(t, expectedResponse.AccessToken, data["token"])
+		assert.NotNil(t, data["user"])
 
 		mockService.AssertExpectations(t)
 	})

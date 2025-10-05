@@ -109,6 +109,8 @@ func TestLeetCodeController_GetAllProblems(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.True(t, response["success"].(bool))
+	// unified format returns list under data
+	assert.NotNil(t, response["data"])
 
 	// 모의 서비스 호출 확인
 	mockService.AssertExpectations(t)
@@ -146,6 +148,7 @@ func TestLeetCodeController_GetProblemByID(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.True(t, response["success"].(bool))
+	assert.NotNil(t, response["data"])
 
 	// 모의 서비스 호출 확인
 	mockService.AssertExpectations(t)
@@ -207,6 +210,7 @@ func TestLeetCodeController_CreateProblem(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.True(t, response["success"].(bool))
+	assert.NotNil(t, response["data"])
 
 	// 모의 서비스 호출 확인
 	mockService.AssertExpectations(t)
@@ -317,6 +321,7 @@ func TestLeetCodeController_UpdateProblem(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.True(t, response["success"].(bool))
+	assert.NotNil(t, response["data"])
 
 	// 모의 서비스 호출 확인
 	mockService.AssertExpectations(t)
