@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/types"
@@ -60,6 +61,11 @@ func (c *Judge0Client) SubmitCode(req types.Judge0Request) (*types.Judge0Respons
 	// 헤더 설정
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("X-RapidAPI-Key", c.apiKey)
+	if parsed, perr := url.Parse(c.apiEndpoint); perr == nil {
+		if parsed.Host != "" {
+			request.Header.Set("X-RapidAPI-Host", parsed.Host)
+		}
+	}
 
 	// API 요청 실행
 	resp, err := c.httpClient.Do(request)

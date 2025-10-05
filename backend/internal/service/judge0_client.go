@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -79,7 +80,14 @@ func (c *judge0HttpClient) SubmitCode(request judge0Request) (*judge0Response, e
 
 	// 헤더 설정
 	req.Header.Set("Content-Type", "application/json")
+	// RapidAPI requires both Key and Host
 	req.Header.Set("X-RapidAPI-Key", c.apiKey)
+	if parsed, perr := url.Parse(c.apiEndpoint); perr == nil {
+		// Only set when using RapidAPI
+		if parsed.Host != "" {
+			req.Header.Set("X-RapidAPI-Host", parsed.Host)
+		}
+	}
 
 	// API 요청 실행
 	resp, err := c.httpClient.Do(req)
