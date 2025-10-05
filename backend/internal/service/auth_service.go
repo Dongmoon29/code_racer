@@ -37,6 +37,7 @@ type authService struct {
 	logger      logger.Logger
 }
 
+// NewAuthService creates a new AuthService instance with the provided dependencies
 func NewAuthService(userRepo interfaces.UserRepository, jwtSecret string, logger logger.Logger) interfaces.AuthService {
 	return &authService{
 		userRepo:    userRepo,

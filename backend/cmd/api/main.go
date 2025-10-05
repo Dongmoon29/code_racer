@@ -142,7 +142,7 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 
 	// Initialize WebSocket and matchmaking services
 	matchmakingService := service.NewMatchmakingService(matchService, nil, rdb, appLogger)
-	wsService := service.NewWebSocketService(rdb, appLogger, matchmakingService)
+	wsService := service.NewWebSocketService(rdb, appLogger, matchmakingService, repos.userRepository)
 	matchmakingService.SetWebSocketService(wsService)
 
 	// Start WebSocket hub

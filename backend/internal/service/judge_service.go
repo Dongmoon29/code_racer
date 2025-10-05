@@ -38,6 +38,7 @@ type judgeService struct {
 // Interface implementation check
 var _ interfaces.JudgeService = (*judgeService)(nil)
 
+// NewJudgeService creates a new JudgeService instance with the provided configuration
 func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger) interfaces.JudgeService {
 	return &judgeService{
 		codeWrapper:       factory.NewCodeWrapper(logger),

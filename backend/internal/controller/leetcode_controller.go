@@ -300,7 +300,9 @@ func (c *LeetCodeController) GetProblemsWithPagination(ctx *gin.Context) {
 		limit = 10
 	}
 
-	// TODO: 리포지토리에 페이지네이션 메서드 추가 필요
+	// Note: Currently using in-memory pagination for simplicity
+	// In production, pagination should be implemented at the database level
+	// for better performance with large datasets
 	problems, err := c.leetCodeService.GetAllProblems()
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to get problems with pagination")

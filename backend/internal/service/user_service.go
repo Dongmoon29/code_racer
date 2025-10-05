@@ -22,6 +22,7 @@ type userService struct {
 	logger   logger.Logger
 }
 
+// NewUserService creates a new UserService instance with the provided dependencies
 func NewUserService(userRepo interfaces.UserRepository, logger logger.Logger) UserService {
 	return &userService{
 		userRepo: userRepo,

@@ -9,6 +9,12 @@ import (
 	"github.com/google/uuid"
 )
 
+// Default limits for LeetCode problems
+const (
+	defaultTimeLimit   = 1000 // milliseconds
+	defaultMemoryLimit = 128  // MB
+)
+
 type LeetCodeService interface {
 	GetAllProblems() ([]*model.LeetCodeSummary, error)
 	GetProblemByID(id uuid.UUID) (*model.LeetCodeDetail, error)
@@ -25,6 +31,7 @@ type leetCodeService struct {
 	logger       logger.Logger
 }
 
+// NewLeetCodeService creates a new LeetCodeService instance with the provided dependencies
 func NewLeetCodeService(leetCodeRepo repository.LeetCodeRepository, logger logger.Logger) LeetCodeService {
 	return &leetCodeService{
 		leetCodeRepo: leetCodeRepo,
@@ -75,8 +82,8 @@ func (s *leetCodeService) CreateProblem(req *model.CreateLeetCodeRequest) (*mode
 		InputFormat:        req.InputFormat,
 		OutputFormat:       req.OutputFormat,
 		FunctionName:       req.FunctionName,
-		TimeLimit:          1000, // 기본값
-		MemoryLimit:        128,  // 기본값
+		TimeLimit:          defaultTimeLimit,
+		MemoryLimit:        defaultMemoryLimit,
 		JavaScriptTemplate: req.JavaScriptTemplate,
 		PythonTemplate:     req.PythonTemplate,
 		GoTemplate:         req.GoTemplate,

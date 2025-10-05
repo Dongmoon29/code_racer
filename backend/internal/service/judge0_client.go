@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+// HTTP client timeout configuration
+const (
+	httpClientTimeout = 30 * time.Second
+)
+
 // judge0Request는 Judge0 API 요청에 사용되는 데이터 구조체입니다
 type judge0Request struct {
 	SourceCode       string `json:"source_code"`
@@ -47,13 +52,13 @@ type judge0HttpClient struct {
 	httpClient  *http.Client
 }
 
-// NewJudge0Client Judge0Client 인스턴스 생성
+// NewJudge0Client creates a new Judge0Client instance with the provided configuration
 func NewJudge0Client(apiKey string, apiEndpoint string) Judge0Client {
 	return &judge0HttpClient{
 		apiKey:      apiKey,
 		apiEndpoint: apiEndpoint,
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second, // 타임아웃 설정
+			Timeout: httpClientTimeout,
 		},
 	}
 }

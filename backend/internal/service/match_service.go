@@ -35,6 +35,7 @@ type matchService struct {
 	judgeService interfaces.JudgeService
 }
 
+// NewMatchService creates a new MatchService instance with the provided dependencies
 func NewMatchService(
 	matchRepo repository.MatchRepository,
 	leetCodeRepo repository.LeetCodeRepository,

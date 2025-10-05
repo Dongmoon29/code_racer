@@ -50,7 +50,7 @@ func NewUserDisconnectHandler(redisManager *RedisManager, matchService MatchServ
 // HandleUserDisconnect handles user disconnection based on scenario and reason
 func (h *UserDisconnectHandler) HandleUserDisconnect(matchID, userID uuid.UUID, reason DisconnectReason) error {
 	// Determine the scenario
-	scenario, err := h.determineDisconnectScenario(matchID, userID)
+	scenario, err := h.determineDisconnectScenario(matchID)
 	if err != nil {
 		h.logger.Error().Err(err).
 			Str("matchID", matchID.String()).
@@ -82,7 +82,7 @@ func (h *UserDisconnectHandler) HandleUserDisconnect(matchID, userID uuid.UUID, 
 }
 
 // determineDisconnectScenario determines the scenario based on match state
-func (h *UserDisconnectHandler) determineDisconnectScenario(matchID, userID uuid.UUID) (DisconnectScenario, error) {
+func (h *UserDisconnectHandler) determineDisconnectScenario(matchID uuid.UUID) (DisconnectScenario, error) {
 	// If matchID is nil, user was in matchmaking
 	if matchID == uuid.Nil {
 		return ScenarioMatchmaking, nil
@@ -267,8 +267,9 @@ func (h *UserDisconnectHandler) notifyRemainingUsers(matchID, userID uuid.UUID, 
 	}
 
 	// Broadcast to remaining users
-	// This would integrate with WebSocket service
-	// TODO: Implement actual WebSocket broadcasting
+	// Note: WebSocket broadcasting should be implemented here to notify
+	// remaining users about the disconnection in real-time
+	// This would require integration with the WebSocket service
 	h.logger.Info().
 		Str("matchID", matchID.String()).
 		Str("userID", userID.String()).

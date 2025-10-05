@@ -1,9 +1,9 @@
 package python
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/model"
 )
 
 type Wrapper struct{}
@@ -11,7 +11,7 @@ type Wrapper struct{}
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
 func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
-    template := `
+	template := `
 import json, sys
 
 # user code
@@ -32,11 +32,11 @@ def run_all():
 
 if __name__ == "__main__":
     run_all()`
-    return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
+	return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
 }
 
 func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
-    template := `
+	template := `
 import json
 import sys
 
@@ -56,7 +56,5 @@ def run_test():
 
 if __name__ == "__main__":
     run_test()`
-    return fmt.Sprintf(template, code, testCase, problem.FunctionName)
+	return fmt.Sprintf(template, code, testCase, problem.FunctionName)
 }
-
-

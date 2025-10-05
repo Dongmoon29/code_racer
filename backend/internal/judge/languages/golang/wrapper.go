@@ -1,9 +1,9 @@
 package golang
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/model"
 )
 
 // Wrapper implements Go-specific code wrapping logic.
@@ -12,8 +12,8 @@ type Wrapper struct{}
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
 func (g *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
-    if len(problem.IOSchema.ParamTypes) == 0 {
-        template := `
+	if len(problem.IOSchema.ParamTypes) == 0 {
+		template := `
 package main
 
 import (
@@ -39,11 +39,11 @@ func main() {
     b, _ := json.Marshal(results)
     // Remove debug prints - use proper logging instead
 }`
-        return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
-    }
+		return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
+	}
 
-    argDecl, callArgs := goArgLines("c", problem.IOSchema.ParamTypes)
-    template := `
+	argDecl, callArgs := goArgLines("c", problem.IOSchema.ParamTypes)
+	template := `
 package main
 
 import (
@@ -76,12 +76,12 @@ func main() {
     b, _ := json.Marshal(results)
     // Remove debug prints - use proper logging instead
 }`
-    return fmt.Sprintf(template, code, testCasesJSON, argDecl, problem.FunctionName, callArgs), nil
+	return fmt.Sprintf(template, code, testCasesJSON, argDecl, problem.FunctionName, callArgs), nil
 }
 
 func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
-    if len(problem.IOSchema.ParamTypes) == 0 {
-        template := `
+	if len(problem.IOSchema.ParamTypes) == 0 {
+		template := `
 package main
 
 import (
@@ -103,10 +103,10 @@ func main() {
     b, _ := json.Marshal(out)
     // Remove debug prints - use proper logging instead
 }`
-        return fmt.Sprintf(template, code, testCase, problem.FunctionName)
-    }
-    argDecl, callArgs := goArgLines("testCase", problem.IOSchema.ParamTypes)
-    template := `
+		return fmt.Sprintf(template, code, testCase, problem.FunctionName)
+	}
+	argDecl, callArgs := goArgLines("testCase", problem.IOSchema.ParamTypes)
+	template := `
 package main
 
 import (
@@ -135,40 +135,38 @@ func main() {
     b, _ := json.Marshal(out)
     // Remove debug prints - use proper logging instead
 }`
-    return fmt.Sprintf(template, code, testCase, argDecl, problem.FunctionName, callArgs)
+	return fmt.Sprintf(template, code, testCase, argDecl, problem.FunctionName, callArgs)
 }
 
 func goArgLines(varName string, paramTypes []string) (string, string) {
-    decl := ""
-    call := ""
-    for i, pt := range paramTypes {
-        idx := fmt.Sprintf("%s[%d]", varName, i)
-        arg := fmt.Sprintf("arg%d", i)
-        switch pt {
-        case "number", "int":
-            decl += fmt.Sprintf("    %s := toInt(%s)\n", arg, idx)
-            call += arg
-        case "float":
-            decl += fmt.Sprintf("    %s := toFloat(%s)\n", arg, idx)
-            call += arg
-        case "boolean", "bool":
-            decl += fmt.Sprintf("    %s := toBool(%s)\n", arg, idx)
-            call += arg
-        case "string":
-            decl += fmt.Sprintf("    %s := toString(%s)\n", arg, idx)
-            call += arg
-        case "array":
-            decl += fmt.Sprintf("    %s := toIntSlice(%s)\n", arg, idx)
-            call += arg
-        default:
-            decl += fmt.Sprintf("    %s := %s\n", arg, idx)
-            call += arg
-        }
-        if i < len(paramTypes)-1 {
-            call += ", "
-        }
-    }
-    return decl, call
+	decl := ""
+	call := ""
+	for i, pt := range paramTypes {
+		idx := fmt.Sprintf("%s[%d]", varName, i)
+		arg := fmt.Sprintf("arg%d", i)
+		switch pt {
+		case "number", "int":
+			decl += fmt.Sprintf("    %s := toInt(%s)\n", arg, idx)
+			call += arg
+		case "float":
+			decl += fmt.Sprintf("    %s := toFloat(%s)\n", arg, idx)
+			call += arg
+		case "boolean", "bool":
+			decl += fmt.Sprintf("    %s := toBool(%s)\n", arg, idx)
+			call += arg
+		case "string":
+			decl += fmt.Sprintf("    %s := toString(%s)\n", arg, idx)
+			call += arg
+		case "array":
+			decl += fmt.Sprintf("    %s := toIntSlice(%s)\n", arg, idx)
+			call += arg
+		default:
+			decl += fmt.Sprintf("    %s := %s\n", arg, idx)
+			call += arg
+		}
+		if i < len(paramTypes)-1 {
+			call += ", "
+		}
+	}
+	return decl, call
 }
-
-

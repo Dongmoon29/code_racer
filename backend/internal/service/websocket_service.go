@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/go-redis/redis/v8"
@@ -65,6 +66,9 @@ type Hub struct {
 
 	// Matchmaking service for handling matches
 	matchmakingService MatchmakingService
+
+	// User repository for getting user information
+	userRepository interfaces.UserRepository
 
 	// Logger for structured logging
 	logger logger.Logger
@@ -164,15 +168,17 @@ type webSocketService struct {
 	logger             logger.Logger
 	hub                *Hub
 	matchmakingService MatchmakingService
+	userRepository     interfaces.UserRepository
 }
 
 // NewWebSocketService creates a new WebSocketService instance
-func NewWebSocketService(rdb *redis.Client, logger logger.Logger, matchmakingService MatchmakingService) WebSocketService {
+func NewWebSocketService(rdb *redis.Client, logger logger.Logger, matchmakingService MatchmakingService, userRepository interfaces.UserRepository) WebSocketService {
 	service := &webSocketService{
 		rdb:                rdb,
 		redisManager:       NewRedisManager(rdb, logger),
 		logger:             logger,
 		matchmakingService: matchmakingService,
+		userRepository:     userRepository,
 	}
 	service.InitHub()
 	return service
@@ -191,6 +197,7 @@ func (s *webSocketService) InitHub() *Hub {
 		startMatching:      make(chan *MatchingRequest),
 		cancelMatching:     make(chan *CancelRequest),
 		matchmakingService: s.matchmakingService,
+		userRepository:     s.userRepository,
 		logger:             s.logger,
 	}
 	return s.hub
@@ -485,6 +492,21 @@ func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, match interf
 		return
 	}
 
+	// Get user names for both players
+	player1User, err1 := h.userRepository.FindByID(player1.userID)
+	player2User, err2 := h.userRepository.FindByID(player2.userID)
+
+	// Use default names if user lookup fails
+	player1Name := "Player 1"
+	player2Name := "Player 2"
+
+	if err1 == nil && player1User != nil {
+		player1Name = player1User.Name
+	}
+	if err2 == nil && player2User != nil {
+		player2Name = player2User.Name
+	}
+
 	// Create detailed match found messages
 	matchMsg1 := MatchFoundMessage{
 		Type:   "match_found",
@@ -497,7 +519,7 @@ func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, match interf
 		},
 		Opponent: map[string]interface{}{
 			"id":   player2.userID.String(),
-			"name": "Player 2", // TODO: Get actual user name
+			"name": player2Name,
 		},
 	}
 
@@ -512,7 +534,7 @@ func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, match interf
 		},
 		Opponent: map[string]interface{}{
 			"id":   player1.userID.String(),
-			"name": "Player 1", // TODO: Get actual user name
+			"name": player1Name,
 		},
 	}
 
