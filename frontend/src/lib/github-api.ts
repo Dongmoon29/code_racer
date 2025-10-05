@@ -1,6 +1,9 @@
 import { TIMER_CONSTANTS } from '@/constants';
 import { createErrorHandler } from '@/lib/error-tracking';
 
+// GitHub API constants
+const GITHUB_API_BASE_URL = 'https://api.github.com';
+
 export interface GitHubCommit {
   sha: string;
   commit: {
@@ -99,7 +102,7 @@ export async function getRecentCommits(
 
   try {
     const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/commits?per_page=${perPage}`,
+      `${GITHUB_API_BASE_URL}/repos/${owner}/${repo}/commits?per_page=${perPage}`,
       {
         headers: {
           Accept: 'application/vnd.github.v3+json',
@@ -121,8 +124,8 @@ export async function getRecentCommits(
     errorHandler(error, {
       owner,
       repo,
-      maxCommits,
-      endpoint: `${API_BASE_URL}/repos/${owner}/${repo}/commits`,
+      perPage,
+      endpoint: `${GITHUB_API_BASE_URL}/repos/${owner}/${repo}/commits`,
     });
     return [];
   }
@@ -143,7 +146,7 @@ export async function getRepositoryInfo(
 
   try {
     const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}`,
+      `${GITHUB_API_BASE_URL}/repos/${owner}/${repo}`,
       {
         headers: {
           Accept: 'application/vnd.github.v3+json',
@@ -165,7 +168,7 @@ export async function getRepositoryInfo(
     errorHandler(error, {
       owner,
       repo,
-      endpoint: `${API_BASE_URL}/repos/${owner}/${repo}`,
+      endpoint: `${GITHUB_API_BASE_URL}/repos/${owner}/${repo}`,
     });
     return null;
   }
