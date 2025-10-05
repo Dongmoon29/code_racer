@@ -114,6 +114,9 @@ func (s *userService) UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRe
 	}
 
 	// 프로필 정보 업데이트
+	if req.Name != "" {
+		user.Name = req.Name
+	}
 	user.Homepage = req.Homepage
 	user.LinkedIn = req.LinkedIn
 	user.GitHub = req.GitHub

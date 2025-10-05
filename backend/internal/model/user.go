@@ -132,6 +132,7 @@ type LoginResponse struct {
 }
 
 type UpdateProfileRequest struct {
+	Name        string `json:"name" binding:"omitempty,min=2,max=100"`
 	Homepage    string `json:"homepage" binding:"omitempty,url"`
 	LinkedIn    string `json:"linkedin" binding:"omitempty,url"`
 	GitHub      string `json:"github" binding:"omitempty,url"`
