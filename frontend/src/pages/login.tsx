@@ -10,11 +10,12 @@ import { motion } from 'framer-motion';
 const LoginPage: React.FC = () => {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
-  const { isLoggedIn } = useAuthStore();
+  const { isLoggedIn, isLoading } = useAuthStore();
 
   useEffect(() => {
-    // 이미 로그인된 사용자가 로그인 페이지에 접근하면 dashboard로 리다이렉트
-    if (isLoggedIn) {
+    // Only redirect if we're sure the user is logged in
+    // and we're not still loading
+    if (!isLoading && isLoggedIn) {
       router.replace('/dashboard');
       return;
     }
@@ -24,7 +25,24 @@ const LoginPage: React.FC = () => {
         'Registration successful! Please login with your new account.'
       );
     }
-  }, [isLoggedIn, router.query, router]);
+  }, [isLoading, isLoggedIn, router.query, router]);
+
+  // Show loading while checking auth status
+  if (isLoading) {
+    return (
+      <Layout
+        title="Login | CodeRacer"
+        description="Login to CodeRacer to start competing in real-time coding challenges"
+      >
+        <div className="flex w-full min-h-[calc(100vh-80px)] items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout

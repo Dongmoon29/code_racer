@@ -37,15 +37,16 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
 
   const cancelMatching = useCallback(() => {
     if (wsClientRef.current) {
+      // Send cancel request and wait for server confirmation
       wsClientRef.current.cancelMatching();
-      wsClientRef.current.disconnect();
-      wsClientRef.current = null;
+      // Don't disconnect immediately - wait for server response
     }
     if (redirectTimeoutRef.current) {
       clearTimeout(redirectTimeoutRef.current);
       redirectTimeoutRef.current = null;
     }
 
+    // Update UI state immediately for better UX
     setMatchingState(MATCHING_STATE.IDLE);
     setSelectedDifficulty(null);
     setWaitTimeSeconds(0);
@@ -89,9 +90,17 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
         onStatusUpdate: (message: MatchingStatusMessage) => {
           setWaitTimeSeconds(message.wait_time_seconds || 0);
 
-          if (message.status === 'cancelled') {
+          if (message.status === 'canceled') {
             setMatchingState(MATCHING_STATE.IDLE);
             setSelectedDifficulty(null);
+            setWaitTimeSeconds(0);
+            setError(null);
+
+            // Disconnect after server confirmation
+            if (wsClientRef.current) {
+              wsClientRef.current.disconnect();
+              wsClientRef.current = null;
+            }
           }
         },
 

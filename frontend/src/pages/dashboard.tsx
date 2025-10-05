@@ -12,12 +12,24 @@ const DashboardPage: FC = () => {
   const { isLoggedIn, isLoading } = useAuth();
 
   useEffect(() => {
+    // Only redirect if we're sure the user is not logged in
+    // and we're not still loading
     if (!isLoading && !isLoggedIn) {
-      router.push('/login');
+      router.replace('/login');
     }
   }, [isLoading, isLoggedIn, router]);
 
-  if (isLoading || !isLoggedIn) {
+  // Show loading while checking auth status
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <CodeRacerLoader size="lg" />
+      </div>
+    );
+  }
+
+  // Show loading if not logged in (will redirect)
+  if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <CodeRacerLoader size="lg" />

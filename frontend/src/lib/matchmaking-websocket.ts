@@ -73,18 +73,19 @@ export class MatchmakingWebSocketClient {
           wsHost = wsHost.replace(/^https?:\/\//, '');
         }
 
-        const token =
-          localStorage.getItem('authToken') || localStorage.getItem('token');
+        const wsUrl = `${wsProtocol}//${wsHost}/ws/matching`;
+
+        // Security: Use sessionStorage instead of localStorage
+        const token = sessionStorage.getItem('authToken');
         if (!token) {
           reject(new Error('No authentication token found'));
           return;
         }
 
-        const wsUrl = `${wsProtocol}//${wsHost}/ws/matching?token=${encodeURIComponent(
-          token
-        )}`;
+        // Add token as query parameter (WebSocket limitation)
+        const wsUrlWithToken = `${wsUrl}?token=${encodeURIComponent(token)}`;
 
-        this.ws = new WebSocket(wsUrl);
+        this.ws = new WebSocket(wsUrlWithToken);
 
         this.ws.onopen = () => {
           this.reconnectAttempts = 0;
@@ -135,6 +136,13 @@ export class MatchmakingWebSocketClient {
       case 'matching_status':
         console.log('📊 Matching status update:', message);
         this.callbacks.onStatusUpdate?.(message);
+
+        // If status is 'canceled', disconnect after a short delay
+        if (message.status === 'canceled') {
+          setTimeout(() => {
+            this.disconnect();
+          }, 50);
+        }
         break;
       case 'match_found':
         console.log('🎉 Match found!:', message);

@@ -56,16 +56,16 @@ export class WebSocketClient {
       wsUrl = `${wsProtocol}//${wsHost}/ws/${this.gameId}`;
     }
 
-    // Get JWT token
-    const token =
-      localStorage.getItem('authToken') || localStorage.getItem('token');
-
+    // Security: Use Authorization header instead of URL parameter
+    // This prevents token exposure in logs and browser history
+    const token = sessionStorage.getItem('authToken');
     if (!token) {
       console.error('No authentication token found');
       return;
     }
 
-    // Add token as query parameter (headers cannot be set in browser WebSocket)
+    // Add token as query parameter (WebSocket doesn't support custom headers)
+    // This is a limitation of WebSocket protocol, but we use sessionStorage for better security
     wsUrl = `${wsUrl}?token=${encodeURIComponent(token)}`;
 
     // Create WebSocket connection

@@ -134,12 +134,15 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
+	// Set httpOnly cookie for security (when same-origin)
+	ctx.SetCookie("auth_token", response.AccessToken, 3600*24*7, "/", "", true, true) // 7 days, httpOnly, secure
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Login successful",
 		"data": gin.H{
 			"user":  response.User,
-			"token": response.AccessToken,
+			"token": response.AccessToken, // Include token for cross-origin scenarios
 		},
 	})
 }
@@ -307,10 +310,13 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 
 	c.logger.Info().Msg("ExchangeToken: Token exchange successful")
 
+	// Set httpOnly cookie for security (when same-origin)
+	ctx.SetCookie("auth_token", response.AccessToken, 3600*24*7, "/", "", true, true) // 7 days, httpOnly, secure
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"token":   response.AccessToken,
 		"user":    response.User,
+		"token":   response.AccessToken, // Include token for cross-origin scenarios
 	})
 }
 
@@ -322,8 +328,11 @@ func (c *AuthController) validateState(state string) bool {
 }
 
 func (c *AuthController) Logout(ctx *gin.Context) {
+	// Clear the httpOnly cookie
+	ctx.SetCookie("auth_token", "", -1, "/", "", true, true) // Expire immediately
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Successfully logged out. Please remove the token from client storage.",
+		"message": "Successfully logged out",
 	})
 }

@@ -40,8 +40,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('Logout failed', error);
     } finally {
-      // Remove token from local storage
-      localStorage.removeItem('authToken');
+      // Clear token from sessionStorage (more secure than localStorage)
+      sessionStorage.removeItem('authToken');
 
       set({
         user: null,
@@ -52,13 +52,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
   initializeAuth: async () => {
-    // Check if token exists in local storage
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      set({ user: null, isLoggedIn: false, isLoading: false });
-      return;
-    }
-
     // Skip if already loading
     if (get().isLoading) {
       return;
@@ -66,19 +59,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     try {
       set({ isLoading: true });
+
+      // Check if token exists in sessionStorage
+      const token = sessionStorage.getItem('authToken');
+      if (!token) {
+        set({ user: null, isLoggedIn: false, isLoading: false });
+        return;
+      }
+
       const response = await authApi.getCurrentUser();
       const user = extractUserFromResponse(response);
       if (user) {
         set({ user, isLoggedIn: true });
       } else {
-        // Remove token if user info cannot be retrieved
-        localStorage.removeItem('authToken');
         set({ user: null, isLoggedIn: false });
       }
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 401) {
-        // Remove token if invalid
-        localStorage.removeItem('authToken');
+        // User is not authenticated - clear token
+        sessionStorage.removeItem('authToken');
         set({ user: null, isLoggedIn: false });
       } else {
         console.error('Failed to initialize auth', error);

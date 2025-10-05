@@ -28,8 +28,10 @@ const LoginForm: React.FC = () => {
       const response = await authApi.login(email, password);
 
       if (response.success) {
+        // Security: Store token in sessionStorage (more secure than localStorage)
+        // sessionStorage is cleared when browser tab is closed
         if (response.data?.token) {
-          localStorage.setItem('authToken', response.data.token);
+          sessionStorage.setItem('authToken', response.data.token);
         }
 
         const user = extractUserFromResponse(response);
