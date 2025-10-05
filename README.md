@@ -3,8 +3,10 @@
 **Real-time competitive coding platform** where developers race to solve programming challenges against each other.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Go Version](https://img.shields.io/badge/go-1.25-blue.svg)](https://golang.org/)
+[![Go Version](https://img.shields.io/badge/go-1.25.0-blue.svg)](https://golang.org/)
 [![Node.js Version](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.4.7-black.svg)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.0.0-61dafb.svg)](https://reactjs.org/)
 [![PostgreSQL](https://img.shields.io/badge/database-PostgreSQL-blue.svg)](https://postgresql.org/)
 [![Redis](https://img.shields.io/badge/cache-Redis-red.svg)](https://redis.io/)
 
@@ -15,49 +17,64 @@ CodeRacer is a real-time multiplayer coding platform that allows developers to c
 ### ✨ Key Features
 
 - 🔥 **Real-time Competitions**: Live coding battles with instant opponent code visibility
-- 🤖 **Automatic Matchmaking**: Smart player matching based on difficulty preferences
+- 🤖 **Automatic Matchmaking**: FIFO-based player matching with difficulty preferences (Easy/Medium/Hard)
 - 💻 **Multi-language Support**: Code in Python, JavaScript, Go, Java, and C++
 - ⚡ **Live Code Execution**: Powered by Judge0 API for instant code evaluation
-- 🎨 **Modern UI**: Responsive design with dark/light theme support
+- 🎨 **Modern UI**: Responsive design with dark/light theme support via next-themes
+- ⌨️ **Vim Mode Support**: Built-in Vim keybindings in the code editor
 - 👤 **User Authentication**: Secure login with email/password, Google, and GitHub OAuth
-- 📊 **Admin Panel**: LeetCode problem management system
-- 🌐 **WebSocket Integration**: Real-time communication and game state synchronization
+- 📊 **Admin Panel**: LeetCode problem management and user administration
+- 🌐 **WebSocket Integration**: Bidirectional real-time communication with automatic reconnection
+- 🔒 **Session Management**: Redis-backed session storage with distributed locking
+- 📈 **Leaderboard System**: Track user ratings and competitive rankings
+- 🛡️ **Error Tracking**: Comprehensive error handling with severity categorization
 
 ### 🏗️ Architecture
 
 **Frontend (Next.js + TypeScript)**
 
-- Modern React application with TypeScript
-- Real-time WebSocket integration
-- CodeMirror editor with syntax highlighting
-- Tailwind CSS + Styled Components for styling
-- Zustand for state management
+- Next.js 15 with React 19 and TypeScript 5
+- Pages Router architecture for SSR/SSG
+- Real-time WebSocket integration with reconnection logic
+- CodeMirror 6 editor with syntax highlighting and Vim mode
+- Tailwind CSS v4 for responsive design
+- Zustand for lightweight state management
+- TanStack Query (React Query) for server state
+- Custom hooks for game logic separation
+- Error tracking with severity-based categorization
 
 **Backend (Go + Gin)**
 
 - Clean architecture with dependency injection
-- WebSocket-based real-time communication
-- JWT authentication with OAuth integration
-- Comprehensive testing suite
+- Zerolog structured logging
+- WebSocket Hub pattern for connection management
+- JWT authentication with OAuth2 (Google, GitHub)
+- GORM with PostgreSQL for persistence
+- Redis for session storage and distributed locking
+- Comprehensive unit testing with testify and gomock
+- Centralized router management
 - Docker containerization
 
 **Infrastructure**
 
-- PostgreSQL for data persistence
-- Redis for caching and session management
-- Judge0 API for code execution
-- Google Cloud Platform deployment
+- PostgreSQL 14+ for data persistence
+- Redis 7+ for caching and real-time game state
+- Judge0 API for secure code execution
+- Google Cloud Platform (GCP) deployment
+  - Cloud Run for containerized services
+  - Cloud SQL for managed PostgreSQL
+  - Artifact Registry for container images
 - Terraform for infrastructure as code
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- [Go 1.25+](https://golang.org/doc/install)
+- [Go 1.25.0+](https://golang.org/doc/install)
 - [Node.js 20+](https://nodejs.org/)
 - [PostgreSQL 14+](https://www.postgresql.org/)
 - [Redis 7+](https://redis.io/)
-- [Docker](https://www.docker.com/) (optional)
+- [Docker](https://www.docker.com/) (recommended for local development)
 
 ### 1. Clone Repository
 
@@ -96,7 +113,12 @@ cd frontend
 # Install dependencies
 npm install
 
-# Start development server
+# Setup environment variables (optional)
+# Create .env.local if needed for custom API URLs
+# NEXT_PUBLIC_API_URL=http://localhost:8080/api
+# NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
+
+# Start development server with Turbopack
 npm run dev
 ```
 
@@ -118,23 +140,50 @@ code_racer/
 │   ├── cmd/api/            # Application entry point
 │   ├── internal/           # Private application code
 │   │   ├── config/         # Configuration management
-│   │   ├── controller/     # HTTP handlers
-│   │   ├── service/        # Business logic
+│   │   ├── controller/     # HTTP and WebSocket handlers
+│   │   ├── service/        # Business logic layer
+│   │   │   ├── websocket_service.go    # WebSocket Hub
+│   │   │   ├── matchmaking_service.go  # Matchmaking logic
+│   │   │   ├── match_service.go        # Game management
+│   │   │   └── judge_service.go        # Code execution
 │   │   ├── repository/     # Data access layer
-│   │   ├── model/          # Data models
-│   │   └── middleware/     # HTTP middleware
+│   │   ├── model/          # Data models & entities
+│   │   ├── middleware/     # HTTP middleware (auth, CORS, etc)
+│   │   ├── logger/         # Zerolog integration
+│   │   ├── router/         # Centralized route management
+│   │   ├── constants/      # Application constants
+│   │   ├── interfaces/     # Interface definitions
+│   │   ├── util/           # Helper functions
+│   │   └── testutil/       # Testing utilities
 │   ├── migrations/         # Database migrations
-│   └── docker-compose.yml  # Local development services
+│   ├── deployment/         # Deployment scripts
+│   │   └── terraform/      # Infrastructure as code
+│   ├── docker-compose.yml  # Local development services
+│   └── Dockerfile          # Production container image
 ├── frontend/               # Next.js frontend application
 │   ├── src/
 │   │   ├── components/     # React components
-│   │   ├── pages/          # Next.js pages
-│   │   ├── lib/            # Utility functions
+│   │   │   ├── ui/         # Reusable UI components
+│   │   │   ├── game/       # Game-related components
+│   │   │   ├── auth/       # Authentication forms
+│   │   │   ├── admin/      # Admin panel components
+│   │   │   └── layout/     # Layout components
+│   │   ├── pages/          # Next.js pages (Pages Router)
+│   │   ├── lib/            # Utility functions & API clients
+│   │   │   ├── api.ts              # HTTP API client
+│   │   │   ├── websocket.ts        # Game WebSocket client
+│   │   │   ├── matchmaking-websocket.ts  # Matchmaking WS
+│   │   │   └── error-tracking.ts   # Error management
 │   │   ├── hooks/          # Custom React hooks
-│   │   └── stores/         # State management
-│   └── public/             # Static assets
-└── deployment/             # Infrastructure and deployment
-    └── terraform/          # GCP infrastructure
+│   │   ├── stores/         # Zustand state management
+│   │   ├── types/          # TypeScript type definitions
+│   │   ├── constants/      # Frontend constants
+│   │   └── styles/         # Global styles
+│   ├── public/             # Static assets
+│   └── Dockerfile          # Production container image
+├── docs/                   # Documentation
+├── matchmaking-flow.md     # Matchmaking flow diagrams
+└── README.md              # This file
 ```
 
 ## 🛠️ Development
