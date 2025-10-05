@@ -61,6 +61,7 @@ func (c *Judge0Client) SubmitCode(req types.Judge0Request) (*types.Judge0Respons
 	// 헤더 설정
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("X-RapidAPI-Key", c.apiKey)
+	fmt.Println("X-RapidAPI-Key ==================>", c.apiKey)
 	if parsed, perr := url.Parse(c.apiEndpoint); perr == nil {
 		if parsed.Host != "" {
 			fmt.Println("X-RapidAPI-Host ==================>", parsed.Host)
