@@ -55,7 +55,8 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
             src="/track.png"
             alt="Racing Track Background"
             fill
-            className="object-cover opacity-20"
+            // className="object-cover opacity-20"
+            className="object-cover !opacity-75 !dark:opacity-20"
             priority
           />
         </div>
@@ -193,7 +194,7 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
             src="/track2.png"
             alt="Second Racing Track Background"
             fill
-            className="object-cover opacity-25"
+            className="object-cover !opacity-60 !dark:opacity-20"
             priority
           />
         </div>
