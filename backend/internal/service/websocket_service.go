@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -406,7 +407,7 @@ func (h *Hub) tryMatchmaking(difficulty string) {
 // sendMatchingStatus sends matching status to a client
 func (h *Hub) sendMatchingStatus(client *Client, status string, queuePos, waitTime int) {
 	msg := MatchingStatusMessage{
-		Type:     "matching_status",
+		Type:     constants.MatchingStatus,
 		Status:   status,
 		QueuePos: queuePos,
 		WaitTime: waitTime,
@@ -440,7 +441,7 @@ func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
 
 		// Send error to both players
 		errorMsg := map[string]interface{}{
-			"type":    "match_error",
+			"type":    constants.Error,
 			"message": "Failed to create game. Please try again.",
 		}
 
@@ -475,7 +476,7 @@ func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, match interf
 	if !ok {
 		// Send simple notification without game details
 		simpleMsg := map[string]interface{}{
-			"type":    "match_found",
+			"type":    constants.MatchFound,
 			"message": "Match found! Redirecting to game...",
 		}
 
@@ -687,7 +688,7 @@ func (s *webSocketService) loadExistingCodeForClient(client *Client, matchID uui
 	existingCode, err := s.redisManager.GetUserCode(matchID, userID)
 	if err == nil && existingCode != "" {
 		codeUpdateMsg := CodeUpdateMessage{
-			Type:    "code_update",
+			Type:    constants.CodeUpdate,
 			MatchID: matchID.String(),
 			UserID:  userID.String(),
 			Code:    existingCode,
@@ -867,26 +868,26 @@ func (c *Client) readPump(wsService *webSocketService) {
 		}
 
 		switch msgType {
-		case "auth":
+		case constants.Auth:
 			// Handle auth message (already authenticated at connection time)
 			// Logging removed
 
-		case "ping":
+		case constants.Ping:
 			// Respond to ping message with pong
 			pongMsg := map[string]interface{}{
-				"type":      "pong",
+				"type":      constants.Pong,
 				"timestamp": time.Now().Unix(),
 			}
 			pongBytes, _ := json.Marshal(pongMsg)
 			c.send <- pongBytes
 
-		case "start_matching":
+		case constants.StartMatching:
 			c.handleStartMatchingMessage(msg)
 
-		case "cancel_matching":
+		case constants.CancelMatching:
 			c.handleCancelMatchingMessage()
 
-		case "code_update":
+		case constants.CodeUpdate:
 			c.handleCodeUpdateMessage(msg, wsService)
 
 		default:
@@ -964,7 +965,7 @@ func (c *Client) storeCodeInRedis(code string, wsService *webSocketService) {
 // broadcastCodeUpdate broadcasts code update to other clients (excluding sender)
 func (c *Client) broadcastCodeUpdate(code string, wsService *webSocketService) {
 	codeUpdateMsg := CodeUpdateMessage{
-		Type:    "code_update",
+		Type:    constants.CodeUpdate,
 		MatchID: c.matchID.String(),
 		UserID:  c.userID.String(),
 		Code:    code,

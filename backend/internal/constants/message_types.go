@@ -1,0 +1,97 @@
+package constants
+
+// WebSocket message types for consistent communication between frontend and backend
+const (
+	// Authentication messages
+	Auth = "auth"
+
+	// Connection management
+	Ping = "ping"
+	Pong = "pong"
+
+	// Game-related messages
+	CodeUpdate   = "code_update"
+	GameFinished = "game_finished"
+
+	// Matchmaking messages
+	StartMatching  = "start_matching"
+	CancelMatching = "cancel_matching"
+	MatchingStatus = "matching_status"
+	MatchFound     = "match_found"
+
+	// Error handling
+	Error = "error"
+)
+
+// MessageType represents all possible WebSocket message types
+type MessageType string
+
+// Message type constants
+var (
+	MessageTypeAuth           MessageType = Auth
+	MessageTypePing           MessageType = Ping
+	MessageTypePong           MessageType = Pong
+	MessageTypeCodeUpdate     MessageType = CodeUpdate
+	MessageTypeGameFinished   MessageType = GameFinished
+	MessageTypeStartMatching  MessageType = StartMatching
+	MessageTypeCancelMatching MessageType = CancelMatching
+	MessageTypeMatchingStatus MessageType = MatchingStatus
+	MessageTypeMatchFound     MessageType = MatchFound
+	MessageTypeError          MessageType = Error
+)
+
+// IsValidMessageType checks if the given string is a valid message type
+func IsValidMessageType(msgType string) bool {
+	switch msgType {
+	case Auth, Ping, Pong, CodeUpdate, GameFinished,
+		StartMatching, CancelMatching, MatchingStatus, MatchFound, Error:
+		return true
+	default:
+		return false
+	}
+}
+
+// GetAllMessageTypes returns all valid message types
+func GetAllMessageTypes() []MessageType {
+	return []MessageType{
+		MessageTypeAuth,
+		MessageTypePing,
+		MessageTypePong,
+		MessageTypeCodeUpdate,
+		MessageTypeGameFinished,
+		MessageTypeStartMatching,
+		MessageTypeCancelMatching,
+		MessageTypeMatchingStatus,
+		MessageTypeMatchFound,
+		MessageTypeError,
+	}
+}
+
+// MessageTypeCategory represents the category of a message type
+type MessageTypeCategory string
+
+const (
+	CategoryAuth        MessageTypeCategory = "auth"
+	CategoryConnection  MessageTypeCategory = "connection"
+	CategoryGame        MessageTypeCategory = "game"
+	CategoryMatchmaking MessageTypeCategory = "matchmaking"
+	CategoryError       MessageTypeCategory = "error"
+)
+
+// GetMessageTypeCategory returns the category of a message type
+func GetMessageTypeCategory(msgType string) MessageTypeCategory {
+	switch msgType {
+	case Auth:
+		return CategoryAuth
+	case Ping, Pong:
+		return CategoryConnection
+	case CodeUpdate, GameFinished:
+		return CategoryGame
+	case StartMatching, CancelMatching, MatchingStatus, MatchFound:
+		return CategoryMatchmaking
+	case Error:
+		return CategoryError
+	default:
+		return CategoryError
+	}
+}
