@@ -16,6 +16,7 @@ export type LanguageOption =
   | 'rust';
 
 export type ProfileFormValues = {
+  name?: string;
   homepage?: string;
   linkedin?: string;
   github?: string;
@@ -30,6 +31,7 @@ type ProfileEditFormProps = {
 };
 
 const schema: yup.ObjectSchema<ProfileFormValues> = yup.object({
+  name: yup.string().min(2).max(100).optional(),
   homepage: yup.string().url('Invalid URL').optional(),
   linkedin: yup.string().url('Invalid URL').optional(),
   github: yup.string().url('Invalid URL').optional(),
@@ -80,6 +82,19 @@ export default function ProfileEditForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div>
+        <label className="text-sm">Name</label>
+        <input
+          className="mt-1 w-full border rounded px-3 py-2 bg-background"
+          placeholder="Your name"
+          {...register('name')}
+        />
+        {errors.name && (
+          <p className="text-xs text-red-500">
+            {errors.name.message as string}
+          </p>
+        )}
+      </div>
       <div>
         <label className="text-sm">Homepage</label>
         <input
