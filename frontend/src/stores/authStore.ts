@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api, { authApi, extractUserFromResponse } from '@/lib/api';
+import api, { authApi } from '@/lib/api';
 import { AxiosError } from 'axios';
 import { createErrorHandler } from '@/lib/error-tracking';
 
@@ -76,7 +76,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       const response = await authApi.getCurrentUser();
-      const user = extractUserFromResponse(response);
+      const user = response?.data; // unified: { success, data: User }
       if (user) {
         set({ user, isLoggedIn: true });
       } else {

@@ -170,7 +170,7 @@ func TestRegister(t *testing.T) {
 		var response map[string]interface{}
 		json.Unmarshal(w.Body.Bytes(), &response)
 		assert.True(t, response["success"].(bool))
-		// unified format: user is under data
+		// unified format: user object directly under data
 		assert.NotNil(t, response["data"])
 		data := response["data"].(map[string]interface{})
 		assert.NotNil(t, data["id"])
@@ -295,7 +295,7 @@ func TestGetCurrentUser(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.True(t, response["success"].(bool))
-		// unified format: user under data
+		// unified format: user object under data
 		assert.NotNil(t, response["data"])
 		data := response["data"].(map[string]interface{})
 		assert.NotNil(t, data["id"])

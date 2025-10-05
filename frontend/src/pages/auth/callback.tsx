@@ -1,14 +1,17 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { authApi, extractUserFromResponse } from '../../lib/api';
+import { authApi } from '../../lib/api';
 
 const AuthCallback: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasRunRef = useRef(false);
 
   useEffect(() => {
+    if (hasRunRef.current) return; // prevent double-run in StrictMode
+    hasRunRef.current = true;
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const state = urlParams.get('state');
@@ -37,7 +40,7 @@ const AuthCallback: React.FC = () => {
           // Always fetch fresh user from /users/me to avoid drift
           try {
             const me = await authApi.getCurrentUser();
-            const user = extractUserFromResponse(me);
+            const user = me?.data; // unified: { success, data: User }
             if (user) {
               useAuthStore.getState().login(user);
             }

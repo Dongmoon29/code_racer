@@ -34,8 +34,7 @@ interface RecentGameSummary {
   created_at: string;
 }
 
-interface CurrentUserResponse {
-  user: UserInfo;
+interface CurrentUserResponse extends UserInfo {
   recent_games: RecentGameSummary[];
 }
 
@@ -77,8 +76,8 @@ const MyPage = () => {
     );
   }
 
-  const user = data?.data?.user;
-  const recentGames = data?.data?.recent_games;
+  const user = data?.data as CurrentUserResponse | undefined;
+  const recentGames = user?.recent_games;
 
   return (
     <DashboardLayout>

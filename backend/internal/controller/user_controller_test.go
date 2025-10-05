@@ -57,7 +57,7 @@ func TestGetCurrentUser_WithRecentGamesDTO(t *testing.T) {
 
 	var resp struct {
 		Success bool
-		Data    model.CurrentUserMeResponse
+		Data    model.UserResponse
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("unmarshal: %v", err)
@@ -65,7 +65,7 @@ func TestGetCurrentUser_WithRecentGamesDTO(t *testing.T) {
 	if !resp.Success {
 		t.Fatalf("success=false")
 	}
-	if resp.Data.User == nil || resp.Data.User.Email != "u@test.com" {
+	if resp.Data.Email != "u@test.com" {
 		t.Fatalf("user not returned")
 	}
 	if len(resp.Data.RecentGames) != 1 {

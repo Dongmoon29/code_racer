@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail } from 'lucide-react';
-import { authApi, extractUserFromResponse } from '../../lib/api';
+import { authApi } from '../../lib/api';
 import { Spinner } from '../ui';
 import axios from 'axios';
 import { Button } from '../ui/Button';
@@ -39,13 +39,13 @@ const LoginForm: React.FC = () => {
         // Always sync authStore with fresh /users/me to avoid drift
         try {
           const meResponse = await authApi.getCurrentUser();
-          const user = extractUserFromResponse(meResponse);
+          const user = meResponse?.data; // unified: { success, data: User }
           if (user) {
             useAuthStore.getState().login(user);
           }
         } catch (e) {
-          // If /users/me fails, fall back to login response user
-          const fallbackUser = extractUserFromResponse(response);
+          // If /users/me fails, fall back to login response user under data.user
+          const fallbackUser = response?.data?.user;
           if (fallbackUser) {
             useAuthStore.getState().login(fallbackUser);
           }

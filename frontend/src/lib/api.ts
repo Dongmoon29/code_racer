@@ -14,30 +14,6 @@ export interface UserProfile {
   fav_language?: string;
 }
 
-// User type definition (matches authStore)
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  profile_image?: string;
-  homepage?: string;
-  linkedin?: string;
-  oauthProvider?: string;
-}
-
-// Type guard to check if object is User
-const isUser = (obj: unknown): obj is User => {
-  return (
-    obj !== null &&
-    typeof obj === 'object' &&
-    typeof (obj as Record<string, unknown>).id === 'string' &&
-    typeof (obj as Record<string, unknown>).name === 'string' &&
-    typeof (obj as Record<string, unknown>).email === 'string' &&
-    typeof (obj as Record<string, unknown>).role === 'string'
-  );
-};
-
 // API client basic configuration
 const api = axios.create({
   baseURL: '/api',
@@ -78,7 +54,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Don't redirect during login attempts or auth initialization
       const url = error.config?.url || '';
-      if (!url.includes('/auth/login') && !url.includes('/users/me')) {
+      const skipLogout =
+        url.includes('/auth/login') ||
+        url.includes('/users/me') ||
+        url.includes('/auth/exchange-token');
+      if (!skipLogout) {
         // Only logout if not already logged out to prevent infinite loops
         const authState = useAuthStore.getState();
         if (authState.isLoggedIn) {
@@ -89,39 +69,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// Helper function to consistently extract user information from API responses
-export const extractUserFromResponse = (response: unknown): User | null => {
-  // Login API: { success: true, data: { user, token } }
-  if (
-    response &&
-    typeof response === 'object' &&
-    response !== null &&
-    'data' in response &&
-    response.data &&
-    typeof response.data === 'object' &&
-    response.data !== null &&
-    'user' in response.data
-  ) {
-    const data = response.data as Record<string, unknown>;
-    if (isUser(data.user)) {
-      return data.user;
-    }
-  }
-  // Register/GetCurrentUser API: { success: true, user: user }
-  if (
-    response &&
-    typeof response === 'object' &&
-    response !== null &&
-    'user' in response
-  ) {
-    const responseObj = response as Record<string, unknown>;
-    if (isUser(responseObj.user)) {
-      return responseObj.user;
-    }
-  }
-  return null;
-};
 
 // Authentication related API
 export const authApi = {
@@ -231,7 +178,6 @@ export const matchApi = {
     return { game: mapped };
   },
 
-  // 코드 제출
   submitSolution: async (matchId: string, code: string, language: string) => {
     const response = await api.post(`/matches/${matchId}/submit`, {
       code,
@@ -241,9 +187,7 @@ export const matchApi = {
   },
 };
 
-// LeetCode 문제 관련 API
 export const leetcodeApi = {
-  // LeetCode 문제 목록 조회
   listLeetCodes: async () => {
     const response = await api.get('/leetcode');
     return response.data;
@@ -276,7 +220,6 @@ export const getCodeTemplate = (
 };
 
 export const userApi = {
-  // 관리자용 사용자 목록 조회 (offset pagination)
   adminList: async (page: number, limit = 20, sort?: string) => {
     const response = await api.get(`/admin/users`, {
       params: { page, limit, ...(sort ? { sort } : {}) },
@@ -296,13 +239,11 @@ export const userApi = {
       has_next: boolean;
     };
   },
-  // 프로필 업데이트
   updateProfile: async (profile: UserProfile) => {
     const response = await api.put('/users/profile', profile);
     return response.data;
   },
 
-  // 리더보드 조회
   getLeaderboard: async () => {
     const response = await api.get('/users/leaderboard');
     return response.data as {

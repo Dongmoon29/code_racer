@@ -48,21 +48,22 @@ type LeaderboardUser struct {
 }
 
 type UserResponse struct {
-	ID            uuid.UUID `json:"id"`
-	Email         string    `json:"email"`
-	Name          string    `json:"name"`
-	ProfileImage  string    `json:"profile_image"`
-	Role          Role      `json:"role"`
-	OAuthProvider string    `json:"oauth_provider,omitempty"`
-	OAuthID       string    `json:"oauth_id,omitempty"`
-	Homepage      string    `json:"homepage,omitempty"`
-	LinkedIn      string    `json:"linkedin,omitempty"`
-	GitHub        string    `json:"github,omitempty"`
-	Company       string    `json:"company,omitempty"`
-	JobTitle      string    `json:"job_title,omitempty"`
-	FavLanguage   string    `json:"fav_language,omitempty"`
-	CreatedAt     time.Time `json:"created_at"`
-	Rating        int       `json:"rating"`
+	ID            uuid.UUID           `json:"id"`
+	Email         string              `json:"email"`
+	Name          string              `json:"name"`
+	ProfileImage  string              `json:"profile_image"`
+	Role          Role                `json:"role"`
+	OAuthProvider string              `json:"oauth_provider,omitempty"`
+	OAuthID       string              `json:"oauth_id,omitempty"`
+	Homepage      string              `json:"homepage,omitempty"`
+	LinkedIn      string              `json:"linkedin,omitempty"`
+	GitHub        string              `json:"github,omitempty"`
+	Company       string              `json:"company,omitempty"`
+	JobTitle      string              `json:"job_title,omitempty"`
+	FavLanguage   string              `json:"fav_language,omitempty"`
+	CreatedAt     time.Time           `json:"created_at"`
+	Rating        int                 `json:"rating"`
+	RecentGames   []RecentGameSummary `json:"recent_games"`
 }
 
 func (u *User) ToResponse() *UserResponse {

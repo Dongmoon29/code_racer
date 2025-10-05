@@ -45,7 +45,10 @@ func (c *UserController) GetCurrentUser(ctx *gin.Context) {
 		}
 	}
 
-	OK(ctx, model.CurrentUserMeResponse{User: user, RecentGames: recent})
+	// Embed recent_games into user object for response ergonomics
+	enriched := *user
+	enriched.RecentGames = recent
+	OK(ctx, enriched)
 }
 
 func (c *UserController) GetProfile(ctx *gin.Context) {
