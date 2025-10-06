@@ -1,5 +1,5 @@
-import React, { ReactNode } from 'react';
-import { Car, Trophy, User } from 'lucide-react';
+import React, { ReactNode, useState } from 'react';
+import { Car, Trophy, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import Header from './Header';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -12,57 +12,82 @@ const navigationItems = [
   {
     href: '/dashboard/mypage',
     label: 'My Page',
-    icon: <User className="w-5 h-5" />,
+    icon: <User className="w-5 h-5 shrink-0" />,
   },
   {
     href: '/dashboard/leaderboard',
     label: 'Leaderboard',
-    icon: <Trophy className="w-5 h-5" />,
+    icon: <Trophy className="w-5 h-5 shrink-0" />,
   },
   {
     href: '/dashboard',
     label: 'Dashboard',
-    icon: <Car className="w-5 h-5" />,
+    icon: <Car className="w-5 h-5 shrink-0" />,
   },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <div className="flex">
         {/* Sidebar */}
-        <div className="w-64 bg-card border-r border-border h-full min-h-dvh sticky top-0 overflow-y-auto">
-          <div className="p-6">
-            {/* Navigation */}
-            <nav className="space-y-6">
-              <div>
-                <div className="space-y-1">
-                  {navigationItems.map((item) => {
-                    const isActive = router.pathname === item.href;
+        <div
+          className={`${
+            isCollapsed ? 'w-16' : 'w-45'
+          } bg-card border-r border-border h-full min-h-dvh sticky top-0 overflow-y-auto transition-all duration-300`}
+        >
+          <div>
+            {/* Toggle Button */}
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={toggleSidebar}
+                className="p-2 rounded-md hover:bg-accent transition-colors"
+              >
+                {isCollapsed ? (
+                  <ChevronRight className="w-4 h-4" />
+                ) : (
+                  <ChevronLeft className="w-4 h-4" />
+                )}
+              </button>
+            </div>
 
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`
-                          flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors
-                          ${
-                            isActive
-                              ? 'bg-primary text-primary-foreground'
-                              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                          }
-                        `}
-                      >
-                        {item.icon}
-                        <span>{item.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
+            {/* Navigation */}
+            <nav className="space-y-2 w-full">
+              {navigationItems.map((item) => {
+                const isActive = router.pathname === item.href;
+
+                return (
+                  <div
+                    key={item.href}
+                    className={`flex items-center h-12 w-full ${
+                      isActive
+                        ? 'border-l-4 border-orange-300 text-orange-300'
+                        : ''
+                    }`}
+                  >
+                    <Link
+                      href={item.href}
+                      className={`flex items-center h-full hover:text-orange-500 transition-colors w-full ${
+                        isCollapsed
+                          ? 'justify-center px-2'
+                          : 'gap-3 px-3 py-2 text-sm font-medium'
+                      }`}
+                      title={isCollapsed ? item.label : undefined}
+                    >
+                      {item.icon}
+                      {!isCollapsed && <span>{item.label}</span>}
+                    </Link>
+                  </div>
+                );
+              })}
             </nav>
           </div>
         </div>

@@ -38,21 +38,29 @@ const Header: FC = () => {
   return (
     <header className="border-b border-border bg-[color:hsl(var(--header))] relative z-50">
       <div className="px-4">
-        <div className="flex justify-between items-center py-1">
-          <div className="flex justify-between items-center gap-4">
-            <Link href="/" className="flex items-center gap-3">
-              <Logo />
-              codeRacer
-            </Link>
-            <Link
-              href="/dashboard"
-              className={`flex font-medium text-sm items-center gap-3 ${
-                isDashboardRoute ? 'text-primary' : ''
+        <div className="flex justify-between items-stretch h-12">
+          <div className="flex justify-between items-center gap-4 h-full">
+            <div className="flex items-center gap-3">
+              <Link href="/" className="flex items-center gap-3">
+                <Logo />
+                codeRacer
+              </Link>
+            </div>
+            <div
+              className={`flex items-center gap-3 h-full ${
+                isDashboardRoute
+                  ? 'border-b-2 border-orange-300 text-orange-300'
+                  : ''
               }`}
-              aria-current={isDashboardRoute ? 'page' : undefined}
             >
-              Dashboard
-            </Link>
+              <Link
+                href="/dashboard"
+                className="flex font-medium text-sm items-center gap-3 h-full hover:text-orange-500 transition-colors"
+                aria-current={isDashboardRoute ? 'page' : undefined}
+              >
+                Dashboard
+              </Link>
+            </div>
           </div>
 
           <div className="md:hidden flex items-center space-x-2">
