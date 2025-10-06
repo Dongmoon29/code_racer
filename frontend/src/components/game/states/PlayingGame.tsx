@@ -82,26 +82,28 @@ export const PlayingGame: FC<PlayingGameProps> = ({
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
-      <div className="p-4 grid grid-cols-12 gap-4 mb-4">
-        <div className="col-span-12 md:col-span-8">
-          <h1 className="text-2xl font-bold">{game.leetcode.title}</h1>
-          <div className="flex items-center gap-4 mt-2">
-            <LanguageSelector
-              selectedLanguage={selectedLanguage}
-              onChange={onLanguageChange}
-            />
+      {!isFullscreen && (
+        <div className="p-4 grid grid-cols-12 gap-4 mb-4">
+          <div className="col-span-12 md:col-span-8">
+            <h1 className="text-2xl font-bold">{game.leetcode.title}</h1>
+            <div className="flex items-center gap-4 mt-2">
+              <LanguageSelector
+                selectedLanguage={selectedLanguage}
+                onChange={onLanguageChange}
+              />
+            </div>
+          </div>
+          <div className="col-span-12 md:col-span-4 flex justify-end items-start">
+            <Button
+              onClick={onSubmitCode}
+              disabled={submitting}
+              className="w-full md:w-auto"
+            >
+              {submitting ? <Spinner size="sm" /> : 'Submit Solution'}
+            </Button>
           </div>
         </div>
-        <div className="col-span-12 md:col-span-4 flex justify-end items-start">
-          <Button
-            onClick={onSubmitCode}
-            disabled={submitting}
-            className="w-full md:w-auto"
-          >
-            {submitting ? <Spinner size="sm" /> : 'Submit Solution'}
-          </Button>
-        </div>
-      </div>
+      )}
 
       {/* Submit Result Alert */}
       {submitResult && (
