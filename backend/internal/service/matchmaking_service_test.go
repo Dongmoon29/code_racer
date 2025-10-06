@@ -70,12 +70,10 @@ func TestMatchmakingService_CreateMatch_Success(t *testing.T) {
 	// Setup
 	logger := testutil.SetupTestLogger()
 	mockMatchService := &MockMatchService{}
-	mockWSService := &MockWebSocketService{}
-
 	// Mock Redis client (we'll use a simple mock for now)
 	var mockRDB *redis.Client
 
-	service := NewMatchmakingService(mockMatchService, mockWSService, mockRDB, logger)
+	service := NewMatchmakingService(mockMatchService, mockRDB, logger)
 
 	player1ID := uuid.New()
 	player2ID := uuid.New()
@@ -98,11 +96,9 @@ func TestMatchmakingService_CreateMatch_MatchServiceError(t *testing.T) {
 	// Setup
 	logger := testutil.SetupTestLogger()
 	mockMatchService := &MockMatchService{}
-	mockWSService := &MockWebSocketService{}
-
 	var mockRDB *redis.Client
 
-	service := NewMatchmakingService(mockMatchService, mockWSService, mockRDB, logger)
+	service := NewMatchmakingService(mockMatchService, mockRDB, logger)
 
 	player1ID := uuid.New()
 	player2ID := uuid.New()
@@ -122,19 +118,4 @@ func TestMatchmakingService_CreateMatch_MatchServiceError(t *testing.T) {
 	mockMatchService.AssertExpectations(t)
 }
 
-func TestMatchmakingService_SetWebSocketService(t *testing.T) {
-	// Setup
-	logger := testutil.SetupTestLogger()
-	mockMatchService := &MockMatchService{}
-	mockWSService := &MockWebSocketService{}
-
-	var mockRDB *redis.Client
-
-	service := NewMatchmakingService(mockMatchService, mockWSService, mockRDB, logger)
-
-	// Execute
-	service.SetWebSocketService(mockWSService)
-
-	// Assert - this is a simple setter, so we just verify it doesn't panic
-	assert.NotNil(t, service)
-}
+// Note: SetWebSocketService test removed due to refactor removing circular dependency

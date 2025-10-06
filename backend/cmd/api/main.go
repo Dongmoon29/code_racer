@@ -12,6 +12,7 @@ import (
 	_ "github.com/Dongmoon29/code_racer/docs" // Import docs for swagger
 	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/controller"
+	"github.com/Dongmoon29/code_racer/internal/events"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	logger "github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/middleware"
@@ -140,10 +141,12 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger)
 	matchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, judgeService, appLogger)
 
-	// Initialize WebSocket and matchmaking services
-	matchmakingService := service.NewMatchmakingService(matchService, nil, rdb, appLogger)
-	wsService := service.NewWebSocketService(rdb, appLogger, matchmakingService, repos.userRepository)
-	matchmakingService.SetWebSocketService(wsService)
+	// Initialize EventBus
+	eventBus := events.NewEventBus()
+
+	// Initialize WebSocket and matchmaking services (event-driven, no circular dependency)
+	matchmakingService := service.NewMatchmakingService(matchService, rdb, appLogger, eventBus)
+	wsService := service.NewWebSocketService(rdb, appLogger, matchmakingService, repos.userRepository, eventBus)
 
 	// Start WebSocket hub
 	wsHub := wsService.InitHub()

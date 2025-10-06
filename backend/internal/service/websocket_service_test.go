@@ -22,9 +22,7 @@ func (m *MockMatchmakingService) CreateMatch(player1ID, player2ID uuid.UUID, dif
 	return args.Get(0), args.Error(1)
 }
 
-func (m *MockMatchmakingService) SetWebSocketService(wsService WebSocketService) {
-	m.Called(wsService)
-}
+// Note: SetWebSocketService removed in refactor
 
 // MockUserRepository is a mock implementation of UserRepository
 type MockUserRepository struct {
@@ -65,7 +63,7 @@ func TestWebSocketService_NewWebSocketService(t *testing.T) {
 	var mockRDB *redis.Client
 
 	// Execute
-	service := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository)
+	service := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository, nil)
 
 	// Assert
 	assert.NotNil(t, service)
@@ -80,7 +78,7 @@ func TestWebSocketService_InitHub(t *testing.T) {
 
 	var mockRDB *redis.Client
 
-	service := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository)
+	service := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository, nil)
 
 	// Execute
 	hub := service.InitHub()
@@ -109,7 +107,7 @@ func TestWebSocketService_HandleConnection(t *testing.T) {
 
 	var mockRDB *redis.Client
 
-	service := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository)
+	service := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository, nil)
 	service.InitHub()
 
 	userID := uuid.New()
@@ -144,7 +142,7 @@ func TestWebSocketService_BroadcastToMatch(t *testing.T) {
 
 	var mockRDB *redis.Client
 
-	service := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository)
+	service := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository, nil)
 	service.InitHub()
 
 	matchID := uuid.New()
