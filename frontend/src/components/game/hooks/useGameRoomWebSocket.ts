@@ -19,6 +19,7 @@ interface UseGameRoomWebSocketProps {
   setOpponentCode: (code: string) => void;
   setSubmitResult: (result: SubmitResult | null) => void;
   setSubmitting: (submitting: boolean) => void;
+  setSelectedLanguage: (language: SupportedLanguage) => void;
   refetchGame: () => void;
 }
 
@@ -32,6 +33,7 @@ export const useGameRoomWebSocket = ({
   setOpponentCode,
   setSubmitResult,
   setSubmitting,
+  setSelectedLanguage,
   refetchGame,
 }: UseGameRoomWebSocketProps) => {
   const router = useRouter();
@@ -128,6 +130,7 @@ export const useGameRoomWebSocket = ({
     (newLanguage: SupportedLanguage) => {
       setSubmitting(false);
       setSubmitResult(null);
+      setSelectedLanguage(newLanguage);
 
       if (game?.leetcode) {
         const template = getCodeTemplate(game.leetcode, newLanguage);
@@ -138,7 +141,13 @@ export const useGameRoomWebSocket = ({
         }
       }
     },
-    [game?.leetcode, setMyCode, setSubmitting, setSubmitResult]
+    [
+      game?.leetcode,
+      setMyCode,
+      setSubmitting,
+      setSubmitResult,
+      setSelectedLanguage,
+    ]
   );
 
   // Code submission handler

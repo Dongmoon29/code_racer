@@ -32,6 +32,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     submitting,
     setSubmitting,
     selectedLanguage,
+    setSelectedLanguage,
     showMyCode,
     setShowMyCode,
     showOpponentCode,
@@ -51,6 +52,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       setOpponentCode,
       setSubmitResult,
       setSubmitting,
+      setSelectedLanguage,
       refetchGame,
     });
 
