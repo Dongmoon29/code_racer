@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/Card';
+// Card components removed in favor of button-based cards
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 
@@ -34,49 +34,46 @@ const difficultyOptions: DifficultyOption[] = [
 interface DifficultySelectorProps {
   onSelect: (difficulty: Difficulty) => void;
   disabled?: boolean;
+  value?: Difficulty;
 }
 
 export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
   onSelect,
   disabled = false,
+  value,
 }) => {
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <div className="text-center mb-12">
-        <div className="mb-6">
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent">
-            🏁 Code Racer
-          </h1>
-          <h2 className="text-2xl font-semibold text-[hsl(var(--foreground))] mb-4">
-            Choose Your Racing Circuit
-          </h2>
-        </div>
-        <div className="space-y-3">
-          <p className="text-lg text-[hsl(var(--muted-foreground))] font-medium">
-            Compete against friends or racers worldwide!
-          </p>
-          <p className="text-[hsl(var(--muted-foreground))]">
-            💨 Select your preferred speed circuit and let the coding race
-            begin!
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {difficultyOptions.map((option) => (
-          <Card
-            key={option.value}
-            className={`cursor-pointer transition-all duration-200 transform hover:scale-105 
-              `}
-            onClick={() => !disabled && onSelect(option.value)}
-          >
-            <CardContent className="p-6 text-center">
-              <h3 className={`text-2xl font-bold mb-2 ${option.color}`}>
-                {option.label}
-              </h3>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Racing-style difficulty cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+        {difficultyOptions.map((option) => {
+          const selected = value === option.value;
+          return (
+            <button
+              key={option.value}
+              onClick={() => !disabled && onSelect(option.value)}
+              className={
+                `relative group rounded-2xl p-4 text-left border transition-all duration-200 w-full h-36 flex flex-col justify-center items-start cursor-pointer ` +
+                `bg-[hsl(var(--background))] border-[hsl(var(--border))] ` +
+                (selected
+                  ? 'ring-2 ring-offset-2 ring-indigo-500 -translate-y-0.5'
+                  : 'hover:-translate-y-0.5')
+              }
+            >
+              <div
+                className={`absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-sky-500 to-violet-500 blur-sm`}
+              ></div>
+              <div className="relative text-center">
+                <h3 className={`text-2xl font-bold mb-1 ${option.color}`}>
+                  {option.label}
+                </h3>
+                <div className="text-[hsl(var(--muted-foreground))] text-sm">
+                  {option.value}
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

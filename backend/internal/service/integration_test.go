@@ -15,19 +15,14 @@ func TestMatchmakingIntegration_Success(t *testing.T) {
 	// Setup
 	logger := testutil.SetupTestLogger()
 	mockMatchService := &MockMatchService{}
-	mockWSService := &MockWebSocketService{}
-
 	var mockRDB *redis.Client
 
-	// Create matchmaking service
-	matchmakingService := NewMatchmakingService(mockMatchService, mockWSService, mockRDB, logger)
+	// Create matchmaking service (no WebSocket dependency)
+	matchmakingService := NewMatchmakingService(mockMatchService, mockRDB, logger)
 
-	// Create WebSocket service
+	// Create WebSocket service (constructed for hub tests only, no bus in this test)
 	mockUserRepository := &MockUserRepository{}
-	wsService := NewWebSocketService(mockRDB, logger, matchmakingService, mockUserRepository)
-
-	// Set WebSocket service in matchmaking service
-	matchmakingService.SetWebSocketService(wsService)
+	_ = NewWebSocketService(mockRDB, logger, matchmakingService, mockUserRepository, nil)
 
 	// Test data
 	player1ID := uuid.New()
@@ -63,7 +58,7 @@ func TestWebSocketIntegration_ServiceInitialization(t *testing.T) {
 	var mockRDB *redis.Client
 
 	// Create WebSocket service
-	wsService := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository)
+	wsService := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository, nil)
 
 	// Initialize hub
 	hub := wsService.InitHub()
@@ -89,11 +84,9 @@ func TestMatchmakingIntegration_ErrorHandling(t *testing.T) {
 	// Setup
 	logger := testutil.SetupTestLogger()
 	mockMatchService := &MockMatchService{}
-	mockWSService := &MockWebSocketService{}
-
 	var mockRDB *redis.Client
 
-	matchmakingService := NewMatchmakingService(mockMatchService, mockWSService, mockRDB, logger)
+	matchmakingService := NewMatchmakingService(mockMatchService, mockRDB, logger)
 
 	player1ID := uuid.New()
 	player2ID := uuid.New()

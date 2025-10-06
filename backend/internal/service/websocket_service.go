@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
+	"github.com/Dongmoon29/code_racer/internal/events"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -166,19 +167,43 @@ type webSocketService struct {
 	hub                *Hub
 	matchmakingService MatchmakingService
 	userRepository     interfaces.UserRepository
+	eventBus           events.EventBus
 }
 
 // NewWebSocketService creates a new WebSocketService instance
-func NewWebSocketService(rdb *redis.Client, logger logger.Logger, matchmakingService MatchmakingService, userRepository interfaces.UserRepository) WebSocketService {
+func NewWebSocketService(rdb *redis.Client, logger logger.Logger, matchmakingService MatchmakingService, userRepository interfaces.UserRepository, eventBus events.EventBus) WebSocketService {
 	service := &webSocketService{
 		rdb:                rdb,
 		redisManager:       NewRedisManager(rdb, logger),
 		logger:             logger,
 		matchmakingService: matchmakingService,
 		userRepository:     userRepository,
+		eventBus:           eventBus,
 	}
 	service.InitHub()
+	service.subscribeToEvents()
 	return service
+}
+
+// subscribeToEvents registers event handlers on the event bus
+func (s *webSocketService) subscribeToEvents() {
+	if s.eventBus == nil {
+		return
+	}
+	s.eventBus.Subscribe(events.TopicMatchCreated, func(payload interface{}) {
+		evt, ok := payload.(*events.MatchCreatedEvent)
+		if !ok || evt == nil || evt.Match == nil {
+			return
+		}
+		// Broadcast a simple notification to the match room if any clients joined already
+		msg := map[string]interface{}{
+			"type":    constants.MatchFound,
+			"game_id": evt.Match.ID.String(),
+		}
+		if msgBytes, err := json.Marshal(msg); err == nil {
+			s.hub.matchBroadcast <- &MatchMessage{matchID: evt.Match.ID, data: msgBytes}
+		}
+	})
 }
 
 // InitHub initializes the WebSocket hub
