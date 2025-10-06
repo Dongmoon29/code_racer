@@ -8,6 +8,7 @@ import { Analytics } from '@vercel/analytics/react';
 import AdminLayout from '../components/admin/AdminLayout';
 import '../styles/globals.css';
 import { useAuthStore } from '../stores/authStore';
+import { FullscreenProvider } from '../contexts/FullscreenContext';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const { initializeAuth } = useAuthStore();
@@ -34,18 +35,20 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={queryClient}>
-        {isAdminRoute ? (
-          <>
-            <Head>
-              <title>{adminTitle}</title>
-            </Head>
-            <AdminLayout>
-              <Component {...pageProps} />
-            </AdminLayout>
-          </>
-        ) : (
-          <Component {...pageProps} />
-        )}
+        <FullscreenProvider>
+          {isAdminRoute ? (
+            <>
+              <Head>
+                <title>{adminTitle}</title>
+              </Head>
+              <AdminLayout>
+                <Component {...pageProps} />
+              </AdminLayout>
+            </>
+          ) : (
+            <Component {...pageProps} />
+          )}
+        </FullscreenProvider>
       </QueryClientProvider>
       <Analytics />
     </NextThemeProvider>

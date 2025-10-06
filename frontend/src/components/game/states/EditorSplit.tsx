@@ -13,7 +13,6 @@ interface EditorSplitProps {
   isResizing: boolean;
   sizesNormal: number[];
   showFullscreenButton?: boolean;
-  isFullscreen?: boolean;
   gutterSize?: number;
   onCodeChange: (code: string) => void;
   onMaximizeToggle: (editor: 'my' | 'opponent') => void;
@@ -33,7 +32,6 @@ export const EditorSplit: FC<EditorSplitProps> = memo(
     isResizing,
     sizesNormal,
     showFullscreenButton = false,
-    isFullscreen = false,
     gutterSize = 6,
     onCodeChange,
     onFullscreenToggle,
@@ -62,7 +60,6 @@ export const EditorSplit: FC<EditorSplitProps> = memo(
           isMinimized={maximizedEditor === 'opponent'}
           isResizing={isResizing}
           showFullscreenButton={showFullscreenButton}
-          isFullscreen={isFullscreen}
           onChange={onCodeChange}
           onFullscreenToggle={onFullscreenToggle}
         />
