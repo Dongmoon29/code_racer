@@ -83,7 +83,7 @@ const LoginPage: React.FC = () => {
               }}
             >
               <Image
-                src="/code_racer_hero.png"
+                src="/code_racer_hero.webp"
                 alt="Code Racer illustration"
                 fill
                 style={{ objectFit: 'contain' }}

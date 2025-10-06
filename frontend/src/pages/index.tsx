@@ -52,7 +52,7 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
           }}
         >
           <Image
-            src="/track.png"
+            src="/track.webp"
             alt="Racing Track Background"
             fill
             // className="object-cover opacity-20"
@@ -72,7 +72,7 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
               }}
             >
               <Image
-                src="/code_racer_hero.png"
+                src="/code_racer_hero.webp"
                 alt="CodeRacer Hero"
                 width={300}
                 height={192}
@@ -191,7 +191,7 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
           }}
         >
           <Image
-            src="/track2.png"
+            src="/track2.webp"
             alt="Second Racing Track Background"
             fill
             className="object-cover !opacity-60 !dark:opacity-20"
@@ -210,7 +210,7 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
               }}
             >
               <Image
-                src="/code_racer_hero2.png"
+                src="/code_racer_hero2.webp"
                 alt="CodeRacer Hero 2"
                 width={300}
                 height={192}
