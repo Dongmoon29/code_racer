@@ -16,6 +16,8 @@ const Header: FC = () => {
   const dropdown = useDropdown();
   const router = useRouter();
 
+  const isDashboardRoute = router.pathname.startsWith('/dashboard');
+
   const handleLogout = async () => {
     await logout();
     dropdown.close();
@@ -44,7 +46,10 @@ const Header: FC = () => {
             </Link>
             <Link
               href="/dashboard"
-              className="flex font-medium text-sm items-center gap-3"
+              className={`flex font-medium text-sm items-center gap-3 ${
+                isDashboardRoute ? 'text-primary' : ''
+              }`}
+              aria-current={isDashboardRoute ? 'page' : undefined}
             >
               Dashboard
             </Link>
