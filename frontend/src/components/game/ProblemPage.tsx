@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import CodeEditor from './CodeEditor';
 import { getCodeTemplate } from '@/lib/api';
 import { LeetCodeDetail } from '@/types';
@@ -7,7 +7,7 @@ interface ProblemPageProps {
   problem: LeetCodeDetail;
 }
 
-const ProblemPage: React.FC<ProblemPageProps> = ({ problem }) => {
+const ProblemPage: React.FC<ProblemPageProps> = memo(({ problem }) => {
   const [selectedLanguage, setSelectedLanguage] =
     useState<string>('javascript');
   const [code, setCode] = useState<string>(() => {
@@ -59,6 +59,8 @@ const ProblemPage: React.FC<ProblemPageProps> = ({ problem }) => {
       </div>
     </div>
   );
-};
+});
+
+ProblemPage.displayName = 'ProblemPage';
 
 export default ProblemPage;

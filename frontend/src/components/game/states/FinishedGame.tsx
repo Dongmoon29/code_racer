@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useRouter } from 'next/router';
 import CodeEditor from '../CodeEditor';
 import { Game } from '@/types';
@@ -14,7 +14,7 @@ interface Props {
   selectedLanguage: 'python' | 'javascript' | 'go';
 }
 
-export const FinishedGame: React.FC<Props> = ({
+export const FinishedGame: React.FC<Props> = memo(({
   game,
   me,
   opponent,
@@ -73,4 +73,6 @@ export const FinishedGame: React.FC<Props> = ({
       </Button>
     </div>
   );
-};
+});
+
+FinishedGame.displayName = 'FinishedGame';

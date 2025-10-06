@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useEffect, useState } from 'react';
+import React, { FC, memo, useCallback, useEffect, useState } from 'react';
 import Split from 'react-split';
 import { Spinner } from '../../ui';
 import LanguageSelector from '../LanguageSelector';
@@ -28,7 +28,7 @@ interface PlayingGameProps {
   onToggleOpponentCode: () => void;
 }
 
-export const PlayingGame: FC<PlayingGameProps> = ({
+export const PlayingGame: FC<PlayingGameProps> = memo(({
   game,
   myCode,
   opponentCode,
@@ -218,4 +218,6 @@ export const PlayingGame: FC<PlayingGameProps> = ({
       )}
     </div>
   );
-};
+});
+
+PlayingGame.displayName = 'PlayingGame';

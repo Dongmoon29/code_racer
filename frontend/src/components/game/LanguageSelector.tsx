@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 // 지원하는 언어 목록 (게임에서 사용하는 3종으로 제한)
 const LANGUAGES = [
@@ -15,7 +15,7 @@ interface LanguageSelectorProps {
   disabled?: boolean;
 }
 
-const LanguageSelector: React.FC<LanguageSelectorProps> = ({
+const LanguageSelector: React.FC<LanguageSelectorProps> = memo(({
   selectedLanguage,
   onChange,
   disabled = false,
@@ -40,6 +40,8 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       </select>
     </div>
   );
-};
+});
+
+LanguageSelector.displayName = 'LanguageSelector';
 
 export default LanguageSelector;
