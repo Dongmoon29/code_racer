@@ -2,6 +2,7 @@
 
 import React, { useState, FC } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useAuthStore } from '@/stores/authStore';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import Logo from './Logo';
@@ -13,10 +14,15 @@ const Header: FC = () => {
   const { user, isLoggedIn, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdown = useDropdown();
+  const router = useRouter();
 
   const handleLogout = async () => {
     await logout();
     dropdown.close();
+  };
+
+  const handleNavigateToProfile = () => {
+    router.push('/dashboard/mypage');
   };
 
   const toggleMenu = () => {
@@ -77,6 +83,7 @@ const Header: FC = () => {
                 onClose={dropdown.close}
                 dropdownRef={dropdown.dropdownRef}
                 onLogout={handleLogout}
+                onNavigateToProfile={handleNavigateToProfile}
               />
             ) : (
               <Link
