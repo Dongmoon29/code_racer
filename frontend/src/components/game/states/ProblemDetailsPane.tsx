@@ -25,7 +25,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
     }
 
     return (
-      <div className="bg-[hsl(var(--muted))] rounded-lg overflow-auto">
+      <div className="bg-[hsl(var(--muted))] rounded-lg overflow-auto p-2">
         <div className="px-4 py-2 border-b flex justify-between items-center">
           <span className="font-medium">Problem Details</span>
           <button

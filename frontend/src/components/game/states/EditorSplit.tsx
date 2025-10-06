@@ -36,12 +36,15 @@ export const EditorSplit: FC<EditorSplitProps> = memo(
     isFullscreen = false,
     gutterSize = 6,
     onCodeChange,
-    onMaximizeToggle,
     onFullscreenToggle,
     onDragStart,
     onDragEnd,
   }) => {
-    const splitConfig = useSplitConfig(maximizedEditor, sizesNormal, gutterSize);
+    const splitConfig = useSplitConfig(
+      maximizedEditor,
+      sizesNormal,
+      gutterSize
+    );
 
     return (
       <Split

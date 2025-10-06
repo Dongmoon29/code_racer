@@ -113,95 +113,90 @@ export const PlayingGame: FC<PlayingGameProps> = ({
         </Alert>
       )}
 
-      <div
-        className="flex-1 px-4 py-4 flex min-h-0 game-editor-container"
-        style={{ width: '100%' }}
-      >
-        {/* Problem Description Pane */}
+      {!isFullscreenMy ? (
         <div
-          className={`transition-all duration-300 overflow-auto ${
-            isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'
-          }`}
+          className="flex-1 px-4 py-4 flex min-h-0 game-editor-container"
+          style={{ width: '100%' }}
         >
-          <ProblemDetailsPane
-            isExpanded={isDescriptionExpanded}
-            title={game.leetcode.title}
-            description={game.leetcode.description}
-            examples={game.leetcode.examples}
-            constraints={game.leetcode.constraints}
-            onToggle={handleToggleDescription}
-          />
-        </div>
-
-        {/* Editor Panes */}
-        <div className="flex-1 ml-4">
-          <Split
-            className="flex w-full h-full"
-            sizes={
-              maximizedEditor === 'my'
-                ? [100, 0]
-                : maximizedEditor === 'opponent'
-                ? [0, 100]
-                : sizesNormal
-            }
-            minSize={0}
-            gutterSize={6}
-            snapOffset={0}
-            dragInterval={1}
-            cursor="col-resize"
-            onDragStart={() => {
-              setIsResizing(true);
-              document.body.classList.add('resizing');
-            }}
-            onDragEnd={(sizes) => {
-              setIsResizing(false);
-              setSizesNormal(sizes as number[]);
-              document.body.classList.remove('resizing');
-            }}
-            gutter={(index, dir) => {
-              const g = document.createElement('div');
-              g.className = `gutter gutter-${dir}`;
-              g.style.cursor =
-                dir === 'horizontal' ? 'col-resize' : 'row-resize';
-              if (dir === 'horizontal') {
-                g.style.width = '6px';
-              }
-              g.style.background = 'transparent';
-              g.style.zIndex = '10';
-              return g;
-            }}
+          {/* Problem Description Pane */}
+          <div
+            className={`transition-all duration-300 overflow-auto ${
+              isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'
+            }`}
           >
-            <EditorPane
-              title="Me"
-              code={myCode}
-              language={selectedLanguage}
-              theme={theme}
-              isMaximized={maximizedEditor === 'my'}
-              isMinimized={maximizedEditor === 'opponent'}
-              isResizing={isResizing}
-              showFullscreenButton={true}
-              isFullscreen={isFullscreenMy}
-              onChange={onCodeChange}
-              onMaximizeToggle={() => handleMaximizeToggle('my')}
-              onFullscreenToggle={handleToggleFullscreen}
+            <ProblemDetailsPane
+              isExpanded={isDescriptionExpanded}
+              title={game.leetcode.title}
+              description={game.leetcode.description}
+              examples={game.leetcode.examples}
+              constraints={game.leetcode.constraints}
+              onToggle={handleToggleDescription}
             />
-            <EditorPane
-              title={opponentName ?? ''}
-              code={opponentCode}
-              language={selectedLanguage}
-              theme={theme}
-              readOnly={true}
-              isMaximized={maximizedEditor === 'opponent'}
-              isMinimized={maximizedEditor === 'my'}
-              isResizing={isResizing}
-              onMaximizeToggle={() => handleMaximizeToggle('opponent')}
-            />
-          </Split>
-        </div>
-      </div>
+          </div>
 
-      {/* Fullscreen Overlay */}
-      {isFullscreenMy && (
+          {/* Editor Panes */}
+          <div className="flex-1 ml-4">
+            <Split
+              className="flex w-full h-full"
+              sizes={
+                maximizedEditor === 'my'
+                  ? [100, 0]
+                  : maximizedEditor === 'opponent'
+                  ? [0, 100]
+                  : sizesNormal
+              }
+              minSize={0}
+              gutterSize={6}
+              snapOffset={0}
+              dragInterval={1}
+              cursor="col-resize"
+              onDragStart={() => {
+                setIsResizing(true);
+                document.body.classList.add('resizing');
+              }}
+              onDragEnd={(sizes) => {
+                setIsResizing(false);
+                setSizesNormal(sizes as number[]);
+                document.body.classList.remove('resizing');
+              }}
+              gutter={(index, dir) => {
+                const g = document.createElement('div');
+                g.className = `gutter gutter-${dir}`;
+                g.style.cursor =
+                  dir === 'horizontal' ? 'col-resize' : 'row-resize';
+                if (dir === 'horizontal') {
+                  g.style.width = '6px';
+                }
+                g.style.background = 'transparent';
+                g.style.zIndex = '10';
+                return g;
+              }}
+            >
+              <EditorPane
+                title="Me"
+                code={myCode}
+                language={selectedLanguage}
+                theme={theme}
+                isMinimized={maximizedEditor === 'opponent'}
+                isResizing={isResizing}
+                showFullscreenButton={true}
+                isFullscreen={isFullscreenMy}
+                onChange={onCodeChange}
+                onFullscreenToggle={handleToggleFullscreen}
+              />
+              <EditorPane
+                title={opponentName ?? ''}
+                code={opponentCode}
+                language={selectedLanguage}
+                theme={theme}
+                readOnly={true}
+                isMinimized={maximizedEditor === 'my'}
+                isResizing={isResizing}
+              />
+            </Split>
+          </div>
+        </div>
+      ) : (
         <FullscreenOverlay
           myCode={myCode}
           opponentCode={opponentCode}

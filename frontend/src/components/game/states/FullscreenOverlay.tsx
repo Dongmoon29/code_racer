@@ -1,5 +1,4 @@
 import React, { FC, memo, useState } from 'react';
-import { Minimize2 } from 'lucide-react';
 import { ProblemDetailsPane } from './ProblemDetailsPane';
 import { EditorSplit } from './EditorSplit';
 
@@ -37,7 +36,6 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
     onCodeChange,
     onMaximizeToggle,
     onToggleDescription,
-    onClose,
   }) => {
     const [isResizing, setIsResizing] = useState(false);
     const [fsSplitSizes, setFsSplitSizes] = useState<number[]>([50, 50]);
@@ -57,18 +55,8 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
     };
 
     return (
-      <div className="fixed inset-0 z-[9999] bg-white dark:bg-black flex flex-col">
-        {/* Floating exit button */}
-        <button
-          onClick={onClose}
-          className="absolute top-2 right-2 p-2 rounded-md bg-[hsl(var(--muted))] hover:bg-gray-200 transition-colors shadow z-50"
-          title="Exit Fullscreen"
-        >
-          <Minimize2 className="w-4 h-4" />
-        </button>
-
+      <div className="fixed inset-0 z-[9999] flex flex-col">
         <div className="flex-1 flex min-h-0">
-          {/* Problem details (collapsible) */}
           <div
             className={`transition-all duration-300 overflow-auto border-r ${
               isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'
@@ -84,7 +72,6 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
             />
           </div>
 
-          {/* Editors with resizable splitter */}
           <div className="flex-1 p-2 min-h-0 overflow-hidden">
             <EditorSplit
               myCode={myCode}

@@ -8,13 +8,11 @@ interface EditorPaneProps {
   language: 'python' | 'javascript' | 'go';
   theme?: string;
   readOnly?: boolean;
-  isMaximized: boolean;
   isMinimized: boolean;
   isResizing: boolean;
   showFullscreenButton?: boolean;
   isFullscreen?: boolean;
   onChange?: (code: string) => void;
-  onMaximizeToggle: () => void;
   onFullscreenToggle?: () => void;
 }
 
