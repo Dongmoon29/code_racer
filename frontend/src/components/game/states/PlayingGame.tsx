@@ -9,6 +9,7 @@ import { Alert } from '@/components/ui/alert';
 import { ProblemDetailsPane } from './ProblemDetailsPane';
 import { EditorPane } from './EditorPane';
 import { FullscreenOverlay } from './FullscreenOverlay';
+import { useFullscreen } from '@/contexts/FullscreenContext';
 
 interface PlayingGameProps {
   game: Game;
@@ -40,6 +41,7 @@ export const PlayingGame: FC<PlayingGameProps> = ({
   onSubmitCode,
 }) => {
   const { theme } = useTheme();
+  const { isFullscreen, setIsFullscreen } = useFullscreen();
   const [maximizedEditor, setMaximizedEditor] = useState<
     'my' | 'opponent' | null
   >(null);
@@ -60,7 +62,7 @@ export const PlayingGame: FC<PlayingGameProps> = ({
     setIsFullscreenMy((prev) => !prev);
   }, []);
 
-  // ESC to exit fullscreen and body scroll lock
+  // ESC to exit fullscreen
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -69,15 +71,13 @@ export const PlayingGame: FC<PlayingGameProps> = ({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [setIsFullscreen]);
 
+  // Sync local fullscreen toggle with global context
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = isFullscreenMy ? 'hidden' : prev || '';
-    return () => {
-      document.body.style.overflow = prev || '';
-    };
-  }, [isFullscreenMy]);
+    setIsFullscreen(isFullscreenMy);
+    return () => setIsFullscreen(false);
+  }, [isFullscreenMy, setIsFullscreen]);
 
   return (
     <div className="flex flex-col h-screen">
@@ -113,7 +113,7 @@ export const PlayingGame: FC<PlayingGameProps> = ({
         </Alert>
       )}
 
-      {!isFullscreenMy ? (
+      {!isFullscreen ? (
         <div
           className="flex-1 px-4 py-4 flex min-h-0 game-editor-container"
           style={{ width: '100%' }}
@@ -180,7 +180,6 @@ export const PlayingGame: FC<PlayingGameProps> = ({
                 isMinimized={maximizedEditor === 'opponent'}
                 isResizing={isResizing}
                 showFullscreenButton={true}
-                isFullscreen={isFullscreenMy}
                 onChange={onCodeChange}
                 onFullscreenToggle={handleToggleFullscreen}
               />

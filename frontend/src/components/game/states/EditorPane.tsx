@@ -1,6 +1,7 @@
 import React, { FC, memo } from 'react';
-import { Expand, Minimize2 } from 'lucide-react';
+import { Expand, Minimize } from 'lucide-react';
 import CodeEditor from '../CodeEditor';
+import { useFullscreen } from '@/contexts/FullscreenContext';
 
 interface EditorPaneProps {
   title: string;
@@ -11,7 +12,6 @@ interface EditorPaneProps {
   isMinimized: boolean;
   isResizing: boolean;
   showFullscreenButton?: boolean;
-  isFullscreen?: boolean;
   onChange?: (code: string) => void;
   onFullscreenToggle?: () => void;
 }
@@ -26,10 +26,10 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     isMinimized,
     isResizing,
     showFullscreenButton = false,
-    isFullscreen = false,
     onChange,
     onFullscreenToggle,
   }) => {
+    const { isFullscreen } = useFullscreen();
     const headerClass = `bg-[hsl(var(--muted))] px-4 py-2 flex items-center ${
       isMinimized ? 'justify-center' : 'justify-between'
     }`;
@@ -56,7 +56,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
                 title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
               >
                 {isFullscreen ? (
-                  <Minimize2 className="w-4 h-4" />
+                  <Minimize className="w-4 h-4" />
                 ) : (
                   <Expand className="w-4 h-4" />
                 )}

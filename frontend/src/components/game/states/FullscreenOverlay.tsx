@@ -36,6 +36,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
     onCodeChange,
     onMaximizeToggle,
     onToggleDescription,
+    onClose,
   }) => {
     const [isResizing, setIsResizing] = useState(false);
     const [fsSplitSizes, setFsSplitSizes] = useState<number[]>([50, 50]);
@@ -82,9 +83,11 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
               maximizedEditor={maximizedEditor}
               isResizing={isResizing}
               sizesNormal={fsSplitSizes}
+              showFullscreenButton={true}
               gutterSize={10}
               onCodeChange={onCodeChange}
               onMaximizeToggle={onMaximizeToggle}
+              onFullscreenToggle={onClose}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
             />
