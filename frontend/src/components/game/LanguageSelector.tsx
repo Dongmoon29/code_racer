@@ -1,18 +1,17 @@
 import React from 'react';
 
-// 지원하는 언어 목록
+// 지원하는 언어 목록 (게임에서 사용하는 3종으로 제한)
 const LANGUAGES = [
   { id: 'javascript', name: 'JavaScript' },
   { id: 'python', name: 'Python' },
-  { id: 'java', name: 'Java' },
-  { id: 'rust', name: 'Rust' },
-  { id: 'cpp', name: 'C++' },
   { id: 'go', name: 'Go' },
-];
+] as const;
+
+type SupportedLanguage = (typeof LANGUAGES)[number]['id'];
 
 interface LanguageSelectorProps {
-  selectedLanguage: string;
-  onChange: (language: 'python' | 'javascript' | 'go') => void;
+  selectedLanguage: SupportedLanguage;
+  onChange: (language: SupportedLanguage) => void;
   disabled?: boolean;
 }
 
@@ -29,7 +28,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       <select
         id="language-select"
         value={selectedLanguage}
-        onChange={(e) => onChange(e.target.value as 'python' | 'javascript')}
+        onChange={(e) => onChange(e.target.value as SupportedLanguage)}
         disabled={disabled}
         className="py-1 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
       >
