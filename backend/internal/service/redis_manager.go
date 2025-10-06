@@ -40,6 +40,7 @@ const (
 	FieldFinishedAt = "finished_at"
 	FieldLeetCodeID = "leetcode_id"
 	FieldDifficulty = "difficulty"
+    FieldMode       = "mode"
 )
 
 // NewRedisManager creates a new RedisManager instance
@@ -51,7 +52,7 @@ func NewRedisManager(rdb *redis.Client, logger logger.Logger) *RedisManager {
 }
 
 // CreateMatch creates Redis data structure for a new match
-func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid.UUID, leetcodeID uuid.UUID, difficulty string) error {
+func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid.UUID, leetcodeID uuid.UUID, difficulty string, mode string) error {
 	ctx := context.Background()
 	now := time.Now()
 
@@ -62,12 +63,13 @@ func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid
 
 	// Set match metadata
 	matchDataKey := fmt.Sprintf(MatchDataKey, matchID.String())
-	pipe.HSet(ctx, matchDataKey, map[string]interface{}{
+    pipe.HSet(ctx, matchDataKey, map[string]interface{}{
 		FieldStatus:     string(model.MatchStatusPlaying),
 		FieldCreatedAt:  now.Unix(),
 		FieldStartedAt:  now.Unix(),
 		FieldLeetCodeID: leetcodeID,
-		FieldDifficulty: difficulty,
+        FieldDifficulty: difficulty,
+        FieldMode:       mode,
 	})
 	pipe.Expire(ctx, matchDataKey, codeExpirationHours*time.Hour)
 

@@ -71,7 +71,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
     };
   }, []);
 
-  const startMatching = async (difficulty: Difficulty) => {
+  const startMatching = async (difficulty: Difficulty, mode: 'casual_pvp' | 'ranked_pvp' | 'single' = 'casual_pvp') => {
     // Prevent duplicate start: ignore if in progress or existing socket
     if (matchingState !== MATCHING_STATE.IDLE || wsClientRef.current) {
       return;
@@ -89,7 +89,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
       const wsClient = new MatchmakingWebSocketClient({
         onConnect: () => {
           setMatchingState(MATCHING_STATE.SEARCHING);
-          wsClient.startMatching(difficulty);
+          wsClient.startMatching(difficulty, mode);
         },
 
         onStatusUpdate: (message: MatchingStatusMessage) => {

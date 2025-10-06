@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
@@ -21,7 +22,7 @@ type MatchService interface {
 
 	// Matchmaking methods
 	GetRandomLeetCodeByDifficulty(difficulty string) (*model.LeetCode, error)
-	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Match, error)
+	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error)
 
 	// Query methods
 	GetMatch(matchID uuid.UUID) (*model.Match, error)
@@ -33,6 +34,7 @@ type matchService struct {
 	redisManager *RedisManager
 	logger       logger.Logger
 	judgeService interfaces.JudgeService
+	userRepo     interfaces.UserRepository
 }
 
 // NewMatchService creates a new MatchService instance with the provided dependencies
@@ -41,6 +43,7 @@ func NewMatchService(
 	leetCodeRepo repository.LeetCodeRepository,
 	rdb *redis.Client,
 	judgeService interfaces.JudgeService,
+	userRepo interfaces.UserRepository,
 	logger logger.Logger,
 ) MatchService {
 	return &matchService{
@@ -49,25 +52,26 @@ func NewMatchService(
 		rdb:          rdb,
 		redisManager: NewRedisManager(rdb, logger),
 		judgeService: judgeService,
+		userRepo:     userRepo,
 		logger:       logger,
 	}
 }
 
-// SubmitSolution 코드 제출 및 평가
+// SubmitSolution handles code submission and evaluation
 func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *model.SubmitSolutionRequest) (*model.SubmitSolutionResponse, error) {
 	s.logger.Debug().
 		Str("matchID", matchID.String()).
 		Str("userID", userID.String()).
 		Msg("Starting solution submission")
 
-	// 게임 정보 조회
+		// Fetch match from repository
 	match, err := s.matchRepo.FindByID(matchID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to find game")
 		return nil, err
 	}
 
-	// 게임 상태 체크
+	// Validate match status
 	if match.Status != model.MatchStatusPlaying {
 		s.logger.Error().
 			Str("status", string(match.Status)).
@@ -80,7 +84,7 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 		Str("language", req.Language).
 		Msg("Evaluating submitted code")
 
-	// Judge0 API를 통해 코드 평가
+		// Evaluate code via Judge service (Judge0)
 	result, err := s.judgeService.EvaluateCode(req.Code, req.Language, &match.LeetCode)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Code evaluation failed")
@@ -95,17 +99,17 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 		Str("errorMessage", result.ErrorMessage).
 		Msg("Code evaluation completed")
 
-	// 코드가 모든 테스트 케이스를 통과했는지 확인
+		// Check if all test cases passed
 	if result.Passed {
 		s.logger.Debug().Msg("All test cases passed, setting winner")
 
-		// 분산 락을 사용한 승자 설정 (동시 제출 방지)
+		// Set winner using a distributed lock (prevent race on simultaneous submits)
 		ctx := context.Background()
 		lockKey := fmt.Sprintf("match:%s:winner_lock", matchID.String())
 		lockValue := userID.String()
 		lockExpiry := 10 * time.Second
 
-		// 분산 락 획득 시도
+		// Try to acquire the distributed lock
 		lockAcquired, err := s.rdb.SetNX(ctx, lockKey, lockValue, lockExpiry).Result()
 		if err != nil {
 			s.logger.Error().Err(err).Msg("Failed to acquire winner lock")
@@ -113,7 +117,7 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 		}
 
 		if !lockAcquired {
-			// 다른 플레이어가 이미 승리했음
+			// Another player already won
 			s.logger.Info().Msg("Another player already won the game")
 			return &model.SubmitSolutionResponse{
 				Success:  true,
@@ -122,24 +126,54 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 			}, nil
 		}
 
-		// 락 해제를 위한 defer 설정
+		// Ensure lock is released (defer)
 		defer func() {
 			s.rdb.Del(ctx, lockKey)
 		}()
 
-		// 승자 설정
+		// Persist winner in DB
 		if err := s.matchRepo.SetWinner(matchID, userID); err != nil {
 			s.logger.Error().Err(err).Msg("Failed to set winner")
 			return nil, err
 		}
 
-		// Redis에서 게임 상태 업데이트
+		// Update match status in Redis
 		matchKey := fmt.Sprintf("match:%s", matchID.String())
 		if err := s.rdb.HSet(ctx, matchKey, "status", string(model.MatchStatusFinished)).Err(); err != nil {
 			s.logger.Error().Err(err).Msg("Failed to update match status in Redis")
 		}
 
-		// Game end notification will be handled by real-time WebSocket updates
+		// ELO update for ranked matches
+		// Reload match to ensure we have the latest mode and participants
+		updatedMatch, err := s.matchRepo.FindByID(matchID)
+		if err == nil && updatedMatch != nil && updatedMatch.Mode == model.MatchModeRankedPVP && updatedMatch.PlayerBID != nil {
+			winnerID := userID
+			var loserID uuid.UUID
+			if winnerID == updatedMatch.PlayerAID {
+				loserID = *updatedMatch.PlayerBID
+			} else {
+				loserID = updatedMatch.PlayerAID
+			}
+
+			// Fetch users
+			winner, err1 := s.userRepo.FindByID(winnerID)
+			loser, err2 := s.userRepo.FindByID(loserID)
+			if err1 == nil && err2 == nil && winner != nil && loser != nil {
+				newWinner, newLoser := applyElo(winner.Rating, loser.Rating, true)
+				winner.Rating = newWinner
+				loser.Rating = newLoser
+				if err := s.userRepo.Update(winner); err != nil {
+					s.logger.Error().Err(err).Msg("Failed to update winner rating")
+				}
+				if err := s.userRepo.Update(loser); err != nil {
+					s.logger.Error().Err(err).Msg("Failed to update loser rating")
+				}
+			} else {
+				s.logger.Warn().Msg("Failed to load users for ELO update")
+			}
+		}
+
+		// Game end notification will be handled by WebSocket layer
 		s.logger.Info().Msg("Match completed - winner determined")
 
 		return &model.SubmitSolutionResponse{
@@ -157,19 +191,44 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 	}, nil
 }
 
-// UpdateCode 코드 업데이트 및 웹소켓 브로드캐스트
+// applyElo applies ELO update with K-factor to winner/loser ratings.
+// Returns updated ratings (winnerNew, loserNew).
+func applyElo(winnerRating int, loserRating int, winnerWon bool) (int, int) {
+	const kFactor = 32.0
+	ra := float64(winnerRating)
+	rb := float64(loserRating)
+	ea := 1.0 / (1.0 + math.Pow(10.0, (rb-ra)/400.0))
+	eb := 1.0 - ea
+	var sa, sb float64
+	if winnerWon {
+		sa, sb = 1.0, 0.0
+	} else {
+		sa, sb = 0.0, 1.0
+	}
+	newRA := int(math.Round(ra + kFactor*(sa-ea)))
+	newRB := int(math.Round(rb + kFactor*(sb-eb)))
+	if newRA < 0 {
+		newRA = 0
+	}
+	if newRB < 0 {
+		newRB = 0
+	}
+	return newRA, newRB
+}
+
+// UpdateCode stores user's code in Redis and will be broadcasted by WebSocket layer
 func (s *matchService) UpdateCode(matchID uuid.UUID, userID uuid.UUID, code string) error {
 	match, err := s.matchRepo.FindByID(matchID)
 	if err != nil {
 		return err
 	}
 
-	// 게임 상태 체크
+	// Validate match status
 	if match.Status != model.MatchStatusPlaying {
 		return errors.New("match is not in playing status")
 	}
 
-	// Redis에 코드 저장
+	// Persist code in Redis
 	if err := s.redisManager.UpdateUserCode(matchID, userID, code); err != nil {
 		return err
 	}
@@ -177,27 +236,27 @@ func (s *matchService) UpdateCode(matchID uuid.UUID, userID uuid.UUID, code stri
 	return nil
 }
 
-// GetPlayerCode 플레이어 코드 조회
+// GetPlayerCode returns the user's code snapshot stored in Redis
 func (s *matchService) GetPlayerCode(matchID uuid.UUID, userID uuid.UUID) (string, error) {
 	return s.redisManager.GetUserCode(matchID, userID)
 }
 
 func (s *matchService) CloseMatch(matchID uuid.UUID, userID uuid.UUID) error {
-	// DB에서 게임 방 닫기
+	// Close match in DB
 	if err := s.matchRepo.CloseMatch(matchID, userID); err != nil {
 		return err
 	}
 
-	// Redis에서 게임 관련 데이터 정리
+	// Cleanup match data in Redis
 	ctx := context.Background()
 
-	// 게임에 참가한 사용자 목록 가져오기
+	// Get participants in the match
 	users, err := s.redisManager.GetMatchUsers(matchID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to get match users from Redis")
 	}
 
-	// 각 사용자를 매치에서 제거
+	// Remove each user from the match
 	for _, uid := range users {
 		userID, err := uuid.Parse(uid)
 		if err != nil {
@@ -209,19 +268,19 @@ func (s *matchService) CloseMatch(matchID uuid.UUID, userID uuid.UUID) error {
 		}
 	}
 
-	// 매치 완전 정리
+	// Cleanup all remaining match keys
 	if err := s.redisManager.CleanupMatch(matchID); err != nil {
 		s.logger.Error().Err(err).Msg("Failed to cleanup match")
 	}
 
-	// 승자 락 키도 정리
+	// Cleanup winner lock key as well
 	lockKey := fmt.Sprintf("match:%s:winner_lock", matchID.String())
 	s.rdb.Del(ctx, lockKey)
 
 	return nil
 }
 
-// GetMatch 매치 조회
+// GetMatch finds a match by ID
 func (s *matchService) GetMatch(matchID uuid.UUID) (*model.Match, error) {
 	match, err := s.matchRepo.FindByID(matchID)
 	if err != nil {
@@ -230,8 +289,9 @@ func (s *matchService) GetMatch(matchID uuid.UUID) (*model.Match, error) {
 	return match, nil
 }
 
-func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Match, error) {
-	// Get a random LeetCode problem for the difficulty
+// CreateMatch persists a new match and initializes Redis state
+func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error) {
+	// Pick a random LeetCode problem for the requested difficulty
 	leetcode, err := s.GetRandomLeetCodeByDifficulty(difficulty)
 	if err != nil {
 		s.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to get random LeetCode problem")
@@ -243,6 +303,7 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 		PlayerBID:  &player2ID,
 		LeetCodeID: leetcode.ID,
 		Status:     model.MatchStatusPlaying,
+		Mode:       model.MatchMode(mode),
 	}
 
 	// Save to database
@@ -251,7 +312,7 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 		return nil, fmt.Errorf("failed to create match: %w", err)
 	}
 
-	// Load the complete game with LeetCode details
+	// Load the complete match with associated LeetCode details
 	createdMatch, err := s.matchRepo.FindByID(match.ID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to load created match")
@@ -259,9 +320,9 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 	}
 
 	// Initialize Redis data using RedisManager
-	if err := s.redisManager.CreateMatch(match.ID, player1ID, player2ID, leetcode.ID, difficulty); err != nil {
+	if err := s.redisManager.CreateMatch(match.ID, player1ID, player2ID, leetcode.ID, difficulty, mode); err != nil {
 		s.logger.Error().Err(err).Msg("Failed to initialize Redis data for match")
-		// Try to clean up the database record
+		// Try to rollback the database record
 		if deleteErr := s.matchRepo.Delete(match.ID); deleteErr != nil {
 			s.logger.Error().Err(deleteErr).Msg("Failed to rollback match creation")
 		}

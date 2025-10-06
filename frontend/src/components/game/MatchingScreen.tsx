@@ -180,7 +180,7 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(
                 : ''
             }`}
             disabled={matchingState !== MATCHING_STATE.IDLE}
-            onClick={() => startMatching(difficulty)}
+            onClick={() => startMatching(difficulty, mode)}
           >
             GO
           </button>

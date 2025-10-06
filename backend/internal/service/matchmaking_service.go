@@ -9,7 +9,7 @@ import (
 
 // MatchmakingService handles player matching and game creation
 type MatchmakingService interface {
-	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string) (interface{}, error)
+	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (interface{}, error)
 }
 
 type matchmakingService struct {
@@ -42,14 +42,14 @@ func NewMatchmakingService(
 }
 
 // CreateMatch handles the complete match creation flow
-func (s *matchmakingService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string) (interface{}, error) {
+func (s *matchmakingService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (interface{}, error) {
 	s.logger.Info().
 		Str("player1ID", player1ID.String()).
 		Str("player2ID", player2ID.String()).
 		Str("difficulty", difficulty).
 		Msg("Starting match creation")
 
-	match, err := s.matchService.CreateMatch(player1ID, player2ID, difficulty)
+	match, err := s.matchService.CreateMatch(player1ID, player2ID, difficulty, mode)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to create match")
 		return nil, err
