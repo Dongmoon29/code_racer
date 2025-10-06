@@ -12,6 +12,7 @@ interface UserDropdownProps {
   onClose: () => void;
   dropdownRef: RefObject<HTMLDivElement | null>;
   onLogout: () => void;
+  onNavigateToProfile: () => void;
 }
 
 const UserDropdown: FC<UserDropdownProps> = ({
@@ -21,6 +22,7 @@ const UserDropdown: FC<UserDropdownProps> = ({
   onClose,
   dropdownRef,
   onLogout,
+  onNavigateToProfile,
 }) => {
   return (
     <div className="relative z-50" ref={dropdownRef}>
@@ -62,6 +64,16 @@ const UserDropdown: FC<UserDropdownProps> = ({
           style={{ backgroundColor: 'hsl(var(--background))' }}
         >
           <div className="py-1">
+            <button
+              onClick={() => {
+                onNavigateToProfile();
+                onClose();
+              }}
+              className="block w-full text-left px-4 py-2 text-sm hover:bg-muted cursor-pointer"
+              style={{ color: 'hsl(var(--foreground))' }}
+            >
+              My Profile
+            </button>
             {user.role === 'admin' && (
               <Link
                 href="/admin"
