@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, FC } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, User } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { authApi } from '@/lib/api';
 import { Spinner } from '../ui';
 import axios, { AxiosError } from 'axios';
@@ -9,50 +11,29 @@ import { ApiErrorResponse } from '@/types';
 import { Alert } from '../ui/alert';
 import { Button } from '../ui/Button';
 import Image from 'next/image';
+import { registerSchema, RegisterFormData } from '@/lib/validations/auth';
 
-const RegisterForm: React.FC = () => {
+const RegisterForm: FC = () => {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: yupResolver(registerSchema),
+    mode: 'onBlur',
+  });
 
-    if (!name.trim()) {
-      setError('Name is required');
-      return;
-    }
-
-    if (!email.trim()) {
-      setError('Email is required');
-      return;
-    }
-
-    if (!password.trim()) {
-      setError('Password is required');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
+  const onSubmit = async (data: RegisterFormData) => {
     try {
       setLoading(true);
       setError(null);
 
-      await authApi.register(email, password, name);
+      await authApi.register(data.email, data.password, data.name);
 
       router.push('/login?registered=true');
     } catch (err: unknown) {
@@ -76,27 +57,30 @@ const RegisterForm: React.FC = () => {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-1">
           <label
             htmlFor="name"
             className="text-sm font-medium text-[hsl(var(--foreground))]"
           >
-            Name
+            이름
           </label>
           <div className="relative">
             <input
               id="name"
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="John Doe"
+              {...register('name')}
+              placeholder="홍길동"
               disabled={loading}
-              required
-              className="w-full h-12 px-3 py-2 border border-input rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+              className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${
+                errors.name ? 'border-red-500' : 'border-input'
+              }`}
             />
             <User className="absolute right-3 top-3.5 h-5 w-5 text-[hsl(var(--muted-foreground))]" />
           </div>
+          {errors.name && (
+            <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>
+          )}
         </div>
 
         <div className="space-y-1">
@@ -104,21 +88,24 @@ const RegisterForm: React.FC = () => {
             htmlFor="email"
             className="text-sm font-medium text-[hsl(var(--foreground))]"
           >
-            E-mail
+            이메일
           </label>
           <div className="relative">
             <input
               id="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              {...register('email')}
               placeholder="you@example.com"
               disabled={loading}
-              required
-              className="w-full h-12 px-3 py-2 border border-input rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+              className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${
+                errors.email ? 'border-red-500' : 'border-input'
+              }`}
             />
             <Mail className="absolute right-3 top-3.5 h-5 w-5 text-[hsl(var(--muted-foreground))]" />
           </div>
+          {errors.email && (
+            <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
+          )}
         </div>
 
         <div className="space-y-1">
@@ -126,17 +113,17 @@ const RegisterForm: React.FC = () => {
             htmlFor="password"
             className="text-sm font-medium text-[hsl(var(--foreground))]"
           >
-            Password
+            비밀번호
           </label>
           <div className="relative">
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              {...register('password')}
               disabled={loading}
-              required
-              className="w-full h-12 px-3 py-2 border border-input rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+              className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${
+                errors.password ? 'border-red-500' : 'border-input'
+              }`}
             />
             <button
               type="button"
@@ -150,6 +137,11 @@ const RegisterForm: React.FC = () => {
               )}
             </button>
           </div>
+          {errors.password && (
+            <p className="text-sm text-red-500 mt-1">
+              {errors.password.message}
+            </p>
+          )}
         </div>
 
         <div className="space-y-1">
@@ -157,19 +149,24 @@ const RegisterForm: React.FC = () => {
             htmlFor="confirmPassword"
             className="text-sm font-medium text-[hsl(var(--foreground))]"
           >
-            Confirm Password
+            비밀번호 확인
           </label>
           <div className="relative">
             <input
               id="confirmPassword"
               type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              {...register('confirmPassword')}
               disabled={loading}
-              required
-              className="w-full h-12 px-3 py-2 border border-input rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+              className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${
+                errors.confirmPassword ? 'border-red-500' : 'border-input'
+              }`}
             />
           </div>
+          {errors.confirmPassword && (
+            <p className="text-sm text-red-500 mt-1">
+              {errors.confirmPassword.message}
+            </p>
+          )}
         </div>
 
         <Button type="submit" className="w-full h-12" disabled={loading}>
@@ -221,7 +218,7 @@ const RegisterForm: React.FC = () => {
             href="/login"
             className="text-[hsl(var(--primary))] font-medium hover:underline"
           >
-            Login
+            로그인
           </Link>
         </p>
       </div>

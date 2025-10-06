@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, FC } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { authApi } from '../../lib/api';
 import { Spinner } from '../ui';
 import axios from 'axios';
@@ -10,24 +12,30 @@ import { Alert } from '../ui/alert';
 import Image from 'next/image';
 import { useRouterHelper } from '@/lib/router';
 import { useAuthStore } from '../../stores/authStore';
+import { loginSchema, LoginFormData } from '@/lib/validations/auth';
 
-const LoginForm: React.FC = () => {
+const LoginForm: FC = () => {
   const router = useRouter();
   const routerHelper = useRouterHelper(router);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: yupResolver(loginSchema),
+    mode: 'onBlur',
+  });
 
+  const onSubmit = async (data: LoginFormData) => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await authApi.login(email, password);
+      const response = await authApi.login(data.email, data.password);
 
       if (response.success) {
         // Security: Store token in sessionStorage (more secure than localStorage)
@@ -81,27 +89,30 @@ const LoginForm: React.FC = () => {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-1">
           <label
             htmlFor="email"
             className="text-sm font-medium text-[hsl(var(--foreground))]"
           >
-            E-mail
+            이메일
           </label>
           <div className="relative">
             <input
               id="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              {...register('email')}
               placeholder="you@example.com"
               disabled={loading}
-              required
-              className="w-full h-12 px-3 py-2 border border-input rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+              className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${
+                errors.email ? 'border-red-500' : 'border-input'
+              }`}
             />
             <Mail className="absolute right-3 top-3.5 h-5 w-5 text-[hsl(var(--muted-foreground))]" />
           </div>
+          {errors.email && (
+            <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
+          )}
         </div>
 
         <div className="space-y-1">
@@ -109,17 +120,17 @@ const LoginForm: React.FC = () => {
             htmlFor="password"
             className="text-sm font-medium text-[hsl(var(--foreground))]"
           >
-            Password
+            비밀번호
           </label>
           <div className="relative">
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              {...register('password')}
               disabled={loading}
-              required
-              className="w-full h-12 px-3 py-2 border border-input rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+              className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${
+                errors.password ? 'border-red-500' : 'border-input'
+              }`}
             />
             <button
               type="button"
@@ -134,10 +145,15 @@ const LoginForm: React.FC = () => {
               )}
             </button>
           </div>
+          {errors.password && (
+            <p className="text-sm text-red-500 mt-1">
+              {errors.password.message}
+            </p>
+          )}
         </div>
 
         <Button type="submit" className="w-full h-12" disabled={loading}>
-          {loading ? <Spinner size="sm" /> : 'Sign In'}
+          {loading ? <Spinner size="sm" /> : 'Login'}
         </Button>
       </form>
 
@@ -185,7 +201,7 @@ const LoginForm: React.FC = () => {
             href="/register"
             className="text-[hsl(var(--primary))] font-medium hover:underline"
           >
-            Register
+            회원가입
           </Link>
         </p>
       </div>
