@@ -139,7 +139,7 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 	authService := service.NewAuthService(repos.userRepository, cfg.JWTSecret, appLogger)
 	userService := service.NewUserService(repos.userRepository, repos.matchRepository, appLogger)
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger)
-	matchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, judgeService, appLogger)
+	matchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, judgeService, repos.userRepository, appLogger)
 
 	// Initialize EventBus
 	eventBus := events.NewEventBus()
