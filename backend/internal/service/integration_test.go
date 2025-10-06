@@ -37,10 +37,10 @@ func TestMatchmakingIntegration_Success(t *testing.T) {
 		Status:    "playing",
 	}
 
-	mockMatchService.On("CreateMatch", player1ID, player2ID, difficulty).Return(mockMatch, nil)
+	mockMatchService.On("CreateMatch", player1ID, player2ID, difficulty, "casual_pvp").Return(mockMatch, nil)
 
 	// Execute
-	result, err := matchmakingService.CreateMatch(player1ID, player2ID, difficulty)
+    result, err := matchmakingService.CreateMatch(player1ID, player2ID, difficulty, "casual_pvp")
 
 	// Assert
 	assert.NoError(t, err)
@@ -93,10 +93,10 @@ func TestMatchmakingIntegration_ErrorHandling(t *testing.T) {
 	difficulty := "hard"
 
 	// Mock match creation failure
-	mockMatchService.On("CreateMatch", player1ID, player2ID, difficulty).Return((*model.Match)(nil), assert.AnError)
+	mockMatchService.On("CreateMatch", player1ID, player2ID, difficulty, "casual_pvp").Return((*model.Match)(nil), assert.AnError)
 
 	// Execute
-	result, err := matchmakingService.CreateMatch(player1ID, player2ID, difficulty)
+    result, err := matchmakingService.CreateMatch(player1ID, player2ID, difficulty, "casual_pvp")
 
 	// Assert
 	assert.Error(t, err)

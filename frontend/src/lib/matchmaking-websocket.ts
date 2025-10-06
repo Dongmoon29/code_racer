@@ -5,6 +5,7 @@ import { createErrorHandler } from '@/lib/error-tracking';
 export interface MatchingRequest {
   type: 'start_matching';
   difficulty: 'Easy' | 'Medium' | 'Hard';
+  mode: 'casual_pvp' | 'ranked_pvp' | 'single';
 }
 
 export interface CancelRequest {
@@ -192,7 +193,7 @@ export class MatchmakingWebSocketClient {
     }, delay);
   }
 
-  startMatching(difficulty: 'Easy' | 'Medium' | 'Hard') {
+  startMatching(difficulty: 'Easy' | 'Medium' | 'Hard', mode: 'casual_pvp' | 'ranked_pvp' | 'single' = 'casual_pvp') {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error('WebSocket is not connected');
       return;
@@ -201,6 +202,7 @@ export class MatchmakingWebSocketClient {
     const message: MatchingRequest = {
       type: 'start_matching',
       difficulty,
+      mode,
     };
 
     console.log('🚀 Sending start_matching message:', message);

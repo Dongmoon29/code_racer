@@ -38,8 +38,8 @@ func (m *MockMatchService) GetRandomLeetCodeByDifficulty(difficulty string) (*mo
 	return args.Get(0).(*model.LeetCode), args.Error(1)
 }
 
-func (m *MockMatchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Match, error) {
-	args := m.Called(player1ID, player2ID, difficulty)
+func (m *MockMatchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error) {
+    args := m.Called(player1ID, player2ID, difficulty, mode)
 	return args.Get(0).(*model.Match), args.Error(1)
 }
 
@@ -81,10 +81,10 @@ func TestMatchmakingService_CreateMatch_Success(t *testing.T) {
 
 	// Mock match creation success
 	mockMatch := &model.Match{ID: uuid.New()}
-	mockMatchService.On("CreateMatch", player1ID, player2ID, difficulty).Return(mockMatch, nil)
+    mockMatchService.On("CreateMatch", player1ID, player2ID, difficulty, mock.Anything).Return(mockMatch, nil)
 
 	// Execute
-	result, err := service.CreateMatch(player1ID, player2ID, difficulty)
+    result, err := service.CreateMatch(player1ID, player2ID, difficulty, "casual_pvp")
 
 	// Assert
 	assert.NoError(t, err)
@@ -106,10 +106,10 @@ func TestMatchmakingService_CreateMatch_MatchServiceError(t *testing.T) {
 
 	// Mock match creation failure
 	expectedError := errors.New("failed to create match")
-	mockMatchService.On("CreateMatch", player1ID, player2ID, difficulty).Return((*model.Match)(nil), expectedError)
+    mockMatchService.On("CreateMatch", player1ID, player2ID, difficulty, mock.Anything).Return((*model.Match)(nil), expectedError)
 
 	// Execute
-	result, err := service.CreateMatch(player1ID, player2ID, difficulty)
+    result, err := service.CreateMatch(player1ID, player2ID, difficulty, "casual_pvp")
 
 	// Assert
 	assert.Error(t, err)

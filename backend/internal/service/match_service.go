@@ -21,7 +21,7 @@ type MatchService interface {
 
 	// Matchmaking methods
 	GetRandomLeetCodeByDifficulty(difficulty string) (*model.LeetCode, error)
-	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Match, error)
+	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error)
 
 	// Query methods
 	GetMatch(matchID uuid.UUID) (*model.Match, error)
@@ -230,7 +230,7 @@ func (s *matchService) GetMatch(matchID uuid.UUID) (*model.Match, error) {
 	return match, nil
 }
 
-func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Match, error) {
+func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error) {
 	// Get a random LeetCode problem for the difficulty
 	leetcode, err := s.GetRandomLeetCodeByDifficulty(difficulty)
 	if err != nil {
@@ -243,6 +243,7 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 		PlayerBID:  &player2ID,
 		LeetCodeID: leetcode.ID,
 		Status:     model.MatchStatusPlaying,
+		Mode:       model.MatchMode(mode),
 	}
 
 	// Save to database
@@ -259,7 +260,7 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 	}
 
 	// Initialize Redis data using RedisManager
-	if err := s.redisManager.CreateMatch(match.ID, player1ID, player2ID, leetcode.ID, difficulty); err != nil {
+	if err := s.redisManager.CreateMatch(match.ID, player1ID, player2ID, leetcode.ID, difficulty, mode); err != nil {
 		s.logger.Error().Err(err).Msg("Failed to initialize Redis data for match")
 		// Try to clean up the database record
 		if deleteErr := s.matchRepo.Delete(match.ID); deleteErr != nil {

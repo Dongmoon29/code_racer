@@ -43,8 +43,8 @@ type Hub struct {
 	// Map of clients by match ID
 	matchClients map[string]map[*Client]bool
 
-	// NEW: Matchmaking clients by difficulty
-	matchingClients map[string][]*Client
+	// NEW: Matchmaking clients by mode and difficulty: mode -> difficulty -> clients
+	matchingClients map[string]map[string][]*Client
 
 	// Channel for client registration
 	register chan *Client
@@ -96,6 +96,7 @@ type Client struct {
 	isMatching   bool
 	difficulty   string
 	matchStarted time.Time
+	mode         string
 
 	// NEW: Flag to indicate if disconnect is after successful match
 	disconnectAfterMatch bool
@@ -128,6 +129,7 @@ type CodeUpdateMessage struct {
 type MatchingRequest struct {
 	Client     *Client `json:"-"`
 	Difficulty string  `json:"difficulty"`
+	Mode       string  `json:"mode"`
 }
 
 type CancelRequest struct {
@@ -211,7 +213,7 @@ func (s *webSocketService) InitHub() *Hub {
 	s.hub = &Hub{
 		clients:            make(map[*Client]bool),
 		matchClients:       make(map[string]map[*Client]bool),
-		matchingClients:    make(map[string][]*Client),
+		matchingClients:    make(map[string]map[string][]*Client),
 		register:           make(chan *Client),
 		unregister:         make(chan *Client),
 		broadcast:          make(chan *Message),
@@ -323,11 +325,11 @@ func (h *Hub) handleStartMatching(req *MatchingRequest) {
 
 	matchingClient := req.Client
 	requestedDifficulty := req.Difficulty
-
-	h.updateClientMatchingState(matchingClient, requestedDifficulty)
-	h.addClientToMatchingQueue(matchingClient, requestedDifficulty)
-	h.sendMatchingStatusToClient(matchingClient, requestedDifficulty)
-	h.attemptImmediateMatchmaking(requestedDifficulty)
+	requestedMode := req.Mode
+	h.updateClientMatchingState(matchingClient, requestedDifficulty, requestedMode)
+	h.addClientToMatchingQueue(matchingClient, requestedDifficulty, requestedMode)
+	h.sendMatchingStatusToClient(matchingClient, requestedDifficulty, requestedMode)
+	h.attemptImmediateMatchmaking(requestedDifficulty, requestedMode)
 }
 
 // logMatchingRequest logs the matching request details
@@ -336,32 +338,39 @@ func (h *Hub) logMatchingRequest(req *MatchingRequest) {
 }
 
 // updateClientMatchingState updates the client's matching state
-func (h *Hub) updateClientMatchingState(client *Client, difficulty string) {
+func (h *Hub) updateClientMatchingState(client *Client, difficulty, mode string) {
 	client.isMatching = true
 	client.difficulty = difficulty
+	client.mode = mode
 	client.matchStarted = time.Now()
 }
 
 // addClientToMatchingQueue adds client to the matching queue
-func (h *Hub) addClientToMatchingQueue(client *Client, difficulty string) {
+func (h *Hub) addClientToMatchingQueue(client *Client, difficulty, mode string) {
 	// Prevent duplicate queue entries by removing any existing occurrence first
 	h.removeFromMatchingQueue(client)
 
 	// Add to matching queue
-	h.matchingClients[difficulty] = append(h.matchingClients[difficulty], client)
-	h.logger.Info().Str("difficulty", difficulty).Int("queueSize", len(h.matchingClients[difficulty])).Msg("Client added to matching queue")
+	if _, ok := h.matchingClients[mode]; !ok {
+		h.matchingClients[mode] = make(map[string][]*Client)
+	}
+	h.matchingClients[mode][difficulty] = append(h.matchingClients[mode][difficulty], client)
+	h.logger.Info().Str("mode", mode).Str("difficulty", difficulty).Int("queueSize", len(h.matchingClients[mode][difficulty])).Msg("Client added to matching queue")
 }
 
 // sendMatchingStatusToClient sends matching status to the client
-func (h *Hub) sendMatchingStatusToClient(client *Client, difficulty string) {
-	queuePosition := len(h.matchingClients[difficulty])
+func (h *Hub) sendMatchingStatusToClient(client *Client, difficulty, mode string) {
+	queuePosition := 0
+	if qs, ok := h.matchingClients[mode]; ok {
+		queuePosition = len(qs[difficulty])
+	}
 	h.sendMatchingStatus(client, "searching", queuePosition, 0)
 	h.logger.Debug().Str("userID", client.userID.String()).Int("queuePosition", queuePosition).Msg("Sent matching status to client")
 }
 
 // attemptImmediateMatchmaking tries to find a match immediately
-func (h *Hub) attemptImmediateMatchmaking(difficulty string) {
-	h.tryMatchmaking(difficulty)
+func (h *Hub) attemptImmediateMatchmaking(difficulty, mode string) {
+	h.tryMatchmaking(difficulty, mode)
 }
 
 // handleCancelMatching processes a cancel matching request
@@ -380,6 +389,7 @@ func (h *Hub) handleCancelMatching(req *CancelRequest) {
 	// Update client state
 	client.isMatching = false
 	client.difficulty = ""
+	client.mode = ""
 
 	// Send cancellation confirmation
 	h.sendMatchingStatus(client, "canceled", 0, 0)
@@ -387,24 +397,50 @@ func (h *Hub) handleCancelMatching(req *CancelRequest) {
 
 // removeFromMatchingQueue removes a client from all matching queues
 func (h *Hub) removeFromMatchingQueue(client *Client) {
-	for difficulty, clients := range h.matchingClients {
-		for i, c := range clients {
-			if c == client {
-				// Remove client from slice
-				h.matchingClients[difficulty] = append(clients[:i], clients[i+1:]...)
-				break
+	// Prefer removing from the specific mode/difficulty bucket
+	if qs, ok := h.matchingClients[client.mode]; ok {
+		if clients, ok2 := qs[client.difficulty]; ok2 {
+			for i, c := range clients {
+				if c == client {
+					h.matchingClients[client.mode][client.difficulty] = append(clients[:i], clients[i+1:]...)
+					break
+				}
+			}
+			if len(h.matchingClients[client.mode][client.difficulty]) == 0 {
+				delete(h.matchingClients[client.mode], client.difficulty)
 			}
 		}
-		// Clean up empty queues
-		if len(h.matchingClients[difficulty]) == 0 {
-			delete(h.matchingClients, difficulty)
+		if len(h.matchingClients[client.mode]) == 0 {
+			delete(h.matchingClients, client.mode)
+		}
+		return
+	}
+	// Fallback: scan all queues if mode/difficulty missing
+	for mode, byDiff := range h.matchingClients {
+		for difficulty, clients := range byDiff {
+			for i, c := range clients {
+				if c == client {
+					h.matchingClients[mode][difficulty] = append(clients[:i], clients[i+1:]...)
+					break
+				}
+			}
+			if len(h.matchingClients[mode][difficulty]) == 0 {
+				delete(h.matchingClients[mode], difficulty)
+			}
+		}
+		if len(h.matchingClients[mode]) == 0 {
+			delete(h.matchingClients, mode)
 		}
 	}
 }
 
 // tryMatchmaking attempts to match waiting clients
-func (h *Hub) tryMatchmaking(difficulty string) {
-	clients := h.matchingClients[difficulty]
+func (h *Hub) tryMatchmaking(difficulty, mode string) {
+	byDiff, ok := h.matchingClients[mode]
+	if !ok {
+		return
+	}
+	clients := byDiff[difficulty]
 
 	// Need at least 2 clients to match
 	if len(clients) < 2 {
@@ -416,9 +452,12 @@ func (h *Hub) tryMatchmaking(difficulty string) {
 	player2 := clients[1]
 
 	// Remove matched clients from queue
-	h.matchingClients[difficulty] = clients[2:]
-	if len(h.matchingClients[difficulty]) == 0 {
-		delete(h.matchingClients, difficulty)
+	h.matchingClients[mode][difficulty] = clients[2:]
+	if len(h.matchingClients[mode][difficulty]) == 0 {
+		delete(h.matchingClients[mode], difficulty)
+		if len(h.matchingClients[mode]) == 0 {
+			delete(h.matchingClients, mode)
+		}
 	}
 
 	// Create game and notify clients
@@ -454,7 +493,11 @@ func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
 	player2.disconnectAfterMatch = true
 
 	// Create the actual game
-	game, err := h.matchmakingService.CreateMatch(player1.userID, player2.userID, difficulty)
+	mode := player1.mode
+	if mode == "" {
+		mode = "casual_pvp"
+	}
+	game, err := h.matchmakingService.CreateMatch(player1.userID, player2.userID, difficulty, mode)
 	if err != nil {
 		// Reset flags on error
 		player1.disconnectAfterMatch = false
@@ -477,9 +520,14 @@ func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
 			}
 		}
 
-		// Return players to matching queue on error
+		// Return players to matching queue on error (preserve mode bucket)
 		h.mu.Lock()
-		h.matchingClients[difficulty] = append([]*Client{player1, player2}, h.matchingClients[difficulty]...)
+		mode := player1.mode
+		if _, ok := h.matchingClients[mode]; !ok {
+			h.matchingClients[mode] = make(map[string][]*Client)
+		}
+		current := h.matchingClients[mode][difficulty]
+		h.matchingClients[mode][difficulty] = append([]*Client{player1, player2}, current...)
 		player1.isMatching = true
 		player2.isMatching = true
 		h.mu.Unlock()
@@ -923,6 +971,10 @@ func (c *Client) handleStartMatchingMessage(msg map[string]interface{}) {
 	c.hub.logger.Info().Interface("message", msg).Str("userID", c.userID.String()).Msg("Received start matching message")
 
 	if difficulty, ok := msg["difficulty"].(string); ok {
+		mode := "casual_pvp"
+		if m, ok := msg["mode"].(string); ok && m != "" {
+			mode = m
+		}
 		c.hub.logger.Info().Str("difficulty", difficulty).Str("userID", c.userID.String()).Msg("Extracted difficulty from message")
 
 		if c.isValidDifficulty(difficulty) {
@@ -930,6 +982,7 @@ func (c *Client) handleStartMatchingMessage(msg map[string]interface{}) {
 			matchReq := &MatchingRequest{
 				Client:     c,
 				Difficulty: difficulty,
+				Mode:       mode,
 			}
 			c.hub.startMatching <- matchReq
 			c.hub.logger.Info().Str("userID", c.userID.String()).Msg("Match request sent to hub")
