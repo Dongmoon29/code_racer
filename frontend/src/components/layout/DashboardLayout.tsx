@@ -28,10 +28,19 @@ const navigationItems = [
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('dashboard-sidebar-collapsed') === 'true';
+    }
+    return false;
+  });
 
   const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dashboard-sidebar-collapsed', newState.toString());
+    }
   };
 
   return (
