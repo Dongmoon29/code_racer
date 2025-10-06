@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useEffect, useState } from 'react';
 import { Spinner } from '../../ui';
 import CodeEditor from '../CodeEditor';
 import LanguageSelector from '../LanguageSelector';
@@ -42,10 +42,30 @@ export const PlayingGame: FC<PlayingGameProps> = ({
     'my' | 'opponent' | null
   >(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
+  const [isFullscreenMy, setIsFullscreenMy] = useState(false);
 
   const handleMaximizeToggle = (editor: 'my' | 'opponent') => {
     setMaximizedEditor((current) => (current === editor ? null : editor));
   };
+
+  // ESC to exit fullscreen and body scroll lock
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsFullscreenMy(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = isFullscreenMy ? 'hidden' : prev || '';
+    return () => {
+      document.body.style.overflow = prev || '';
+    };
+  }, [isFullscreenMy]);
 
   return (
     <div className="flex flex-col h-screen">
@@ -179,6 +199,17 @@ export const PlayingGame: FC<PlayingGameProps> = ({
                     <Maximize2 className="w-4 h-4" />
                   )}
                 </button>
+                <button
+                  onClick={() => setIsFullscreenMy((v) => !v)}
+                  className="cursor-pointer p-1 hover:bg-gray-200 rounded-md transition-colors shrink-0"
+                  title={isFullscreenMy ? 'Exit Fullscreen' : 'Fullscreen'}
+                >
+                  {isFullscreenMy ? (
+                    <Minimize2 className="w-4 h-4" />
+                  ) : (
+                    <Maximize2 className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </div>
             <div
@@ -247,6 +278,180 @@ export const PlayingGame: FC<PlayingGameProps> = ({
           </div>
         </div>
       </div>
+      {isFullscreenMy && (
+        <div className="fixed inset-0 z-[9999] bg-white dark:bg-black flex flex-col">
+          {/* Floating exit button */}
+          <button
+            onClick={() => setIsFullscreenMy(false)}
+            className="absolute top-2 right-2 p-2 rounded-md bg-[hsl(var(--muted))] hover:bg-gray-200 transition-colors shadow"
+            title="Exit Fullscreen"
+          >
+            <Minimize2 className="w-4 h-4" />
+          </button>
+          <div className="flex-1 flex min-h-0">
+            {/* Problem details (collapsible) */}
+            <div
+              className={`transition-all duration-300 overflow-auto border-r ${
+                isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'
+              }`}
+            >
+              {isDescriptionExpanded ? (
+                <div className="h-full flex flex-col">
+                  <div className="px-4 py-3 border-b flex justify-between items-center bg-[hsl(var(--muted))]">
+                    <span className="font-medium">Problem Details</span>
+                    <button
+                      onClick={() => setIsDescriptionExpanded(false)}
+                      className="p-1 hover:bg-gray-200 rounded-md transition-colors"
+                      title="Minimize"
+                    >
+                      <Minimize2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-4 p-4">
+                    <div>
+                      <h2 className="text-xl font-semibold mb-2">
+                        Problem Description
+                      </h2>
+                      <p className="whitespace-pre-line">
+                        {game.leetcode.description}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">Examples</h3>
+                      <pre className="p-3 rounded whitespace-pre-wrap bg-[hsl(var(--muted))]">
+                        {game.leetcode.examples}
+                      </pre>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">
+                        Constraints
+                      </h3>
+                      <pre className="p-3 rounded whitespace-pre-wrap bg-[hsl(var(--muted))]">
+                        {game.leetcode.constraints}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsDescriptionExpanded(true)}
+                  className="w-full h-10 flex items-center justify-center text-[hsl(var(--muted-foreground))] hover:text-white hover:scale-110 transition-all duration-200"
+                  title="Show Problem Details"
+                >
+                  <FileText className="w-6 h-6" />
+                </button>
+              )}
+            </div>
+
+            {/* Editors side by side with maximize/minimize */}
+            <div className="flex-1 flex gap-2 p-2 overflow-hidden">
+              {/* My editor */}
+              <div
+                className={`transition-all duration-300 border rounded-lg overflow-hidden flex flex-col min-w-0 ${
+                  maximizedEditor === 'opponent'
+                    ? 'w-[40px]'
+                    : maximizedEditor === 'my'
+                    ? 'w-full'
+                    : 'w-[calc(50%-0.5rem)]'
+                }`}
+              >
+                <div
+                  className={`h-10 px-4 py-2 border-b flex items-center ${
+                    maximizedEditor === 'opponent'
+                      ? 'justify-center'
+                      : 'justify-between'
+                  } bg-[hsl(var(--muted))]`}
+                >
+                  <span
+                    className={`font-medium truncate ${
+                      maximizedEditor === 'opponent' ? 'hidden' : ''
+                    }`}
+                  >
+                    Me
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleMaximizeToggle('my')}
+                      className="cursor-pointer p-1 hover:bg-gray-200 rounded-md transition-colors shrink-0"
+                      title={maximizedEditor === 'my' ? 'Restore' : 'Maximize'}
+                    >
+                      {maximizedEditor === 'my' ? (
+                        <Minimize2 className="w-4 h-4" />
+                      ) : (
+                        <Maximize2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div
+                  className={`flex-1 min-h-0 ${
+                    maximizedEditor === 'opponent' ? 'hidden' : ''
+                  }`}
+                >
+                  <CodeEditor
+                    value={myCode}
+                    onChange={onCodeChange}
+                    language={selectedLanguage}
+                    theme={theme}
+                  />
+                </div>
+              </div>
+
+              {/* Opponent editor */}
+              <div
+                className={`transition-all duration-300 border rounded-lg overflow-hidden flex flex-col min-w-0 ${
+                  maximizedEditor === 'my'
+                    ? 'w-[40px]'
+                    : maximizedEditor === 'opponent'
+                    ? 'w-full'
+                    : 'w-[calc(50%-0.5rem)]'
+                }`}
+              >
+                <div
+                  className={`h-10 px-4 py-2 border-b flex items-center ${
+                    maximizedEditor === 'my'
+                      ? 'justify-center'
+                      : 'justify-between'
+                  } bg-[hsl(var(--muted))]`}
+                >
+                  <span
+                    className={`font-medium truncate ${
+                      maximizedEditor === 'my' ? 'hidden' : ''
+                    }`}
+                  >
+                    {opponentName ?? ''}
+                  </span>
+                  <button
+                    onClick={() => handleMaximizeToggle('opponent')}
+                    className="p-1 hover:bg-gray-50 cursor-pointer rounded-md transition-colors shrink-0"
+                    title={
+                      maximizedEditor === 'opponent' ? 'Restore' : 'Maximize'
+                    }
+                  >
+                    {maximizedEditor === 'opponent' ? (
+                      <Minimize2 className="w-4 h-4" />
+                    ) : (
+                      <Maximize2 className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                <div
+                  className={`flex-1 min-h-0 ${
+                    maximizedEditor === 'my' ? 'hidden' : ''
+                  }`}
+                >
+                  <CodeEditor
+                    value={opponentCode}
+                    readOnly={true}
+                    language={selectedLanguage}
+                    theme={theme}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
