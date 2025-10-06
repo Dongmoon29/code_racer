@@ -1,12 +1,14 @@
-import React, { FC, useEffect, useState } from 'react';
+import React, { FC, useCallback, useEffect, useState } from 'react';
+import Split from 'react-split';
 import { Spinner } from '../../ui';
-import CodeEditor from '../CodeEditor';
 import LanguageSelector from '../LanguageSelector';
 import { Game, SubmitResult } from '@/types';
-import { FileText, Maximize2, Minimize2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/alert';
+import { ProblemDetailsPane } from './ProblemDetailsPane';
+import { EditorPane } from './EditorPane';
+import { FullscreenOverlay } from './FullscreenOverlay';
 
 interface PlayingGameProps {
   game: Game;
@@ -43,10 +45,20 @@ export const PlayingGame: FC<PlayingGameProps> = ({
   >(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
   const [isFullscreenMy, setIsFullscreenMy] = useState(false);
+  const [sizesNormal, setSizesNormal] = useState<number[]>([50, 50]);
+  const [isResizing, setIsResizing] = useState(false);
 
-  const handleMaximizeToggle = (editor: 'my' | 'opponent') => {
+  const handleMaximizeToggle = useCallback((editor: 'my' | 'opponent') => {
     setMaximizedEditor((current) => (current === editor ? null : editor));
-  };
+  }, []);
+
+  const handleToggleDescription = useCallback(() => {
+    setIsDescriptionExpanded((prev) => !prev);
+  }, []);
+
+  const handleToggleFullscreen = useCallback(() => {
+    setIsFullscreenMy((prev) => !prev);
+  }, []);
 
   // ESC to exit fullscreen and body scroll lock
   useEffect(() => {
@@ -105,352 +117,108 @@ export const PlayingGame: FC<PlayingGameProps> = ({
         className="flex-1 px-4 py-4 flex min-h-0 game-editor-container"
         style={{ width: '100%' }}
       >
+        {/* Problem Description Pane */}
         <div
-          className={`
-            transition-all duration-300 overflow-auto
-            ${isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'}
-          `}
+          className={`transition-all duration-300 overflow-auto ${
+            isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'
+          }`}
         >
-          {isDescriptionExpanded ? (
-            <div className="bg-[hsl(var(--muted))] rounded-lg overflow-auto">
-              <div className="px-4 py-2 border-b flex justify-between items-center">
-                <span className="font-medium">Problem Details</span>
-                <button
-                  onClick={() => setIsDescriptionExpanded(false)}
-                  className="p-1 hover:bg-gray-200 rounded-md transition-colors"
-                  title="Minimize"
-                >
-                  <Minimize2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-4 p-4">
-                <div>
-                  <h2 className="text-xl font-semibold mb-2">
-                    Problem Description
-                  </h2>
-                  <p className="whitespace-pre-line">
-                    {game.leetcode.description}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Examples</h3>
-                  <pre className="p-3 rounded whitespace-pre-wrap bg-[hsl(var(--muted))]">
-                    {game.leetcode.examples}
-                  </pre>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Constraints</h3>
-                  <pre className="p-3 rounded whitespace-pre-wrap bg-[hsl(var(--muted))]">
-                    {game.leetcode.constraints}
-                  </pre>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setIsDescriptionExpanded(true)}
-              className="w-full h-10 flex items-center justify-center text-[hsl(var(--muted-foreground))] rounded-lg hover:text-white hover:scale-110 transition-all duration-200"
-              title="Show Problem Details"
-            >
-              <FileText className="w-6 h-6" />
-            </button>
-          )}
+          <ProblemDetailsPane
+            isExpanded={isDescriptionExpanded}
+            title={game.leetcode.title}
+            description={game.leetcode.description}
+            examples={game.leetcode.examples}
+            constraints={game.leetcode.constraints}
+            onToggle={handleToggleDescription}
+          />
         </div>
-        <div className="flex-1 flex gap-4 ml-4">
-          <div
-            className={`
-              transition-all duration-300 border border-gray-200 rounded-lg overflow-hidden
-              ${
-                maximizedEditor === 'opponent'
-                  ? 'w-[40px]'
-                  : maximizedEditor === 'my'
-                  ? 'w-full'
-                  : 'w-[calc(50%-0.5rem)]'
-              }
-            `}
-          >
-            <div
-              className={`
-              bg-[hsl(var(--muted))] px-4 py-2 border-b flex items-center
-              ${
-                maximizedEditor === 'opponent'
-                  ? 'justify-center'
-                  : 'justify-between'
-              }
-            `}
-            >
-              <span
-                className={`font-medium truncate ${
-                  maximizedEditor === 'opponent' ? 'hidden' : ''
-                }`}
-              >
-                Me
-              </span>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleMaximizeToggle('my')}
-                  className="cursor-pointer p-1 hover:bg-gray-200 rounded-md transition-colors shrink-0"
-                  title={maximizedEditor === 'my' ? 'Restore' : 'Maximize'}
-                >
-                  {maximizedEditor === 'my' ? (
-                    <Minimize2 className="w-4 h-4" />
-                  ) : (
-                    <Maximize2 className="w-4 h-4" />
-                  )}
-                </button>
-                <button
-                  onClick={() => setIsFullscreenMy((v) => !v)}
-                  className="cursor-pointer p-1 hover:bg-gray-200 rounded-md transition-colors shrink-0"
-                  title={isFullscreenMy ? 'Exit Fullscreen' : 'Fullscreen'}
-                >
-                  {isFullscreenMy ? (
-                    <Minimize2 className="w-4 h-4" />
-                  ) : (
-                    <Maximize2 className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-            <div
-              className={`h-[calc(100%-40px)] overflow-auto ${
-                maximizedEditor === 'opponent' ? 'hidden' : ''
-              }`}
-            >
-              <CodeEditor
-                value={myCode}
-                onChange={onCodeChange}
-                language={selectedLanguage}
-                theme={theme}
-              />
-            </div>
-          </div>
 
-          <div
-            className={`
-              transition-all duration-300 border border-gray-200 rounded-lg overflow-hidden
-              ${
-                maximizedEditor === 'my'
-                  ? 'w-[40px]'
-                  : maximizedEditor === 'opponent'
-                  ? 'w-full'
-                  : 'w-[calc(50%-0.5rem)]'
+        {/* Editor Panes */}
+        <div className="flex-1 ml-4">
+          <Split
+            className="flex w-full h-full"
+            sizes={
+              maximizedEditor === 'my'
+                ? [100, 0]
+                : maximizedEditor === 'opponent'
+                ? [0, 100]
+                : sizesNormal
+            }
+            minSize={0}
+            gutterSize={6}
+            snapOffset={0}
+            dragInterval={1}
+            cursor="col-resize"
+            onDragStart={() => {
+              setIsResizing(true);
+              document.body.classList.add('resizing');
+            }}
+            onDragEnd={(sizes) => {
+              setIsResizing(false);
+              setSizesNormal(sizes as number[]);
+              document.body.classList.remove('resizing');
+            }}
+            gutter={(index, dir) => {
+              const g = document.createElement('div');
+              g.className = `gutter gutter-${dir}`;
+              g.style.cursor =
+                dir === 'horizontal' ? 'col-resize' : 'row-resize';
+              if (dir === 'horizontal') {
+                g.style.width = '6px';
               }
-            `}
+              g.style.background = 'transparent';
+              g.style.zIndex = '10';
+              return g;
+            }}
           >
-            <div
-              className={`
-              bg-[hsl(var(--muted))] px-4 py-2 border-b flex items-center
-              ${maximizedEditor === 'my' ? 'justify-center' : 'justify-between'}
-            `}
-            >
-              <span
-                className={`font-medium truncate ${
-                  maximizedEditor === 'my' ? 'hidden' : ''
-                }`}
-              >
-                {opponentName ?? ''}
-              </span>
-              <button
-                onClick={() => handleMaximizeToggle('opponent')}
-                className="p-1 hover:bg-gray-50 cursor-pointer rounded-md transition-colors shrink-0"
-                title={maximizedEditor === 'opponent' ? 'Restore' : 'Maximize'}
-              >
-                {maximizedEditor === 'opponent' ? (
-                  <Minimize2 className="w-4 h-4" />
-                ) : (
-                  <Maximize2 className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-            <div
-              className={`h-[calc(100%-40px)] overflow-auto ${
-                maximizedEditor === 'my' ? 'hidden' : ''
-              }`}
-            >
-              <CodeEditor
-                value={opponentCode}
-                readOnly={true}
-                language={selectedLanguage}
-                theme={theme}
-              />
-            </div>
-          </div>
+            <EditorPane
+              title="Me"
+              code={myCode}
+              language={selectedLanguage}
+              theme={theme}
+              isMaximized={maximizedEditor === 'my'}
+              isMinimized={maximizedEditor === 'opponent'}
+              isResizing={isResizing}
+              showFullscreenButton={true}
+              isFullscreen={isFullscreenMy}
+              onChange={onCodeChange}
+              onMaximizeToggle={() => handleMaximizeToggle('my')}
+              onFullscreenToggle={handleToggleFullscreen}
+            />
+            <EditorPane
+              title={opponentName ?? ''}
+              code={opponentCode}
+              language={selectedLanguage}
+              theme={theme}
+              readOnly={true}
+              isMaximized={maximizedEditor === 'opponent'}
+              isMinimized={maximizedEditor === 'my'}
+              isResizing={isResizing}
+              onMaximizeToggle={() => handleMaximizeToggle('opponent')}
+            />
+          </Split>
         </div>
       </div>
+
+      {/* Fullscreen Overlay */}
       {isFullscreenMy && (
-        <div className="fixed inset-0 z-[9999] bg-white dark:bg-black flex flex-col">
-          {/* Floating exit button */}
-          <button
-            onClick={() => setIsFullscreenMy(false)}
-            className="absolute top-2 right-2 p-2 rounded-md bg-[hsl(var(--muted))] hover:bg-gray-200 transition-colors shadow"
-            title="Exit Fullscreen"
-          >
-            <Minimize2 className="w-4 h-4" />
-          </button>
-          <div className="flex-1 flex min-h-0">
-            {/* Problem details (collapsible) */}
-            <div
-              className={`transition-all duration-300 overflow-auto border-r ${
-                isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'
-              }`}
-            >
-              {isDescriptionExpanded ? (
-                <div className="h-full flex flex-col">
-                  <div className="px-4 py-3 border-b flex justify-between items-center bg-[hsl(var(--muted))]">
-                    <span className="font-medium">Problem Details</span>
-                    <button
-                      onClick={() => setIsDescriptionExpanded(false)}
-                      className="p-1 hover:bg-gray-200 rounded-md transition-colors"
-                      title="Minimize"
-                    >
-                      <Minimize2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="space-y-4 p-4">
-                    <div>
-                      <h2 className="text-xl font-semibold mb-2">
-                        Problem Description
-                      </h2>
-                      <p className="whitespace-pre-line">
-                        {game.leetcode.description}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Examples</h3>
-                      <pre className="p-3 rounded whitespace-pre-wrap bg-[hsl(var(--muted))]">
-                        {game.leetcode.examples}
-                      </pre>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">
-                        Constraints
-                      </h3>
-                      <pre className="p-3 rounded whitespace-pre-wrap bg-[hsl(var(--muted))]">
-                        {game.leetcode.constraints}
-                      </pre>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setIsDescriptionExpanded(true)}
-                  className="w-full h-10 flex items-center justify-center text-[hsl(var(--muted-foreground))] hover:text-white hover:scale-110 transition-all duration-200"
-                  title="Show Problem Details"
-                >
-                  <FileText className="w-6 h-6" />
-                </button>
-              )}
-            </div>
-
-            {/* Editors side by side with maximize/minimize */}
-            <div className="flex-1 flex gap-2 p-2 overflow-hidden">
-              {/* My editor */}
-              <div
-                className={`transition-all duration-300 border rounded-lg overflow-hidden flex flex-col min-w-0 ${
-                  maximizedEditor === 'opponent'
-                    ? 'w-[40px]'
-                    : maximizedEditor === 'my'
-                    ? 'w-full'
-                    : 'w-[calc(50%-0.5rem)]'
-                }`}
-              >
-                <div
-                  className={`h-10 px-4 py-2 border-b flex items-center ${
-                    maximizedEditor === 'opponent'
-                      ? 'justify-center'
-                      : 'justify-between'
-                  } bg-[hsl(var(--muted))]`}
-                >
-                  <span
-                    className={`font-medium truncate ${
-                      maximizedEditor === 'opponent' ? 'hidden' : ''
-                    }`}
-                  >
-                    Me
-                  </span>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleMaximizeToggle('my')}
-                      className="cursor-pointer p-1 hover:bg-gray-200 rounded-md transition-colors shrink-0"
-                      title={maximizedEditor === 'my' ? 'Restore' : 'Maximize'}
-                    >
-                      {maximizedEditor === 'my' ? (
-                        <Minimize2 className="w-4 h-4" />
-                      ) : (
-                        <Maximize2 className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                <div
-                  className={`flex-1 min-h-0 ${
-                    maximizedEditor === 'opponent' ? 'hidden' : ''
-                  }`}
-                >
-                  <CodeEditor
-                    value={myCode}
-                    onChange={onCodeChange}
-                    language={selectedLanguage}
-                    theme={theme}
-                  />
-                </div>
-              </div>
-
-              {/* Opponent editor */}
-              <div
-                className={`transition-all duration-300 border rounded-lg overflow-hidden flex flex-col min-w-0 ${
-                  maximizedEditor === 'my'
-                    ? 'w-[40px]'
-                    : maximizedEditor === 'opponent'
-                    ? 'w-full'
-                    : 'w-[calc(50%-0.5rem)]'
-                }`}
-              >
-                <div
-                  className={`h-10 px-4 py-2 border-b flex items-center ${
-                    maximizedEditor === 'my'
-                      ? 'justify-center'
-                      : 'justify-between'
-                  } bg-[hsl(var(--muted))]`}
-                >
-                  <span
-                    className={`font-medium truncate ${
-                      maximizedEditor === 'my' ? 'hidden' : ''
-                    }`}
-                  >
-                    {opponentName ?? ''}
-                  </span>
-                  <button
-                    onClick={() => handleMaximizeToggle('opponent')}
-                    className="p-1 hover:bg-gray-50 cursor-pointer rounded-md transition-colors shrink-0"
-                    title={
-                      maximizedEditor === 'opponent' ? 'Restore' : 'Maximize'
-                    }
-                  >
-                    {maximizedEditor === 'opponent' ? (
-                      <Minimize2 className="w-4 h-4" />
-                    ) : (
-                      <Maximize2 className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-                <div
-                  className={`flex-1 min-h-0 ${
-                    maximizedEditor === 'my' ? 'hidden' : ''
-                  }`}
-                >
-                  <CodeEditor
-                    value={opponentCode}
-                    readOnly={true}
-                    language={selectedLanguage}
-                    theme={theme}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <FullscreenOverlay
+          myCode={myCode}
+          opponentCode={opponentCode}
+          opponentName={opponentName}
+          selectedLanguage={selectedLanguage}
+          theme={theme}
+          maximizedEditor={maximizedEditor}
+          isDescriptionExpanded={isDescriptionExpanded}
+          problemTitle={game.leetcode.title}
+          problemDescription={game.leetcode.description}
+          problemExamples={game.leetcode.examples}
+          problemConstraints={game.leetcode.constraints}
+          onCodeChange={onCodeChange}
+          onMaximizeToggle={handleMaximizeToggle}
+          onToggleDescription={handleToggleDescription}
+          onClose={handleToggleFullscreen}
+        />
       )}
     </div>
   );
