@@ -30,6 +30,7 @@ interface CodeEditorProps {
   theme?: string;
   readOnly?: boolean;
   vimMode?: boolean;
+  isResizing?: boolean;
 }
 
 const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -39,6 +40,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   theme = 'dark',
   readOnly = false,
   vimMode = false,
+  isResizing = false,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -154,13 +156,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   useEffect(() => {
     const view = viewRef.current;
     if (view && value !== view.state.doc.toString()) {
-      // Only update if the change is significant (not just a single character)
       const currentDoc = view.state.doc.toString();
+
+      // In read-only mode (viewer), always reflect external updates immediately
+      const shouldForceUpdate = readOnly;
+
+      // Otherwise, only update if the change is significant to avoid cursor jitter
       const isSignificantChange =
         Math.abs(value.length - currentDoc.length) > 1 ||
         (!currentDoc.includes(value) && !value.includes(currentDoc));
 
-      if (isSignificantChange) {
+      if (shouldForceUpdate || isSignificantChange) {
         const currentCursor = view.state.selection.main;
         const newDocLength = value.length;
 
@@ -185,8 +191,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         });
 
         // Restore focus if it was previously focused
-        if (hasFocus && activeElement === view.dom) {
-          // Use requestAnimationFrame for better timing
+        if (!readOnly && hasFocus && activeElement === view.dom) {
           requestAnimationFrame(() => {
             view.focus();
           });
@@ -195,11 +200,29 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   }, [value]);
 
+  // Debounced layout on resize end to reduce jank
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    if (isResizing) return; // skip during drag
+    const id = requestAnimationFrame(() => {
+      try {
+        // CodeMirror 6 relayouts on container size; we can force a read by dispatching a no-op
+        view.requestMeasure?.();
+      } catch {}
+    });
+    return () => cancelAnimationFrame(id);
+  }, [isResizing]);
+
   return (
     <div className="w-full h-full flex flex-col">
-      <div ref={editorRef} className="flex-1 overflow-auto relative" />
+      <div
+        ref={editorRef}
+        className="flex-1 overflow-auto relative"
+        style={{ willChange: isResizing ? 'auto' : 'contents' }}
+      />
     </div>
   );
 };
 
-export default CodeEditor;
+export default React.memo(CodeEditor);

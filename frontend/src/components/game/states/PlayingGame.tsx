@@ -1,12 +1,15 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useCallback, useEffect, useState } from 'react';
+import Split from 'react-split';
 import { Spinner } from '../../ui';
-import CodeEditor from '../CodeEditor';
 import LanguageSelector from '../LanguageSelector';
 import { Game, SubmitResult } from '@/types';
-import { FileText, Maximize2, Minimize2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/alert';
+import { ProblemDetailsPane } from './ProblemDetailsPane';
+import { EditorPane } from './EditorPane';
+import { FullscreenOverlay } from './FullscreenOverlay';
+import { useFullscreen } from '@/contexts/FullscreenContext';
 
 interface PlayingGameProps {
   game: Game;
@@ -38,14 +41,43 @@ export const PlayingGame: FC<PlayingGameProps> = ({
   onSubmitCode,
 }) => {
   const { theme } = useTheme();
+  const { isFullscreen, setIsFullscreen } = useFullscreen();
   const [maximizedEditor, setMaximizedEditor] = useState<
     'my' | 'opponent' | null
   >(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
+  const [isFullscreenMy, setIsFullscreenMy] = useState(false);
+  const [sizesNormal, setSizesNormal] = useState<number[]>([50, 50]);
+  const [isResizing, setIsResizing] = useState(false);
 
-  const handleMaximizeToggle = (editor: 'my' | 'opponent') => {
+  const handleMaximizeToggle = useCallback((editor: 'my' | 'opponent') => {
     setMaximizedEditor((current) => (current === editor ? null : editor));
-  };
+  }, []);
+
+  const handleToggleDescription = useCallback(() => {
+    setIsDescriptionExpanded((prev) => !prev);
+  }, []);
+
+  const handleToggleFullscreen = useCallback(() => {
+    setIsFullscreenMy((prev) => !prev);
+  }, []);
+
+  // ESC to exit fullscreen
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsFullscreenMy(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [setIsFullscreen]);
+
+  // Sync local fullscreen toggle with global context
+  useEffect(() => {
+    setIsFullscreen(isFullscreenMy);
+    return () => setIsFullscreen(false);
+  }, [isFullscreenMy, setIsFullscreen]);
 
   return (
     <div className="flex flex-col h-screen">
@@ -81,172 +113,107 @@ export const PlayingGame: FC<PlayingGameProps> = ({
         </Alert>
       )}
 
-      <div
-        className="flex-1 px-4 py-4 flex min-h-0 game-editor-container"
-        style={{ width: '100%' }}
-      >
+      {!isFullscreen ? (
         <div
-          className={`
-            transition-all duration-300 overflow-auto
-            ${isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'}
-          `}
+          className="flex-1 px-4 py-4 flex min-h-0 game-editor-container"
+          style={{ width: '100%' }}
         >
-          {isDescriptionExpanded ? (
-            <div className="bg-[hsl(var(--muted))] rounded-lg overflow-auto">
-              <div className="px-4 py-2 border-b flex justify-between items-center">
-                <span className="font-medium">Problem Details</span>
-                <button
-                  onClick={() => setIsDescriptionExpanded(false)}
-                  className="p-1 hover:bg-gray-200 rounded-md transition-colors"
-                  title="Minimize"
-                >
-                  <Minimize2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-4 p-4">
-                <div>
-                  <h2 className="text-xl font-semibold mb-2">
-                    Problem Description
-                  </h2>
-                  <p className="whitespace-pre-line">
-                    {game.leetcode.description}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Examples</h3>
-                  <pre className="p-3 rounded whitespace-pre-wrap bg-[hsl(var(--muted))]">
-                    {game.leetcode.examples}
-                  </pre>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Constraints</h3>
-                  <pre className="p-3 rounded whitespace-pre-wrap bg-[hsl(var(--muted))]">
-                    {game.leetcode.constraints}
-                  </pre>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setIsDescriptionExpanded(true)}
-              className="w-full h-10 flex items-center justify-center text-[hsl(var(--muted-foreground))] rounded-lg hover:text-white hover:scale-110 transition-all duration-200"
-              title="Show Problem Details"
-            >
-              <FileText className="w-6 h-6" />
-            </button>
-          )}
-        </div>
-        <div className="flex-1 flex gap-4 ml-4">
+          {/* Problem Description Pane */}
           <div
-            className={`
-              transition-all duration-300 border border-gray-200 rounded-lg overflow-hidden
-              ${
-                maximizedEditor === 'opponent'
-                  ? 'w-[40px]'
-                  : maximizedEditor === 'my'
-                  ? 'w-full'
-                  : 'w-[calc(50%-0.5rem)]'
-              }
-            `}
+            className={`transition-all duration-300 overflow-auto ${
+              isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'
+            }`}
           >
-            <div
-              className={`
-              bg-[hsl(var(--muted))] px-4 py-2 border-b flex items-center
-              ${
-                maximizedEditor === 'opponent'
-                  ? 'justify-center'
-                  : 'justify-between'
-              }
-            `}
-            >
-              <span
-                className={`font-medium truncate ${
-                  maximizedEditor === 'opponent' ? 'hidden' : ''
-                }`}
-              >
-                Me
-              </span>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleMaximizeToggle('my')}
-                  className="cursor-pointer p-1 hover:bg-gray-200 rounded-md transition-colors shrink-0"
-                  title={maximizedEditor === 'my' ? 'Restore' : 'Maximize'}
-                >
-                  {maximizedEditor === 'my' ? (
-                    <Minimize2 className="w-4 h-4" />
-                  ) : (
-                    <Maximize2 className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-            <div
-              className={`h-[calc(100%-40px)] overflow-auto ${
-                maximizedEditor === 'opponent' ? 'hidden' : ''
-              }`}
-            >
-              <CodeEditor
-                value={myCode}
-                onChange={onCodeChange}
-                language={selectedLanguage}
-                theme={theme}
-              />
-            </div>
+            <ProblemDetailsPane
+              isExpanded={isDescriptionExpanded}
+              title={game.leetcode.title}
+              description={game.leetcode.description}
+              examples={game.leetcode.examples}
+              constraints={game.leetcode.constraints}
+              onToggle={handleToggleDescription}
+            />
           </div>
 
-          <div
-            className={`
-              transition-all duration-300 border border-gray-200 rounded-lg overflow-hidden
-              ${
+          {/* Editor Panes */}
+          <div className="flex-1 ml-4">
+            <Split
+              className="flex w-full h-full"
+              sizes={
                 maximizedEditor === 'my'
-                  ? 'w-[40px]'
+                  ? [100, 0]
                   : maximizedEditor === 'opponent'
-                  ? 'w-full'
-                  : 'w-[calc(50%-0.5rem)]'
+                  ? [0, 100]
+                  : sizesNormal
               }
-            `}
-          >
-            <div
-              className={`
-              bg-[hsl(var(--muted))] px-4 py-2 border-b flex items-center
-              ${maximizedEditor === 'my' ? 'justify-center' : 'justify-between'}
-            `}
+              minSize={0}
+              gutterSize={6}
+              snapOffset={0}
+              dragInterval={1}
+              cursor="col-resize"
+              onDragStart={() => {
+                setIsResizing(true);
+                document.body.classList.add('resizing');
+              }}
+              onDragEnd={(sizes) => {
+                setIsResizing(false);
+                setSizesNormal(sizes as number[]);
+                document.body.classList.remove('resizing');
+              }}
+              gutter={(index, dir) => {
+                const g = document.createElement('div');
+                g.className = `gutter gutter-${dir}`;
+                g.style.cursor =
+                  dir === 'horizontal' ? 'col-resize' : 'row-resize';
+                if (dir === 'horizontal') {
+                  g.style.width = '6px';
+                }
+                g.style.background = 'transparent';
+                g.style.zIndex = '10';
+                return g;
+              }}
             >
-              <span
-                className={`font-medium truncate ${
-                  maximizedEditor === 'my' ? 'hidden' : ''
-                }`}
-              >
-                {opponentName ?? ''}
-              </span>
-              <button
-                onClick={() => handleMaximizeToggle('opponent')}
-                className="p-1 hover:bg-gray-50 cursor-pointer rounded-md transition-colors shrink-0"
-                title={maximizedEditor === 'opponent' ? 'Restore' : 'Maximize'}
-              >
-                {maximizedEditor === 'opponent' ? (
-                  <Minimize2 className="w-4 h-4" />
-                ) : (
-                  <Maximize2 className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-            <div
-              className={`h-[calc(100%-40px)] overflow-auto ${
-                maximizedEditor === 'my' ? 'hidden' : ''
-              }`}
-            >
-              <CodeEditor
-                value={opponentCode}
-                readOnly={true}
+              <EditorPane
+                title="Me"
+                code={myCode}
                 language={selectedLanguage}
                 theme={theme}
+                isMinimized={maximizedEditor === 'opponent'}
+                isResizing={isResizing}
+                showFullscreenButton={true}
+                onChange={onCodeChange}
+                onFullscreenToggle={handleToggleFullscreen}
               />
-            </div>
+              <EditorPane
+                title={opponentName ?? ''}
+                code={opponentCode}
+                language={selectedLanguage}
+                theme={theme}
+                readOnly={true}
+                isMinimized={maximizedEditor === 'my'}
+                isResizing={isResizing}
+              />
+            </Split>
           </div>
         </div>
-      </div>
+      ) : (
+        <FullscreenOverlay
+          myCode={myCode}
+          opponentCode={opponentCode}
+          opponentName={opponentName}
+          selectedLanguage={selectedLanguage}
+          theme={theme}
+          maximizedEditor={maximizedEditor}
+          isDescriptionExpanded={isDescriptionExpanded}
+          problemTitle={game.leetcode.title}
+          problemDescription={game.leetcode.description}
+          problemExamples={game.leetcode.examples}
+          problemConstraints={game.leetcode.constraints}
+          onCodeChange={onCodeChange}
+          onMaximizeToggle={handleMaximizeToggle}
+          onToggleDescription={handleToggleDescription}
+          onClose={handleToggleFullscreen}
+        />
+      )}
     </div>
   );
 };
