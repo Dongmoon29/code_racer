@@ -1,5 +1,6 @@
 import React, { useEffect, useState, memo, FC } from 'react';
 import { Button } from '@/components/ui/Button';
+import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 import { type Difficulty } from './DifficultySelector';
 import { MATCHING_LOADER_CONSTANTS } from './constants/matching-loader-constants';
 
@@ -45,13 +46,16 @@ export const MatchingLoader: FC<MatchingLoaderProps> = memo(
 
     return (
       <div className="max-w-2xl mx-auto p-8 text-center">
-        <div className="mb-6">
+        <div className="flex flex-col items-center justify-center mb-6 gap-4">
           <h2 className="text-3xl font-bold text-foreground mb-2">
             Searching for opponent
           </h2>
           <p className={`text-sm ${config.color} font-medium`}>
             Difficulty: {config.icon} {difficulty}
           </p>
+          <div className="mt-2">
+            <CodeRacerLoader size="md" />
+          </div>
         </div>
 
         <div className="flex items-center justify-center">
@@ -60,7 +64,7 @@ export const MatchingLoader: FC<MatchingLoaderProps> = memo(
             onClick={onCancel}
             className="min-w-[140px] border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
           >
-            Cancel matching
+            Cancel
           </Button>
         </div>
       </div>
