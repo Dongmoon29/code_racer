@@ -18,6 +18,7 @@ interface FullscreenOverlayProps {
   onMaximizeToggle: (editor: 'my' | 'opponent') => void;
   onToggleDescription: () => void;
   onClose: () => void;
+  isSinglePlayerMode?: boolean;
 }
 
 export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
@@ -37,6 +38,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
     onMaximizeToggle,
     onToggleDescription,
     onClose,
+    isSinglePlayerMode = false,
   }) => {
     const [isResizing, setIsResizing] = useState(false);
     const [fsSplitSizes, setFsSplitSizes] = useState<number[]>([50, 50]);
@@ -74,23 +76,46 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
           </div>
 
           <div className="flex-1 p-2 min-h-0 overflow-hidden">
-            <EditorSplit
-              myCode={myCode}
-              opponentCode={opponentCode}
-              opponentName={opponentName}
-              selectedLanguage={selectedLanguage}
-              theme={theme}
-              maximizedEditor={maximizedEditor}
-              isResizing={isResizing}
-              sizesNormal={fsSplitSizes}
-              showFullscreenButton={true}
-              gutterSize={10}
-              onCodeChange={onCodeChange}
-              onMaximizeToggle={onMaximizeToggle}
-              onFullscreenToggle={onClose}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            />
+            {isSinglePlayerMode ? (
+              // Single player mode - only show one editor
+              <EditorSplit
+                myCode={myCode}
+                opponentCode=""
+                opponentName=""
+                selectedLanguage={selectedLanguage}
+                theme={theme}
+                maximizedEditor={null}
+                isResizing={false}
+                sizesNormal={[100]}
+                showFullscreenButton={true}
+                gutterSize={10}
+                onCodeChange={onCodeChange}
+                onMaximizeToggle={() => {}}
+                onFullscreenToggle={onClose}
+                onDragStart={() => {}}
+                onDragEnd={() => {}}
+                isSinglePlayerMode={true}
+              />
+            ) : (
+              // Multiplayer mode - show split editors
+              <EditorSplit
+                myCode={myCode}
+                opponentCode={opponentCode}
+                opponentName={opponentName}
+                selectedLanguage={selectedLanguage}
+                theme={theme}
+                maximizedEditor={maximizedEditor}
+                isResizing={isResizing}
+                sizesNormal={fsSplitSizes}
+                showFullscreenButton={true}
+                gutterSize={10}
+                onCodeChange={onCodeChange}
+                onMaximizeToggle={onMaximizeToggle}
+                onFullscreenToggle={onClose}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              />
+            )}
           </div>
         </div>
       </div>

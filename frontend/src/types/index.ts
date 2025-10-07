@@ -198,6 +198,7 @@ export interface Game {
   };
   leetcode: LeetCodeDetail;
   status: 'waiting' | 'playing' | 'finished' | 'closed';
+  mode: 'ranked_pvp' | 'casual_pvp' | 'single';
   started_at?: string;
   created_at: string;
   player_count: number;

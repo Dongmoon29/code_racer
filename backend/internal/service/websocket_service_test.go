@@ -18,7 +18,12 @@ type MockMatchmakingService struct {
 }
 
 func (m *MockMatchmakingService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (interface{}, error) {
-    args := m.Called(player1ID, player2ID, difficulty, mode)
+	args := m.Called(player1ID, player2ID, difficulty, mode)
+	return args.Get(0), args.Error(1)
+}
+
+func (m *MockMatchmakingService) CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (interface{}, error) {
+	args := m.Called(playerID, difficulty)
 	return args.Get(0), args.Error(1)
 }
 

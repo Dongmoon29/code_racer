@@ -50,6 +50,8 @@ export const PlayingGame: FC<PlayingGameProps> = memo(({
   const [sizesNormal, setSizesNormal] = useState<number[]>([50, 50]);
   const [isResizing, setIsResizing] = useState(false);
 
+  const isSinglePlayerMode = game.mode === 'single';
+
   const handleMaximizeToggle = useCallback((editor: 'my' | 'opponent') => {
     setMaximizedEditor((current) => (current === editor ? null : editor));
   }, []);
@@ -138,82 +140,99 @@ export const PlayingGame: FC<PlayingGameProps> = memo(({
 
           {/* Editor Panes */}
           <div className="flex-1 ml-4">
-            <Split
-              className="flex w-full h-full"
-              sizes={
-                maximizedEditor === 'my'
-                  ? [100, 0]
-                  : maximizedEditor === 'opponent'
-                  ? [0, 100]
-                  : sizesNormal
-              }
-              minSize={0}
-              gutterSize={6}
-              snapOffset={0}
-              dragInterval={1}
-              cursor="col-resize"
-              onDragStart={() => {
-                setIsResizing(true);
-                document.body.classList.add('resizing');
-              }}
-              onDragEnd={(sizes) => {
-                setIsResizing(false);
-                setSizesNormal(sizes as number[]);
-                document.body.classList.remove('resizing');
-              }}
-              gutter={(index, dir) => {
-                const g = document.createElement('div');
-                g.className = `gutter gutter-${dir}`;
-                g.style.cursor =
-                  dir === 'horizontal' ? 'col-resize' : 'row-resize';
-                if (dir === 'horizontal') {
-                  g.style.width = '6px';
-                }
-                g.style.background = 'transparent';
-                g.style.zIndex = '10';
-                return g;
-              }}
-            >
+            {isSinglePlayerMode ? (
+              // Single player mode - only show one editor
               <EditorPane
-                title="Me"
+                title="Practice Mode"
                 code={myCode}
                 language={selectedLanguage}
                 theme={theme}
-                isMinimized={maximizedEditor === 'opponent'}
-                isResizing={isResizing}
+                isMinimized={false}
+                isResizing={false}
                 showFullscreenButton={true}
                 onChange={onCodeChange}
                 onFullscreenToggle={handleToggleFullscreen}
               />
-              <EditorPane
-                title={opponentName ?? ''}
-                code={opponentCode}
-                language={selectedLanguage}
-                theme={theme}
-                readOnly={true}
-                isMinimized={maximizedEditor === 'my'}
-                isResizing={isResizing}
-              />
-            </Split>
+            ) : (
+              // Multiplayer mode - show split editors
+              <Split
+                className="flex w-full h-full"
+                sizes={
+                  maximizedEditor === 'my'
+                    ? [100, 0]
+                    : maximizedEditor === 'opponent'
+                    ? [0, 100]
+                    : sizesNormal
+                }
+                minSize={0}
+                gutterSize={6}
+                snapOffset={0}
+                dragInterval={1}
+                cursor="col-resize"
+                onDragStart={() => {
+                  setIsResizing(true);
+                  document.body.classList.add('resizing');
+                }}
+                onDragEnd={(sizes) => {
+                  setIsResizing(false);
+                  setSizesNormal(sizes as number[]);
+                  document.body.classList.remove('resizing');
+                }}
+                gutter={(index, dir) => {
+                  const g = document.createElement('div');
+                  g.className = `gutter gutter-${dir}`;
+                  g.style.cursor =
+                    dir === 'horizontal' ? 'col-resize' : 'row-resize';
+                  if (dir === 'horizontal') {
+                    g.style.width = '6px';
+                  }
+                  g.style.background = 'transparent';
+                  g.style.zIndex = '10';
+                  return g;
+                }}
+              >
+                <EditorPane
+                  title="Me"
+                  code={myCode}
+                  language={selectedLanguage}
+                  theme={theme}
+                  isMinimized={maximizedEditor === 'opponent'}
+                  isResizing={isResizing}
+                  showFullscreenButton={true}
+                  onChange={onCodeChange}
+                  onFullscreenToggle={handleToggleFullscreen}
+                />
+                <EditorPane
+                  title={opponentName ?? ''}
+                  code={opponentCode}
+                  language={selectedLanguage}
+                  theme={theme}
+                  readOnly={true}
+                  isMinimized={maximizedEditor === 'my'}
+                  isResizing={isResizing}
+                />
+              </Split>
+            )}
           </div>
         </div>
       ) : (
         <FullscreenOverlay
           myCode={myCode}
-          opponentCode={opponentCode}
-          opponentName={opponentName}
+          opponentCode={isSinglePlayerMode ? '' : opponentCode}
+          opponentName={isSinglePlayerMode ? '' : opponentName}
           selectedLanguage={selectedLanguage}
           theme={theme}
-          maximizedEditor={maximizedEditor}
+          maximizedEditor={isSinglePlayerMode ? null : maximizedEditor}
           isDescriptionExpanded={isDescriptionExpanded}
           problemTitle={game.leetcode.title}
           problemDescription={game.leetcode.description}
           problemExamples={game.leetcode.examples}
           problemConstraints={game.leetcode.constraints}
           onCodeChange={onCodeChange}
-          onMaximizeToggle={handleMaximizeToggle}
+          onMaximizeToggle={isSinglePlayerMode ? () => {} : handleMaximizeToggle}
           onToggleDescription={handleToggleDescription}
           onClose={handleToggleFullscreen}
+          isSinglePlayerMode={isSinglePlayerMode}
         />
       )}
     </div>
