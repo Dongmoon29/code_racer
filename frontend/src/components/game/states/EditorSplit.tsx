@@ -19,6 +19,7 @@ interface EditorSplitProps {
   onFullscreenToggle?: () => void;
   onDragStart: () => void;
   onDragEnd: (sizes: number[]) => void;
+  isSinglePlayerMode?: boolean;
 }
 
 export const EditorSplit: FC<EditorSplitProps> = memo(
@@ -37,6 +38,7 @@ export const EditorSplit: FC<EditorSplitProps> = memo(
     onFullscreenToggle,
     onDragStart,
     onDragEnd,
+    isSinglePlayerMode = false,
   }) => {
     const splitConfig = useSplitConfig(
       maximizedEditor,
@@ -45,34 +47,52 @@ export const EditorSplit: FC<EditorSplitProps> = memo(
     );
 
     return (
-      <Split
-        className="flex w-full h-full"
-        direction="horizontal"
-        {...splitConfig}
-        onDragStart={onDragStart}
-        onDragEnd={(sizes) => onDragEnd(sizes as number[])}
-      >
-        <EditorPane
-          title="Me"
-          code={myCode}
-          language={selectedLanguage}
-          theme={theme}
-          isMinimized={maximizedEditor === 'opponent'}
-          isResizing={isResizing}
-          showFullscreenButton={showFullscreenButton}
-          onChange={onCodeChange}
-          onFullscreenToggle={onFullscreenToggle}
-        />
-        <EditorPane
-          title={opponentName ?? ''}
-          code={opponentCode}
-          language={selectedLanguage}
-          theme={theme}
-          readOnly={true}
-          isMinimized={maximizedEditor === 'my'}
-          isResizing={isResizing}
-        />
-      </Split>
+      <>
+        {isSinglePlayerMode ? (
+          // Single player mode - only show one editor
+          <EditorPane
+            title="Practice Mode"
+            code={myCode}
+            language={selectedLanguage}
+            theme={theme}
+            isMinimized={false}
+            isResizing={false}
+            showFullscreenButton={showFullscreenButton}
+            onChange={onCodeChange}
+            onFullscreenToggle={onFullscreenToggle}
+          />
+        ) : (
+          // Multiplayer mode - show split editors
+          <Split
+            className="flex w-full h-full"
+            direction="horizontal"
+            {...splitConfig}
+            onDragStart={onDragStart}
+            onDragEnd={(sizes) => onDragEnd(sizes as number[])}
+          >
+            <EditorPane
+              title="Me"
+              code={myCode}
+              language={selectedLanguage}
+              theme={theme}
+              isMinimized={maximizedEditor === 'opponent'}
+              isResizing={isResizing}
+              showFullscreenButton={showFullscreenButton}
+              onChange={onCodeChange}
+              onFullscreenToggle={onFullscreenToggle}
+            />
+            <EditorPane
+              title={opponentName ?? ''}
+              code={opponentCode}
+              language={selectedLanguage}
+              theme={theme}
+              readOnly={true}
+              isMinimized={maximizedEditor === 'my'}
+              isResizing={isResizing}
+            />
+          </Split>
+        )}
+      </>
     );
   }
 );

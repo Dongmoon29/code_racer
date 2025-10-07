@@ -40,7 +40,7 @@ const (
 	FieldFinishedAt = "finished_at"
 	FieldLeetCodeID = "leetcode_id"
 	FieldDifficulty = "difficulty"
-    FieldMode       = "mode"
+	FieldMode       = "mode"
 )
 
 // NewRedisManager creates a new RedisManager instance
@@ -63,13 +63,13 @@ func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid
 
 	// Set match metadata
 	matchDataKey := fmt.Sprintf(MatchDataKey, matchID.String())
-    pipe.HSet(ctx, matchDataKey, map[string]interface{}{
+	pipe.HSet(ctx, matchDataKey, map[string]interface{}{
 		FieldStatus:     string(model.MatchStatusPlaying),
 		FieldCreatedAt:  now.Unix(),
 		FieldStartedAt:  now.Unix(),
 		FieldLeetCodeID: leetcodeID,
-        FieldDifficulty: difficulty,
-        FieldMode:       mode,
+		FieldDifficulty: difficulty,
+		FieldMode:       mode,
 	})
 	pipe.Expire(ctx, matchDataKey, codeExpirationHours*time.Hour)
 
@@ -100,6 +100,57 @@ func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid
 		Str("player2", player2ID.String()).
 		Str("difficulty", difficulty).
 		Msg("Match created in Redis")
+
+	return nil
+}
+
+// CreateSinglePlayerMatch creates Redis data structure for a single player match
+func (rm *RedisManager) CreateSinglePlayerMatch(matchID uuid.UUID, playerID uuid.UUID, leetcodeID uuid.UUID, difficulty string) error {
+	ctx := context.Background()
+	now := time.Now()
+
+	// Calculate expiration time (24 hours from now)
+	expiresAt := now.Add(codeExpirationHours * time.Hour)
+
+	pipe := rm.rdb.Pipeline()
+
+	// Set match metadata
+	matchDataKey := fmt.Sprintf(MatchDataKey, matchID.String())
+	pipe.HSet(ctx, matchDataKey, map[string]interface{}{
+		FieldStatus:     string(model.MatchStatusPlaying),
+		FieldCreatedAt:  now.Unix(),
+		FieldStartedAt:  now.Unix(),
+		FieldLeetCodeID: leetcodeID,
+		FieldDifficulty: difficulty,
+		FieldMode:       string(model.MatchModeSingle),
+	})
+	pipe.Expire(ctx, matchDataKey, codeExpirationHours*time.Hour)
+
+	// Add single user to match
+	matchUsersKey := fmt.Sprintf(MatchUsersKey, matchID.String())
+	pipe.SAdd(ctx, matchUsersKey, playerID.String())
+	pipe.Expire(ctx, matchUsersKey, matchUsersExpirationHours*time.Hour)
+
+	// Initialize empty code for single player
+	matchCodesKey := fmt.Sprintf(MatchCodesKey, matchID.String())
+	pipe.HSet(ctx, matchCodesKey, playerID.String(), "")
+	pipe.Expire(ctx, matchCodesKey, codeExpirationHours*time.Hour)
+
+	// Set expiration timestamp
+	matchExpiryKey := fmt.Sprintf(MatchExpiryKey, matchID.String())
+	pipe.Set(ctx, matchExpiryKey, expiresAt.Unix(), codeExpirationHours*time.Hour)
+
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		rm.logger.Error().Err(err).Str("matchID", matchID.String()).Msg("Failed to create single player match in Redis")
+		return fmt.Errorf("failed to create single player match in Redis: %w", err)
+	}
+
+	rm.logger.Info().
+		Str("matchID", matchID.String()).
+		Str("player", playerID.String()).
+		Str("difficulty", difficulty).
+		Msg("Single player match created in Redis")
 
 	return nil
 }

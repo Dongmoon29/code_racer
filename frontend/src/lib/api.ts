@@ -170,6 +170,7 @@ export const matchApi = {
         : undefined,
       leetcode: payload.leetcode,
       status: payload.status,
+      mode: payload.mode || 'casual_pvp', // Add mode field mapping
       started_at: payload.started_at,
       created_at: payload.created_at,
       player_count: payload.player_b ? 2 : 1,

@@ -79,6 +79,7 @@ func Setup(
 			{
 				match.GET("/:id", matchController.GetMatch)
 				match.POST("/:id/submit", matchController.SubmitSolution)
+				match.POST("/single", matchController.CreateSinglePlayerMatch)
 			}
 
 			// users

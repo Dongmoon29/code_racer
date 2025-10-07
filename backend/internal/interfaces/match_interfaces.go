@@ -5,8 +5,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// GameCreator는 게임 생성 기능만 담당하는 인터페이스
-type ASasdasd interface {
-	CreateGameForMatch(player1ID, player2ID uuid.UUID, difficulty string) (*model.Match, error)
+// MatchService defines the interface for match-related operations
+type MatchService interface {
+	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error)
+	CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (*model.Match, error)
+	GetMatch(matchID uuid.UUID) (*model.Match, error)
 	GetRandomLeetCodeByDifficulty(difficulty string) (*model.LeetCode, error)
+	SubmitSolution(matchID, userID uuid.UUID, req *model.SubmitSolutionRequest) (*model.SubmitSolutionResponse, error)
 }

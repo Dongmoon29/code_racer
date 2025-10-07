@@ -86,3 +86,44 @@ func (c *MatchController) SubmitSolution(ctx *gin.Context) {
 		"message":   result.Message,
 	})
 }
+
+// CreateSinglePlayerMatch creates a single player match
+func (c *MatchController) CreateSinglePlayerMatch(ctx *gin.Context) {
+	// 사용자 ID 가져오기
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		Unauthorized(ctx, "User not authenticated")
+		return
+	}
+
+	// 요청 데이터 바인딩
+	var req struct {
+		Difficulty string `json:"difficulty" binding:"required"`
+	}
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		BadRequest(ctx, "Invalid request: "+err.Error())
+		return
+	}
+
+	// Validate difficulty
+	if req.Difficulty != "Easy" && req.Difficulty != "Medium" && req.Difficulty != "Hard" {
+		BadRequest(ctx, "Invalid difficulty. Must be Easy, Medium, or Hard")
+		return
+	}
+
+	// Create single player match
+	match, err := c.matchService.CreateSinglePlayerMatch(userID.(uuid.UUID), req.Difficulty)
+	if err != nil {
+		c.logger.Error().Err(err).Msg("Failed to create single player match")
+		InternalError(ctx, "Failed to create single player match")
+		return
+	}
+
+	c.logger.Info().
+		Str("matchID", match.ID.String()).
+		Str("userID", userID.(uuid.UUID).String()).
+		Str("difficulty", req.Difficulty).
+		Msg("Single player match created successfully")
+
+	OK(ctx, match.ToResponse())
+}

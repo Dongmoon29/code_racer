@@ -62,6 +62,11 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     [game?.status]
   );
 
+  const isSinglePlayerMode = useMemo(
+    () => game?.mode === 'single',
+    [game?.mode]
+  );
+
   const sessionStorageKeys = useMemo(
     () => ({
       code: `match_${matchId}_code`,
@@ -151,10 +156,10 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       game={game}
       currentUser={currentUser}
       myCode={myCode}
-      opponentCode={opponentCode}
+      opponentCode={isSinglePlayerMode ? '' : opponentCode}
       selectedLanguage={selectedLanguage}
       showMyCode={showMyCode}
-      showOpponentCode={showOpponentCode}
+      showOpponentCode={isSinglePlayerMode ? false : showOpponentCode}
       submitResult={submitResult}
       submitting={submitting}
       onCodeChange={handleCodeChange}

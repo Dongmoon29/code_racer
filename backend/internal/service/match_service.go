@@ -23,6 +23,7 @@ type MatchService interface {
 	// Matchmaking methods
 	GetRandomLeetCodeByDifficulty(difficulty string) (*model.LeetCode, error)
 	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error)
+	CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (*model.Match, error)
 
 	// Query methods
 	GetMatch(matchID uuid.UUID) (*model.Match, error)
@@ -336,6 +337,56 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 		Str("difficulty", difficulty).
 		Str("problem", leetcode.Title).
 		Msg("Successfully created match")
+
+	return createdMatch, nil
+}
+
+// CreateSinglePlayerMatch creates a single player match for practice mode
+func (s *matchService) CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (*model.Match, error) {
+	// Pick a random LeetCode problem for the requested difficulty
+	leetcode, err := s.GetRandomLeetCodeByDifficulty(difficulty)
+	if err != nil {
+		s.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to get random LeetCode problem")
+		return nil, fmt.Errorf("failed to get problem for difficulty %s: %w", difficulty, err)
+	}
+
+	match := &model.Match{
+		PlayerAID:  playerID,
+		PlayerBID:  nil, // No second player for single mode
+		LeetCodeID: leetcode.ID,
+		Status:     model.MatchStatusPlaying,
+		Mode:       model.MatchModeSingle,
+	}
+
+	// Save to database
+	if err := s.matchRepo.Create(match); err != nil {
+		s.logger.Error().Err(err).Msg("Failed to create single player match in database")
+		return nil, fmt.Errorf("failed to create single player match: %w", err)
+	}
+
+	// Load the complete match with associated LeetCode details
+	createdMatch, err := s.matchRepo.FindByID(match.ID)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to load created single player match")
+		return nil, fmt.Errorf("failed to load single player match: %w", err)
+	}
+
+	// Initialize Redis data for single player match
+	if err := s.redisManager.CreateSinglePlayerMatch(match.ID, playerID, leetcode.ID, difficulty); err != nil {
+		s.logger.Error().Err(err).Msg("Failed to initialize Redis data for single player match")
+		// Try to rollback the database record
+		if deleteErr := s.matchRepo.Delete(match.ID); deleteErr != nil {
+			s.logger.Error().Err(deleteErr).Msg("Failed to rollback single player match creation")
+		}
+		return nil, fmt.Errorf("failed to initialize single player match data: %w", err)
+	}
+
+	s.logger.Info().
+		Str("matchID", match.ID.String()).
+		Str("playerID", playerID.String()).
+		Str("difficulty", difficulty).
+		Str("problem", leetcode.Title).
+		Msg("Successfully created single player match")
 
 	return createdMatch, nil
 }

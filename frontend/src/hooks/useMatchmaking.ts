@@ -10,6 +10,7 @@ import type { Difficulty } from '@/components/game/DifficultySelector';
 import { TIMER_CONSTANTS, WEBSOCKET_CONSTANTS } from '@/constants';
 import { useRouterHelper } from '@/lib/router';
 import { createErrorHandler } from '@/lib/error-tracking';
+import { createSinglePlayerMatch } from '@/api/game';
 
 export interface UseMatchmakingOptions {
   onMatchFound?: (gameId: string) => void;
@@ -71,7 +72,10 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
     };
   }, []);
 
-  const startMatching = async (difficulty: Difficulty, mode: 'casual_pvp' | 'ranked_pvp' | 'single' = 'casual_pvp') => {
+  const startMatching = async (
+    difficulty: Difficulty,
+    mode: 'casual_pvp' | 'ranked_pvp' | 'single' = 'casual_pvp'
+  ) => {
     // Prevent duplicate start: ignore if in progress or existing socket
     if (matchingState !== MATCHING_STATE.IDLE || wsClientRef.current) {
       return;
@@ -86,6 +90,27 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
       setSelectedDifficulty(difficulty);
       setError(null);
 
+      // Handle single player mode differently
+      if (mode === 'single') {
+        const response = await createSinglePlayerMatch(difficulty);
+        if (response.success && response.data?.id) {
+          setMatchingState(MATCHING_STATE.FOUND);
+
+          redirectTimeoutRef.current = window.setTimeout(() => {
+            if (onMatchFound) {
+              onMatchFound(response.data.id);
+            } else {
+              routerHelper.goToGameRoom(response.data.id);
+            }
+          }, redirectDelayMs);
+        } else {
+          setError('Failed to create single player match');
+          setMatchingState(MATCHING_STATE.ERROR);
+        }
+        return;
+      }
+
+      // Multiplayer mode - use WebSocket
       const wsClient = new MatchmakingWebSocketClient({
         onConnect: () => {
           setMatchingState(MATCHING_STATE.SEARCHING);
