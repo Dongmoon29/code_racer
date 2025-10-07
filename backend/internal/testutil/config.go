@@ -1,6 +1,8 @@
 package testutil
 
 import (
+	"os"
+
 	"github.com/Dongmoon29/code_racer/internal/config"
 )
 
@@ -8,6 +10,11 @@ import (
 // Note: This uses hardcoded test values. In CI/CD environments,
 // these should be configured via environment variables
 func SetupTestConfig() *config.Config {
+	judgeKey := os.Getenv("JUDGE0_API_KEY")
+	judgeEndpoint := os.Getenv("JUDGE0_API_ENDPOINT")
+	if judgeEndpoint == "" {
+		judgeEndpoint = "https://judge0-ce.p.rapidapi.com"
+	}
 	return &config.Config{
 		DBHost:     "localhost",
 		DBUser:     "postgres",
@@ -24,7 +31,7 @@ func SetupTestConfig() *config.Config {
 
 		ServerPort: "8081",
 
-		Judge0APIKey:      "21031b5e62msh0d70c4eec062706p1c6c61jsn2d5fe6103e64",
-		Judge0APIEndpoint: "https://judge0-ce.p.rapidapi.com",
+		Judge0APIKey:      judgeKey,
+		Judge0APIEndpoint: judgeEndpoint,
 	}
 }

@@ -66,3 +66,5 @@ jobs:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           JWT_SECRET: test_secret
+          JUDGE0_API_KEY: ${{ secrets.JUDGE0_API_KEY }}
+          JUDGE0_API_ENDPOINT: ${{ secrets.JUDGE0_API_ENDPOINT }}
