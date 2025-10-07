@@ -4,6 +4,7 @@ import { useAuth } from '../../../../hooks/useAuth';
 import { getLeetCodeProblem } from '../../../../lib/leetcode-api';
 import { LeetCodeFormData } from '@/types';
 import LeetCodeForm from '../../../../components/admin/LeetCodeForm';
+import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 
 export default function EditLeetCodePage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -75,7 +76,7 @@ export default function EditLeetCodePage() {
   if (authLoading || isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="text-lg">Loading...</div>
+        <CodeRacerLoader size="lg" />
       </div>
     );
   }

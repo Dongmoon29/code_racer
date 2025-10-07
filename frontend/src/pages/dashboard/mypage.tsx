@@ -4,6 +4,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { ProfileSidebar, Overview, GameHistory } from '@/components/profile';
+import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 
 interface UserInfo {
   id: string;
@@ -55,7 +56,7 @@ const MyPage = () => {
       <DashboardLayout>
         <div className="py-8">
           <div className="flex items-center justify-center">
-            <div className="text-lg">Loading...</div>
+            <CodeRacerLoader />
           </div>
         </div>
       </DashboardLayout>

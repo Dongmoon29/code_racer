@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { FC } from 'react';
 import {
   Calendar,
   Building,
@@ -30,7 +30,7 @@ interface OverviewProps {
   user: UserInfo;
 }
 
-const Overview: React.FC<OverviewProps> = ({ user }) => {
+const Overview: FC<OverviewProps> = ({ user }) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',

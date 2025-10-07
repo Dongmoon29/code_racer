@@ -3,6 +3,7 @@ import LeetCodeForm from '../../../components/admin/LeetCodeForm';
 import { useAuth } from '../../../hooks/useAuth';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
+import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 
 export default function CreateLeetCodePage() {
   const { user, isLoading } = useAuth();
@@ -25,7 +26,7 @@ export default function CreateLeetCodePage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="text-lg">Loading...</div>
+        <CodeRacerLoader size="lg" />
       </div>
     );
   }
