@@ -161,7 +161,7 @@ func (s *userService) ListUsers(page int, limit int, orderBy string, dir string)
 }
 
 func (s *userService) GetLeaderboard(limit int) ([]*model.LeaderboardUser, error) {
-	users, _, err := s.userRepo.ListUsers(0, limit, "rating", "desc")
+	users, err := s.userRepo.GetLeaderboardUsers(limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leaderboard: %w", err)
 	}

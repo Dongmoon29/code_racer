@@ -97,3 +97,27 @@ func (r *userRepository) ListUsers(offset int, limit int, orderByField string, o
 
 	return users, total, nil
 }
+
+// TODO: Optimize this query
+func (r *userRepository) GetLeaderboardUsers(limit int) ([]*model.User, error) {
+	var users []*model.User
+
+	err := r.db.
+		Where(`EXISTS (
+			SELECT 1 FROM matches m1 
+			WHERE m1.player_a_id = users.id AND m1.mode = 'ranked_pvp'
+		) OR EXISTS (
+			SELECT 1 FROM matches m2 
+			WHERE m2.player_b_id = users.id AND m2.mode = 'ranked_pvp' AND m2.player_b_id IS NOT NULL
+		)`).
+		Order("rating DESC").
+		Order("id DESC").
+		Limit(limit).
+		Find(&users).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
