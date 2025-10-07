@@ -63,14 +63,14 @@ const RegisterForm: FC = () => {
             htmlFor="name"
             className="text-sm font-medium text-[hsl(var(--foreground))]"
           >
-            이름
+            Name
           </label>
           <div className="relative">
             <input
               id="name"
               type="text"
               {...register('name')}
-              placeholder="홍길동"
+              placeholder="John Doe"
               disabled={loading}
               className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${
                 errors.name ? 'border-red-500' : 'border-input'
@@ -88,7 +88,7 @@ const RegisterForm: FC = () => {
             htmlFor="email"
             className="text-sm font-medium text-[hsl(var(--foreground))]"
           >
-            이메일
+            Email
           </label>
           <div className="relative">
             <input
@@ -113,7 +113,7 @@ const RegisterForm: FC = () => {
             htmlFor="password"
             className="text-sm font-medium text-[hsl(var(--foreground))]"
           >
-            비밀번호
+            Password
           </label>
           <div className="relative">
             <input
@@ -149,7 +149,7 @@ const RegisterForm: FC = () => {
             htmlFor="confirmPassword"
             className="text-sm font-medium text-[hsl(var(--foreground))]"
           >
-            비밀번호 확인
+            Confirm Password
           </label>
           <div className="relative">
             <input
@@ -174,7 +174,7 @@ const RegisterForm: FC = () => {
         </Button>
       </form>
 
-      {/* 구분선 추가 */}
+      {/* Divider */}
       <div className="relative my-8">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-[hsl(var(--border))]"></div>
@@ -218,7 +218,7 @@ const RegisterForm: FC = () => {
             href="/login"
             className="text-[hsl(var(--primary))] font-medium hover:underline"
           >
-            로그인
+            Login
           </Link>
         </p>
       </div>

@@ -95,7 +95,7 @@ const LoginForm: FC = () => {
             htmlFor="email"
             className="text-sm font-medium text-[hsl(var(--foreground))]"
           >
-            이메일
+            Email
           </label>
           <div className="relative">
             <input
@@ -120,7 +120,7 @@ const LoginForm: FC = () => {
             htmlFor="password"
             className="text-sm font-medium text-[hsl(var(--foreground))]"
           >
-            비밀번호
+            Password
           </label>
           <div className="relative">
             <input
@@ -201,7 +201,7 @@ const LoginForm: FC = () => {
             href="/register"
             className="text-[hsl(var(--primary))] font-medium hover:underline"
           >
-            회원가입
+            Register
           </Link>
         </p>
       </div>

@@ -142,11 +142,17 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  <span>Working on game creation & game deletion</span>
+                  <span>
+                    working on a league system with an ELO rating mechanism,
+                    where leagues are divided based on game difficulty.
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                  <span>Working on dashboard UI</span>
+                  <span>
+                    Working on CRUD system for algorithm problems in the admin
+                    panel.
+                  </span>
                 </div>
                 <div className="text-md font-extrabold mb-4 mt-10">
                   This project is still under development!! and it&apos;s open
