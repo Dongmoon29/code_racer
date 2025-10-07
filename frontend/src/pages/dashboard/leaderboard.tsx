@@ -85,8 +85,7 @@ const LeaderboardPage = () => {
               {finalRankedUsers.map((user) => (
                 <tr key={user.id}>
                   <td className="px-4 py-3 text-sm w-24">{user.rank}</td>
-                  {/* <td className="px-4 py-3 text-sm">{user.name}</td> */}
-                  <td className="px-4 py-3 text-sm">WIP</td>
+                  <td className="px-4 py-3 text-sm">{user.name}</td>
                   <td className="px-4 py-3 text-sm">{user.rating ?? '-'}</td>
                 </tr>
               ))}
