@@ -8,10 +8,9 @@ export const closeGame = async (gameId: string): Promise<ApiResponse> => {
 
 export const createSinglePlayerMatch = async (
   difficulty: string
-): Promise<ApiResponse> => {
+): Promise<ApiResponse<{ id: string }>> => {
   const response = await axios.post('/api/matches/single', {
     difficulty,
   });
   return response.data;
 };
-//

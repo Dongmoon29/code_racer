@@ -10,10 +10,10 @@ export interface ApiSuccessResponse<T = unknown> {
   data?: T;
 }
 
-export interface ApiResponse {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
-  data?: unknown;
+  data?: T;
   game?: {
     id: string;
     leetcode: {

@@ -98,9 +98,9 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
 
           redirectTimeoutRef.current = window.setTimeout(() => {
             if (onMatchFound) {
-              onMatchFound(response.data.id);
+              onMatchFound(response.data!.id);
             } else {
-              routerHelper.goToGameRoom(response.data.id);
+              routerHelper.goToGameRoom(response.data!.id);
             }
           }, redirectDelayMs);
         } else {
