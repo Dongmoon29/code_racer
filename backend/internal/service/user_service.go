@@ -160,14 +160,12 @@ func (s *userService) ListUsers(page int, limit int, orderBy string, dir string)
 	return users, total, nil
 }
 
-// GetLeaderboard 레이팅 기준 상위 사용자 조회
 func (s *userService) GetLeaderboard(limit int) ([]*model.LeaderboardUser, error) {
-	users, _, err := s.userRepo.ListUsers(0, limit, "rating", "desc")
+	users, _, err := s.userRepo.ListUsers(0, limit, "rating", "asc")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leaderboard: %w", err)
 	}
 
-	// User를 LeaderboardUser DTO로 변환
 	leaderboardUsers := make([]*model.LeaderboardUser, len(users))
 	for i, user := range users {
 		leaderboardUsers[i] = &model.LeaderboardUser{
