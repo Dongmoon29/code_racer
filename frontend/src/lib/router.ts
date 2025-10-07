@@ -10,6 +10,7 @@ export const ROUTES = {
 
   // Main app routes
   DASHBOARD: '/dashboard',
+  DASHBOARD_RACE: '/dashboard/race',
   PROFILE: '/profile',
 
   // Game routes
@@ -88,6 +89,10 @@ export class RouterHelper {
 
   goToDashboard() {
     return this.push(ROUTES.DASHBOARD);
+  }
+
+  goToDashboardRace() {
+    return this.push(ROUTES.DASHBOARD_RACE);
   }
 
   goToProfile() {

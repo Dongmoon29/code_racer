@@ -24,7 +24,7 @@ const Header: FC = () => {
   };
 
   const handleNavigateToProfile = () => {
-    router.push('/dashboard/mypage');
+    router.push('/dashboard');
   };
 
   const toggleMenu = () => {

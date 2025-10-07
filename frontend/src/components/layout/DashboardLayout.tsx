@@ -10,8 +10,8 @@ type DashboardLayoutProps = {
 
 const navigationItems = [
   {
-    href: '/dashboard/mypage',
-    label: 'My Page',
+    href: '/dashboard',
+    label: 'Profile',
     icon: <User className="w-5 h-5 shrink-0" />,
   },
   {
@@ -20,8 +20,8 @@ const navigationItems = [
     icon: <Trophy className="w-5 h-5 shrink-0" />,
   },
   {
-    href: '/dashboard',
-    label: 'Dashboard',
+    href: '/dashboard/race',
+    label: 'Race',
     icon: <Car className="w-5 h-5 shrink-0" />,
   },
 ];
