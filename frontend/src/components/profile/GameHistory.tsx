@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { FC } from 'react';
 import { Trophy, Clock, Users, Code, Calendar } from 'lucide-react';
 import {
   normalizeRecentGames,
@@ -10,10 +10,7 @@ interface GameHistoryProps {
   currentUserId?: string;
 }
 
-const GameHistory: React.FC<GameHistoryProps> = ({
-  games = [],
-  currentUserId,
-}) => {
+const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
   const items: GameHistoryItem[] = normalizeRecentGames(games as unknown[]);
 
   const getDifficultyColor = (difficulty: string) => {
@@ -52,7 +49,7 @@ const GameHistory: React.FC<GameHistoryProps> = ({
   };
 
   return (
-    <div className="bg-card rounded-lg border p-6">
+    <div className="bg-card rounded-lg p-6">
       <h3 className="text-lg font-semibold mb-4">Recent Games</h3>
 
       {items.length === 0 && (

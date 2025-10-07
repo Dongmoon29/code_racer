@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Alert } from '@/components/ui/alert';
 import { useAuthStore } from '@/stores/authStore';
 import { motion } from 'framer-motion';
+import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
@@ -35,10 +36,7 @@ const LoginPage: React.FC = () => {
         description="Login to CodeRacer to start competing in real-time coding challenges"
       >
         <div className="flex w-full min-h-[calc(100vh-80px)] items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading...</p>
-          </div>
+          <CodeRacerLoader size="lg" />
         </div>
       </Layout>
     );

@@ -7,6 +7,7 @@ import {
 } from '@/hooks/useLeetCode';
 import Link from 'next/link';
 import { LeetCodeSummary } from '@/types';
+import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 
 export default function LeetCodeList() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,7 +57,7 @@ export default function LeetCodeList() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg text-gray-600">Loading...</div>
+        <CodeRacerLoader />
       </div>
     );
   }

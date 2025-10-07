@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import Link from 'next/link';
+import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 
 export default function AdminPage() {
   const { user, isLoading } = useAuth();
@@ -17,7 +18,7 @@ export default function AdminPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="text-lg">Loading...</div>
+        <CodeRacerLoader size="lg" />
       </div>
     );
   }
