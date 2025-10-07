@@ -52,7 +52,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
             {showFullscreenButton && onFullscreenToggle && (
               <button
                 onClick={onFullscreenToggle}
-                className="cursor-pointer p-1 hover:bg-gray-200 rounded-md transition-colors shrink-0"
+                className="cursor-pointer p-1 hover:text-[hsl(var(--muted-foreground))] rounded-md transition-colors shrink-0"
                 title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
               >
                 {isFullscreen ? (

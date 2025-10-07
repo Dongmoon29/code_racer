@@ -61,7 +61,7 @@ export const LeetCodeEditorSplit: FC<CodeEditorSplitProps> = memo(
     if (isSinglePlayerMode) {
       return (
         <EditorPane
-          title="Practice Mode"
+          title="Me"
           code={myCode}
           language={selectedLanguage}
           theme={theme}

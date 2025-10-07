@@ -51,7 +51,7 @@ export const EditorSplit: FC<EditorSplitProps> = memo(
         {isSinglePlayerMode ? (
           // Single player mode - only show one editor
           <EditorPane
-            title="Practice Mode"
+            title="Me"
             code={myCode}
             language={selectedLanguage}
             theme={theme}
