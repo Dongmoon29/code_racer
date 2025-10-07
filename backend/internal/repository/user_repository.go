@@ -76,6 +76,7 @@ func (r *userRepository) ListUsers(offset int, limit int, orderByField string, o
 		"name":       "name",
 		"email":      "email",
 		"role":       "role",
+		"rating":     "rating",
 	}
 	field, ok := allowed[orderByField]
 	if !ok || field == "" {
