@@ -1,7 +1,6 @@
 import Document, { Html, Head, Main, NextScript } from 'next/document';
 
 export default class MyDocument extends Document {
-
   render() {
     return (
       <Html lang="ko">
@@ -40,7 +39,7 @@ export default class MyDocument extends Document {
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content="Code Racer" />
           <meta name="twitter:description" content="실시간 코딩 경쟁 플랫폼" />
-          <meta name="twitter:image" content="/code_racer_hero.png" />
+          <meta name="twitter:image" content="/code_racer_hero.webp" />
         </Head>
         <body>
           <Main />

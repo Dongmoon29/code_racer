@@ -106,7 +106,6 @@ const MyPage = () => {
                 <Overview user={user!} />
 
                 {/* Edit profile form is now toggled inside the sidebar under the button */}
-
                 <GameHistory currentUserId={user?.id} games={recentGames} />
               </div>
             </div>

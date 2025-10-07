@@ -49,7 +49,7 @@ export const CodeRacerLoader: React.FC<CodeRacerLoaderProps> = ({
             style={{ animationDuration: '1.2s' }}
           >
             <Image
-              src="/code_racer_hero.png"
+              src="/code_racer_hero.webp"
               alt="CodeRacer Character"
               width={imageSizes[size]}
               height={imageSizes[size]}
