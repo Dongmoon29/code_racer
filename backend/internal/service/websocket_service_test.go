@@ -59,6 +59,11 @@ func (m *MockUserRepository) ListUsers(offset, limit int, orderByField, orderDir
 	return args.Get(0).([]*model.User), args.Get(1).(int64), args.Error(2)
 }
 
+func (m *MockUserRepository) GetLeaderboardUsers(limit int) ([]*model.User, error) {
+	args := m.Called(limit)
+	return args.Get(0).([]*model.User), args.Error(1)
+}
+
 func TestWebSocketService_NewWebSocketService(t *testing.T) {
 	// Setup
 	logger := testutil.SetupTestLogger()
