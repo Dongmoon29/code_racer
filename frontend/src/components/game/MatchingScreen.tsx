@@ -2,7 +2,6 @@ import React, { memo, useState } from 'react';
 import { useRouter } from 'next/router';
 import MatchingLoader from './MatchingLoader';
 import { ConnectingCard, ErrorCard, FoundCard } from './MatchingCards';
-import { AnimatePresence, motion } from 'framer-motion';
 import { MATCHING_STATE } from '@/lib/constants';
 import { useMatchmaking } from '@/hooks/useMatchmaking';
 import DifficultySelector, { type Difficulty } from './DifficultySelector';
@@ -34,57 +33,23 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(
 
     // Connecting state
     if (matchingState === MATCHING_STATE.CONNECTING) {
-      return (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key="connecting"
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-          >
-            <ConnectingCard />
-          </motion.div>
-        </AnimatePresence>
-      );
+      return <ConnectingCard />;
     }
 
     // Error state
     if (matchingState === MATCHING_STATE.ERROR) {
       return (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key="error"
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-          >
-            <ErrorCard
-              message={error || undefined}
-              onRetry={retryMatching}
-              onBack={() => router.push('/dashboard')}
-            />
-          </motion.div>
-        </AnimatePresence>
+        <ErrorCard
+          message={error || undefined}
+          onRetry={retryMatching}
+          onBack={() => router.push('/dashboard')}
+        />
       );
     }
 
     // Found state (briefly show confirmation)
     if (matchingState === MATCHING_STATE.FOUND) {
-      return (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key="found"
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-          >
-            <FoundCard />
-          </motion.div>
-        </AnimatePresence>
-      );
+      return <FoundCard />;
     }
 
     // Searching state
@@ -111,59 +76,67 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(
         title: 'Casual PvP',
         subtitle: 'Friendly race, no rating',
         colors: 'from-emerald-500 to-teal-500',
-        accent: 'text-emerald-600',
+        accent: 'text-green-600',
       },
       {
         value: 'ranked_pvp',
         title: 'Ranked PvP',
         subtitle: 'Climb the leaderboard',
         colors: 'from-indigo-500 to-purple-500',
-        accent: 'text-indigo-600',
+        accent: 'text-yellow-600',
       },
       {
         value: 'single',
         title: 'Single',
         subtitle: 'Solo time attack',
         colors: 'from-orange-500 to-rose-500',
-        accent: 'text-orange-600',
+        accent: 'text-red-600',
       },
     ];
 
     // Simple, reusable styles
     const cardBaseClass =
-      'group relative w-full h-36 rounded-2xl border bg-[hsl(var(--background))] border-[hsl(var(--border))] flex flex-col justify-center items-start p-4 transition-transform cursor-pointer';
+      'w-full h-36 rounded-2xl border bg-[hsl(var(--background))] border-[hsl(var(--border))] flex flex-col justify-center items-start p-4 cursor-pointer';
     const ctaClass =
       'w-14 h-14 flex items-center justify-center rounded-full text-white font-semibold shadow-lg bg-green-600';
 
     return (
       <div className="max-w-5xl mx-auto p-6">
         {/* Mode card selector */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 items-stretch">
-          {modeOptions.map((m) => {
-            const selected = mode === m.value;
-            return (
-              <button
-                key={m.value}
-                onClick={() => setMode(m.value)}
-                className={`${cardBaseClass} ${
-                  selected
-                    ? 'ring-2 ring-emerald-500 ring-offset-2 -translate-y-0.5'
-                    : ''
-                }`}
-              >
-                <div className="leading-tight">
-                  <div className="text-xl font-bold mb-1">{m.title}</div>
-                  <div className="text-[hsl(var(--muted-foreground))] text-sm">
-                    {m.subtitle}
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-4 text-[hsl(var(--foreground))]">
+            Mode
+          </h2>
+          <div className="flex flex-col sm:flex-row gap-4">
+            {modeOptions.map((m) => {
+              const selected = mode === m.value;
+              return (
+                <button
+                  key={m.value}
+                  onClick={() => setMode(m.value)}
+                  className={`${cardBaseClass} ${
+                    selected ? 'ring-2 ring-emerald-500 ring-offset-2' : ''
+                  }`}
+                >
+                  <div className="leading-tight text-center w-full">
+                    <div className={`text-xl font-bold mb-1 ${m.accent}`}>
+                      {m.title}
+                    </div>
+                    <div className="text-[hsl(var(--muted-foreground))] text-sm">
+                      {m.subtitle}
+                    </div>
                   </div>
-                </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Difficulty card selector */}
         <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-4 text-[hsl(var(--foreground))]">
+            Difficulty
+          </h2>
           <DifficultySelector
             value={difficulty}
             onSelect={(d: Difficulty) => setDifficulty(d)}
