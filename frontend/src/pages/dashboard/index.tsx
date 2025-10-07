@@ -39,7 +39,7 @@ interface CurrentUserResponse extends UserInfo {
   recent_games: RecentGameSummary[];
 }
 
-const MyPage = () => {
+const DashboardIndex = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => {
@@ -92,20 +92,14 @@ const MyPage = () => {
 
       <div className="py-6">
         <div className="max-w-7xl mx-auto">
-          {/* GitHub-style layout */}
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left Sidebar - Profile Information */}
             <div className="lg:w-80 flex-shrink-0">
               <ProfileSidebar user={user!} />
             </div>
 
-            {/* Right Main Content */}
             <div className="flex-1 min-w-0">
               <div className="space-y-6">
-                {/* Overview - User Information */}
                 <Overview user={user!} />
-
-                {/* Edit profile form is now toggled inside the sidebar under the button */}
                 <GameHistory currentUserId={user?.id} games={recentGames} />
               </div>
             </div>
@@ -116,4 +110,4 @@ const MyPage = () => {
   );
 };
 
-export default MyPage;
+export default DashboardIndex;
