@@ -138,15 +138,21 @@ func initializeRepositories(db *gorm.DB, appLogger logger.Logger) *repositories 
 func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *services {
 	authService := service.NewAuthService(repos.userRepository, cfg.JWTSecret, appLogger)
 	userService := service.NewUserService(repos.userRepository, repos.matchRepository, appLogger)
-	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger)
-	matchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, judgeService, repos.userRepository, appLogger)
 
 	// Initialize EventBus
 	eventBus := events.NewEventBus()
 
-	// Initialize WebSocket and matchmaking services (event-driven, no circular dependency)
-	matchmakingService := service.NewMatchmakingService(matchService, rdb, appLogger, eventBus)
+	// Initialize WebSocket and matchmaking services first (to avoid circular dependency)
+	// Create a temporary matchService for matchmaking service initialization
+	tempMatchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, nil, repos.userRepository, appLogger)
+	matchmakingService := service.NewMatchmakingService(tempMatchService, rdb, appLogger, eventBus)
 	wsService := service.NewWebSocketService(rdb, appLogger, matchmakingService, repos.userRepository, eventBus)
+
+	// Now create JudgeService with WebSocket broadcaster
+	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger, wsService)
+
+	// Create the final matchService with the complete JudgeService
+	matchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, judgeService, repos.userRepository, appLogger)
 
 	// Start WebSocket hub
 	wsHub := wsService.InitHub()
@@ -284,6 +290,5 @@ func startServer(router *gin.Engine, port string) {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal().Err(err).Msg("Server forced to shutdown")
 	}
-	//
 	log.Info().Msg("Server exited gracefully")
 }

@@ -85,8 +85,8 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 		Str("language", req.Language).
 		Msg("Evaluating submitted code")
 
-		// Evaluate code via Judge service (Judge0)
-	result, err := s.judgeService.EvaluateCode(req.Code, req.Language, &match.LeetCode)
+		// Evaluate code via Judge service (Judge0) with realtime notifications
+	result, err := s.judgeService.EvaluateCodeWithRealtime(req.Code, req.Language, &match.LeetCode, matchID, userID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Code evaluation failed")
 		return nil, err

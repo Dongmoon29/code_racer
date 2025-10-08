@@ -8,6 +8,11 @@ import { Game, SubmitResult } from '@/types';
 import { getCodeTemplate } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { type SupportedLanguage } from '@/constants';
+import {
+  SubmissionProgress,
+  TestCaseDetailMessage,
+  SubmissionStatusMessage,
+} from '@/types/websocket';
 
 interface UseGameRoomWebSocketProps {
   matchId: string;
@@ -20,6 +25,9 @@ interface UseGameRoomWebSocketProps {
   setSubmitResult: (result: SubmitResult | null) => void;
   setSubmitting: (submitting: boolean) => void;
   setSelectedLanguage: (language: SupportedLanguage) => void;
+  setSubmissionProgress: React.Dispatch<
+    React.SetStateAction<SubmissionProgress>
+  >;
   refetchGame: () => void;
 }
 
@@ -34,6 +42,7 @@ export const useGameRoomWebSocket = ({
   setSubmitResult,
   setSubmitting,
   setSelectedLanguage,
+  setSubmissionProgress,
   refetchGame,
 }: UseGameRoomWebSocketProps) => {
   const router = useRouter();
@@ -62,6 +71,138 @@ export const useGameRoomWebSocket = ({
             }
           }
           break;
+
+        case 'submission_started': {
+          const raw = message as unknown as {
+            data?: unknown;
+            payload?: unknown;
+          };
+          const m = (raw.data ||
+            raw.payload ||
+            message) as SubmissionStatusMessage;
+          // Only reflect my own submission progress in my UI
+          if (m.user_id !== currentUser?.id) break;
+          setSubmitting(true);
+          setSubmissionProgress({
+            isSubmitting: true,
+            totalTestCases:
+              m.total_test_cases || game?.leetcode?.test_cases?.length || 0,
+            completedTestCases: 0,
+            testCaseResults: Array.from({
+              length:
+                m.total_test_cases || game?.leetcode?.test_cases?.length || 0,
+            }).map((_, i) => ({
+              index: i,
+              input: undefined,
+              expectedOutput: undefined,
+              status: 'pending',
+            })),
+            statusMessage: 'Evaluating Solution...',
+          });
+          break;
+        }
+
+        case 'test_case_running': {
+          const raw = message as unknown as {
+            data?: unknown;
+            payload?: unknown;
+          };
+          const m = (raw.data ||
+            raw.payload ||
+            message) as TestCaseDetailMessage;
+          if (m.user_id !== currentUser?.id) break;
+          setSubmissionProgress((prev: SubmissionProgress) => {
+            const next = { ...prev };
+            const list = [...prev.testCaseResults];
+            list[m.test_case_index] = {
+              index: m.test_case_index,
+              input: m.input,
+              expectedOutput: m.expected_output,
+              status: 'running',
+            };
+            next.testCaseResults = list;
+            return next;
+          });
+          break;
+        }
+
+        case 'test_case_completed': {
+          const raw = message as unknown as {
+            data?: unknown;
+            payload?: unknown;
+          };
+          const m = (raw.data ||
+            raw.payload ||
+            message) as TestCaseDetailMessage;
+          if (m.user_id !== currentUser?.id) break;
+          setSubmissionProgress((prev: SubmissionProgress) => {
+            const next = { ...prev };
+            const list = [...prev.testCaseResults];
+            list[m.test_case_index] = {
+              index: m.test_case_index,
+              input: m.input,
+              expectedOutput: m.expected_output,
+              actualOutput: m.actual_output,
+              passed: m.passed,
+              status: 'completed',
+              executionTime: m.execution_time,
+              memoryUsage: m.memory_usage,
+            };
+            next.testCaseResults = list;
+            next.completedTestCases = Math.min(
+              prev.completedTestCases + 1,
+              prev.totalTestCases
+            );
+            return next;
+          });
+          break;
+        }
+
+        case 'submission_completed': {
+          const raw = message as unknown as {
+            data?: unknown;
+            payload?: unknown;
+          };
+          const m = (raw.data ||
+            raw.payload ||
+            message) as SubmissionStatusMessage;
+          if (m.user_id !== currentUser?.id) break;
+          setSubmitting(false);
+          setSubmissionProgress((prev: SubmissionProgress) => ({
+            ...prev,
+            isSubmitting: false,
+            overallPassed: m.passed,
+            executionTime: m.execution_time,
+            memoryUsage: m.memory_usage,
+            statusMessage: m.passed
+              ? 'All test cases passed!'
+              : 'Some test cases failed.',
+          }));
+          break;
+        }
+
+        case 'submission_failed': {
+          const raw = message as unknown as {
+            data?: unknown;
+            payload?: unknown;
+          };
+          const m = (raw.data ||
+            raw.payload ||
+            message) as SubmissionStatusMessage;
+          if (m.user_id !== currentUser?.id) break;
+          setSubmitting(false);
+          setSubmissionProgress((prev: SubmissionProgress) => ({
+            ...prev,
+            isSubmitting: false,
+            statusMessage: 'Submission failed.',
+          }));
+          setSubmitResult({
+            success: false,
+            message: 'Submission failed.',
+            is_winner: false,
+          });
+          break;
+        }
 
         case 'game_finished':
           if (message.winner_id) {

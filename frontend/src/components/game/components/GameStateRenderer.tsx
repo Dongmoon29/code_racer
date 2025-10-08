@@ -1,6 +1,7 @@
 import React, { FC, memo } from 'react';
 import { useRouter } from 'next/router';
 import { Game, SubmitResult } from '@/types';
+import { SubmissionProgress } from '@/types/websocket';
 import { PlayingGame } from '../states/PlayingGame';
 import { FinishedGame } from '../states/FinishedGame';
 import { Button } from '../../ui/Button';
@@ -19,6 +20,7 @@ interface GameStateRendererProps {
   showOpponentCode: boolean;
   submitResult: SubmitResult | null;
   submitting: boolean;
+  submissionProgress: SubmissionProgress;
   onCodeChange: (code: string) => void;
   onLanguageChange: (language: SupportedLanguage) => void;
   onSubmitCode: () => void;
@@ -37,6 +39,7 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
     showOpponentCode,
     submitResult,
     submitting,
+    submissionProgress,
     onCodeChange,
     onLanguageChange,
     onSubmitCode,
@@ -84,6 +87,7 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
             showOpponentCode={showOpponentCode}
             submitResult={submitResult}
             submitting={submitting}
+            submissionProgress={submissionProgress}
             onCodeChange={onCodeChange}
             onLanguageChange={onLanguageChange}
             onSubmitCode={onSubmitCode}

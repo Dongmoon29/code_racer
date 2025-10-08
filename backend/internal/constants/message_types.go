@@ -13,6 +13,13 @@ const (
 	CodeUpdate   = "code_update"
 	GameFinished = "game_finished"
 
+	// Real-time scoring messages
+	SubmissionStarted   = "submission_started"
+	TestCaseRunning     = "test_case_running"
+	TestCaseCompleted   = "test_case_completed"
+	SubmissionCompleted = "submission_completed"
+	SubmissionFailed    = "submission_failed"
+
 	// Matchmaking messages
 	StartMatching  = "start_matching"
 	CancelMatching = "cancel_matching"
@@ -28,22 +35,28 @@ type MessageType string
 
 // Message type constants
 var (
-	MessageTypeAuth           MessageType = Auth
-	MessageTypePing           MessageType = Ping
-	MessageTypePong           MessageType = Pong
-	MessageTypeCodeUpdate     MessageType = CodeUpdate
-	MessageTypeGameFinished   MessageType = GameFinished
-	MessageTypeStartMatching  MessageType = StartMatching
-	MessageTypeCancelMatching MessageType = CancelMatching
-	MessageTypeMatchingStatus MessageType = MatchingStatus
-	MessageTypeMatchFound     MessageType = MatchFound
-	MessageTypeError          MessageType = Error
+	MessageTypeAuth                MessageType = Auth
+	MessageTypePing                MessageType = Ping
+	MessageTypePong                MessageType = Pong
+	MessageTypeCodeUpdate          MessageType = CodeUpdate
+	MessageTypeGameFinished        MessageType = GameFinished
+	MessageTypeSubmissionStarted   MessageType = SubmissionStarted
+	MessageTypeTestCaseRunning     MessageType = TestCaseRunning
+	MessageTypeTestCaseCompleted   MessageType = TestCaseCompleted
+	MessageTypeSubmissionCompleted MessageType = SubmissionCompleted
+	MessageTypeSubmissionFailed    MessageType = SubmissionFailed
+	MessageTypeStartMatching       MessageType = StartMatching
+	MessageTypeCancelMatching      MessageType = CancelMatching
+	MessageTypeMatchingStatus      MessageType = MatchingStatus
+	MessageTypeMatchFound          MessageType = MatchFound
+	MessageTypeError               MessageType = Error
 )
 
 // IsValidMessageType checks if the given string is a valid message type
 func IsValidMessageType(msgType string) bool {
 	switch msgType {
 	case Auth, Ping, Pong, CodeUpdate, GameFinished,
+		SubmissionStarted, TestCaseRunning, TestCaseCompleted, SubmissionCompleted, SubmissionFailed,
 		StartMatching, CancelMatching, MatchingStatus, MatchFound, Error:
 		return true
 	default:
@@ -59,6 +72,11 @@ func GetAllMessageTypes() []MessageType {
 		MessageTypePong,
 		MessageTypeCodeUpdate,
 		MessageTypeGameFinished,
+		MessageTypeSubmissionStarted,
+		MessageTypeTestCaseRunning,
+		MessageTypeTestCaseCompleted,
+		MessageTypeSubmissionCompleted,
+		MessageTypeSubmissionFailed,
 		MessageTypeStartMatching,
 		MessageTypeCancelMatching,
 		MessageTypeMatchingStatus,
@@ -85,7 +103,7 @@ func GetMessageTypeCategory(msgType string) MessageTypeCategory {
 		return CategoryAuth
 	case Ping, Pong:
 		return CategoryConnection
-	case CodeUpdate, GameFinished:
+	case CodeUpdate, GameFinished, SubmissionStarted, TestCaseRunning, TestCaseCompleted, SubmissionCompleted, SubmissionFailed:
 		return CategoryGame
 	case StartMatching, CancelMatching, MatchingStatus, MatchFound:
 		return CategoryMatchmaking

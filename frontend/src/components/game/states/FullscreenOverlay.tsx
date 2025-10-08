@@ -1,6 +1,8 @@
 import React, { FC, memo, useState } from 'react';
 import { ProblemDetailsPane } from './ProblemDetailsPane';
 import { LeetCodeEditorSplit } from './CodeEditorSplitProps';
+import TestCaseDisplay from '../TestCaseDisplay';
+import { SubmissionProgress } from '@/types/websocket';
 
 interface FullscreenOverlayProps {
   myCode: string;
@@ -19,6 +21,8 @@ interface FullscreenOverlayProps {
   onToggleDescription: () => void;
   onClose: () => void;
   isSinglePlayerMode?: boolean;
+  onRun?: () => void;
+  submissionProgress: SubmissionProgress;
 }
 
 export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
@@ -39,6 +43,8 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
     onToggleDescription,
     onClose,
     isSinglePlayerMode = false,
+    onRun,
+    submissionProgress,
   }) => {
     const [isResizing, setIsResizing] = useState(false);
     const [fsSplitSizes, setFsSplitSizes] = useState<number[]>([50, 50]);
@@ -61,18 +67,29 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
       <div className="fixed inset-0 z-[9999] flex flex-col">
         <div className="flex-1 flex min-h-0">
           <div
-            className={`transition-all duration-300 overflow-auto border-r ${
+            className={`transition-all duration-300 border-r ${
               isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'
-            }`}
+            } h-full flex flex-col`}
           >
-            <ProblemDetailsPane
-              isExpanded={isDescriptionExpanded}
-              title={problemTitle}
-              description={problemDescription}
-              examples={problemExamples}
-              constraints={problemConstraints}
-              onToggle={onToggleDescription}
-            />
+            <div className="flex-1 min-h-0 overflow-auto">
+              <ProblemDetailsPane
+                isExpanded={isDescriptionExpanded}
+                title={problemTitle}
+                description={problemDescription}
+                examples={problemExamples}
+                constraints={problemConstraints}
+                onToggle={onToggleDescription}
+              />
+            </div>
+
+            {isDescriptionExpanded && (
+              <div className="mt-3 pr-2">
+                <TestCaseDisplay
+                  submissionProgress={submissionProgress}
+                  compact
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex-1 p-2 min-h-0 overflow-hidden">
@@ -88,6 +105,8 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
               showFullscreenButton={true}
               onCodeChange={onCodeChange}
               onFullscreenToggle={onClose}
+              onRun={onRun}
+              runDisabled={false}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               isSinglePlayerMode={isSinglePlayerMode}

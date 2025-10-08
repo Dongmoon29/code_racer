@@ -28,13 +28,15 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
       <div className="rounded-lg overflow-auto p-2 ">
         <div className="px-4 py-2 border-b flex justify-between items-center">
           <span className="font-medium">Problem Details</span>
-          <button
-            onClick={onToggle}
-            className="p-1 hover:text-[hsl(var(--muted-foreground))] rounded-md transition-colors cursor-pointer"
-            title="Minimize"
-          >
-            <Minimize2 className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onToggle}
+              className="p-1 hover:text-[hsl(var(--muted-foreground))] rounded-md transition-colors cursor-pointer"
+              title="Minimize"
+            >
+              <Minimize2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4 p-4">

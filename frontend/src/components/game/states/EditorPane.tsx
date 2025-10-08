@@ -1,5 +1,5 @@
 import React, { FC, memo } from 'react';
-import { Expand, Minimize } from 'lucide-react';
+import { Expand, Minimize, Play } from 'lucide-react';
 import CodeEditor from '../CodeEditor';
 import { useFullscreen } from '@/contexts/FullscreenContext';
 
@@ -14,6 +14,8 @@ interface EditorPaneProps {
   showFullscreenButton?: boolean;
   onChange?: (code: string) => void;
   onFullscreenToggle?: () => void;
+  onRun?: () => void;
+  runDisabled?: boolean;
 }
 
 export const EditorPane: FC<EditorPaneProps> = memo(
@@ -28,6 +30,8 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     showFullscreenButton = false,
     onChange,
     onFullscreenToggle,
+    onRun,
+    runDisabled = false,
   }) => {
     const { isFullscreen } = useFullscreen();
     const headerClass = `bg-[hsl(var(--muted))] px-4 py-2 flex items-center ${
@@ -49,6 +53,20 @@ export const EditorPane: FC<EditorPaneProps> = memo(
             {title}
           </span>
           <div className="flex items-center space-x-2">
+            {onRun && (
+              <button
+                onClick={onRun}
+                disabled={runDisabled}
+                className={`cursor-pointer p-1 rounded-md transition-colors shrink-0 ${
+                  runDisabled
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:text-[hsl(var(--muted-foreground))]'
+                }`}
+                title="Run Submission"
+              >
+                <Play className="w-4 h-4" />
+              </button>
+            )}
             {showFullscreenButton && onFullscreenToggle && (
               <button
                 onClick={onFullscreenToggle}

@@ -1,5 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  Dispatch,
+  SetStateAction,
+} from 'react';
 import { Game, SubmitResult } from '@/types';
+import { SubmissionProgress, TestCaseResult } from '@/types/websocket';
 import {
   GAME_ROOM_CONSTANTS,
   createSessionStorageKey,
@@ -34,6 +42,8 @@ interface UseGameRoomStateReturn {
   setSubmitResult: (result: SubmitResult | null) => void;
   submitting: boolean;
   setSubmitting: (submitting: boolean) => void;
+  submissionProgress: SubmissionProgress;
+  setSubmissionProgress: Dispatch<SetStateAction<SubmissionProgress>>;
 
   // Language and UI state
   selectedLanguage: SupportedLanguage;
@@ -76,6 +86,13 @@ export const useGameRoomState = ({
   // Submission state
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [submissionProgress, setSubmissionProgress] =
+    useState<SubmissionProgress>({
+      isSubmitting: false,
+      totalTestCases: 0,
+      completedTestCases: 0,
+      testCaseResults: [],
+    });
 
   // Language and UI state with session storage initialization
   const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguage>(
@@ -175,6 +192,8 @@ export const useGameRoomState = ({
     setSubmitResult,
     submitting,
     setSubmitting,
+    submissionProgress,
+    setSubmissionProgress,
 
     // Language and UI state
     selectedLanguage,
