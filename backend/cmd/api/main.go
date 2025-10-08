@@ -284,6 +284,6 @@ func startServer(router *gin.Engine, port string) {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal().Err(err).Msg("Server forced to shutdown")
 	}
-
+	//
 	log.Info().Msg("Server exited gracefully")
 }

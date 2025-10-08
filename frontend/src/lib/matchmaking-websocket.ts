@@ -1,6 +1,5 @@
 import { WEBSOCKET_CONSTANTS } from '@/constants';
 import { createErrorHandler } from '@/lib/error-tracking';
-//
 
 export interface MatchingRequest {
   type: 'start_matching';
@@ -193,7 +192,10 @@ export class MatchmakingWebSocketClient {
     }, delay);
   }
 
-  startMatching(difficulty: 'Easy' | 'Medium' | 'Hard', mode: 'casual_pvp' | 'ranked_pvp' | 'single' = 'casual_pvp') {
+  startMatching(
+    difficulty: 'Easy' | 'Medium' | 'Hard',
+    mode: 'casual_pvp' | 'ranked_pvp' | 'single' = 'casual_pvp'
+  ) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error('WebSocket is not connected');
       return;
