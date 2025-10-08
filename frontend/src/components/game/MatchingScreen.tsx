@@ -115,7 +115,15 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(
                   key={m.value}
                   onClick={() => setMode(m.value)}
                   className={`${cardBaseClass} ${
-                    selected ? 'ring-2 ring-emerald-500 ring-offset-2' : ''
+                    selected
+                      ? `ring-2 ${
+                          m.value === 'casual_pvp'
+                            ? 'ring-green-500'
+                            : m.value === 'ranked_pvp'
+                            ? 'ring-yellow-500'
+                            : 'ring-red-500'
+                        }`
+                      : ''
                   }`}
                 >
                   <div className="leading-tight text-center w-full">

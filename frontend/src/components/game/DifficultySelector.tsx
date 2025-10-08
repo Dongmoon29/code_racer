@@ -52,7 +52,15 @@ export const DifficultySelector: FC<DifficultySelectorProps> = ({
             className={
               `rounded-2xl p-4 border w-full h-36 flex flex-col justify-center items-center cursor-pointer ` +
               `bg-[hsl(var(--background))] border-[hsl(var(--border))] ` +
-              (selected ? 'ring-2 ring-offset-2 ring-indigo-500' : '')
+              (selected
+                ? `ring-2 ${
+                    option.value === 'Easy'
+                      ? 'ring-green-500'
+                      : option.value === 'Medium'
+                      ? 'ring-yellow-500'
+                      : 'ring-red-500'
+                  }`
+                : '')
             }
           >
             <div className="text-center">
