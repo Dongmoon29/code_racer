@@ -5,6 +5,7 @@ import { ConnectingCard, ErrorCard, FoundCard } from './MatchingCards';
 import { MATCHING_STATE } from '@/lib/constants';
 import { useMatchmaking } from '@/hooks/useMatchmaking';
 import DifficultySelector, { type Difficulty } from './DifficultySelector';
+import { getRingClasses } from '@/lib/selector-utils';
 
 interface MatchingScreenProps {
   onMatchFound?: (gameId: string) => void;
@@ -114,17 +115,11 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(
                 <button
                   key={m.value}
                   onClick={() => setMode(m.value)}
-                  className={`${cardBaseClass} ${
-                    selected
-                      ? `ring-2 ${
-                          m.value === 'casual_pvp'
-                            ? 'ring-green-500'
-                            : m.value === 'ranked_pvp'
-                            ? 'ring-yellow-500'
-                            : 'ring-red-500'
-                        }`
-                      : ''
-                  }`}
+                  className={`${cardBaseClass} ${getRingClasses(
+                    selected,
+                    m.value,
+                    'mode'
+                  )}`}
                 >
                   <div className="leading-tight text-center w-full">
                     <div className={`text-xl font-bold mb-1 ${m.accent}`}>

@@ -1,4 +1,5 @@
 import React, { FC } from 'react';
+import { getRingClasses } from '@/lib/selector-utils';
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 
@@ -52,15 +53,7 @@ export const DifficultySelector: FC<DifficultySelectorProps> = ({
             className={
               `rounded-2xl p-4 border w-full h-36 flex flex-col justify-center items-center cursor-pointer ` +
               `bg-[hsl(var(--background))] border-[hsl(var(--border))] ` +
-              (selected
-                ? `ring-2 ${
-                    option.value === 'Easy'
-                      ? 'ring-green-500'
-                      : option.value === 'Medium'
-                      ? 'ring-yellow-500'
-                      : 'ring-red-500'
-                  }`
-                : '')
+              getRingClasses(selected, option.value, 'difficulty')
             }
           >
             <div className="text-center">
