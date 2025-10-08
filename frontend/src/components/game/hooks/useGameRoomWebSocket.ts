@@ -218,6 +218,32 @@ export const useGameRoomWebSocket = ({
     });
   }, [setSubmitResult]);
 
+  const handleJudge0TimeoutError = useCallback(
+    (message: WebSocketMessage) => {
+      setSubmitResult({
+        success: false,
+        message:
+          message.message ||
+          'Judge0 API is not responding. Please try again later.',
+        is_winner: false,
+      });
+    },
+    [setSubmitResult]
+  );
+
+  const handleJudge0QuotaError = useCallback(
+    (message: WebSocketMessage) => {
+      setSubmitResult({
+        success: false,
+        message:
+          message.message ||
+          'Judge0 API daily quota exceeded. Please try again tomorrow.',
+        is_winner: false,
+      });
+    },
+    [setSubmitResult]
+  );
+
   // WebSocket message handler
   const handleWebSocketMessage = useCallback(
     (message: WebSocketMessage) => {
@@ -262,6 +288,14 @@ export const useGameRoomWebSocket = ({
           handleError();
           break;
 
+        case WEBSOCKET_MESSAGE_TYPES.JUDGE0_TIMEOUT_ERROR:
+          handleJudge0TimeoutError(message);
+          break;
+
+        case WEBSOCKET_MESSAGE_TYPES.JUDGE0_QUOTA_ERROR:
+          handleJudge0QuotaError(message);
+          break;
+
         default:
           console.log('Unknown message type:', message.type);
       }
@@ -275,6 +309,8 @@ export const useGameRoomWebSocket = ({
       handleSubmissionFailed,
       handleGameFinished,
       handleError,
+      handleJudge0TimeoutError,
+      handleJudge0QuotaError,
     ]
   );
 

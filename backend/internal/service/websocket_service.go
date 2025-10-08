@@ -159,6 +159,7 @@ type WebSocketService interface {
 	InitHub() *Hub
 	HandleConnection(conn *websocket.Conn, userID uuid.UUID, matchID uuid.UUID)
 	BroadcastToMatch(matchID uuid.UUID, message []byte)
+	BroadcastToAllClients(message []byte)
 }
 
 // webSocketService implements WebSocketService interface
@@ -794,6 +795,10 @@ func (s *webSocketService) startClientGoroutines(client *Client) {
 // BroadcastToGame broadcasts a message to all clients in a specific game
 func (s *webSocketService) BroadcastToMatch(matchID uuid.UUID, message []byte) {
 	s.hub.matchBroadcast <- &MatchMessage{matchID: matchID, data: message}
+}
+
+func (s *webSocketService) BroadcastToAllClients(message []byte) {
+	s.hub.broadcastToAllClients(message)
 }
 
 // cleanupUserData cleans up user data from Redis when WebSocket connection is closed

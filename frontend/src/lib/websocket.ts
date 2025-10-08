@@ -10,6 +10,8 @@ export interface WebSocketMessage {
   code?: string;
   winner_id?: string;
   payload?: unknown;
+  message?: string;
+  details?: string;
 }
 
 export interface CodeUpdateMessage extends WebSocketMessage {

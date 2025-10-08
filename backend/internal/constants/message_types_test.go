@@ -18,6 +18,8 @@ func TestMessageTypeConstants(t *testing.T) {
 		{"Valid MatchingStatus", MatchingStatus, true},
 		{"Valid MatchFound", MatchFound, true},
 		{"Valid Error", Error, true},
+		{"Valid Judge0TimeoutError", Judge0TimeoutError, true},
+		{"Valid Judge0QuotaError", Judge0QuotaError, true},
 		{"Invalid message type", "invalid_type", false},
 		{"Empty string", "", false},
 	}
@@ -48,6 +50,8 @@ func TestGetMessageTypeCategory(t *testing.T) {
 		{"MatchingStatus category", MatchingStatus, CategoryMatchmaking},
 		{"MatchFound category", MatchFound, CategoryMatchmaking},
 		{"Error category", Error, CategoryError},
+		{"Judge0TimeoutError category", Judge0TimeoutError, CategoryError},
+		{"Judge0QuotaError category", Judge0QuotaError, CategoryError},
 		{"Invalid message type", "invalid", CategoryError},
 	}
 
@@ -65,7 +69,7 @@ func TestGetAllMessageTypes(t *testing.T) {
 	messageTypes := GetAllMessageTypes()
 
 	// Check that we have the expected number of message types
-	expectedCount := 15
+	expectedCount := 17
 	if len(messageTypes) != expectedCount {
 		t.Errorf("GetAllMessageTypes() returned %d types, expected %d", len(messageTypes), expectedCount)
 	}
@@ -81,16 +85,18 @@ func TestGetAllMessageTypes(t *testing.T) {
 func TestMessageTypeValues(t *testing.T) {
 	// Test that constants have expected values
 	expectedValues := map[string]string{
-		Auth:           "auth",
-		Ping:           "ping",
-		Pong:           "pong",
-		CodeUpdate:     "code_update",
-		GameFinished:   "game_finished",
-		StartMatching:  "start_matching",
-		CancelMatching: "cancel_matching",
-		MatchingStatus: "matching_status",
-		MatchFound:     "match_found",
-		Error:          "error",
+		Auth:               "auth",
+		Ping:               "ping",
+		Pong:               "pong",
+		CodeUpdate:         "code_update",
+		GameFinished:       "game_finished",
+		StartMatching:      "start_matching",
+		CancelMatching:     "cancel_matching",
+		MatchingStatus:     "matching_status",
+		MatchFound:         "match_found",
+		Error:              "error",
+		Judge0TimeoutError: "judge0_timeout_error",
+		Judge0QuotaError:   "judge0_quota_error",
 	}
 
 	for constant, expectedValue := range expectedValues {

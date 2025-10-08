@@ -24,4 +24,5 @@ type Judge0Client interface {
 // WebSocketBroadcaster WebSocket 브로드캐스터 인터페이스
 type WebSocketBroadcaster interface {
 	BroadcastToMatch(matchID uuid.UUID, message []byte)
+	BroadcastToAllClients(message []byte)
 }

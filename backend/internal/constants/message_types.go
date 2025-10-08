@@ -28,6 +28,10 @@ const (
 
 	// Error handling
 	Error = "error"
+
+	// Judge0 specific errors
+	Judge0TimeoutError = "judge0_timeout_error"
+	Judge0QuotaError   = "judge0_quota_error"
 )
 
 // MessageType represents all possible WebSocket message types
@@ -50,6 +54,8 @@ var (
 	MessageTypeMatchingStatus      MessageType = MatchingStatus
 	MessageTypeMatchFound          MessageType = MatchFound
 	MessageTypeError               MessageType = Error
+	MessageTypeJudge0TimeoutError  MessageType = Judge0TimeoutError
+	MessageTypeJudge0QuotaError    MessageType = Judge0QuotaError
 )
 
 // IsValidMessageType checks if the given string is a valid message type
@@ -57,7 +63,8 @@ func IsValidMessageType(msgType string) bool {
 	switch msgType {
 	case Auth, Ping, Pong, CodeUpdate, GameFinished,
 		SubmissionStarted, TestCaseRunning, TestCaseCompleted, SubmissionCompleted, SubmissionFailed,
-		StartMatching, CancelMatching, MatchingStatus, MatchFound, Error:
+		StartMatching, CancelMatching, MatchingStatus, MatchFound, Error,
+		Judge0TimeoutError, Judge0QuotaError:
 		return true
 	default:
 		return false
@@ -82,6 +89,8 @@ func GetAllMessageTypes() []MessageType {
 		MessageTypeMatchingStatus,
 		MessageTypeMatchFound,
 		MessageTypeError,
+		MessageTypeJudge0TimeoutError,
+		MessageTypeJudge0QuotaError,
 	}
 }
 
@@ -107,7 +116,7 @@ func GetMessageTypeCategory(msgType string) MessageTypeCategory {
 		return CategoryGame
 	case StartMatching, CancelMatching, MatchingStatus, MatchFound:
 		return CategoryMatchmaking
-	case Error:
+	case Error, Judge0TimeoutError, Judge0QuotaError:
 		return CategoryError
 	default:
 		return CategoryError

@@ -27,6 +27,10 @@ export const WEBSOCKET_MESSAGE_TYPES = {
 
   // Error handling
   ERROR: 'error',
+
+  // Judge0 specific errors
+  JUDGE0_TIMEOUT_ERROR: 'judge0_timeout_error',
+  JUDGE0_QUOTA_ERROR: 'judge0_quota_error',
 } as const;
 
 // Type for WebSocket message types

@@ -92,6 +92,10 @@ func (m *MockWebSocketService) BroadcastToMatch(matchID uuid.UUID, message []byt
 	m.Called(matchID, message)
 }
 
+func (m *MockWebSocketService) BroadcastToAllClients(message []byte) {
+	m.Called(message)
+}
+
 // setupWebSocketTest performs setup configuration for WebSocket tests
 func setupWebSocketTest() (*gin.Engine, *MockWebSocketService, *WebSocketController) {
 	gin.SetMode(gin.TestMode)

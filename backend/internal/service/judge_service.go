@@ -177,6 +177,9 @@ func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expecte
 				Str("error_type", "judge0_quota_exceeded").
 				Int("languageID", languageID).
 				Msg("Judge0 quota exceeded")
+			s.sendJudge0QuotaError()
+		} else if strings.Contains(errorMessage.Error(), "context deadline exceeded") || strings.Contains(errorMessage.Error(), "timeout") {
+			s.sendJudge0TimeoutError()
 		}
 		return nil, errorMessage
 	}
@@ -413,6 +416,12 @@ func (s *judgeService) submitSingle(wrappedCode string, languageID int, expected
 	response, err := s.judge0Client.SubmitCode(request)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Judge0 API request failed")
+
+		// Check if it's a timeout error and send WebSocket notification
+		if strings.Contains(err.Error(), "context deadline exceeded") || strings.Contains(err.Error(), "timeout") {
+			s.sendJudge0TimeoutError()
+		}
+
 		return nil, &types.TestCaseResult{TestCaseIndex: index, Passed: false, ErrorMessage: fmt.Sprintf("Judge0 API error: %v", err)}
 	}
 	s.logger.Debug().Int("testCaseIndex", index).Interface("response", response).Msg("Received Judge0 API response")
@@ -607,19 +616,6 @@ func (s *judgeService) getFinalResultMessage(result *types.EvaluationResult) str
 	return fmt.Sprintf("%d/%d test cases passed.", s.countPassedTests(result.TestResults), len(result.TestResults))
 }
 
-// tryBatchEvaluateWithRealtime Batch evaluation with real-time notifications
-func (s *judgeService) tryBatchEvaluateWithRealtime(code string, languageID int, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, bool, error) {
-	// Use existing tryBatchEvaluate logic but add real-time notification simulation
-	result, success, err := s.tryBatchEvaluate(code, languageID, problem)
-
-	if success && err == nil {
-		// Simulate individual test cases when batch evaluation succeeds
-		s.simulateBatchProgress(matchID, userID, problem.TestCases)
-	}
-
-	return result, success, err
-}
-
 // aggregatePerTestWithRealtime Individual evaluation with real-time notifications
 func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
 	var testCaseResults []types.TestCaseResult
@@ -661,16 +657,42 @@ func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int,
 	}, nil
 }
 
-// simulateBatchProgress Simulate individual test cases when batch evaluation succeeds
-func (s *judgeService) simulateBatchProgress(matchID uuid.UUID, userID uuid.UUID, testCases []model.TestCase) {
-	for i, testCase := range testCases {
-		s.notifyTestCaseRunning(matchID, userID, testCase, i, len(testCases))
-		time.Sleep(200 * time.Millisecond) // Simulation delay
-		s.notifyTestCaseCompleted(matchID, userID, testCase, i, &types.TestCaseResult{
-			TestCaseIndex: i,
-			Passed:        true, // Assume all tests pass when batch evaluation succeeds
-			ExecutionTime: 1.0,
-			MemoryUsage:   1000,
-		})
+// sendJudge0TimeoutError sends a timeout error message via WebSocket
+func (s *judgeService) sendJudge0TimeoutError() {
+	if s.wsBroadcaster == nil {
+		return
+	}
+
+	errorMsg := map[string]interface{}{
+		"type":    constants.Judge0TimeoutError,
+		"message": "Judge0 API is not responding. Please try again later.",
+		"details": "Temporary issue with the code execution service.",
+	}
+
+	if msgBytes, err := json.Marshal(errorMsg); err == nil {
+		s.wsBroadcaster.BroadcastToAllClients(msgBytes)
+		s.logger.Info().Msg("Judge0 timeout error message sent via WebSocket")
+	} else {
+		s.logger.Error().Err(err).Msg("Failed to marshal Judge0 timeout error message")
+	}
+}
+
+// sendJudge0QuotaError sends a quota exceeded error message via WebSocket
+func (s *judgeService) sendJudge0QuotaError() {
+	if s.wsBroadcaster == nil {
+		return
+	}
+
+	errorMsg := map[string]interface{}{
+		"type":    constants.Judge0QuotaError,
+		"message": "Judge0 API daily quota exceeded. Please try again tomorrow.",
+		"details": "The code execution service has reached its daily usage limit.",
+	}
+
+	if msgBytes, err := json.Marshal(errorMsg); err == nil {
+		s.wsBroadcaster.BroadcastToAllClients(msgBytes)
+		s.logger.Info().Msg("Judge0 quota error message sent via WebSocket")
+	} else {
+		s.logger.Error().Err(err).Msg("Failed to marshal Judge0 quota error message")
 	}
 }
