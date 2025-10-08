@@ -198,7 +198,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         }
       }
     }
-  }, [value]);
+  }, [value, readOnly]);
 
   // Debounced layout on resize end to reduce jank
   useEffect(() => {

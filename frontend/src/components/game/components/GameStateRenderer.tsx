@@ -43,8 +43,6 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
     onCodeChange,
     onLanguageChange,
     onSubmitCode,
-    onToggleMyCode,
-    onToggleOpponentCode,
   }) => {
     const router = useRouter();
     const routerHelper = useRouterHelper(router);
@@ -91,8 +89,6 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
             onCodeChange={onCodeChange}
             onLanguageChange={onLanguageChange}
             onSubmitCode={onSubmitCode}
-            onToggleMyCode={onToggleMyCode}
-            onToggleOpponentCode={onToggleOpponentCode}
           />
         );
 

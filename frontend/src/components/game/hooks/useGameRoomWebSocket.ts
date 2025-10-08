@@ -228,7 +228,15 @@ export const useGameRoomWebSocket = ({
           console.log('Unknown message type:', message.type);
       }
     },
-    [setOpponentCode, setSubmitResult, currentUser?.id, refetchGame]
+    [
+      setOpponentCode,
+      setSubmitResult,
+      setSubmitting,
+      setSubmissionProgress,
+      currentUser?.id,
+      refetchGame,
+      game?.leetcode?.test_cases?.length,
+    ]
   );
 
   // WebSocket connection setup

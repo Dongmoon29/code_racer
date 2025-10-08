@@ -7,7 +7,7 @@ import {
   SetStateAction,
 } from 'react';
 import { Game, SubmitResult } from '@/types';
-import { SubmissionProgress, TestCaseResult } from '@/types/websocket';
+import { SubmissionProgress } from '@/types/websocket';
 import {
   GAME_ROOM_CONSTANTS,
   createSessionStorageKey,

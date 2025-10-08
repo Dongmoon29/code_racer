@@ -5,7 +5,6 @@ import { Game, SubmitResult } from '@/types';
 import { SubmissionProgress } from '@/types/websocket';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/alert';
 import { ProblemDetailsPane } from './ProblemDetailsPane';
 import { FullscreenOverlay } from './FullscreenOverlay';
 import { LeetCodeEditorSplit } from './CodeEditorSplitProps';
@@ -26,8 +25,6 @@ interface PlayingGameProps {
   onCodeChange: (code: string) => void;
   onLanguageChange: (language: 'python' | 'javascript' | 'go') => void;
   onSubmitCode: () => void;
-  onToggleMyCode: () => void;
-  onToggleOpponentCode: () => void;
 }
 
 export const PlayingGame: FC<PlayingGameProps> = memo(
@@ -37,7 +34,6 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
     opponentCode,
     opponentName,
     selectedLanguage,
-    submitResult,
     submitting,
     submissionProgress,
     onCodeChange,
