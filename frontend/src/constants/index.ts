@@ -22,6 +22,9 @@ export const LANGUAGE_EXTENSIONS = {
   [SUPPORTED_LANGUAGES.GO]: 'go',
 } as const;
 
+// Import WebSocket message types from dedicated file
+import { WEBSOCKET_MESSAGE_TYPES } from './websocket';
+
 // WebSocket related constants
 export const WEBSOCKET_CONSTANTS = {
   // Connection settings
@@ -62,19 +65,8 @@ export const WEBSOCKET_CONSTANTS = {
     TLS_HANDSHAKE: 1015,
   },
 
-  // Message types
-  MESSAGE_TYPES: {
-    AUTH: 'auth',
-    PING: 'ping',
-    PONG: 'pong',
-    CODE_UPDATE: 'code_update',
-    START_MATCHING: 'start_matching',
-    CANCEL_MATCHING: 'cancel_matching',
-    MATCHING_STATUS: 'matching_status',
-    MATCH_FOUND: 'match_found',
-    GAME_FINISHED: 'game_finished',
-    ERROR: 'error',
-  },
+  // Message types (re-exported from websocket constants)
+  MESSAGE_TYPES: WEBSOCKET_MESSAGE_TYPES,
 
   // Matching statuses
   MATCHING_STATUSES: {

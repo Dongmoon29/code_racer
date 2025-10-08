@@ -1,18 +1,19 @@
 import { WEBSOCKET_CONSTANTS } from '@/constants';
+import { WEBSOCKET_MESSAGE_TYPES } from '@/constants/websocket';
 import { createErrorHandler } from '@/lib/error-tracking';
 
 export interface MatchingRequest {
-  type: 'start_matching';
+  type: typeof WEBSOCKET_MESSAGE_TYPES.START_MATCHING;
   difficulty: 'Easy' | 'Medium' | 'Hard';
   mode: 'casual_pvp' | 'ranked_pvp' | 'single';
 }
 
 export interface CancelRequest {
-  type: 'cancel_matching';
+  type: typeof WEBSOCKET_MESSAGE_TYPES.CANCEL_MATCHING;
 }
 
 export interface MatchingStatusMessage {
-  type: 'matching_status';
+  type: typeof WEBSOCKET_MESSAGE_TYPES.MATCHING_STATUS;
   status: 'searching' | 'found' | 'canceled';
   queue_position?: number;
   wait_time_seconds?: number;
@@ -20,7 +21,7 @@ export interface MatchingStatusMessage {
 }
 
 export interface MatchFoundMessage {
-  type: 'match_found';
+  type: typeof WEBSOCKET_MESSAGE_TYPES.MATCH_FOUND;
   game_id: string;
   problem: {
     id: string;
@@ -149,7 +150,7 @@ export class MatchmakingWebSocketClient {
   private handleMessage(message: MatchingWebSocketMessage) {
     console.log('🎯 Handling message type:', message.type);
     switch (message.type) {
-      case 'matching_status':
+      case WEBSOCKET_MESSAGE_TYPES.MATCHING_STATUS:
         console.log('📊 Matching status update:', message);
         this.callbacks.onStatusUpdate?.(message);
 
@@ -160,7 +161,7 @@ export class MatchmakingWebSocketClient {
           }, WEBSOCKET_CONSTANTS.MATCHMAKING.CANCEL_DISCONNECT_DELAY_MS);
         }
         break;
-      case 'match_found':
+      case WEBSOCKET_MESSAGE_TYPES.MATCH_FOUND:
         console.log('🎉 Match found!:', message);
         this.callbacks.onMatchFound?.(message);
         break;
@@ -202,7 +203,7 @@ export class MatchmakingWebSocketClient {
     }
 
     const message: MatchingRequest = {
-      type: 'start_matching',
+      type: WEBSOCKET_MESSAGE_TYPES.START_MATCHING,
       difficulty,
       mode,
     };
@@ -222,7 +223,7 @@ export class MatchmakingWebSocketClient {
     }
 
     const message: CancelRequest = {
-      type: 'cancel_matching',
+      type: WEBSOCKET_MESSAGE_TYPES.CANCEL_MATCHING,
     };
 
     this.ws.send(JSON.stringify(message));

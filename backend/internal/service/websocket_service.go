@@ -579,7 +579,7 @@ func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, match interf
 
 	// Create detailed match found messages
 	matchMsg1 := MatchFoundMessage{
-		Type:   "match_found",
+		Type:   constants.MatchFound,
 		GameID: actualMatch.ID.String(),
 		Problem: map[string]interface{}{
 			"id":          actualMatch.LeetCode.ID.String(),
@@ -594,7 +594,7 @@ func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, match interf
 	}
 
 	matchMsg2 := MatchFoundMessage{
-		Type:   "match_found",
+		Type:   constants.MatchFound,
 		GameID: actualMatch.ID.String(),
 		Problem: map[string]interface{}{
 			"id":          actualMatch.LeetCode.ID.String(),

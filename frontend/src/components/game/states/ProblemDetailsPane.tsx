@@ -1,5 +1,6 @@
 import React, { FC, memo } from 'react';
 import { FileText, Minimize2 } from 'lucide-react';
+import { useFullscreen } from '@/contexts/FullscreenContext';
 
 interface ProblemDetailsPaneProps {
   isExpanded: boolean;
@@ -12,6 +13,7 @@ interface ProblemDetailsPaneProps {
 
 export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
   ({ isExpanded, description, examples, constraints, onToggle }) => {
+    const { isFullscreen } = useFullscreen();
     if (!isExpanded) {
       return (
         <button
@@ -25,7 +27,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
     }
 
     return (
-      <div className={`rounded-lg overflow-auto ${isExpanded ? 'p-3' : ''}`}>
+      <div className={`rounded-lg overflow-auto ${isFullscreen ? 'p-3' : ''}`}>
         <div className="py-2 border-b flex justify-between items-center">
           <span className="font-medium">Problem Details</span>
           <div className="flex items-center gap-2">

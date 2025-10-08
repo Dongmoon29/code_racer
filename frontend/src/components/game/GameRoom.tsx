@@ -35,10 +35,6 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     setSubmissionProgress,
     selectedLanguage,
     setSelectedLanguage,
-    showMyCode,
-    setShowMyCode,
-    showOpponentCode,
-    setShowOpponentCode,
     isTemplateSet,
   } = useGameRoomState({ matchId });
 
@@ -161,16 +157,14 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       myCode={myCode}
       opponentCode={isSinglePlayerMode ? '' : opponentCode}
       selectedLanguage={selectedLanguage}
-      showMyCode={showMyCode}
-      showOpponentCode={isSinglePlayerMode ? false : showOpponentCode}
       submitResult={submitResult}
       submitting={submitting}
       submissionProgress={submissionProgress}
       onCodeChange={handleCodeChange}
       onLanguageChange={handleLanguageChange}
       onSubmitCode={handleSubmitCode}
-      onToggleMyCode={() => setShowMyCode(!showMyCode)}
-      onToggleOpponentCode={() => setShowOpponentCode(!showOpponentCode)}
+      onToggleMyCode={() => {}}
+      onToggleOpponentCode={() => {}}
     />
   );
 };

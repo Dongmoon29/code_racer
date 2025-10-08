@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 
 export const ConnectingCard: React.FC = () => (
   <div className="max-w-2xl mx-auto p-6">
-    <Card>
+    <Card className="bg-none">
       <CardContent className="p-8 text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
         <h2 className="text-xl font-semibold mb-2">

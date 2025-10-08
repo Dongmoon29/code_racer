@@ -218,7 +218,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     <div className="w-full h-full flex flex-col">
       <div
         ref={editorRef}
-        className="flex-1 overflow-auto relative"
+        className="flex-1 overflow-auto relative font-medium"
         style={{ willChange: isResizing ? 'auto' : 'contents' }}
       />
     </div>

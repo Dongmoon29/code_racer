@@ -13,6 +13,7 @@ import {
   TestCaseDetailMessage,
   SubmissionStatusMessage,
 } from '@/types/websocket';
+import { WEBSOCKET_MESSAGE_TYPES } from '@/constants/websocket';
 
 interface UseGameRoomWebSocketProps {
   matchId: string;
@@ -30,6 +31,12 @@ interface UseGameRoomWebSocketProps {
   >;
   refetchGame: () => void;
 }
+
+// Helper function to unwrap WebSocket messages
+const unwrapMessage = <T>(message: WebSocketMessage): T => {
+  const raw = message as unknown as { data?: unknown; payload?: unknown };
+  return (raw.data || raw.payload || message) as T;
+};
 
 export const useGameRoomWebSocket = ({
   matchId,
@@ -58,170 +65,201 @@ export const useGameRoomWebSocket = ({
     }
   }, [game?.leetcode, isTemplateSet, myCode, selectedLanguage, setMyCode]);
 
+  // Message type handlers
+  const handleCodeUpdate = useCallback(
+    (message: CodeUpdateMessage) => {
+      if (message.code !== undefined) {
+        // Only update opponent code if the message is from a different user
+        if (message.user_id !== currentUser?.id) {
+          setOpponentCode(message.code);
+        }
+      }
+    },
+    [currentUser?.id, setOpponentCode]
+  );
+
+  const handleSubmissionStarted = useCallback(
+    (message: SubmissionStatusMessage) => {
+      // Only reflect my own submission progress in my UI
+      if (message.user_id !== currentUser?.id) return;
+
+      setSubmitting(true);
+      setSubmissionProgress({
+        isSubmitting: true,
+        totalTestCases:
+          message.total_test_cases || game?.leetcode?.test_cases?.length || 0,
+        completedTestCases: 0,
+        testCaseResults: Array.from({
+          length:
+            message.total_test_cases || game?.leetcode?.test_cases?.length || 0,
+        }).map((_, i) => ({
+          index: i,
+          input: undefined,
+          expectedOutput: undefined,
+          status: 'pending',
+        })),
+        statusMessage: 'Evaluating Solution...',
+      });
+    },
+    [
+      currentUser?.id,
+      setSubmitting,
+      setSubmissionProgress,
+      game?.leetcode?.test_cases?.length,
+    ]
+  );
+
+  const handleTestCaseRunning = useCallback(
+    (message: TestCaseDetailMessage) => {
+      if (message.user_id !== currentUser?.id) return;
+
+      setSubmissionProgress((prev: SubmissionProgress) => {
+        const next = { ...prev };
+        const list = [...prev.testCaseResults];
+        list[message.test_case_index] = {
+          index: message.test_case_index,
+          input: message.input,
+          expectedOutput: message.expected_output,
+          status: 'running',
+        };
+        next.testCaseResults = list;
+        return next;
+      });
+    },
+    [currentUser?.id, setSubmissionProgress]
+  );
+
+  const handleTestCaseCompleted = useCallback(
+    (message: TestCaseDetailMessage) => {
+      if (message.user_id !== currentUser?.id) return;
+
+      setSubmissionProgress((prev: SubmissionProgress) => {
+        const next = { ...prev };
+        const list = [...prev.testCaseResults];
+        list[message.test_case_index] = {
+          index: message.test_case_index,
+          input: message.input,
+          expectedOutput: message.expected_output,
+          actualOutput: message.actual_output,
+          passed: message.passed,
+          status: 'completed',
+          executionTime: message.execution_time,
+          memoryUsage: message.memory_usage,
+        };
+        next.testCaseResults = list;
+        next.completedTestCases = Math.min(
+          prev.completedTestCases + 1,
+          prev.totalTestCases
+        );
+        return next;
+      });
+    },
+    [currentUser?.id, setSubmissionProgress]
+  );
+
+  const handleSubmissionCompleted = useCallback(
+    (message: SubmissionStatusMessage) => {
+      if (message.user_id !== currentUser?.id) return;
+
+      setSubmitting(false);
+      setSubmissionProgress((prev: SubmissionProgress) => ({
+        ...prev,
+        isSubmitting: false,
+        overallPassed: message.passed,
+        executionTime: message.execution_time,
+        memoryUsage: message.memory_usage,
+        statusMessage: message.passed
+          ? 'All test cases passed!'
+          : 'Some test cases failed.',
+      }));
+    },
+    [currentUser?.id, setSubmitting, setSubmissionProgress]
+  );
+
+  const handleSubmissionFailed = useCallback(
+    (message: SubmissionStatusMessage) => {
+      if (message.user_id !== currentUser?.id) return;
+
+      setSubmitting(false);
+      setSubmissionProgress((prev: SubmissionProgress) => ({
+        ...prev,
+        isSubmitting: false,
+        statusMessage: 'Submission failed.',
+      }));
+      setSubmitResult({
+        success: false,
+        message: 'Submission failed.',
+        is_winner: false,
+      });
+    },
+    [currentUser?.id, setSubmitting, setSubmissionProgress, setSubmitResult]
+  );
+
+  const handleGameFinished = useCallback(
+    (message: WebSocketMessage) => {
+      if (message.winner_id) {
+        setSubmitResult({
+          success: true,
+          message: 'Game finished!',
+          is_winner: false, // This will be determined by the actual game logic
+        });
+        // Refresh game data so status becomes 'finished' and UI renders FinishedGame
+        refetchGame();
+      }
+    },
+    [setSubmitResult, refetchGame]
+  );
+
+  const handleError = useCallback(() => {
+    setSubmitResult({
+      success: false,
+      message: 'An error occurred during the game.',
+      is_winner: false,
+    });
+  }, [setSubmitResult]);
+
   // WebSocket message handler
   const handleWebSocketMessage = useCallback(
     (message: WebSocketMessage) => {
       switch (message.type) {
-        case 'code_update':
-          const codeUpdateMessage = message as CodeUpdateMessage;
-          if (codeUpdateMessage.code !== undefined) {
-            // Only update opponent code if the message is from a different user
-            if (codeUpdateMessage.user_id !== currentUser?.id) {
-              setOpponentCode(codeUpdateMessage.code);
-            }
-          }
+        case WEBSOCKET_MESSAGE_TYPES.CODE_UPDATE:
+          handleCodeUpdate(message as CodeUpdateMessage);
           break;
 
-        case 'submission_started': {
-          const raw = message as unknown as {
-            data?: unknown;
-            payload?: unknown;
-          };
-          const m = (raw.data ||
-            raw.payload ||
-            message) as SubmissionStatusMessage;
-          // Only reflect my own submission progress in my UI
-          if (m.user_id !== currentUser?.id) break;
-          setSubmitting(true);
-          setSubmissionProgress({
-            isSubmitting: true,
-            totalTestCases:
-              m.total_test_cases || game?.leetcode?.test_cases?.length || 0,
-            completedTestCases: 0,
-            testCaseResults: Array.from({
-              length:
-                m.total_test_cases || game?.leetcode?.test_cases?.length || 0,
-            }).map((_, i) => ({
-              index: i,
-              input: undefined,
-              expectedOutput: undefined,
-              status: 'pending',
-            })),
-            statusMessage: 'Evaluating Solution...',
-          });
-          break;
-        }
-
-        case 'test_case_running': {
-          const raw = message as unknown as {
-            data?: unknown;
-            payload?: unknown;
-          };
-          const m = (raw.data ||
-            raw.payload ||
-            message) as TestCaseDetailMessage;
-          if (m.user_id !== currentUser?.id) break;
-          setSubmissionProgress((prev: SubmissionProgress) => {
-            const next = { ...prev };
-            const list = [...prev.testCaseResults];
-            list[m.test_case_index] = {
-              index: m.test_case_index,
-              input: m.input,
-              expectedOutput: m.expected_output,
-              status: 'running',
-            };
-            next.testCaseResults = list;
-            return next;
-          });
-          break;
-        }
-
-        case 'test_case_completed': {
-          const raw = message as unknown as {
-            data?: unknown;
-            payload?: unknown;
-          };
-          const m = (raw.data ||
-            raw.payload ||
-            message) as TestCaseDetailMessage;
-          if (m.user_id !== currentUser?.id) break;
-          setSubmissionProgress((prev: SubmissionProgress) => {
-            const next = { ...prev };
-            const list = [...prev.testCaseResults];
-            list[m.test_case_index] = {
-              index: m.test_case_index,
-              input: m.input,
-              expectedOutput: m.expected_output,
-              actualOutput: m.actual_output,
-              passed: m.passed,
-              status: 'completed',
-              executionTime: m.execution_time,
-              memoryUsage: m.memory_usage,
-            };
-            next.testCaseResults = list;
-            next.completedTestCases = Math.min(
-              prev.completedTestCases + 1,
-              prev.totalTestCases
-            );
-            return next;
-          });
-          break;
-        }
-
-        case 'submission_completed': {
-          const raw = message as unknown as {
-            data?: unknown;
-            payload?: unknown;
-          };
-          const m = (raw.data ||
-            raw.payload ||
-            message) as SubmissionStatusMessage;
-          if (m.user_id !== currentUser?.id) break;
-          setSubmitting(false);
-          setSubmissionProgress((prev: SubmissionProgress) => ({
-            ...prev,
-            isSubmitting: false,
-            overallPassed: m.passed,
-            executionTime: m.execution_time,
-            memoryUsage: m.memory_usage,
-            statusMessage: m.passed
-              ? 'All test cases passed!'
-              : 'Some test cases failed.',
-          }));
-          break;
-        }
-
-        case 'submission_failed': {
-          const raw = message as unknown as {
-            data?: unknown;
-            payload?: unknown;
-          };
-          const m = (raw.data ||
-            raw.payload ||
-            message) as SubmissionStatusMessage;
-          if (m.user_id !== currentUser?.id) break;
-          setSubmitting(false);
-          setSubmissionProgress((prev: SubmissionProgress) => ({
-            ...prev,
-            isSubmitting: false,
-            statusMessage: 'Submission failed.',
-          }));
-          setSubmitResult({
-            success: false,
-            message: 'Submission failed.',
-            is_winner: false,
-          });
-          break;
-        }
-
-        case 'game_finished':
-          if (message.winner_id) {
-            setSubmitResult({
-              success: true,
-              message: 'Game finished!',
-              is_winner: false, // This will be determined by the actual game logic
-            });
-            // Refresh game data so status becomes 'finished' and UI renders FinishedGame
-            refetchGame();
-          }
+        case WEBSOCKET_MESSAGE_TYPES.SUBMISSION_STARTED:
+          handleSubmissionStarted(
+            unwrapMessage<SubmissionStatusMessage>(message)
+          );
           break;
 
-        case 'error':
-          setSubmitResult({
-            success: false,
-            message: 'An error occurred during the game.',
-            is_winner: false,
-          });
+        case WEBSOCKET_MESSAGE_TYPES.TEST_CASE_RUNNING:
+          handleTestCaseRunning(unwrapMessage<TestCaseDetailMessage>(message));
+          break;
+
+        case WEBSOCKET_MESSAGE_TYPES.TEST_CASE_COMPLETED:
+          handleTestCaseCompleted(
+            unwrapMessage<TestCaseDetailMessage>(message)
+          );
+          break;
+
+        case WEBSOCKET_MESSAGE_TYPES.SUBMISSION_COMPLETED:
+          handleSubmissionCompleted(
+            unwrapMessage<SubmissionStatusMessage>(message)
+          );
+          break;
+
+        case WEBSOCKET_MESSAGE_TYPES.SUBMISSION_FAILED:
+          handleSubmissionFailed(
+            unwrapMessage<SubmissionStatusMessage>(message)
+          );
+          break;
+
+        case WEBSOCKET_MESSAGE_TYPES.GAME_FINISHED:
+          handleGameFinished(message);
+          break;
+
+        case WEBSOCKET_MESSAGE_TYPES.ERROR:
+          handleError();
           break;
 
         default:
@@ -229,13 +267,14 @@ export const useGameRoomWebSocket = ({
       }
     },
     [
-      setOpponentCode,
-      setSubmitResult,
-      setSubmitting,
-      setSubmissionProgress,
-      currentUser?.id,
-      refetchGame,
-      game?.leetcode?.test_cases?.length,
+      handleCodeUpdate,
+      handleSubmissionStarted,
+      handleTestCaseRunning,
+      handleTestCaseCompleted,
+      handleSubmissionCompleted,
+      handleSubmissionFailed,
+      handleGameFinished,
+      handleError,
     ]
   );
 
@@ -243,14 +282,9 @@ export const useGameRoomWebSocket = ({
   useEffect(() => {
     if (!game) return;
 
-    // Security: No longer check localStorage for token
-    // Authentication is handled via httpOnly cookies
-
     const wsClient = new WebSocketClient(matchId);
 
     wsClient.addMessageHandler(handleWebSocketMessage);
-
-    // Error handler is handled internally by WebSocketClient, no separate setup needed
 
     wsRef.current = wsClient;
 

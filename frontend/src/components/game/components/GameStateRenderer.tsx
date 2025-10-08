@@ -16,8 +16,6 @@ interface GameStateRendererProps {
   myCode: string;
   opponentCode: string;
   selectedLanguage: SupportedLanguage;
-  showMyCode: boolean;
-  showOpponentCode: boolean;
   submitResult: SubmitResult | null;
   submitting: boolean;
   submissionProgress: SubmissionProgress;
@@ -35,8 +33,6 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
     myCode,
     opponentCode,
     selectedLanguage,
-    showMyCode,
-    showOpponentCode,
     submitResult,
     submitting,
     submissionProgress,
@@ -81,8 +77,6 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
             opponentCode={opponentCode}
             opponentName={getOpponentName()}
             selectedLanguage={selectedLanguage}
-            showMyCode={showMyCode}
-            showOpponentCode={showOpponentCode}
             submitResult={submitResult}
             submitting={submitting}
             submissionProgress={submissionProgress}

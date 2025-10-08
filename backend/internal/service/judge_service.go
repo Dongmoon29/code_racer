@@ -470,9 +470,9 @@ func mustJSON(v interface{}) []byte {
 	return b
 }
 
-// EvaluateCodeWithRealtime 실시간 알림이 포함된 코드 평가 (per-test 전용)
+// EvaluateCodeWithRealtime Code evaluation with real-time notifications (per-test only)
 func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
-	// 1. 제출 시작 알림 (총 테스트 케이스 포함)
+	// 1. Submission start notification (including total test cases)
 	s.notifySubmissionStarted(matchID, userID, len(problem.TestCases))
 
 	if err := s.ensureFunctionNameMatches(code, language, problem.FunctionName); err != nil {
@@ -486,7 +486,7 @@ func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, pr
 		return nil, fmt.Errorf("failed to get language ID: %w", err)
 	}
 
-	// 2. 개별 평가만 수행 (배치 경로 비활성화)
+	// 2. Perform individual evaluation only (batch path disabled)
 	perTestEvaluationResult, perTestEvaluationError := s.aggregatePerTestWithRealtime(code, languageID, problem, matchID, userID)
 	if perTestEvaluationError == nil && perTestEvaluationResult != nil {
 		s.notifySubmissionCompleted(matchID, userID, perTestEvaluationResult)
@@ -496,7 +496,7 @@ func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, pr
 	return perTestEvaluationResult, perTestEvaluationError
 }
 
-// notifySubmissionStarted 제출 시작 알림
+// notifySubmissionStarted Submission start notification
 func (s *judgeService) notifySubmissionStarted(matchID uuid.UUID, userID uuid.UUID, totalTestCases int) {
 	msg := model.SubmissionStatusMessage{
 		Type:           constants.SubmissionStarted,
@@ -504,13 +504,13 @@ func (s *judgeService) notifySubmissionStarted(matchID uuid.UUID, userID uuid.UU
 		UserID:         userID.String(),
 		Status:         "started",
 		TotalTestCases: &totalTestCases,
-		Message:        "코드 제출이 시작되었습니다...",
+		Message:        "Code submission started...",
 		Timestamp:      s.getCurrentTimestamp(),
 	}
 	s.broadcastToMatch(matchID, msg)
 }
 
-// notifyTestCaseRunning 테스트 케이스 실행 중 알림
+// notifyTestCaseRunning Test case running notification
 func (s *judgeService) notifyTestCaseRunning(matchID uuid.UUID, userID uuid.UUID, testCase model.TestCase, testCaseIndex int, totalTestCases int) {
 	msg := model.TestCaseDetailMessage{
 		Type:           constants.TestCaseRunning,
@@ -526,9 +526,9 @@ func (s *judgeService) notifyTestCaseRunning(matchID uuid.UUID, userID uuid.UUID
 	s.broadcastToMatch(matchID, msg)
 }
 
-// notifyTestCaseCompleted 테스트 케이스 완료 알림
+// notifyTestCaseCompleted Test case completion notification
 func (s *judgeService) notifyTestCaseCompleted(matchID uuid.UUID, userID uuid.UUID, testCase model.TestCase, testCaseIndex int, result *types.TestCaseResult) {
-	// 실제 출력값 파싱
+	// Parse actual output value
 	var actualOutput interface{}
 	if result.Actual != "" {
 		json.Unmarshal([]byte(result.Actual), &actualOutput)
@@ -539,7 +539,7 @@ func (s *judgeService) notifyTestCaseCompleted(matchID uuid.UUID, userID uuid.UU
 		MatchID:        matchID.String(),
 		UserID:         userID.String(),
 		TestCaseIndex:  testCaseIndex,
-		TotalTestCases: 0, // 이 값은 호출하는 곳에서 설정해야 함
+		TotalTestCases: 0, // This value should be set by the caller
 		Status:         "completed",
 		Input:          testCase.Input,
 		ExpectedOutput: testCase.Output,
@@ -552,7 +552,7 @@ func (s *judgeService) notifyTestCaseCompleted(matchID uuid.UUID, userID uuid.UU
 	s.broadcastToMatch(matchID, msg)
 }
 
-// notifySubmissionCompleted 제출 완료 알림
+// notifySubmissionCompleted Submission completion notification
 func (s *judgeService) notifySubmissionCompleted(matchID uuid.UUID, userID uuid.UUID, result *types.EvaluationResult) {
 	passedTestCases := s.countPassedTests(result.TestResults)
 	totalTestCases := len(result.TestResults)
@@ -573,20 +573,20 @@ func (s *judgeService) notifySubmissionCompleted(matchID uuid.UUID, userID uuid.
 	s.broadcastToMatch(matchID, msg)
 }
 
-// notifySubmissionFailed 제출 실패 알림
+// notifySubmissionFailed Submission failure notification
 func (s *judgeService) notifySubmissionFailed(matchID uuid.UUID, userID uuid.UUID, errorMessage string) {
 	msg := model.SubmissionStatusMessage{
 		Type:      constants.SubmissionFailed,
 		MatchID:   matchID.String(),
 		UserID:    userID.String(),
 		Status:    "failed",
-		Message:   fmt.Sprintf("제출 실패: %s", errorMessage),
+		Message:   fmt.Sprintf("Submission failed: %s", errorMessage),
 		Timestamp: s.getCurrentTimestamp(),
 	}
 	s.broadcastToMatch(matchID, msg)
 }
 
-// broadcastToMatch 매치에 메시지 브로드캐스트
+// broadcastToMatch Broadcast message to match
 func (s *judgeService) broadcastToMatch(matchID uuid.UUID, message interface{}) {
 	if s.wsBroadcaster != nil {
 		msgBytes, _ := json.Marshal(message)
@@ -594,33 +594,33 @@ func (s *judgeService) broadcastToMatch(matchID uuid.UUID, message interface{}) 
 	}
 }
 
-// getCurrentTimestamp 현재 타임스탬프 반환
+// getCurrentTimestamp Get current timestamp
 func (s *judgeService) getCurrentTimestamp() int64 {
 	return time.Now().Unix()
 }
 
-// getFinalResultMessage 최종 결과 메시지 생성
+// getFinalResultMessage Generate final result message
 func (s *judgeService) getFinalResultMessage(result *types.EvaluationResult) string {
 	if result.Passed {
-		return "모든 테스트 케이스를 통과했습니다!"
+		return "All test cases passed!"
 	}
-	return fmt.Sprintf("%d/%d 테스트 케이스를 통과했습니다.", s.countPassedTests(result.TestResults), len(result.TestResults))
+	return fmt.Sprintf("%d/%d test cases passed.", s.countPassedTests(result.TestResults), len(result.TestResults))
 }
 
-// tryBatchEvaluateWithRealtime 실시간 알림이 포함된 배치 평가
+// tryBatchEvaluateWithRealtime Batch evaluation with real-time notifications
 func (s *judgeService) tryBatchEvaluateWithRealtime(code string, languageID int, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, bool, error) {
-	// 기존 tryBatchEvaluate 로직을 사용하되, 실시간 알림 시뮬레이션 추가
+	// Use existing tryBatchEvaluate logic but add real-time notification simulation
 	result, success, err := s.tryBatchEvaluate(code, languageID, problem)
 
 	if success && err == nil {
-		// 배치 평가 성공 시 개별 테스트 케이스처럼 보이게 시뮬레이션
+		// Simulate individual test cases when batch evaluation succeeds
 		s.simulateBatchProgress(matchID, userID, problem.TestCases)
 	}
 
 	return result, success, err
 }
 
-// aggregatePerTestWithRealtime 실시간 알림이 포함된 개별 평가
+// aggregatePerTestWithRealtime Individual evaluation with real-time notifications
 func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
 	var testCaseResults []types.TestCaseResult
 	var totalExecutionTime float64
@@ -629,14 +629,14 @@ func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int,
 	totalTestCases := len(problem.TestCases)
 
 	for testCaseIndex, testCase := range problem.TestCases {
-		// 테스트 케이스 실행 시작 알림
+		// Test case execution start notification
 		s.notifyTestCaseRunning(matchID, userID, testCase, testCaseIndex, totalTestCases)
 
-		// 테스트 케이스 실행
+		// Test case execution
 		testCaseResult := s.evaluateTestCase(code, languageID, testCase, problem, testCaseIndex)
 		testCaseResults = append(testCaseResults, *testCaseResult)
 
-		// 테스트 케이스 완료 알림
+		// Test case completion notification
 		s.notifyTestCaseCompleted(matchID, userID, testCase, testCaseIndex, testCaseResult)
 
 		if !testCaseResult.Passed {
@@ -645,7 +645,7 @@ func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int,
 		totalExecutionTime += testCaseResult.ExecutionTime
 		totalMemoryUsage += testCaseResult.MemoryUsage
 
-		// 약간의 지연 (UI에서 과정을 볼 수 있도록)
+		// Small delay (to allow UI to see the process)
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -661,14 +661,14 @@ func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int,
 	}, nil
 }
 
-// simulateBatchProgress 배치 평가 시 개별 테스트 케이스처럼 보이게 시뮬레이션
+// simulateBatchProgress Simulate individual test cases when batch evaluation succeeds
 func (s *judgeService) simulateBatchProgress(matchID uuid.UUID, userID uuid.UUID, testCases []model.TestCase) {
 	for i, testCase := range testCases {
 		s.notifyTestCaseRunning(matchID, userID, testCase, i, len(testCases))
-		time.Sleep(200 * time.Millisecond) // 시뮬레이션 지연
+		time.Sleep(200 * time.Millisecond) // Simulation delay
 		s.notifyTestCaseCompleted(matchID, userID, testCase, i, &types.TestCaseResult{
 			TestCaseIndex: i,
-			Passed:        true, // 배치 평가 성공 시 모든 테스트 통과로 가정
+			Passed:        true, // Assume all tests pass when batch evaluation succeeds
 			ExecutionTime: 1.0,
 			MemoryUsage:   1000,
 		})

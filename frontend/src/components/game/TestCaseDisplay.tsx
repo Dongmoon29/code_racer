@@ -17,9 +17,38 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
 }) => {
   const { isSubmitting, totalTestCases, completedTestCases, testCaseResults } =
     submissionProgress;
-  console.log('TestCaseDisplay rendering');
+
+  // Computed class names and values
+  const containerClass = `space-y-3 ${className} ${
+    compact ? 'max-h-80 overflow-auto' : ''
+  }`;
+  const cardPadding = compact ? 'p-2' : 'p-4';
+  const statusTextSize = compact ? 'text-sm' : '';
+  const counterTextSize = compact ? 'text-xs' : 'text-sm';
+  const progressBarMargin = compact ? 'mt-2' : 'mt-3';
+  const progressBarHeight = compact ? 'h-1.5' : 'h-2';
+  const progressBarBgHeight = compact ? 'h-1.5' : 'h-2';
+  const testCaseSpacing = compact ? 'space-y-2' : 'space-y-3';
+
+  // Computed status text
+  const getStatusText = () => {
+    if (isSubmitting) return 'Evaluating Solution...';
+    if (completedTestCases > 0) return 'Evaluation Complete';
+    return 'Ready to Evaluate';
+  };
+
+  // Computed progress percentage
+  const progressPercentage =
+    totalTestCases > 0 ? (completedTestCases / totalTestCases) * 100 : 0;
 
   const renderTestCaseResult = (result: TestCaseResult) => {
+    // Computed class names for test case result
+    const testCaseClass = compact ? 'p-2 rounded-md' : 'p-4 rounded-lg';
+    const headerMargin = compact ? 'mb-1' : 'mb-2';
+    const testCaseTextSize = compact ? 'text-sm' : '';
+    const metricsTextSize = compact ? 'text-xs' : 'text-sm';
+    const inputOutputPadding = compact ? 'p-2' : 'p-3';
+    const inputOutputTextSize = compact ? 'text-xs' : 'text-sm';
     const getStatusIcon = () => {
       switch (result.status) {
         case 'running':
@@ -51,23 +80,17 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
     return (
       <div
         key={result.index}
-        className={`${
-          compact ? 'p-2 rounded-md' : 'p-4 rounded-lg'
-        } border transition-all duration-300}`}
+        className={`${testCaseClass} border transition-all duration-300`}
       >
-        <div
-          className={`flex items-center justify-between ${
-            compact ? 'mb-1' : 'mb-2'
-          }`}
-        >
+        <div className={`flex items-center justify-between ${headerMargin}`}>
           <div className="flex items-center gap-2">
             {getStatusIcon()}
-            <span className={`${compact ? 'text-sm' : ''} font-medium`}>
+            <span className={`${testCaseTextSize} font-medium`}>
               Test Case {result.index + 1}
             </span>
           </div>
           {result.status === 'completed' && (
-            <div className={`${compact ? 'text-xs' : 'text-sm'}`}>
+            <div className={metricsTextSize}>
               {result.executionTime && (
                 <span>{(result.executionTime * 1000).toFixed(2)}ms</span>
               )}
@@ -80,13 +103,11 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
           )}
         </div>
 
-        <div className={`space-y-2 ${compact ? 'text-xs' : 'text-sm'}`}>
+        <div className={`space-y-2 ${inputOutputTextSize}`}>
           <div>
             <span className="font-medium">Input:</span>
             <div
-              className={`mt-1 ${
-                compact ? 'p-1 text-[10px]' : 'p-2 text-xs'
-              } rounded border font-mono`}
+              className={`mt-1 ${inputOutputPadding} rounded border font-mono`}
             >
               {formatValue(result.input)}
             </div>
@@ -95,9 +116,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
           <div>
             <span className="font-medium">Expected Output:</span>
             <div
-              className={`mt-1 ${
-                compact ? 'p-1 text-[10px]' : 'p-2 text-xs'
-              } rounded border font-mono`}
+              className={`mt-1 ${inputOutputPadding} rounded border font-mono`}
             >
               {formatValue(result.expectedOutput)}
             </div>
@@ -106,11 +125,9 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
           {result.status === 'completed' &&
             result.actualOutput !== undefined && (
               <div>
-                <span className="font-medium ">Actual Output:</span>
+                <span className="font-medium">Actual Output:</span>
                 <div
-                  className={`mt-1 ${
-                    compact ? 'p-1 text-[10px]' : 'p-2 text-xs'
-                  } rounded border font-mono`}
+                  className={`mt-1 ${inputOutputPadding} rounded border font-mono`}
                 >
                   {formatValue(result.actualOutput)}
                 </div>
@@ -122,13 +139,9 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
   };
 
   return (
-    <div
-      className={`space-y-3 ${className} ${
-        compact ? 'max-h-80 overflow-auto' : ''
-      }`}
-    >
-      {/* 제출 상태 헤더 */}
-      <Card className={`${compact ? 'p-2' : 'p-4'}`}>
+    <div className={containerClass}>
+      {/* Submission status header */}
+      <Card className={cardPadding}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {isSubmitting ? (
@@ -136,41 +149,31 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
             ) : (
               <span className="text-green-500 font-bold">✓</span>
             )}
-            <span className={`${compact ? 'text-sm' : ''} font-medium`}>
-              {isSubmitting
-                ? 'Evaluating Solution...'
-                : completedTestCases > 0
-                ? 'Evaluation Complete'
-                : 'Ready to Evaluate'}
+            <span className={`${statusTextSize} font-medium`}>
+              {getStatusText()}
             </span>
           </div>
-          <div className={`${compact ? 'text-xs' : 'text-sm'} `}>
+          <div className={counterTextSize}>
             {completedTestCases} / {totalTestCases} test cases
           </div>
         </div>
 
-        {/* 진행률 바 */}
-        <div className={`${compact ? 'mt-2' : 'mt-3'}`}>
-          <div className={`w-full rounded-full ${compact ? 'h-1.5' : 'h-2'}`}>
+        {/* Progress bar */}
+        <div className={progressBarMargin}>
+          <div className={`w-full rounded-full ${progressBarHeight}`}>
             <div
-              className={`bg-blue-500 ${
-                compact ? 'h-1.5' : 'h-2'
-              } rounded-full transition-all duration-300`}
+              className={`bg-blue-500 ${progressBarBgHeight} rounded-full transition-all duration-300`}
               style={{
-                width: `${
-                  totalTestCases > 0
-                    ? (completedTestCases / totalTestCases) * 100
-                    : 0
-                }%`,
+                width: `${progressPercentage}%`,
               }}
             />
           </div>
         </div>
       </Card>
 
-      {/* 초기 안내 */}
+      {/* Initial guidance */}
       {!isSubmitting && completedTestCases === 0 && (
-        <Alert variant="info" className={`${compact ? 'p-2' : 'p-3'}`}>
+        <Alert variant="info" className={cardPadding}>
           <div className="text-sm">
             Ready. Press Run to evaluate your solution.
           </div>
@@ -194,9 +197,9 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
         </Alert>
       )}
 
-      {/* 테스트 케이스 결과들 */}
+      {/* Test case results */}
       {testCaseResults.length > 0 && (
-        <div className={`${compact ? 'space-y-2' : 'space-y-3'}`}>
+        <div className={testCaseSpacing}>
           {testCaseResults.map(renderTestCaseResult)}
         </div>
       )}

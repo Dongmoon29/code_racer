@@ -48,10 +48,6 @@ interface UseGameRoomStateReturn {
   // Language and UI state
   selectedLanguage: SupportedLanguage;
   setSelectedLanguage: (language: SupportedLanguage) => void;
-  showMyCode: boolean;
-  setShowMyCode: (show: boolean) => void;
-  showOpponentCode: boolean;
-  setShowOpponentCode: (show: boolean) => void;
 
   // Template setup state
   isTemplateSet: React.MutableRefObject<boolean>;
@@ -106,22 +102,6 @@ export const useGameRoomState = ({
     }
   );
 
-  const [showMyCode, setShowMyCode] = useState<boolean>(() => {
-    const key = createSessionStorageKey(
-      matchId,
-      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.SHOW_MY_CODE
-    );
-    return storageManager.getItem(key) !== 'false';
-  });
-
-  const [showOpponentCode, setShowOpponentCode] = useState<boolean>(() => {
-    const key = createSessionStorageKey(
-      matchId,
-      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.SHOW_OPPONENT_CODE
-    );
-    return storageManager.getItem(key) !== 'false';
-  });
-
   // Template setup state
   const isTemplateSet = useRef(false);
 
@@ -141,24 +121,6 @@ export const useGameRoomState = ({
       GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.LANGUAGE
     ),
     selectedLanguage,
-    300
-  );
-
-  useDebouncedSessionStorage(
-    createSessionStorageKey(
-      matchId,
-      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.SHOW_MY_CODE
-    ),
-    String(showMyCode),
-    300
-  );
-
-  useDebouncedSessionStorage(
-    createSessionStorageKey(
-      matchId,
-      GAME_ROOM_CONSTANTS.SESSION_STORAGE_KEYS.SHOW_OPPONENT_CODE
-    ),
-    String(showOpponentCode),
     300
   );
 
@@ -198,10 +160,6 @@ export const useGameRoomState = ({
     // Language and UI state
     selectedLanguage,
     setSelectedLanguage,
-    showMyCode,
-    setShowMyCode,
-    showOpponentCode,
-    setShowOpponentCode,
 
     // Template setup state
     isTemplateSet,

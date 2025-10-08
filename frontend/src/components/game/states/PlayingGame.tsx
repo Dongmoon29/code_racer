@@ -17,8 +17,6 @@ interface PlayingGameProps {
   opponentCode: string;
   opponentName?: string;
   selectedLanguage: 'python' | 'javascript' | 'go';
-  showMyCode: boolean;
-  showOpponentCode: boolean;
   submitResult: SubmitResult | null;
   submitting: boolean;
   submissionProgress: SubmissionProgress;
