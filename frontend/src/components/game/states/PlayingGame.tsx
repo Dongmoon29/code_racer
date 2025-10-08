@@ -2,6 +2,7 @@ import React, { FC, memo, useCallback, useEffect, useState } from 'react';
 import { Spinner } from '../../ui';
 import LanguageSelector from '../LanguageSelector';
 import { Game, SubmitResult } from '@/types';
+import { SubmissionProgress } from '@/types/websocket';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/alert';
@@ -9,6 +10,7 @@ import { ProblemDetailsPane } from './ProblemDetailsPane';
 import { FullscreenOverlay } from './FullscreenOverlay';
 import { LeetCodeEditorSplit } from './CodeEditorSplitProps';
 import { useFullscreen } from '@/contexts/FullscreenContext';
+import TestCaseDisplay from '../TestCaseDisplay';
 
 interface PlayingGameProps {
   game: Game;
@@ -20,6 +22,7 @@ interface PlayingGameProps {
   showOpponentCode: boolean;
   submitResult: SubmitResult | null;
   submitting: boolean;
+  submissionProgress: SubmissionProgress;
   onCodeChange: (code: string) => void;
   onLanguageChange: (language: 'python' | 'javascript' | 'go') => void;
   onSubmitCode: () => void;
@@ -36,6 +39,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
     selectedLanguage,
     submitResult,
     submitting,
+    submissionProgress,
     onCodeChange,
     onLanguageChange,
     onSubmitCode,
@@ -107,15 +111,9 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
           </div>
         )}
 
-        {/* Submit Result Alert */}
-        {submitResult && (
-          <Alert
-            variant={submitResult.success ? 'success' : 'error'}
-            className="px-4 mb-4"
-          >
-            {submitResult.message}
-          </Alert>
-        )}
+        {/* Global submit banner removed: messages now shown in TestCaseDisplay */}
+
+        {/* Compact Test Case Display under Problem Details (left pane) */}
 
         {!isFullscreen ? (
           <div
@@ -124,18 +122,29 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
           >
             {/* Problem Description Pane */}
             <div
-              className={`transition-all duration-300 overflow-auto ${
+              className={`transition-all duration-300 ${
                 isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'
-              }`}
+              } h-full flex flex-col`}
             >
-              <ProblemDetailsPane
-                isExpanded={isDescriptionExpanded}
-                title={game.leetcode.title}
-                description={game.leetcode.description}
-                examples={game.leetcode.examples}
-                constraints={game.leetcode.constraints}
-                onToggle={handleToggleDescription}
-              />
+              <div className="flex-1 min-h-0 overflow-auto">
+                <ProblemDetailsPane
+                  isExpanded={isDescriptionExpanded}
+                  title={game.leetcode.title}
+                  description={game.leetcode.description}
+                  examples={game.leetcode.examples}
+                  constraints={game.leetcode.constraints}
+                  onToggle={handleToggleDescription}
+                />
+              </div>
+
+              {isDescriptionExpanded && (
+                <div className="mt-3 pr-2">
+                  <TestCaseDisplay
+                    submissionProgress={submissionProgress}
+                    compact
+                  />
+                </div>
+              )}
             </div>
 
             {/* Editor Panes */}
@@ -152,6 +161,8 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                 showFullscreenButton={true}
                 onCodeChange={onCodeChange}
                 onFullscreenToggle={handleToggleFullscreen}
+                onRun={onSubmitCode}
+                runDisabled={submitting}
                 onDragStart={() => {
                   setIsResizing(true);
                   document.body.classList.add('resizing');
@@ -185,6 +196,8 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
             onToggleDescription={handleToggleDescription}
             onClose={handleToggleFullscreen}
             isSinglePlayerMode={isSinglePlayerMode}
+            onRun={onSubmitCode}
+            submissionProgress={submissionProgress}
           />
         )}
       </div>

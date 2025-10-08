@@ -7,6 +7,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/types"
+	"github.com/google/uuid"
 )
 
 // MockJudgeService implements interfaces.JudgeService for testing
@@ -34,6 +35,11 @@ func (m *MockJudgeService) WrapCodeWithTestCase(code string, languageID int, tes
 		return "", fmt.Errorf("unsupported programming language ID: %d", languageID)
 	}
 	return "wrapped code", nil
+}
+
+func (m *MockJudgeService) EvaluateCodeWithRealtime(code string, language string, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
+	// Mock implementation - just return the same result as EvaluateCode
+	return m.EvaluateCode(code, language, problem)
 }
 
 // SetupTestJudgeService creates a mock JudgeService instance for testing

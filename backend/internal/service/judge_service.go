@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/factory"
@@ -12,6 +13,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/types"
+	"github.com/google/uuid"
 )
 
 // Judge service constants
@@ -33,18 +35,20 @@ type judgeService struct {
 	judge0Client      interfaces.Judge0Client
 	logger            logger.Logger
 	functionExtractor *judge.FunctionExtractor
+	wsBroadcaster     interfaces.WebSocketBroadcaster
 }
 
 // Interface implementation check
 var _ interfaces.JudgeService = (*judgeService)(nil)
 
 // NewJudgeService creates a new JudgeService instance with the provided configuration
-func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger) interfaces.JudgeService {
+func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger, wsBroadcaster interfaces.WebSocketBroadcaster) interfaces.JudgeService {
 	return &judgeService{
 		codeWrapper:       factory.NewCodeWrapper(logger),
 		judge0Client:      factory.NewJudge0Client(apiKey, apiEndpoint),
 		logger:            logger,
 		functionExtractor: judge.NewFunctionExtractor(logger),
+		wsBroadcaster:     wsBroadcaster,
 	}
 }
 
@@ -464,4 +468,209 @@ func mustJSON(v interface{}) []byte {
 		return []byte("null")
 	}
 	return b
+}
+
+// EvaluateCodeWithRealtime 실시간 알림이 포함된 코드 평가 (per-test 전용)
+func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
+	// 1. 제출 시작 알림 (총 테스트 케이스 포함)
+	s.notifySubmissionStarted(matchID, userID, len(problem.TestCases))
+
+	if err := s.ensureFunctionNameMatches(code, language, problem.FunctionName); err != nil {
+		s.notifySubmissionFailed(matchID, userID, err.Error())
+		return nil, err
+	}
+
+	languageID, err := s.getLanguageID(language)
+	if err != nil {
+		s.notifySubmissionFailed(matchID, userID, fmt.Sprintf("failed to get language ID: %v", err))
+		return nil, fmt.Errorf("failed to get language ID: %w", err)
+	}
+
+	// 2. 개별 평가만 수행 (배치 경로 비활성화)
+	perTestEvaluationResult, perTestEvaluationError := s.aggregatePerTestWithRealtime(code, languageID, problem, matchID, userID)
+	if perTestEvaluationError == nil && perTestEvaluationResult != nil {
+		s.notifySubmissionCompleted(matchID, userID, perTestEvaluationResult)
+		s.logEvaluationResult(perTestEvaluationResult, languageID, problem, "per_test")
+	}
+
+	return perTestEvaluationResult, perTestEvaluationError
+}
+
+// notifySubmissionStarted 제출 시작 알림
+func (s *judgeService) notifySubmissionStarted(matchID uuid.UUID, userID uuid.UUID, totalTestCases int) {
+	msg := model.SubmissionStatusMessage{
+		Type:           constants.SubmissionStarted,
+		MatchID:        matchID.String(),
+		UserID:         userID.String(),
+		Status:         "started",
+		TotalTestCases: &totalTestCases,
+		Message:        "코드 제출이 시작되었습니다...",
+		Timestamp:      s.getCurrentTimestamp(),
+	}
+	s.broadcastToMatch(matchID, msg)
+}
+
+// notifyTestCaseRunning 테스트 케이스 실행 중 알림
+func (s *judgeService) notifyTestCaseRunning(matchID uuid.UUID, userID uuid.UUID, testCase model.TestCase, testCaseIndex int, totalTestCases int) {
+	msg := model.TestCaseDetailMessage{
+		Type:           constants.TestCaseRunning,
+		MatchID:        matchID.String(),
+		UserID:         userID.String(),
+		TestCaseIndex:  testCaseIndex,
+		TotalTestCases: totalTestCases,
+		Status:         "running",
+		Input:          testCase.Input,
+		ExpectedOutput: testCase.Output,
+		Timestamp:      s.getCurrentTimestamp(),
+	}
+	s.broadcastToMatch(matchID, msg)
+}
+
+// notifyTestCaseCompleted 테스트 케이스 완료 알림
+func (s *judgeService) notifyTestCaseCompleted(matchID uuid.UUID, userID uuid.UUID, testCase model.TestCase, testCaseIndex int, result *types.TestCaseResult) {
+	// 실제 출력값 파싱
+	var actualOutput interface{}
+	if result.Actual != "" {
+		json.Unmarshal([]byte(result.Actual), &actualOutput)
+	}
+
+	msg := model.TestCaseDetailMessage{
+		Type:           constants.TestCaseCompleted,
+		MatchID:        matchID.String(),
+		UserID:         userID.String(),
+		TestCaseIndex:  testCaseIndex,
+		TotalTestCases: 0, // 이 값은 호출하는 곳에서 설정해야 함
+		Status:         "completed",
+		Input:          testCase.Input,
+		ExpectedOutput: testCase.Output,
+		ActualOutput:   actualOutput,
+		Passed:         &result.Passed,
+		ExecutionTime:  &result.ExecutionTime,
+		MemoryUsage:    &result.MemoryUsage,
+		Timestamp:      s.getCurrentTimestamp(),
+	}
+	s.broadcastToMatch(matchID, msg)
+}
+
+// notifySubmissionCompleted 제출 완료 알림
+func (s *judgeService) notifySubmissionCompleted(matchID uuid.UUID, userID uuid.UUID, result *types.EvaluationResult) {
+	passedTestCases := s.countPassedTests(result.TestResults)
+	totalTestCases := len(result.TestResults)
+
+	msg := model.SubmissionStatusMessage{
+		Type:            constants.SubmissionCompleted,
+		MatchID:         matchID.String(),
+		UserID:          userID.String(),
+		Status:          "completed",
+		Passed:          &result.Passed,
+		TotalTestCases:  &totalTestCases,
+		PassedTestCases: &passedTestCases,
+		ExecutionTime:   &result.ExecutionTime,
+		MemoryUsage:     &result.MemoryUsage,
+		Message:         s.getFinalResultMessage(result),
+		Timestamp:       s.getCurrentTimestamp(),
+	}
+	s.broadcastToMatch(matchID, msg)
+}
+
+// notifySubmissionFailed 제출 실패 알림
+func (s *judgeService) notifySubmissionFailed(matchID uuid.UUID, userID uuid.UUID, errorMessage string) {
+	msg := model.SubmissionStatusMessage{
+		Type:      constants.SubmissionFailed,
+		MatchID:   matchID.String(),
+		UserID:    userID.String(),
+		Status:    "failed",
+		Message:   fmt.Sprintf("제출 실패: %s", errorMessage),
+		Timestamp: s.getCurrentTimestamp(),
+	}
+	s.broadcastToMatch(matchID, msg)
+}
+
+// broadcastToMatch 매치에 메시지 브로드캐스트
+func (s *judgeService) broadcastToMatch(matchID uuid.UUID, message interface{}) {
+	if s.wsBroadcaster != nil {
+		msgBytes, _ := json.Marshal(message)
+		s.wsBroadcaster.BroadcastToMatch(matchID, msgBytes)
+	}
+}
+
+// getCurrentTimestamp 현재 타임스탬프 반환
+func (s *judgeService) getCurrentTimestamp() int64 {
+	return time.Now().Unix()
+}
+
+// getFinalResultMessage 최종 결과 메시지 생성
+func (s *judgeService) getFinalResultMessage(result *types.EvaluationResult) string {
+	if result.Passed {
+		return "모든 테스트 케이스를 통과했습니다!"
+	}
+	return fmt.Sprintf("%d/%d 테스트 케이스를 통과했습니다.", s.countPassedTests(result.TestResults), len(result.TestResults))
+}
+
+// tryBatchEvaluateWithRealtime 실시간 알림이 포함된 배치 평가
+func (s *judgeService) tryBatchEvaluateWithRealtime(code string, languageID int, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, bool, error) {
+	// 기존 tryBatchEvaluate 로직을 사용하되, 실시간 알림 시뮬레이션 추가
+	result, success, err := s.tryBatchEvaluate(code, languageID, problem)
+
+	if success && err == nil {
+		// 배치 평가 성공 시 개별 테스트 케이스처럼 보이게 시뮬레이션
+		s.simulateBatchProgress(matchID, userID, problem.TestCases)
+	}
+
+	return result, success, err
+}
+
+// aggregatePerTestWithRealtime 실시간 알림이 포함된 개별 평가
+func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
+	var testCaseResults []types.TestCaseResult
+	var totalExecutionTime float64
+	var totalMemoryUsage float64
+	allTestsPassed := true
+	totalTestCases := len(problem.TestCases)
+
+	for testCaseIndex, testCase := range problem.TestCases {
+		// 테스트 케이스 실행 시작 알림
+		s.notifyTestCaseRunning(matchID, userID, testCase, testCaseIndex, totalTestCases)
+
+		// 테스트 케이스 실행
+		testCaseResult := s.evaluateTestCase(code, languageID, testCase, problem, testCaseIndex)
+		testCaseResults = append(testCaseResults, *testCaseResult)
+
+		// 테스트 케이스 완료 알림
+		s.notifyTestCaseCompleted(matchID, userID, testCase, testCaseIndex, testCaseResult)
+
+		if !testCaseResult.Passed {
+			allTestsPassed = false
+		}
+		totalExecutionTime += testCaseResult.ExecutionTime
+		totalMemoryUsage += testCaseResult.MemoryUsage
+
+		// 약간의 지연 (UI에서 과정을 볼 수 있도록)
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	testCaseCount := float64(len(problem.TestCases))
+	averageExecutionTime := totalExecutionTime / testCaseCount
+	averageMemoryUsage := totalMemoryUsage / testCaseCount
+
+	return &types.EvaluationResult{
+		Passed:        allTestsPassed,
+		TestResults:   testCaseResults,
+		ExecutionTime: averageExecutionTime,
+		MemoryUsage:   averageMemoryUsage,
+	}, nil
+}
+
+// simulateBatchProgress 배치 평가 시 개별 테스트 케이스처럼 보이게 시뮬레이션
+func (s *judgeService) simulateBatchProgress(matchID uuid.UUID, userID uuid.UUID, testCases []model.TestCase) {
+	for i, testCase := range testCases {
+		s.notifyTestCaseRunning(matchID, userID, testCase, i, len(testCases))
+		time.Sleep(200 * time.Millisecond) // 시뮬레이션 지연
+		s.notifyTestCaseCompleted(matchID, userID, testCase, i, &types.TestCaseResult{
+			TestCaseIndex: i,
+			Passed:        true, // 배치 평가 성공 시 모든 테스트 통과로 가정
+			ExecutionTime: 1.0,
+			MemoryUsage:   1000,
+		})
+	}
 }

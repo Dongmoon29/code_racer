@@ -15,6 +15,8 @@ interface CodeEditorSplitProps {
   showFullscreenButton?: boolean;
   onCodeChange: (code: string) => void;
   onFullscreenToggle?: () => void;
+  onRun?: () => void;
+  runDisabled?: boolean;
   onDragStart: () => void;
   onDragEnd: (sizes: number[]) => void;
   isSinglePlayerMode?: boolean;
@@ -33,6 +35,8 @@ export const LeetCodeEditorSplit: FC<CodeEditorSplitProps> = memo(
     showFullscreenButton = false,
     onCodeChange,
     onFullscreenToggle,
+    onRun,
+    runDisabled = false,
     onDragStart,
     onDragEnd,
     isSinglePlayerMode = false,
@@ -70,6 +74,8 @@ export const LeetCodeEditorSplit: FC<CodeEditorSplitProps> = memo(
           showFullscreenButton={showFullscreenButton}
           onChange={onCodeChange}
           onFullscreenToggle={onFullscreenToggle}
+          onRun={onRun}
+          runDisabled={runDisabled}
         />
       );
     }
@@ -86,6 +92,8 @@ export const LeetCodeEditorSplit: FC<CodeEditorSplitProps> = memo(
           showFullscreenButton={showFullscreenButton}
           onChange={onCodeChange}
           onFullscreenToggle={onFullscreenToggle}
+          onRun={onRun}
+          runDisabled={runDisabled}
         />
       );
     }
@@ -121,6 +129,8 @@ export const LeetCodeEditorSplit: FC<CodeEditorSplitProps> = memo(
             showFullscreenButton={showFullscreenButton}
             onChange={onCodeChange}
             onFullscreenToggle={onFullscreenToggle}
+            onRun={onRun}
+            runDisabled={runDisabled}
           />
         </div>
 

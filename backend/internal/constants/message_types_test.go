@@ -65,7 +65,7 @@ func TestGetAllMessageTypes(t *testing.T) {
 	messageTypes := GetAllMessageTypes()
 
 	// Check that we have the expected number of message types
-	expectedCount := 10
+	expectedCount := 15
 	if len(messageTypes) != expectedCount {
 		t.Errorf("GetAllMessageTypes() returned %d types, expected %d", len(messageTypes), expectedCount)
 	}
