@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -29,13 +31,14 @@ type MatchService interface {
 	GetMatch(matchID uuid.UUID) (*model.Match, error)
 }
 type matchService struct {
-	matchRepo    repository.MatchRepository
-	leetCodeRepo repository.LeetCodeRepository
-	rdb          *redis.Client
-	redisManager *RedisManager
-	logger       logger.Logger
-	judgeService interfaces.JudgeService
-	userRepo     interfaces.UserRepository
+	matchRepo     repository.MatchRepository
+	leetCodeRepo  repository.LeetCodeRepository
+	rdb           *redis.Client
+	redisManager  *RedisManager
+	logger        logger.Logger
+	judgeService  interfaces.JudgeService
+	userRepo      interfaces.UserRepository
+	wsBroadcaster interfaces.WebSocketBroadcaster
 }
 
 // NewMatchService creates a new MatchService instance with the provided dependencies
@@ -46,15 +49,17 @@ func NewMatchService(
 	judgeService interfaces.JudgeService,
 	userRepo interfaces.UserRepository,
 	logger logger.Logger,
+	wsBroadcaster interfaces.WebSocketBroadcaster,
 ) MatchService {
 	return &matchService{
-		matchRepo:    matchRepo,
-		leetCodeRepo: leetCodeRepo,
-		rdb:          rdb,
-		redisManager: NewRedisManager(rdb, logger),
-		judgeService: judgeService,
-		userRepo:     userRepo,
-		logger:       logger,
+		matchRepo:     matchRepo,
+		leetCodeRepo:  leetCodeRepo,
+		rdb:           rdb,
+		redisManager:  NewRedisManager(rdb, logger),
+		judgeService:  judgeService,
+		userRepo:      userRepo,
+		logger:        logger,
+		wsBroadcaster: wsBroadcaster,
 	}
 }
 
@@ -174,7 +179,8 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 			}
 		}
 
-		// Game end notification will be handled by WebSocket layer
+		// Send game finished notification via WebSocket
+		s.sendGameFinishedNotification(matchID, userID)
 		s.logger.Info().Msg("Match completed - winner determined")
 
 		return &model.SubmitSolutionResponse{
@@ -413,4 +419,45 @@ func (s *matchService) GetRandomLeetCodeByDifficulty(difficulty string) (*model.
 		Msg("Selected random LeetCode problem")
 
 	return selectedProblem, nil
+}
+
+// sendGameFinishedNotification sends a WebSocket message when the game is finished
+func (s *matchService) sendGameFinishedNotification(matchID, winnerID uuid.UUID) {
+	// Fetch match to check if it's a single player game
+	match, err := s.matchRepo.FindByID(matchID)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to fetch match for game finished notification")
+		return
+	}
+
+	// Don't send WebSocket notification for single player games
+	if match.Mode == model.MatchModeSingle {
+		s.logger.Debug().
+			Str("matchID", matchID.String()).
+			Msg("Skipping WebSocket notification for single player game")
+		return
+	}
+
+	if s.wsBroadcaster == nil {
+		s.logger.Warn().Msg("WebSocket broadcaster is nil, cannot send game finished notification")
+		return
+	}
+
+	message := map[string]interface{}{
+		"type":      constants.GameFinished,
+		"game_id":   matchID.String(),
+		"winner_id": winnerID.String(),
+	}
+
+	msgBytes, err := json.Marshal(message)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to marshal game finished message")
+		return
+	}
+
+	s.wsBroadcaster.BroadcastToMatch(matchID, msgBytes)
+	s.logger.Info().
+		Str("matchID", matchID.String()).
+		Str("winnerID", winnerID.String()).
+		Msg("Game finished notification sent via WebSocket")
 }

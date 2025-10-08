@@ -172,8 +172,25 @@ export const useGameRoomWebSocket = ({
           ? 'All test cases passed!'
           : 'Some test cases failed.',
       }));
+
+      // If all test cases passed, check if game is finished (for single player games)
+      if (message.passed) {
+        setSubmitResult({
+          success: true,
+          message: 'All test cases passed!',
+          is_winner: true,
+        });
+        // Refresh game data to check if game status is 'finished'
+        refetchGame();
+      }
     },
-    [currentUser?.id, setSubmitting, setSubmissionProgress]
+    [
+      currentUser?.id,
+      setSubmitting,
+      setSubmissionProgress,
+      setSubmitResult,
+      refetchGame,
+    ]
   );
 
   const handleSubmissionFailed = useCallback(
