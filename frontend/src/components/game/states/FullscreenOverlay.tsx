@@ -83,7 +83,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
             </div>
 
             {isDescriptionExpanded && (
-              <div className="mt-3 pr-2">
+              <div className="mt-3 p-4">
                 <TestCaseDisplay
                   submissionProgress={submissionProgress}
                   compact

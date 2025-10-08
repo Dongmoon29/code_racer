@@ -91,7 +91,7 @@ const DashboardIndex = () => {
       </Head>
 
       <div className="py-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl">
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="lg:w-80 flex-shrink-0">
               <ProfileSidebar user={user!} />

@@ -25,7 +25,7 @@ const RacePage = () => {
               Start a Race
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Challenge yourself or compete with other developers
+              Challenge yourself or compete with other people
             </p>
           </div>
 

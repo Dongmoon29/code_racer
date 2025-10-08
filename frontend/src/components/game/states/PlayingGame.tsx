@@ -85,7 +85,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
       <div className="flex flex-col h-screen">
         {/* Header */}
         {!isFullscreen && (
-          <div className="p-4 grid grid-cols-12 gap-4 mb-4">
+          <div className="grid grid-cols-12 gap-4 mb-4">
             <div className="col-span-12 md:col-span-8">
               <h1 className="text-2xl font-bold">{game.leetcode.title}</h1>
               <div className="flex items-center gap-4 mt-2">
@@ -113,7 +113,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
 
         {!isFullscreen ? (
           <div
-            className="flex-1 px-4 py-4 flex min-h-0 game-editor-container"
+            className="flex-1 flex min-h-0 game-editor-container"
             style={{ width: '100%' }}
           >
             {/* Problem Description Pane */}
@@ -134,7 +134,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
               </div>
 
               {isDescriptionExpanded && (
-                <div className="mt-3 pr-2">
+                <div className="mt-3">
                   <TestCaseDisplay
                     submissionProgress={submissionProgress}
                     compact

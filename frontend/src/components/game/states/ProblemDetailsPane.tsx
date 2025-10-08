@@ -25,8 +25,8 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
     }
 
     return (
-      <div className="rounded-lg overflow-auto p-2 ">
-        <div className="px-4 py-2 border-b flex justify-between items-center">
+      <div className={`rounded-lg overflow-auto ${isExpanded ? 'p-3' : ''}`}>
+        <div className="py-2 border-b flex justify-between items-center">
           <span className="font-medium">Problem Details</span>
           <div className="flex items-center gap-2">
             <button
@@ -39,7 +39,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
           </div>
         </div>
 
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 py-4">
           <div>
             <h2 className="text-xl font-medium mb-2">Problem Description</h2>
             <p className="whitespace-pre-line font-medium">{description}</p>

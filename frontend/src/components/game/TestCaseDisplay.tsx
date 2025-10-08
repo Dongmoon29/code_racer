@@ -124,8 +124,8 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
   return (
     <div
       className={`space-y-3 ${className} ${
-        compact ? 'max-h-80 overflow-auto pr-1' : ''
-      } p-5`}
+        compact ? 'max-h-80 overflow-auto' : ''
+      }`}
     >
       {/* 제출 상태 헤더 */}
       <Card className={`${compact ? 'p-2' : 'p-4'}`}>
