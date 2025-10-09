@@ -49,6 +49,16 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
     const metricsTextSize = compact ? 'text-xs' : 'text-sm';
     const inputOutputPadding = compact ? 'p-2' : 'p-3';
     const inputOutputTextSize = compact ? 'text-xs' : 'text-sm';
+
+    // Background color based on test result and theme compatibility
+    const getBackgroundClass = () => {
+      if (result.status === 'completed' && !result.passed) {
+        // Failed test case - red background for both light and dark themes
+        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
+      }
+      // Default background for other states
+      return 'bg-card border-border';
+    };
     const getStatusIcon = () => {
       switch (result.status) {
         case 'running':
@@ -80,7 +90,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
     return (
       <div
         key={result.index}
-        className={`${testCaseClass} border transition-all duration-300`}
+        className={`${testCaseClass} ${getBackgroundClass()} transition-all duration-300`}
       >
         <div className={`flex items-center justify-between ${headerMargin}`}>
           <div className="flex items-center gap-2">
