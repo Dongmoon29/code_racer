@@ -16,6 +16,10 @@ interface FullscreenOverlayProps {
   problemDescription: string;
   problemExamples: string;
   problemConstraints: string;
+  problemTestCases?: Array<{
+    input: (string | number | boolean)[];
+    output: string | number | boolean;
+  }>;
   onCodeChange: (code: string) => void;
   onMaximizeToggle: (editor: 'my' | 'opponent') => void;
   onToggleDescription: () => void;
@@ -39,6 +43,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
     problemDescription,
     problemExamples,
     problemConstraints,
+    problemTestCases,
     onCodeChange,
     onMaximizeToggle,
     onToggleDescription,
@@ -80,6 +85,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
                 description={problemDescription}
                 examples={problemExamples}
                 constraints={problemConstraints}
+                testCases={problemTestCases}
                 onToggle={onToggleDescription}
               />
             </div>

@@ -1,8 +1,9 @@
-import React, { FC } from 'react';
+import React, { FC, useState } from 'react';
 import { SubmissionProgress, TestCaseResult } from '@/types/websocket';
 import { Spinner } from '@/components/ui/Spinner';
 import { Alert } from '@/components/ui/alert';
 import { Card } from '@/components/ui/Card';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface TestCaseDisplayProps {
   submissionProgress: SubmissionProgress;
@@ -17,6 +18,8 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
 }) => {
   const { isSubmitting, totalTestCases, completedTestCases, testCaseResults } =
     submissionProgress;
+
+  const [isMinimized, setIsMinimized] = useState(false);
 
   // Computed class names and values
   const containerClass = `space-y-3 ${className} ${
@@ -163,8 +166,21 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
               {getStatusText()}
             </span>
           </div>
-          <div className={counterTextSize}>
-            {completedTestCases} / {totalTestCases} test cases
+          <div className="flex items-center gap-2">
+            <div className={counterTextSize}>
+              {completedTestCases} / {totalTestCases} test cases
+            </div>
+            <button
+              onClick={() => setIsMinimized(!isMinimized)}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+              title={isMinimized ? 'Expand' : 'Minimize'}
+            >
+              {isMinimized ? (
+                <ChevronRight className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
           </div>
         </div>
 
@@ -181,45 +197,50 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
         </div>
       </Card>
 
-      {/* Initial guidance */}
-      {!isSubmitting && completedTestCases === 0 && (
-        <Alert variant="info" className={cardPadding}>
-          <div className="text-sm">
-            Ready. Press Run to evaluate your solution.
-          </div>
-        </Alert>
-      )}
+      {/* Content - only show when not minimized */}
+      {!isMinimized && (
+        <>
+          {/* Initial guidance */}
+          {!isSubmitting && completedTestCases === 0 && (
+            <Alert variant="info" className={cardPadding}>
+              <div className="text-sm">
+                Ready. Press Run to evaluate your solution.
+              </div>
+            </Alert>
+          )}
 
-      {/* Submission in progress */}
-      {isSubmitting && (
-        <Alert variant="info" className={cardPadding}>
-          <div className="text-sm">
-            Evaluating your solution... Please wait.
-          </div>
-        </Alert>
-      )}
+          {/* Submission in progress */}
+          {isSubmitting && (
+            <Alert variant="info" className={cardPadding}>
+              <div className="text-sm">
+                Evaluating your solution... Please wait.
+              </div>
+            </Alert>
+          )}
 
-      {!isSubmitting && completedTestCases > 0 && (
-        <Alert
-          variant={submissionProgress.overallPassed ? 'success' : 'error'}
-          className={`${compact ? 'p-2' : 'p-4'}`}
-        >
-          <div className="flex items-center justify-between">
-            <span className={`${compact ? 'text-sm' : ''} font-medium`}>
-              {submissionProgress.statusMessage ||
-                (submissionProgress.overallPassed
-                  ? 'All test cases passed!'
-                  : 'test cases failed.')}
-            </span>
-          </div>
-        </Alert>
-      )}
+          {!isSubmitting && completedTestCases > 0 && (
+            <Alert
+              variant={submissionProgress.overallPassed ? 'success' : 'error'}
+              className={`${compact ? 'p-2' : 'p-4'}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className={`${compact ? 'text-sm' : ''} font-medium`}>
+                  {submissionProgress.statusMessage ||
+                    (submissionProgress.overallPassed
+                      ? 'All test cases passed!'
+                      : 'test cases failed.')}
+                </span>
+              </div>
+            </Alert>
+          )}
 
-      {/* Test case results */}
-      {testCaseResults.length > 0 && (
-        <div className={testCaseSpacing}>
-          {testCaseResults.map(renderTestCaseResult)}
-        </div>
+          {/* Test case results */}
+          {testCaseResults.length > 0 && (
+            <div className={testCaseSpacing}>
+              {testCaseResults.map(renderTestCaseResult)}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

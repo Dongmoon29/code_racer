@@ -8,11 +8,15 @@ interface ProblemDetailsPaneProps {
   description: string;
   examples: string;
   constraints: string;
+  testCases?: Array<{
+    input: (string | number | boolean)[];
+    output: string | number | boolean;
+  }>;
   onToggle: () => void;
 }
 
 export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
-  ({ isExpanded, description, examples, constraints, onToggle }) => {
+  ({ isExpanded, description, examples, constraints, testCases, onToggle }) => {
     const { isFullscreen } = useFullscreen();
     if (!isExpanded) {
       return (
@@ -58,6 +62,41 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
               {constraints}
             </pre>
           </div>
+
+          {/* Test Cases Section */}
+          {testCases && testCases.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium mb-2">Test Cases</h3>
+              <div className="space-y-3">
+                {testCases.map((testCase, index) => (
+                  <div
+                    key={index}
+                    className="p-3 rounded bg-[hsl(var(--muted))]"
+                  >
+                    <div className="mb-2">
+                      <span className="font-medium text-sm text-[hsl(var(--muted-foreground))]">
+                        Test Case {index + 1}:
+                      </span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="font-medium">Input: </span>
+                        <code className="px-2 py-1 rounded bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+                          {JSON.stringify(testCase.input)}
+                        </code>
+                      </div>
+                      <div>
+                        <span className="font-medium">Expected Output: </span>
+                        <code className="px-2 py-1 rounded bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+                          {JSON.stringify(testCase.output)}
+                        </code>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

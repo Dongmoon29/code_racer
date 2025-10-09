@@ -127,6 +127,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                   description={game.leetcode.description}
                   examples={game.leetcode.examples}
                   constraints={game.leetcode.constraints}
+                  testCases={game.leetcode.test_cases}
                   onToggle={handleToggleDescription}
                 />
               </div>
@@ -183,6 +184,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
             problemDescription={game.leetcode.description}
             problemExamples={game.leetcode.examples}
             problemConstraints={game.leetcode.constraints}
+            problemTestCases={game.leetcode.test_cases}
             onCodeChange={onCodeChange}
             onMaximizeToggle={
               isSinglePlayerMode ? () => {} : handleMaximizeToggle
