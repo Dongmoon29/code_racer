@@ -15,8 +15,11 @@ func SeedLeetCodeProblem(db *gorm.DB) error {
 	}
 
 	if count > 0 {
+		fmt.Printf("LeetCode problems already exist (%d), skipping seed\n", count)
 		return nil
 	}
+
+	fmt.Println("Seeding LeetCode problems...")
 
 	// Test cases 정의
 	twoSumTestCases := []model.TestCase{
@@ -90,6 +93,10 @@ Only one valid answer exists.`,
 			FunctionName:    "twoSum",
 			TimeLimit:       1000,
 			MemoryLimit:     128,
+			IOSchema: model.IOSchema{
+				ParamTypes: []string{"int[]", "int"},
+				ReturnType: "int[]",
+			},
 			JavaScriptTemplate: `/**
  * @param {number[]} nums
  * @param {number} target
@@ -144,6 +151,10 @@ Explanation: Reads 01 from right to left. Therefore it is not a palindrome.`,
 			FunctionName:    "isPalindromeNumber",
 			TimeLimit:       1000,
 			MemoryLimit:     128,
+			IOSchema: model.IOSchema{
+				ParamTypes: []string{"int"},
+				ReturnType: "boolean",
+			},
 			JavaScriptTemplate: `/**
  * @param {number} x
  * @return {boolean}
@@ -194,6 +205,10 @@ Output: false`,
 			FunctionName:    "isValid",
 			TimeLimit:       1000,
 			MemoryLimit:     128,
+			IOSchema: model.IOSchema{
+				ParamTypes: []string{"string"},
+				ReturnType: "boolean",
+			},
 			JavaScriptTemplate: `/**
  * @param {string} s
  * @return {boolean}
@@ -226,10 +241,17 @@ public:
 	}
 
 	// Use transaction for atomic operation
-	return db.Transaction(func(tx *gorm.DB) error {
+	err := db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&leetcodes).Error; err != nil {
 			return fmt.Errorf("failed to seed leetcode problems: %w", err)
 		}
+		fmt.Printf("Successfully seeded %d LeetCode problems\n", len(leetcodes))
 		return nil
 	})
+
+	if err != nil {
+		return fmt.Errorf("transaction failed: %w", err)
+	}
+
+	return nil
 }
