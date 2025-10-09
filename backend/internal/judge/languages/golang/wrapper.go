@@ -61,7 +61,18 @@ func (g *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Le
 		importsSection += "\n)"
 	}
 
-	if len(problem.IOSchema.ParamTypes) == 0 {
+	// Try to infer parameter types from function signature if IOSchema is empty
+	paramTypes := problem.IOSchema.ParamTypes
+	if len(paramTypes) == 0 {
+		sigParser := parser.NewGoSignatureParser()
+		inferredTypes := sigParser.InferParamTypesFromSignature(code, problem.FunctionName)
+		if len(inferredTypes) > 0 {
+			paramTypes = inferredTypes
+		}
+	}
+
+	if len(paramTypes) == 0 {
+		// Fallback: assume all parameters are arrays for backward compatibility
 		template := `package main
 
 %s
@@ -91,7 +102,7 @@ func main() {
 		return fmt.Sprintf(template, importsSection, importInfo.Code, testCasesJSON, problem.FunctionName), nil
 	}
 
-	argDecl, callArgs := goArgLines("c", problem.IOSchema.ParamTypes)
+	argDecl, callArgs := goArgLines("c", paramTypes)
 	template := `package main
 
 %s
@@ -171,32 +182,31 @@ func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.LeetCo
 		importsSection += "\n)"
 	}
 
-	if len(problem.IOSchema.ParamTypes) == 0 {
-		template := `package main
-
-%s
-
-// user code
-%s
-
-func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
-func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
-
-func main() {
-    var testCase []interface{}
-    if err := json.Unmarshal([]byte(%q), &testCase); err != nil {
-        fmt.Fprintf(os.Stderr, "Error parsing test case: %%v\n", err)
-        os.Exit(1)
-    }
-    arg0 := toIntSlice(testCase[0])
-    arg1 := toIntSlice(testCase[1])
-    out := %s(arg0, arg1)
-    b, _ := json.Marshal(out)
-    fmt.Print(string(b))
-}`
-		return fmt.Sprintf(template, importsSection, importInfo.Code, testCase, problem.FunctionName)
+	// Try to infer parameter types from function signature if IOSchema is empty
+	paramTypes := problem.IOSchema.ParamTypes
+	if len(paramTypes) == 0 {
+		sigParser := parser.NewGoSignatureParser()
+		inferredTypes := sigParser.InferParamTypesFromSignature(code, problem.FunctionName)
+		if len(inferredTypes) > 0 {
+			paramTypes = inferredTypes
+		}
 	}
-	argDecl, callArgs := goArgLines("testCase", problem.IOSchema.ParamTypes)
+
+	if len(paramTypes) == 0 {
+		// Fallback: try to infer parameter count from function signature
+		sigParser := parser.NewGoSignatureParser()
+		inferredTypes := sigParser.InferParamTypesFromSignature(code, problem.FunctionName)
+		if len(inferredTypes) > 0 {
+			paramTypes = inferredTypes
+		}
+	}
+
+	if len(paramTypes) == 0 {
+		// Ultimate fallback: assume single int parameter for common cases
+		paramTypes = []string{"int"}
+	}
+
+	argDecl, callArgs := goArgLines("testCase", paramTypes)
 	template := `package main
 
 %s
@@ -205,9 +215,6 @@ func main() {
 %s
 
 func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
-func toFloat(v interface{}) float64 { if f, ok := v.(float64); ok { return f } ; if i, ok := v.(int); ok { return float64(i) }; return 0 }
-func toBool(v interface{}) bool { if b, ok := v.(bool); ok { return b }; return false }
-func toString(v interface{}) string { if s, ok := v.(string); ok { return s }; return "" }
 func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
 
 func main() {
@@ -219,7 +226,7 @@ func main() {
 %s
     out := %s(%s)
     b, _ := json.Marshal(out)
-    // Remove debug prints - use proper logging instead
+    fmt.Print(string(b))
 }`
 	return fmt.Sprintf(template, importsSection, importInfo.Code, testCase, argDecl, problem.FunctionName, callArgs)
 }

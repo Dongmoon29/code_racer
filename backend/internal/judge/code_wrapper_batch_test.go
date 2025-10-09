@@ -83,7 +83,7 @@ func TestWrapCodeBatch_Go(t *testing.T) {
 		"package main",
 		"json.Unmarshal",
 		"solution(",
-		"c...)",
+		"toInt(c[0])",
 		cases,
 	}
 	for _, s := range mustContain {

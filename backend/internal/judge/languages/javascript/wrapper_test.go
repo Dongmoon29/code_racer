@@ -37,6 +37,7 @@ function solution(nums) {
     return nums.sort((a, b) => a - b);
 }
 
+
 // Test execution
 function runTest() {
     try {
@@ -66,6 +67,7 @@ function solution(nums) {
 function solution(nums) {
     return nums.sort((a, b) => a - b);
 }
+
 
 // Test execution
 function runTest() {
@@ -98,6 +100,7 @@ const path = require('path');
 function solution(nums) {
     return nums.sort((a, b) => a - b);
 }
+
 
 // Test execution
 function runTest() {
@@ -179,6 +182,7 @@ function solution(nums) {
 function solution(nums) {
     return nums.sort((a, b) => a - b);
 }
+
 
 function runAll() {
   try {

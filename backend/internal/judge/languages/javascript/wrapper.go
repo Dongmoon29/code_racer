@@ -13,14 +13,15 @@ type Wrapper struct{}
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
 func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
-	// Parse user imports
-	importParser := parser.NewImportParser()
-	importInfo := importParser.ParseImports(code, 63) // JavaScript language ID
+	// Use simple regex-based parser for JavaScript
+	parser := parser.NewJavaScriptParser()
+	imports := parser.GetImports(code)
+	userCode := parser.GetUserCode(code)
 
 	// Build imports section
 	importsSection := ""
-	if len(importInfo.Imports) > 0 {
-		importsSection = strings.Join(importInfo.Imports, "\n") + "\n\n"
+	if len(imports) > 0 {
+		importsSection = strings.Join(imports, "\n") + "\n\n"
 	}
 
 	template := `%s// user code
@@ -42,18 +43,19 @@ function runAll() {
   }
 }
 runAll();`
-	return fmt.Sprintf(template, importsSection, importInfo.Code, testCasesJSON, problem.FunctionName), nil
+	return fmt.Sprintf(template, importsSection, userCode, testCasesJSON, problem.FunctionName), nil
 }
 
 func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
-	// Parse user imports
-	importParser := parser.NewImportParser()
-	importInfo := importParser.ParseImports(code, 63) // JavaScript language ID
+	// Use simple regex-based parser for JavaScript
+	parser := parser.NewJavaScriptParser()
+	imports := parser.GetImports(code)
+	userCode := parser.GetUserCode(code)
 
 	// Build imports section
 	importsSection := ""
-	if len(importInfo.Imports) > 0 {
-		importsSection = strings.Join(importInfo.Imports, "\n") + "\n\n"
+	if len(imports) > 0 {
+		importsSection = strings.Join(imports, "\n") + "\n\n"
 	}
 
 	template := `%s// User code
@@ -73,5 +75,5 @@ function runTest() {
 }
 
 runTest();`
-	return fmt.Sprintf(template, importsSection, importInfo.Code, testCase, problem.FunctionName)
+	return fmt.Sprintf(template, importsSection, userCode, testCase, problem.FunctionName)
 }

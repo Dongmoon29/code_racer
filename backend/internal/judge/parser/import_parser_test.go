@@ -25,7 +25,7 @@ def solution(nums):
 			languageID: 71,
 			expected: &ImportInfo{
 				Imports: []string{"import heapq"},
-				Code:    "\ndef solution(nums):\n    heapq.heapify(nums)\n    return nums",
+				Code:    "def solution(nums):\n    heapq.heapify(nums)\n    return nums",
 			},
 		},
 		{
@@ -40,7 +40,7 @@ def solution(nums):
 			languageID: 71,
 			expected: &ImportInfo{
 				Imports: []string{"import heapq", "import math", "from collections import defaultdict"},
-				Code:    "\ndef solution(nums):\n    heapq.heapify(nums)\n    return nums",
+				Code:    "def solution(nums):\n    heapq.heapify(nums)\n    return nums",
 			},
 		},
 		{
@@ -54,7 +54,7 @@ func solution(nums []int) []int {
 			languageID: 60,
 			expected: &ImportInfo{
 				Imports: []string{`import "sort"`},
-				Code:    "\nfunc solution(nums []int) []int {\n    sort.Ints(nums)\n    return nums\n}",
+				Code:    "func solution(nums []int) []int {\n    sort.Ints(nums)\n    return nums\n}",
 			},
 		},
 		{
@@ -71,7 +71,7 @@ func solution(nums []int) []int {
 			languageID: 60,
 			expected: &ImportInfo{
 				Imports: []string{`"sort"`, `"strings"`},
-				Code:    "\nfunc solution(nums []int) []int {\n    sort.Ints(nums)\n    return nums\n}",
+				Code:    "func solution(nums []int) []int {\n    sort.Ints(nums)\n    return nums\n}",
 			},
 		},
 		{
@@ -84,7 +84,7 @@ function solution(nums) {
 			languageID: 63,
 			expected: &ImportInfo{
 				Imports: []string{"const fs = require('fs');"},
-				Code:    "\nfunction solution(nums) {\n    return nums.sort((a, b) => a - b);\n}",
+				Code:    "function solution(nums) {\n    return nums.sort((a, b) => a - b);\n}",
 			},
 		},
 		{
@@ -97,7 +97,7 @@ function solution(nums) {
 			languageID: 63,
 			expected: &ImportInfo{
 				Imports: []string{"import { readFile } from 'fs';"},
-				Code:    "\nfunction solution(nums) {\n    return nums.sort((a, b) => a - b);\n}",
+				Code:    "function solution(nums) {\n    return nums.sort((a, b) => a - b);\n}",
 			},
 		},
 		{
@@ -114,7 +114,7 @@ public class Solution {
 			languageID: 62,
 			expected: &ImportInfo{
 				Imports: []string{"import java.util.*;", "import java.util.stream.Collectors;"},
-				Code:    "\npublic class Solution {\n    public int[] solution(int[] nums) {\n        Arrays.sort(nums);\n        return nums;\n    }\n}",
+				Code:    "public class Solution {\n    public int[] solution(int[] nums) {\n        Arrays.sort(nums);\n        return nums;\n    }\n}",
 			},
 		},
 		{
@@ -132,7 +132,7 @@ public:
 			languageID: 54,
 			expected: &ImportInfo{
 				Imports: []string{"#include <algorithm>", "#include <vector>"},
-				Code:    "\nclass Solution {\npublic:\n    vector<int> solution(vector<int>& nums) {\n        sort(nums.begin(), nums.end());\n        return nums;\n    }\n};",
+				Code:    "class Solution {\npublic:\n    vector<int> solution(vector<int>& nums) {\n        sort(nums.begin(), nums.end());\n        return nums;\n    }\n};",
 			},
 		},
 		{

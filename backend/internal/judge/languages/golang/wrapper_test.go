@@ -46,15 +46,20 @@ func solution(nums []int) []int {
     return nums
 }
 
+func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
+func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
+
 func main() {
     var testCase []interface{}
     if err := json.Unmarshal([]byte("[3,1,4,1,5]"), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %v\n", err)
         os.Exit(1)
     }
-    out := solution(testCase...)
+    arg0 := toIntSlice(testCase[0])
+
+    out := solution(arg0)
     b, _ := json.Marshal(out)
-    // Remove debug prints - use proper logging instead
+    fmt.Print(string(b))
 }`,
 		},
 		{
@@ -85,15 +90,20 @@ func solution(nums []int) []int {
     return nums
 }
 
+func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
+func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
+
 func main() {
     var testCase []interface{}
     if err := json.Unmarshal([]byte("[3,1,4,1,5]"), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %v\n", err)
         os.Exit(1)
     }
-    out := solution(testCase...)
+    arg0 := toIntSlice(testCase[0])
+
+    out := solution(arg0)
     b, _ := json.Marshal(out)
-    // Remove debug prints - use proper logging instead
+    fmt.Print(string(b))
 }`,
 		},
 		{
@@ -131,15 +141,20 @@ func solution(nums []int) []int {
     return nums
 }
 
+func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
+func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
+
 func main() {
     var testCase []interface{}
     if err := json.Unmarshal([]byte("[3,1,4,1,5]"), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %v\n", err)
         os.Exit(1)
     }
-    out := solution(testCase...)
+    arg0 := toIntSlice(testCase[0])
+
+    out := solution(arg0)
     b, _ := json.Marshal(out)
-    // Remove debug prints - use proper logging instead
+    fmt.Print(string(b))
 }`,
 		},
 	}
@@ -191,6 +206,12 @@ func solution(nums []int) []int {
     return nums
 }
 
+func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
+func toFloat(v interface{}) float64 { if f, ok := v.(float64); ok { return f }; if i, ok := v.(int); ok { return float64(i) }; return 0 }
+func toBool(v interface{}) bool { if b, ok := v.(bool); ok { return b }; return false }
+func toString(v interface{}) string { if s, ok := v.(string); ok { return s }; return "" }
+func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
+
 func main() {
     var cases [][]interface{}
     if err := json.Unmarshal([]byte("[[3,1,4,1,5], [1,2,3]]"), &cases); err != nil {
@@ -199,7 +220,9 @@ func main() {
     }
     results := make([]interface{}, 0, len(cases))
     for _, c := range cases {
-        out := solution(c...)
+    arg0 := toIntSlice(c[0])
+
+        out := solution(arg0)
         results = append(results, out)
     }
     b, _ := json.Marshal(results)
