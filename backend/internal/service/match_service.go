@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
+	"github.com/Dongmoon29/code_racer/internal/events"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -39,6 +40,7 @@ type matchService struct {
 	judgeService  interfaces.JudgeService
 	userRepo      interfaces.UserRepository
 	wsBroadcaster interfaces.WebSocketBroadcaster
+	eventBus      events.EventBus
 }
 
 // NewMatchService creates a new MatchService instance with the provided dependencies
@@ -50,8 +52,9 @@ func NewMatchService(
 	userRepo interfaces.UserRepository,
 	logger logger.Logger,
 	wsBroadcaster interfaces.WebSocketBroadcaster,
+	opts ...interface{},
 ) MatchService {
-	return &matchService{
+	svc := &matchService{
 		matchRepo:     matchRepo,
 		leetCodeRepo:  leetCodeRepo,
 		rdb:           rdb,
@@ -61,6 +64,13 @@ func NewMatchService(
 		logger:        logger,
 		wsBroadcaster: wsBroadcaster,
 	}
+
+	if len(opts) > 0 {
+		if bus, ok := opts[0].(events.EventBus); ok {
+			svc.eventBus = bus
+		}
+	}
+	return svc
 }
 
 // SubmitSolution handles code submission and evaluation
@@ -435,6 +445,9 @@ func (s *matchService) sendGameFinishedNotification(matchID, winnerID uuid.UUID)
 		s.logger.Debug().
 			Str("matchID", matchID.String()).
 			Msg("Skipping WebSocket notification for single player game")
+		if s.eventBus != nil {
+			s.eventBus.Publish(events.TopicGameFinished, &events.GameFinishedEvent{MatchID: matchID.String(), WinnerID: winnerID.String()})
+		}
 		return
 	}
 
@@ -460,4 +473,8 @@ func (s *matchService) sendGameFinishedNotification(matchID, winnerID uuid.UUID)
 		Str("matchID", matchID.String()).
 		Str("winnerID", winnerID.String()).
 		Msg("Game finished notification sent via WebSocket")
+
+	if s.eventBus != nil {
+		s.eventBus.Publish(events.TopicGameFinished, &events.GameFinishedEvent{MatchID: matchID.String(), WinnerID: winnerID.String()})
+	}
 }

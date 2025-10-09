@@ -207,6 +207,166 @@ func (s *webSocketService) subscribeToEvents() {
 			s.hub.matchBroadcast <- &MatchMessage{matchID: evt.Match.ID, data: msgBytes}
 		}
 	})
+
+	s.eventBus.Subscribe(events.TopicGameFinished, func(payload interface{}) {
+		evt, ok := payload.(*events.GameFinishedEvent)
+		if !ok || evt == nil {
+			return
+		}
+		// Broadcast the same message used elsewhere
+		msg := map[string]interface{}{
+			"type":      constants.GameFinished,
+			"game_id":   evt.MatchID,
+			"winner_id": evt.WinnerID,
+		}
+		if msgBytes, err := json.Marshal(msg); err == nil {
+			if matchID, err := uuid.Parse(evt.MatchID); err == nil {
+				s.hub.matchBroadcast <- &MatchMessage{matchID: matchID, data: msgBytes}
+			}
+		}
+	})
+
+	// Realtime judge events
+	s.eventBus.Subscribe(events.TopicSubmissionStarted, func(payload interface{}) {
+		evt, ok := payload.(*events.SubmissionStartedEvent)
+		if !ok || evt == nil {
+			return
+		}
+		msg := map[string]interface{}{
+			"type":             constants.SubmissionStarted,
+			"match_id":         evt.MatchID,
+			"user_id":          evt.UserID,
+			"status":           "started",
+			"total_test_cases": evt.TotalTestCases,
+			"message":          "Code submission started...",
+			"timestamp":        time.Now().Unix(),
+		}
+		if msgBytes, err := json.Marshal(msg); err == nil {
+			if matchID, err := uuid.Parse(evt.MatchID); err == nil {
+				s.hub.matchBroadcast <- &MatchMessage{matchID: matchID, data: msgBytes}
+			}
+		}
+	})
+
+	s.eventBus.Subscribe(events.TopicTestCaseRunning, func(payload interface{}) {
+		evt, ok := payload.(*events.TestCaseRunningEvent)
+		if !ok || evt == nil {
+			return
+		}
+		msg := map[string]interface{}{
+			"type":             constants.TestCaseRunning,
+			"match_id":         evt.MatchID,
+			"user_id":          evt.UserID,
+			"test_case_index":  evt.TestCaseIndex,
+			"total_test_cases": evt.Total,
+			"status":           "running",
+			"input":            evt.TestCase,
+			"timestamp":        time.Now().Unix(),
+		}
+		if msgBytes, err := json.Marshal(msg); err == nil {
+			if matchID, err := uuid.Parse(evt.MatchID); err == nil {
+				s.hub.matchBroadcast <- &MatchMessage{matchID: matchID, data: msgBytes}
+			}
+		}
+	})
+
+	s.eventBus.Subscribe(events.TopicTestCaseCompleted, func(payload interface{}) {
+		evt, ok := payload.(*events.TestCaseCompletedEvent)
+		if !ok || evt == nil {
+			return
+		}
+		msg := map[string]interface{}{
+			"type":            constants.TestCaseCompleted,
+			"match_id":        evt.MatchID,
+			"user_id":         evt.UserID,
+			"test_case_index": evt.TestCaseIndex,
+			"status":          "completed",
+			"input":           evt.Input,
+			"expected":        evt.Expected,
+			"actual":          evt.Actual,
+			"passed":          evt.Passed,
+			"execution_time":  evt.ExecutionTime,
+			"memory_usage":    evt.MemoryUsage,
+			"timestamp":       time.Now().Unix(),
+		}
+		if msgBytes, err := json.Marshal(msg); err == nil {
+			if matchID, err := uuid.Parse(evt.MatchID); err == nil {
+				s.hub.matchBroadcast <- &MatchMessage{matchID: matchID, data: msgBytes}
+			}
+		}
+	})
+
+	s.eventBus.Subscribe(events.TopicSubmissionCompleted, func(payload interface{}) {
+		evt, ok := payload.(*events.SubmissionCompletedEvent)
+		if !ok || evt == nil {
+			return
+		}
+		msg := map[string]interface{}{
+			"type":              constants.SubmissionCompleted,
+			"match_id":          evt.MatchID,
+			"user_id":           evt.UserID,
+			"status":            "completed",
+			"passed":            evt.Passed,
+			"total_test_cases":  evt.TotalCount,
+			"passed_test_cases": evt.PassedCount,
+			"execution_time":    evt.ExecutionTime,
+			"memory_usage":      evt.MemoryUsage,
+			"message": func() string {
+				if evt.Passed {
+					return "All test cases passed!"
+				}
+				return fmt.Sprintf("%d/%d test cases passed.", evt.PassedCount, evt.TotalCount)
+			}(),
+			"timestamp": time.Now().Unix(),
+		}
+		if msgBytes, err := json.Marshal(msg); err == nil {
+			if matchID, err := uuid.Parse(evt.MatchID); err == nil {
+				s.hub.matchBroadcast <- &MatchMessage{matchID: matchID, data: msgBytes}
+			}
+		}
+	})
+
+	s.eventBus.Subscribe(events.TopicSubmissionFailed, func(payload interface{}) {
+		evt, ok := payload.(*events.SubmissionFailedEvent)
+		if !ok || evt == nil {
+			return
+		}
+		msg := map[string]interface{}{
+			"type":      constants.SubmissionFailed,
+			"match_id":  evt.MatchID,
+			"user_id":   evt.UserID,
+			"status":    "failed",
+			"message":   evt.Message,
+			"timestamp": time.Now().Unix(),
+		}
+		if msgBytes, err := json.Marshal(msg); err == nil {
+			if matchID, err := uuid.Parse(evt.MatchID); err == nil {
+				s.hub.matchBroadcast <- &MatchMessage{matchID: matchID, data: msgBytes}
+			}
+		}
+	})
+
+	s.eventBus.Subscribe(events.TopicJudge0Timeout, func(payload interface{}) {
+		msg := map[string]interface{}{
+			"type":    constants.Judge0TimeoutError,
+			"message": "Judge0 API is not responding. Please try again later.",
+			"details": "Temporary issue with the code execution service.",
+		}
+		if msgBytes, err := json.Marshal(msg); err == nil {
+			s.hub.broadcastToAllClients(msgBytes)
+		}
+	})
+
+	s.eventBus.Subscribe(events.TopicJudge0Quota, func(payload interface{}) {
+		msg := map[string]interface{}{
+			"type":    constants.Judge0QuotaError,
+			"message": "Judge0 API daily quota exceeded. Please try again tomorrow.",
+			"details": "The code execution service has reached its daily usage limit.",
+		}
+		if msgBytes, err := json.Marshal(msg); err == nil {
+			s.hub.broadcastToAllClients(msgBytes)
+		}
+	})
 }
 
 // InitHub initializes the WebSocket hub

@@ -52,5 +52,13 @@ func (b *eventBus) Publish(topic string, payload interface{}) {
 
 // Topic names
 const (
-	TopicMatchCreated = "match.created"
+	TopicMatchCreated        = "match.created"
+	TopicGameFinished        = "match.finished"
+	TopicSubmissionStarted   = "submission.started"
+	TopicTestCaseRunning     = "testcase.running"
+	TopicTestCaseCompleted   = "testcase.completed"
+	TopicSubmissionCompleted = "submission.completed"
+	TopicSubmissionFailed    = "submission.failed"
+	TopicJudge0Timeout       = "judge0.timeout"
+	TopicJudge0Quota         = "judge0.quota"
 )

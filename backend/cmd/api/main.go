@@ -142,17 +142,15 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 	// Initialize EventBus
 	eventBus := events.NewEventBus()
 
-	// Initialize WebSocket and matchmaking services first (to avoid circular dependency)
-	// Create a temporary matchService for matchmaking service initialization
-	tempMatchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, nil, repos.userRepository, appLogger, nil)
-	matchmakingService := service.NewMatchmakingService(tempMatchService, rdb, appLogger, eventBus)
+	// Initialize JudgeService first (no direct WebSocket dependency)
+	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger, eventBus)
+
+	// Create MatchService without WebSocket dependency
+	matchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, judgeService, repos.userRepository, appLogger, nil, eventBus)
+
+	// Initialize Matchmaking and WebSocket services
+	matchmakingService := service.NewMatchmakingService(matchService, rdb, appLogger, eventBus)
 	wsService := service.NewWebSocketService(rdb, appLogger, matchmakingService, repos.userRepository, eventBus)
-
-	// Now create JudgeService with WebSocket broadcaster
-	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger, wsService)
-
-	// Create the final matchService with the complete JudgeService
-	matchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, judgeService, repos.userRepository, appLogger, wsService)
 
 	// Start WebSocket hub
 	wsHub := wsService.InitHub()

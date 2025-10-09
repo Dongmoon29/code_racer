@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
+	"github.com/Dongmoon29/code_racer/internal/events"
 	"github.com/Dongmoon29/code_racer/internal/factory"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/judge"
@@ -35,20 +36,20 @@ type judgeService struct {
 	judge0Client      interfaces.Judge0Client
 	logger            logger.Logger
 	functionExtractor *judge.FunctionExtractor
-	wsBroadcaster     interfaces.WebSocketBroadcaster
+	eventBus          events.EventBus
 }
 
 // Interface implementation check
 var _ interfaces.JudgeService = (*judgeService)(nil)
 
 // NewJudgeService creates a new JudgeService instance with the provided configuration
-func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger, wsBroadcaster interfaces.WebSocketBroadcaster) interfaces.JudgeService {
+func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger, eventBus events.EventBus) interfaces.JudgeService {
 	return &judgeService{
 		codeWrapper:       factory.NewCodeWrapper(logger),
 		judge0Client:      factory.NewJudge0Client(apiKey, apiEndpoint),
 		logger:            logger,
 		functionExtractor: judge.NewFunctionExtractor(logger),
-		wsBroadcaster:     wsBroadcaster,
+		eventBus:          eventBus,
 	}
 }
 
@@ -507,113 +508,73 @@ func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, pr
 
 // notifySubmissionStarted Submission start notification
 func (s *judgeService) notifySubmissionStarted(matchID uuid.UUID, userID uuid.UUID, totalTestCases int) {
-	msg := model.SubmissionStatusMessage{
-		Type:           constants.SubmissionStarted,
-		MatchID:        matchID.String(),
-		UserID:         userID.String(),
-		Status:         "started",
-		TotalTestCases: &totalTestCases,
-		Message:        "Code submission started...",
-		Timestamp:      s.getCurrentTimestamp(),
+	if s.eventBus != nil {
+		s.eventBus.Publish(events.TopicSubmissionStarted, &events.SubmissionStartedEvent{
+			MatchID:        matchID.String(),
+			UserID:         userID.String(),
+			TotalTestCases: totalTestCases,
+		})
 	}
-	s.broadcastToMatch(matchID, msg)
 }
 
 // notifyTestCaseRunning Test case running notification
 func (s *judgeService) notifyTestCaseRunning(matchID uuid.UUID, userID uuid.UUID, testCase model.TestCase, testCaseIndex int, totalTestCases int) {
-	msg := model.TestCaseDetailMessage{
-		Type:           constants.TestCaseRunning,
-		MatchID:        matchID.String(),
-		UserID:         userID.String(),
-		TestCaseIndex:  testCaseIndex,
-		TotalTestCases: totalTestCases,
-		Status:         "running",
-		Input:          testCase.Input,
-		ExpectedOutput: testCase.Output,
-		Timestamp:      s.getCurrentTimestamp(),
+	if s.eventBus != nil {
+		s.eventBus.Publish(events.TopicTestCaseRunning, &events.TestCaseRunningEvent{
+			MatchID:       matchID.String(),
+			UserID:        userID.String(),
+			TestCaseIndex: testCaseIndex,
+			TestCase:      testCase,
+			Total:         totalTestCases,
+		})
 	}
-	s.broadcastToMatch(matchID, msg)
 }
 
 // notifyTestCaseCompleted Test case completion notification
 func (s *judgeService) notifyTestCaseCompleted(matchID uuid.UUID, userID uuid.UUID, testCase model.TestCase, testCaseIndex int, result *types.TestCaseResult) {
-	// Parse actual output value
 	var actualOutput interface{}
 	if result.Actual != "" {
 		json.Unmarshal([]byte(result.Actual), &actualOutput)
 	}
-
-	msg := model.TestCaseDetailMessage{
-		Type:           constants.TestCaseCompleted,
-		MatchID:        matchID.String(),
-		UserID:         userID.String(),
-		TestCaseIndex:  testCaseIndex,
-		TotalTestCases: 0, // This value should be set by the caller
-		Status:         "completed",
-		Input:          testCase.Input,
-		ExpectedOutput: testCase.Output,
-		ActualOutput:   actualOutput,
-		Passed:         &result.Passed,
-		ExecutionTime:  &result.ExecutionTime,
-		MemoryUsage:    &result.MemoryUsage,
-		Timestamp:      s.getCurrentTimestamp(),
+	if s.eventBus != nil {
+		s.eventBus.Publish(events.TopicTestCaseCompleted, &events.TestCaseCompletedEvent{
+			MatchID:       matchID.String(),
+			UserID:        userID.String(),
+			TestCaseIndex: testCaseIndex,
+			Input:         testCase.Input,
+			Expected:      testCase.Output,
+			Actual:        actualOutput,
+			Passed:        result.Passed,
+			ExecutionTime: result.ExecutionTime,
+			MemoryUsage:   result.MemoryUsage,
+		})
 	}
-	s.broadcastToMatch(matchID, msg)
 }
 
 // notifySubmissionCompleted Submission completion notification
 func (s *judgeService) notifySubmissionCompleted(matchID uuid.UUID, userID uuid.UUID, result *types.EvaluationResult) {
-	passedTestCases := s.countPassedTests(result.TestResults)
-	totalTestCases := len(result.TestResults)
-
-	msg := model.SubmissionStatusMessage{
-		Type:            constants.SubmissionCompleted,
-		MatchID:         matchID.String(),
-		UserID:          userID.String(),
-		Status:          "completed",
-		Passed:          &result.Passed,
-		TotalTestCases:  &totalTestCases,
-		PassedTestCases: &passedTestCases,
-		ExecutionTime:   &result.ExecutionTime,
-		MemoryUsage:     &result.MemoryUsage,
-		Message:         s.getFinalResultMessage(result),
-		Timestamp:       s.getCurrentTimestamp(),
+	if s.eventBus != nil {
+		s.eventBus.Publish(events.TopicSubmissionCompleted, &events.SubmissionCompletedEvent{
+			MatchID:       matchID.String(),
+			UserID:        userID.String(),
+			Passed:        result.Passed,
+			PassedCount:   s.countPassedTests(result.TestResults),
+			TotalCount:    len(result.TestResults),
+			ExecutionTime: result.ExecutionTime,
+			MemoryUsage:   result.MemoryUsage,
+		})
 	}
-	s.broadcastToMatch(matchID, msg)
 }
 
 // notifySubmissionFailed Submission failure notification
 func (s *judgeService) notifySubmissionFailed(matchID uuid.UUID, userID uuid.UUID, errorMessage string) {
-	msg := model.SubmissionStatusMessage{
-		Type:      constants.SubmissionFailed,
-		MatchID:   matchID.String(),
-		UserID:    userID.String(),
-		Status:    "failed",
-		Message:   fmt.Sprintf("Submission failed: %s", errorMessage),
-		Timestamp: s.getCurrentTimestamp(),
+	if s.eventBus != nil {
+		s.eventBus.Publish(events.TopicSubmissionFailed, &events.SubmissionFailedEvent{
+			MatchID: matchID.String(),
+			UserID:  userID.String(),
+			Message: fmt.Sprintf("Submission failed: %s", errorMessage),
+		})
 	}
-	s.broadcastToMatch(matchID, msg)
-}
-
-// broadcastToMatch Broadcast message to match
-func (s *judgeService) broadcastToMatch(matchID uuid.UUID, message interface{}) {
-	if s.wsBroadcaster != nil {
-		msgBytes, _ := json.Marshal(message)
-		s.wsBroadcaster.BroadcastToMatch(matchID, msgBytes)
-	}
-}
-
-// getCurrentTimestamp Get current timestamp
-func (s *judgeService) getCurrentTimestamp() int64 {
-	return time.Now().Unix()
-}
-
-// getFinalResultMessage Generate final result message
-func (s *judgeService) getFinalResultMessage(result *types.EvaluationResult) string {
-	if result.Passed {
-		return "All test cases passed!"
-	}
-	return fmt.Sprintf("%d/%d test cases passed.", s.countPassedTests(result.TestResults), len(result.TestResults))
 }
 
 // aggregatePerTestWithRealtime Individual evaluation with real-time notifications
@@ -659,40 +620,14 @@ func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int,
 
 // sendJudge0TimeoutError sends a timeout error message via WebSocket
 func (s *judgeService) sendJudge0TimeoutError() {
-	if s.wsBroadcaster == nil {
-		return
-	}
-
-	errorMsg := map[string]interface{}{
-		"type":    constants.Judge0TimeoutError,
-		"message": "Judge0 API is not responding. Please try again later.",
-		"details": "Temporary issue with the code execution service.",
-	}
-
-	if msgBytes, err := json.Marshal(errorMsg); err == nil {
-		s.wsBroadcaster.BroadcastToAllClients(msgBytes)
-		s.logger.Info().Msg("Judge0 timeout error message sent via WebSocket")
-	} else {
-		s.logger.Error().Err(err).Msg("Failed to marshal Judge0 timeout error message")
+	if s.eventBus != nil {
+		s.eventBus.Publish(events.TopicJudge0Timeout, &events.Judge0TimeoutEvent{})
 	}
 }
 
 // sendJudge0QuotaError sends a quota exceeded error message via WebSocket
 func (s *judgeService) sendJudge0QuotaError() {
-	if s.wsBroadcaster == nil {
-		return
-	}
-
-	errorMsg := map[string]interface{}{
-		"type":    constants.Judge0QuotaError,
-		"message": "Judge0 API daily quota exceeded. Please try again tomorrow.",
-		"details": "The code execution service has reached its daily usage limit.",
-	}
-
-	if msgBytes, err := json.Marshal(errorMsg); err == nil {
-		s.wsBroadcaster.BroadcastToAllClients(msgBytes)
-		s.logger.Info().Msg("Judge0 quota error message sent via WebSocket")
-	} else {
-		s.logger.Error().Err(err).Msg("Failed to marshal Judge0 quota error message")
+	if s.eventBus != nil {
+		s.eventBus.Publish(events.TopicJudge0Quota, &events.Judge0QuotaEvent{})
 	}
 }
