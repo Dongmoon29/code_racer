@@ -90,15 +90,25 @@ export class WebSocketClient {
     };
 
     this.ws.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data) as WebSocketMessage;
-        this.handleMessage(message);
-      } catch (error) {
-        this.errorHandler(error, {
-          action: 'parse_message',
-          messageData: event.data,
-          gameId: this.gameId,
-        });
+      const raw = event.data;
+      // Some backends may concatenate multiple JSON objects with newlines in a single frame
+      const chunks = typeof raw === 'string' ? raw.split('\n') : [raw];
+
+      for (const chunk of chunks) {
+        const trimmed = typeof chunk === 'string' ? chunk.trim() : chunk;
+        if (!trimmed) continue;
+        try {
+          const message = JSON.parse(trimmed) as WebSocketMessage;
+          this.handleMessage(message);
+        } catch (error) {
+          // Report both the full payload and the specific chunk that failed
+          this.errorHandler(error, {
+            action: 'parse_message',
+            messageData: raw,
+            chunk: trimmed,
+            gameId: this.gameId,
+          });
+        }
       }
     };
 

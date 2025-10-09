@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// MatchStatus 게임 상태를 표현하는 enum
 type MatchStatus string
 
 const (
@@ -49,7 +48,6 @@ type Match struct {
 	UpdatedAt time.Time  `json:"updated_at"`
 }
 
-// BeforeCreate UUID 생성을 위한 GORM 훅
 func (m *Match) BeforeCreate(tx *gorm.DB) error {
 	if m.ID == uuid.Nil {
 		m.ID = uuid.New()
@@ -57,7 +55,6 @@ func (m *Match) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// 응답 DTO
 type MatchResponse struct {
 	ID        uuid.UUID       `json:"id"`
 	Mode      MatchMode       `gorm:"type:varchar(20);not null;default:'casual_pvp'" json:"mode"`
@@ -71,7 +68,6 @@ type MatchResponse struct {
 	CreatedAt time.Time       `json:"created_at"`
 }
 
-// Match → MatchResponse 변환
 func (m *Match) ToResponse() *MatchResponse {
 	var playerAResp *UserResponse
 	if m.PlayerA.ID != uuid.Nil {
@@ -103,13 +99,11 @@ func (m *Match) ToResponse() *MatchResponse {
 	}
 }
 
-// SubmitSolutionRequest 코드 제출 요청 DTO
 type SubmitSolutionRequest struct {
 	Code     string `json:"code" binding:"required"`
 	Language string `json:"language" binding:"required"`
 }
 
-// SubmitSolutionResponse 코드 제출 응답 DTO
 type SubmitSolutionResponse struct {
 	Success  bool   `json:"success"`
 	Message  string `json:"message"`

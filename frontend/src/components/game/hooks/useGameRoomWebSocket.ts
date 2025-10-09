@@ -170,7 +170,7 @@ export const useGameRoomWebSocket = ({
         memoryUsage: message.memory_usage,
         statusMessage: message.passed
           ? 'All test cases passed!'
-          : 'Some test cases failed.',
+          : 'Test cases failed.',
       }));
 
       // If all test cases passed, check if game is finished (for single player games)

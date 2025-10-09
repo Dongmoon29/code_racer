@@ -596,11 +596,26 @@ func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int,
 		// Test case completion notification
 		s.notifyTestCaseCompleted(matchID, userID, testCase, testCaseIndex, testCaseResult)
 
-		if !testCaseResult.Passed {
-			allTestsPassed = false
-		}
+		// Aggregate metrics so far
 		totalExecutionTime += testCaseResult.ExecutionTime
 		totalMemoryUsage += testCaseResult.MemoryUsage
+
+		// Short-circuit on first failure to save Judge0 cost
+		if !testCaseResult.Passed {
+			allTestsPassed = false
+			s.logger.Debug().Str("Test case failed", fmt.Sprintf("Test case %d failed", testCaseIndex)).Msg("Test case failed")
+			s.notifySubmissionFailed(matchID, userID, fmt.Sprintf("Test case %d failed", testCaseIndex))
+			processed := float64(len(testCaseResults))
+			if processed == 0 {
+				processed = 1
+			}
+			return &types.EvaluationResult{
+				Passed:        false,
+				TestResults:   testCaseResults,
+				ExecutionTime: totalExecutionTime / processed,
+				MemoryUsage:   totalMemoryUsage / processed,
+			}, nil
+		}
 
 		// Small delay (to allow UI to see the process)
 		time.Sleep(100 * time.Millisecond)

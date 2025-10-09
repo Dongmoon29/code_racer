@@ -11,13 +11,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// GameController 게임 관련 컨트롤러
 type MatchController struct {
 	matchService service.MatchService
 	logger       logger.Logger
 }
 
-// NewGameController GameController 인스턴스 생성
 func NewMatchController(matchService service.MatchService, logger logger.Logger) *MatchController {
 	return &MatchController{
 		matchService: matchService,
@@ -25,7 +23,6 @@ func NewMatchController(matchService service.MatchService, logger logger.Logger)
 	}
 }
 
-// GetMatch 매치 정보 조회 핸들러
 func (c *MatchController) GetMatch(ctx *gin.Context) {
 	// Parse match ID
 	matchID, err := uuid.Parse(ctx.Param("id"))
@@ -44,33 +41,29 @@ func (c *MatchController) GetMatch(ctx *gin.Context) {
 	OK(ctx, res)
 }
 
-// SubmitSolution 코드 제출 핸들러
 func (c *MatchController) SubmitSolution(ctx *gin.Context) {
-	// 사용자 ID 가져오기
 	userID, exists := ctx.Get("userID")
 	if !exists {
 		Unauthorized(ctx, "User not authenticated")
 		return
 	}
 
-	// Parse match ID
 	matchID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		BadRequest(ctx, "Invalid match ID")
 		return
 	}
 
-	// 요청 데이터 바인딩
 	var req model.SubmitSolutionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		BadRequest(ctx, "Invalid request: "+err.Error())
 		return
 	}
 
-	// 코드 제출 및 평가
+	// Code submission and evaluation
 	result, err := c.matchService.SubmitSolution(matchID, userID.(uuid.UUID), &req)
 	if err != nil {
-		// Judge0 API 할당량 초과 에러 확인
+		// TODO log got changed so I need to fix this code
 		if strings.Contains(err.Error(), "exceeded the DAILY quota") {
 			JSONError(ctx, http.StatusTooManyRequests, "Code evaluation service is currently unavailable due to daily quota exceeded. Please try again later.", "judge0_quota_exceeded")
 			return
@@ -89,14 +82,12 @@ func (c *MatchController) SubmitSolution(ctx *gin.Context) {
 
 // CreateSinglePlayerMatch creates a single player match
 func (c *MatchController) CreateSinglePlayerMatch(ctx *gin.Context) {
-	// 사용자 ID 가져오기
 	userID, exists := ctx.Get("userID")
 	if !exists {
 		Unauthorized(ctx, "User not authenticated")
 		return
 	}
 
-	// 요청 데이터 바인딩
 	var req struct {
 		Difficulty string `json:"difficulty" binding:"required"`
 	}
@@ -105,13 +96,11 @@ func (c *MatchController) CreateSinglePlayerMatch(ctx *gin.Context) {
 		return
 	}
 
-	// Validate difficulty
 	if req.Difficulty != "Easy" && req.Difficulty != "Medium" && req.Difficulty != "Hard" {
 		BadRequest(ctx, "Invalid difficulty. Must be Easy, Medium, or Hard")
 		return
 	}
 
-	// Create single player match
 	match, err := c.matchService.CreateSinglePlayerMatch(userID.(uuid.UUID), req.Difficulty)
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to create single player match")

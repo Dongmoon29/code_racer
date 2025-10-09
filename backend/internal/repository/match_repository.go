@@ -13,6 +13,7 @@ import (
 type MatchRepository interface {
 	Create(match *model.Match) error
 	FindByID(id uuid.UUID) (*model.Match, error)
+	FindPlayingMatchByID(id uuid.UUID) (*model.Match, error)
 	Update(match *model.Match) error
 	SetWinner(matchID uuid.UUID, userID uuid.UUID) error
 	FindByUserID(userID uuid.UUID) ([]model.Match, error)
@@ -40,6 +41,22 @@ func (r *matchRepository) FindByID(id uuid.UUID) (*model.Match, error) {
 		Preload("Winner").
 		Preload("LeetCode").
 		Where("id = ?", id).
+		First(&match).Error
+	if err != nil {
+		return nil, err
+	}
+	return &match, nil
+}
+
+// FindPlayingMatchByID returns a match only if it is currently in 'playing' status
+func (r *matchRepository) FindPlayingMatchByID(id uuid.UUID) (*model.Match, error) {
+	var match model.Match
+	err := r.db.
+		Preload("PlayerA").
+		Preload("PlayerB").
+		Preload("Winner").
+		Preload("LeetCode").
+		Where("id = ? AND status = ?", id, model.MatchStatusPlaying).
 		First(&match).Error
 	if err != nil {
 		return nil, err

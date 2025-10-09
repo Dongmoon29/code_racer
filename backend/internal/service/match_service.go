@@ -80,19 +80,11 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 		Str("userID", userID.String()).
 		Msg("Starting solution submission")
 
-		// Fetch match from repository
-	match, err := s.matchRepo.FindByID(matchID)
+		// Fetch match from repository (only if playing)
+	match, err := s.matchRepo.FindPlayingMatchByID(matchID)
 	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to find game")
+		s.logger.Error().Err(err).Msg("Failed to find playing match")
 		return nil, err
-	}
-
-	// Validate match status
-	if match.Status != model.MatchStatusPlaying {
-		s.logger.Error().
-			Str("status", string(match.Status)).
-			Msg("Match is not in playing status")
-		return nil, errors.New("match is not in playing status")
 	}
 
 	s.logger.Debug().
