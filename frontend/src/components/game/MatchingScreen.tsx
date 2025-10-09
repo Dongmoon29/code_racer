@@ -99,7 +99,7 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(
     const cardBaseClass =
       'w-full h-36 rounded-2xl border bg-[hsl(var(--background))] border-[hsl(var(--border))] flex flex-col justify-center items-start p-4 cursor-pointer';
     const ctaClass =
-      'w-14 h-14 flex items-center justify-center rounded-full text-white font-semibold shadow-lg bg-green-600';
+      'w-14 h-14 flex items-center justify-center rounded-full text-white font-semibold shadow-lg bg-green-600 cursor-pointer';
 
     return (
       <div className="max-w-5xl mx-auto p-6">
