@@ -2,7 +2,9 @@ package golang
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/Dongmoon29/code_racer/internal/judge/parser"
 	"github.com/Dongmoon29/code_racer/internal/model"
 )
 
@@ -12,18 +14,63 @@ type Wrapper struct{}
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
 func (g *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
-	if len(problem.IOSchema.ParamTypes) == 0 {
-		template := `
-package main
+	// Parse user imports
+	importParser := parser.NewImportParser()
+	importInfo := importParser.ParseImports(code, 60) // Go language ID
 
-import (
+	// Build imports section with duplicate removal
+	baseImports := []string{`"encoding/json"`, `"fmt"`, `"os"`}
+	allImports := make([]string, 0, len(baseImports)+len(importInfo.Imports))
+
+	// Add base imports
+	allImports = append(allImports, baseImports...)
+
+	// Add user imports and remove duplicates
+	importSet := make(map[string]bool)
+	for _, imp := range baseImports {
+		importSet[imp] = true
+	}
+
+	for _, imp := range importInfo.Imports {
+		// Remove "import " prefix if present for multi-line imports
+		if after, ok := strings.CutPrefix(imp, "import "); ok {
+			imp = after
+		}
+		// Add quotes if not present
+		if !strings.HasPrefix(imp, `"`) {
+			imp = `"` + imp + `"`
+		}
+		// Check for duplicates
+		if !importSet[imp] {
+			allImports = append(allImports, imp)
+			importSet[imp] = true
+		}
+	}
+
+	// Build final imports section
+	importsSection := `import (
     "encoding/json"
     "fmt"
     "os"
-)
+)`
+	if len(allImports) > len(baseImports) {
+		importsSection = `import (`
+		for _, imp := range allImports {
+			importsSection += "\n    " + imp
+		}
+		importsSection += "\n)"
+	}
+
+	if len(problem.IOSchema.ParamTypes) == 0 {
+		template := `package main
+
+%s
 
 // user code
 %s
+
+func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
+func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
 
 func main() {
     var cases [][]interface{}
@@ -33,24 +80,21 @@ func main() {
     }
     results := make([]interface{}, 0, len(cases))
     for _, c := range cases {
-        out := %s(c...)
+        arg0 := toIntSlice(c[0])
+        arg1 := toIntSlice(c[1])
+        out := %s(arg0, arg1)
         results = append(results, out)
     }
     b, _ := json.Marshal(results)
-    // Remove debug prints - use proper logging instead
+    fmt.Print(string(b))
 }`
-		return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
+		return fmt.Sprintf(template, importsSection, importInfo.Code, testCasesJSON, problem.FunctionName), nil
 	}
 
 	argDecl, callArgs := goArgLines("c", problem.IOSchema.ParamTypes)
-	template := `
-package main
+	template := `package main
 
-import (
-    "encoding/json"
-    "fmt"
-    "os"
-)
+%s
 
 // user code
 %s
@@ -76,22 +120,67 @@ func main() {
     b, _ := json.Marshal(results)
     // Remove debug prints - use proper logging instead
 }`
-	return fmt.Sprintf(template, code, testCasesJSON, argDecl, problem.FunctionName, callArgs), nil
+	return fmt.Sprintf(template, importsSection, importInfo.Code, testCasesJSON, argDecl, problem.FunctionName, callArgs), nil
 }
 
 func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
-	if len(problem.IOSchema.ParamTypes) == 0 {
-		template := `
-package main
+	// Parse user imports
+	importParser := parser.NewImportParser()
+	importInfo := importParser.ParseImports(code, 60) // Go language ID
 
-import (
+	// Build imports section with duplicate removal
+	baseImports := []string{`"encoding/json"`, `"fmt"`, `"os"`}
+	allImports := make([]string, 0, len(baseImports)+len(importInfo.Imports))
+
+	// Add base imports
+	allImports = append(allImports, baseImports...)
+
+	// Add user imports and remove duplicates
+	importSet := make(map[string]bool)
+	for _, imp := range baseImports {
+		importSet[imp] = true
+	}
+
+	for _, imp := range importInfo.Imports {
+		// Remove "import " prefix if present for multi-line imports
+		if strings.HasPrefix(imp, "import ") {
+			imp = strings.TrimPrefix(imp, "import ")
+		}
+		// Add quotes if not present
+		if !strings.HasPrefix(imp, `"`) {
+			imp = `"` + imp + `"`
+		}
+		// Check for duplicates
+		if !importSet[imp] {
+			allImports = append(allImports, imp)
+			importSet[imp] = true
+		}
+	}
+
+	// Build final imports section
+	importsSection := `import (
     "encoding/json"
     "fmt"
     "os"
-)
+)`
+	if len(allImports) > len(baseImports) {
+		importsSection = `import (`
+		for _, imp := range allImports {
+			importsSection += "\n    " + imp
+		}
+		importsSection += "\n)"
+	}
+
+	if len(problem.IOSchema.ParamTypes) == 0 {
+		template := `package main
+
+%s
 
 // user code
 %s
+
+func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
+func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
 
 func main() {
     var testCase []interface{}
@@ -99,21 +188,18 @@ func main() {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %%v\n", err)
         os.Exit(1)
     }
-    out := %s(testCase...)
+    arg0 := toIntSlice(testCase[0])
+    arg1 := toIntSlice(testCase[1])
+    out := %s(arg0, arg1)
     b, _ := json.Marshal(out)
-    // Remove debug prints - use proper logging instead
+    fmt.Print(string(b))
 }`
-		return fmt.Sprintf(template, code, testCase, problem.FunctionName)
+		return fmt.Sprintf(template, importsSection, importInfo.Code, testCase, problem.FunctionName)
 	}
 	argDecl, callArgs := goArgLines("testCase", problem.IOSchema.ParamTypes)
-	template := `
-package main
+	template := `package main
 
-import (
-    "encoding/json"
-    "fmt"
-    "os"
-)
+%s
 
 // user code
 %s
@@ -135,7 +221,7 @@ func main() {
     b, _ := json.Marshal(out)
     // Remove debug prints - use proper logging instead
 }`
-	return fmt.Sprintf(template, code, testCase, argDecl, problem.FunctionName, callArgs)
+	return fmt.Sprintf(template, importsSection, importInfo.Code, testCase, argDecl, problem.FunctionName, callArgs)
 }
 
 func goArgLines(varName string, paramTypes []string) (string, string) {

@@ -2,7 +2,9 @@ package javascript
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/Dongmoon29/code_racer/internal/judge/parser"
 	"github.com/Dongmoon29/code_racer/internal/model"
 )
 
@@ -11,8 +13,17 @@ type Wrapper struct{}
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
 func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
-	template := `
-// user code
+	// Parse user imports
+	importParser := parser.NewImportParser()
+	importInfo := importParser.ParseImports(code, 63) // JavaScript language ID
+
+	// Build imports section
+	importsSection := ""
+	if len(importInfo.Imports) > 0 {
+		importsSection = strings.Join(importInfo.Imports, "\n") + "\n\n"
+	}
+
+	template := `%s// user code
 %s
 
 function runAll() {
@@ -31,12 +42,21 @@ function runAll() {
   }
 }
 runAll();`
-	return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
+	return fmt.Sprintf(template, importsSection, importInfo.Code, testCasesJSON, problem.FunctionName), nil
 }
 
 func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
-	template := `
-// User code
+	// Parse user imports
+	importParser := parser.NewImportParser()
+	importInfo := importParser.ParseImports(code, 63) // JavaScript language ID
+
+	// Build imports section
+	importsSection := ""
+	if len(importInfo.Imports) > 0 {
+		importsSection = strings.Join(importInfo.Imports, "\n") + "\n\n"
+	}
+
+	template := `%s// User code
 %s
 
 // Test execution
@@ -53,5 +73,5 @@ function runTest() {
 }
 
 runTest();`
-	return fmt.Sprintf(template, code, testCase, problem.FunctionName)
+	return fmt.Sprintf(template, importsSection, importInfo.Code, testCase, problem.FunctionName)
 }
