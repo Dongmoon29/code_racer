@@ -8,7 +8,7 @@ import { SubmitResult } from '@/types';
 interface GameHeaderProps {
   title: string;
   selectedLanguage: 'python' | 'javascript' | 'go';
-  submitting: boolean;
+  isSubmitting: boolean;
   submitResult: SubmitResult | null;
   onLanguageChange: (language: 'python' | 'javascript' | 'go') => void;
   onSubmitCode: () => void;
@@ -18,7 +18,7 @@ export const GameHeader: FC<GameHeaderProps> = memo(
   ({
     title,
     selectedLanguage,
-    submitting,
+    isSubmitting,
     submitResult,
     onLanguageChange,
     onSubmitCode,
@@ -38,10 +38,10 @@ export const GameHeader: FC<GameHeaderProps> = memo(
           <div className="col-span-12 md:col-span-4 flex justify-end items-start">
             <Button
               onClick={onSubmitCode}
-              disabled={submitting}
+              disabled={isSubmitting}
               className="w-full md:w-auto"
             >
-              {submitting ? <Spinner size="sm" /> : 'Submit Solution'}
+              {isSubmitting ? <Spinner size="sm" /> : 'Submit Solution'}
             </Button>
           </div>
         </div>

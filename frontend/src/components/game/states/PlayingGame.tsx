@@ -18,7 +18,7 @@ interface PlayingGameProps {
   opponentName?: string;
   selectedLanguage: 'python' | 'javascript' | 'go';
   submitResult: SubmitResult | null;
-  submitting: boolean;
+  isSubmitting: boolean;
   submissionProgress: SubmissionProgress;
   onCodeChange: (code: string) => void;
   onLanguageChange: (language: 'python' | 'javascript' | 'go') => void;
@@ -32,7 +32,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
     opponentCode,
     opponentName,
     selectedLanguage,
-    submitting,
+    isSubmitting,
     submissionProgress,
     onCodeChange,
     onLanguageChange,
@@ -96,10 +96,10 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
             <div className="col-span-12 md:col-span-4 flex justify-end items-start">
               <Button
                 onClick={onSubmitCode}
-                disabled={submitting}
+                disabled={isSubmitting}
                 className="w-full md:w-auto"
               >
-                {submitting ? <Spinner size="sm" /> : 'Submit Solution'}
+                {isSubmitting ? <Spinner size="sm" /> : 'Submit Solution'}
               </Button>
             </div>
           </div>
@@ -156,7 +156,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                 onCodeChange={onCodeChange}
                 onFullscreenToggle={handleToggleFullscreen}
                 onRun={onSubmitCode}
-                runDisabled={submitting}
+                runDisabled={isSubmitting}
                 onDragStart={() => {
                   setIsResizing(true);
                   document.body.classList.add('resizing');
@@ -192,6 +192,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
             isSinglePlayerMode={isSinglePlayerMode}
             onRun={onSubmitCode}
             submissionProgress={submissionProgress}
+            isSubmitting={isSubmitting}
           />
         )}
       </div>

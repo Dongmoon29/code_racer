@@ -24,7 +24,7 @@ interface UseGameRoomWebSocketProps {
   setMyCode: (code: string) => void;
   setOpponentCode: (code: string) => void;
   setSubmitResult: (result: SubmitResult | null) => void;
-  setSubmitting: (submitting: boolean) => void;
+  setIsSubmitting: (isSubmitting: boolean) => void;
   setSelectedLanguage: (language: SupportedLanguage) => void;
   setSubmissionProgress: React.Dispatch<
     React.SetStateAction<SubmissionProgress>
@@ -47,7 +47,7 @@ export const useGameRoomWebSocket = ({
   setMyCode,
   setOpponentCode,
   setSubmitResult,
-  setSubmitting,
+  setIsSubmitting,
   setSelectedLanguage,
   setSubmissionProgress,
   refetchGame,
@@ -83,7 +83,7 @@ export const useGameRoomWebSocket = ({
       // Only reflect my own submission progress in my UI
       if (message.user_id !== currentUser?.id) return;
 
-      setSubmitting(true);
+      setIsSubmitting(true);
       setSubmissionProgress({
         isSubmitting: true,
         totalTestCases:
@@ -103,7 +103,7 @@ export const useGameRoomWebSocket = ({
     },
     [
       currentUser?.id,
-      setSubmitting,
+      setIsSubmitting,
       setSubmissionProgress,
       game?.leetcode?.test_cases?.length,
     ]
@@ -161,7 +161,7 @@ export const useGameRoomWebSocket = ({
     (message: SubmissionStatusMessage) => {
       if (message.user_id !== currentUser?.id) return;
 
-      setSubmitting(false);
+      setIsSubmitting(false);
       setSubmissionProgress((prev: SubmissionProgress) => ({
         ...prev,
         isSubmitting: false,
@@ -186,7 +186,7 @@ export const useGameRoomWebSocket = ({
     },
     [
       currentUser?.id,
-      setSubmitting,
+      setIsSubmitting,
       setSubmissionProgress,
       setSubmitResult,
       refetchGame,
@@ -197,7 +197,7 @@ export const useGameRoomWebSocket = ({
     (message: SubmissionStatusMessage) => {
       if (message.user_id !== currentUser?.id) return;
 
-      setSubmitting(false);
+      setIsSubmitting(false);
       setSubmissionProgress((prev: SubmissionProgress) => ({
         ...prev,
         isSubmitting: false,
@@ -209,7 +209,7 @@ export const useGameRoomWebSocket = ({
         is_winner: false,
       });
     },
-    [currentUser?.id, setSubmitting, setSubmissionProgress, setSubmitResult]
+    [currentUser?.id, setIsSubmitting, setSubmissionProgress, setSubmitResult]
   );
 
   const handleGameFinished = useCallback(
@@ -364,7 +364,7 @@ export const useGameRoomWebSocket = ({
   // Language change handler
   const handleLanguageChange = useCallback(
     (newLanguage: SupportedLanguage) => {
-      setSubmitting(false);
+      setIsSubmitting(false);
       setSubmitResult(null);
       setSelectedLanguage(newLanguage);
 
@@ -380,7 +380,7 @@ export const useGameRoomWebSocket = ({
     [
       game?.leetcode,
       setMyCode,
-      setSubmitting,
+      setIsSubmitting,
       setSubmitResult,
       setSelectedLanguage,
     ]
@@ -390,7 +390,7 @@ export const useGameRoomWebSocket = ({
   const handleSubmitCode = useCallback(async () => {
     if (!game) return;
 
-    setSubmitting(true);
+    setIsSubmitting(true);
     setSubmitResult(null);
 
     try {
@@ -430,9 +430,16 @@ export const useGameRoomWebSocket = ({
         is_winner: false,
       });
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
-  }, [game, matchId, myCode, selectedLanguage, setSubmitting, setSubmitResult]);
+  }, [
+    game,
+    matchId,
+    myCode,
+    selectedLanguage,
+    setIsSubmitting,
+    setSubmitResult,
+  ]);
 
   return {
     handleCodeChange,

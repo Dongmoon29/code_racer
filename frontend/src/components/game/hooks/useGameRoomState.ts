@@ -40,8 +40,8 @@ interface UseGameRoomStateReturn {
   // Submission state
   submitResult: SubmitResult | null;
   setSubmitResult: (result: SubmitResult | null) => void;
-  submitting: boolean;
-  setSubmitting: (submitting: boolean) => void;
+  isSubmitting: boolean;
+  setIsSubmitting: (isSubmitting: boolean) => void;
   submissionProgress: SubmissionProgress;
   setSubmissionProgress: Dispatch<SetStateAction<SubmissionProgress>>;
 
@@ -81,7 +81,7 @@ export const useGameRoomState = ({
 
   // Submission state
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
-  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submissionProgress, setSubmissionProgress] =
     useState<SubmissionProgress>({
       isSubmitting: false,
@@ -152,8 +152,8 @@ export const useGameRoomState = ({
     // Submission state
     submitResult,
     setSubmitResult,
-    submitting,
-    setSubmitting,
+    isSubmitting,
+    setIsSubmitting,
     submissionProgress,
     setSubmissionProgress,
 

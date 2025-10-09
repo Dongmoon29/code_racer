@@ -23,6 +23,7 @@ interface FullscreenOverlayProps {
   isSinglePlayerMode?: boolean;
   onRun?: () => void;
   submissionProgress: SubmissionProgress;
+  isSubmitting: boolean;
 }
 
 export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
@@ -45,6 +46,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
     isSinglePlayerMode = false,
     onRun,
     submissionProgress,
+    isSubmitting,
   }) => {
     const [isResizing, setIsResizing] = useState(false);
     const [fsSplitSizes, setFsSplitSizes] = useState<number[]>([50, 50]);
@@ -106,7 +108,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
               onCodeChange={onCodeChange}
               onFullscreenToggle={onClose}
               onRun={onRun}
-              runDisabled={false}
+              runDisabled={isSubmitting}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               isSinglePlayerMode={isSinglePlayerMode}

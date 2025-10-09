@@ -29,8 +29,8 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     setOpponentCode,
     submitResult,
     setSubmitResult,
-    submitting,
-    setSubmitting,
+    isSubmitting,
+    setIsSubmitting,
     submissionProgress,
     setSubmissionProgress,
     selectedLanguage,
@@ -49,7 +49,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       setMyCode,
       setOpponentCode,
       setSubmitResult,
-      setSubmitting,
+      setIsSubmitting,
       setSelectedLanguage,
       setSubmissionProgress,
       refetchGame,
@@ -158,7 +158,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       opponentCode={isSinglePlayerMode ? '' : opponentCode}
       selectedLanguage={selectedLanguage}
       submitResult={submitResult}
-      submitting={submitting}
+      isSubmitting={isSubmitting}
       submissionProgress={submissionProgress}
       onCodeChange={handleCodeChange}
       onLanguageChange={handleLanguageChange}
