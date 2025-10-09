@@ -180,7 +180,15 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
         </Alert>
       )}
 
-      {/* 전체 결과 요약 */}
+      {/* Submission in progress */}
+      {isSubmitting && (
+        <Alert variant="info" className={cardPadding}>
+          <div className="text-sm">
+            Evaluating your solution... Please wait.
+          </div>
+        </Alert>
+      )}
+
       {!isSubmitting && completedTestCases > 0 && (
         <Alert
           variant={submissionProgress.overallPassed ? 'success' : 'error'}
