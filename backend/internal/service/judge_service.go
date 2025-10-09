@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -451,9 +452,107 @@ func (s *judgeService) evaluateSingleResponse(response *types.Judge0Response, te
 		return result
 	}
 	result.Actual = strings.TrimSpace(response.Stdout)
-	result.Passed = strings.TrimSpace(result.Actual) == strings.TrimSpace(result.Expected)
+	result.Passed = s.compareResults(result.Actual, result.Expected)
 	s.logger.Debug().Int("testCaseIndex", index).Bool("passed", result.Passed).Str("actual", result.Actual).Str("expected", result.Expected).Float64("executionTime", result.ExecutionTime).Float64("memoryUsage", result.MemoryUsage).Msg("Test case evaluation completed")
 	return result
+}
+
+// compareResults compares actual and expected results considering JSON types
+func (s *judgeService) compareResults(actual, expected string) bool {
+	// Parse both as JSON to handle type differences
+	var actualValue, expectedValue interface{}
+
+	if err := json.Unmarshal([]byte(actual), &actualValue); err != nil {
+		// If actual is not valid JSON, fall back to string comparison
+		return strings.TrimSpace(actual) == strings.TrimSpace(expected)
+	}
+
+	if err := json.Unmarshal([]byte(expected), &expectedValue); err != nil {
+		// If expected is not valid JSON, fall back to string comparison
+		return strings.TrimSpace(actual) == strings.TrimSpace(expected)
+	}
+
+	// Compare the parsed JSON values
+	return s.deepEqual(actualValue, expectedValue)
+}
+
+// deepEqual performs deep comparison of JSON values
+func (s *judgeService) deepEqual(a, b interface{}) bool {
+	// Handle numeric types - convert to float64 for comparison
+	if aNum, aOk := s.toFloat64(a); aOk {
+		if bNum, bOk := s.toFloat64(b); bOk {
+			return aNum == bNum
+		}
+	}
+
+	// Handle string types
+	if aStr, aOk := a.(string); aOk {
+		if bStr, bOk := b.(string); bOk {
+			return aStr == bStr
+		}
+	}
+
+	// Handle boolean types
+	if aBool, aOk := a.(bool); aOk {
+		if bBool, bOk := b.(bool); bOk {
+			return aBool == bBool
+		}
+	}
+
+	// Handle arrays
+	if aArr, aOk := a.([]interface{}); aOk {
+		if bArr, bOk := b.([]interface{}); bOk {
+			if len(aArr) != len(bArr) {
+				return false
+			}
+			for i := range aArr {
+				if !s.deepEqual(aArr[i], bArr[i]) {
+					return false
+				}
+			}
+			return true
+		}
+	}
+
+	// Handle objects/maps
+	if aMap, aOk := a.(map[string]interface{}); aOk {
+		if bMap, bOk := b.(map[string]interface{}); bOk {
+			if len(aMap) != len(bMap) {
+				return false
+			}
+			for k, v := range aMap {
+				if !s.deepEqual(v, bMap[k]) {
+					return false
+				}
+			}
+			return true
+		}
+	}
+
+	// Fallback to direct comparison
+	return a == b
+}
+
+// toFloat64 converts various numeric types to float64
+func (s *judgeService) toFloat64(v interface{}) (float64, bool) {
+	switch val := v.(type) {
+	case float64:
+		return val, true
+	case float32:
+		return float64(val), true
+	case int:
+		return float64(val), true
+	case int32:
+		return float64(val), true
+	case int64:
+		return float64(val), true
+	case string:
+		// Try to parse string as number
+		if f, err := strconv.ParseFloat(val, 64); err == nil {
+			return f, true
+		}
+	}
+	return 0, false
 }
 
 func getFloat64Time(timeValue interface{}) float64 {

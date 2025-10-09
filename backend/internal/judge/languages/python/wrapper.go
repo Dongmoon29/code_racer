@@ -2,7 +2,9 @@ package python
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/Dongmoon29/code_racer/internal/judge/parser"
 	"github.com/Dongmoon29/code_racer/internal/model"
 )
 
@@ -11,8 +13,17 @@ type Wrapper struct{}
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
 func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
-	template := `
-import json, sys
+	// Parse user imports
+	importParser := parser.NewImportParser()
+	importInfo := importParser.ParseImports(code, 71) // Python language ID
+
+	// Build imports section
+	importsSection := "import json, sys"
+	if len(importInfo.Imports) > 0 {
+		importsSection += "\n" + strings.Join(importInfo.Imports, "\n")
+	}
+
+	template := `%s
 
 # user code
 %s
@@ -32,13 +43,21 @@ def run_all():
 
 if __name__ == "__main__":
     run_all()`
-	return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
+	return fmt.Sprintf(template, importsSection, importInfo.Code, testCasesJSON, problem.FunctionName), nil
 }
 
 func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
-	template := `
-import json
-import sys
+	// Parse user imports
+	importParser := parser.NewImportParser()
+	importInfo := importParser.ParseImports(code, 71) // Python language ID
+
+	// Build imports section
+	importsSection := "import json\nimport sys"
+	if len(importInfo.Imports) > 0 {
+		importsSection += "\n" + strings.Join(importInfo.Imports, "\n")
+	}
+
+	template := `%s
 
 # 사용자 코드
 %s
@@ -56,5 +75,5 @@ def run_test():
 
 if __name__ == "__main__":
     run_test()`
-	return fmt.Sprintf(template, code, testCase, problem.FunctionName)
+	return fmt.Sprintf(template, importsSection, importInfo.Code, testCase, problem.FunctionName)
 }
