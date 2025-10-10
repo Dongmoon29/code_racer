@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"io"
 	"testing"
 
@@ -30,9 +31,18 @@ func (m *mockCodeWrapper) WrapCodeBatch(code string, languageID int, testCasesJS
 
 type mockJudge0Client struct{}
 
-func (m *mockJudge0Client) SubmitCode(request types.Judge0Request) (*types.Judge0Response, error) {
+func (m *mockJudge0Client) SubmitCode(ctx context.Context, request types.Judge0Request) (*types.Judge0Response, error) {
 	// Echo expected output as stdout to simulate pass
 	return &types.Judge0Response{Stdout: request.ExpectedOutput, Time: 1.0, Memory: 12345}, nil
+}
+
+func (m *mockJudge0Client) Close() {
+	// Mock implementation - do nothing
+}
+
+func (m *mockJudge0Client) GetRateLimitStatus() int {
+	// Mock implementation - return a reasonable value
+	return 100
 }
 
 func buildTestLogger() appLogger.Logger {
