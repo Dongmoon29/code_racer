@@ -74,11 +74,11 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
       <div className="fixed inset-0 z-[9999] flex flex-col">
         <div className="flex-1 flex min-h-0">
           <div
-            className={`transition-all duration-300 border-r ${
+            className={`transition-all duration-300 ${
               isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'
             } h-full flex flex-col`}
           >
-            <div className="flex-1 min-h-0 overflow-auto">
+            <div className="flex-1 min-h-0 overflow-auto p-2">
               <ProblemDetailsPane
                 isExpanded={isDescriptionExpanded}
                 title={problemTitle}
