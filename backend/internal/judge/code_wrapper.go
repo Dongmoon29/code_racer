@@ -1,7 +1,9 @@
 package judge
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/judge/languages"
@@ -12,10 +14,46 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/model"
 )
 
-// CodeWrapper는 각 프로그래밍 언어별 코드 래핑을 처리합니다
+// CodeWrapper는 각 프로그래밍 언어별 코드 래핑을 처리하는 개선된 서비스입니다
 type CodeWrapper struct {
 	logger       logger.Logger
 	langWrappers map[int]languages.LanguageWrapper
+	validators   map[int]CodeValidator
+}
+
+// CodeValidator는 코드 검증을 담당합니다
+type CodeValidator interface {
+	Validate(code string, problem *model.LeetCode) error
+	ExtractFunctionName(code string) (string, error)
+}
+
+// DefaultCodeValidator는 기본 코드 검증기를 제공합니다
+type DefaultCodeValidator struct{}
+
+func (v *DefaultCodeValidator) Validate(code string, problem *model.LeetCode) error {
+	if strings.TrimSpace(code) == "" {
+		return fmt.Errorf("code cannot be empty")
+	}
+	if problem.FunctionName == "" {
+		return fmt.Errorf("function name is required")
+	}
+	return nil
+}
+
+func (v *DefaultCodeValidator) ExtractFunctionName(code string) (string, error) {
+	// 기본 구현: 간단한 함수명 추출
+	lines := strings.Split(code, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.Contains(line, "function ") || strings.Contains(line, "def ") || strings.Contains(line, "func ") {
+			// 간단한 추출 로직
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				return parts[1], nil
+			}
+		}
+	}
+	return "", fmt.Errorf("function name not found")
 }
 
 func NewCodeWrapper(logger logger.Logger) *CodeWrapper {
@@ -26,11 +64,18 @@ func NewCodeWrapper(logger logger.Logger) *CodeWrapper {
 			constants.LanguageIDJavaScript: jsWrapper.NewWrapper(),
 			constants.LanguageIDPython:     pyWrapper.NewWrapper(),
 		},
+		validators: map[int]CodeValidator{
+			constants.LanguageIDGo:         &DefaultCodeValidator{},
+			constants.LanguageIDJavaScript: &DefaultCodeValidator{},
+			constants.LanguageIDPython:     &DefaultCodeValidator{},
+			constants.LanguageIDJava:       &DefaultCodeValidator{},
+			constants.LanguageIDCPP:        &DefaultCodeValidator{},
+		},
 	}
 	return cw
 }
 
-// WrapCode는 주어진 코드를 언어에 맞는 테스트 코드로 래핑합니다
+// WrapCode는 주어진 코드를 언어에 맞는 테스트 코드로 래핑합니다 (개선된 버전)
 func (w *CodeWrapper) WrapCode(code string, languageID int, testCase string, problem *model.LeetCode) (string, error) {
 	w.logger.Info().
 		Int("languageID", languageID).
@@ -38,9 +83,27 @@ func (w *CodeWrapper) WrapCode(code string, languageID int, testCase string, pro
 		Str("functionName", problem.FunctionName).
 		Msg("Wrapping code for testing")
 
-	if impl, ok := w.langWrappers[languageID]; ok {
-		return impl.WrapSingle(code, testCase, problem), nil
+	// 코드 검증
+	if validator, ok := w.validators[languageID]; ok {
+		if err := validator.Validate(code, problem); err != nil {
+			return "", fmt.Errorf("code validation failed: %w", err)
+		}
 	}
+
+	// 테스트 케이스 검증
+	if err := w.validateTestCase(testCase); err != nil {
+		return "", fmt.Errorf("test case validation failed: %w", err)
+	}
+
+	// 언어별 래핑 실행
+	if impl, ok := w.langWrappers[languageID]; ok {
+		wrappedCode := impl.WrapSingle(code, testCase, problem)
+		if wrappedCode == "" {
+			return "", fmt.Errorf("failed to wrap code for language ID: %d", languageID)
+		}
+		return wrappedCode, nil
+	}
+	
 	// Fallback to legacy inline wrappers for languages not yet split out
 	switch languageID {
 	case constants.LanguageIDJava:
@@ -52,16 +115,73 @@ func (w *CodeWrapper) WrapCode(code string, languageID int, testCase string, pro
 	}
 }
 
-// WrapCodeBatch는 모든 테스트 케이스를 한 번에 실행하는 배치 하니스를 생성합니다
+// validateTestCase validates the test case JSON
+func (w *CodeWrapper) validateTestCase(testCase string) error {
+	if strings.TrimSpace(testCase) == "" {
+		return fmt.Errorf("test case cannot be empty")
+	}
+	
+	// JSON 유효성 검사
+	var testData interface{}
+	if err := json.Unmarshal([]byte(testCase), &testData); err != nil {
+		return fmt.Errorf("invalid test case JSON: %w", err)
+	}
+	
+	return nil
+}
+
+// WrapCodeBatch는 모든 테스트 케이스를 한 번에 실행하는 배치 하니스를 생성합니다 (개선된 버전)
 func (w *CodeWrapper) WrapCodeBatch(code string, languageID int, testCasesJSON string, problem *model.LeetCode) (string, error) {
 	w.logger.Info().
 		Int("languageID", languageID).
 		Str("functionName", problem.FunctionName).
 		Msg("Wrapping code for batch testing")
-	if impl, ok := w.langWrappers[languageID]; ok {
-		return impl.WrapBatch(code, testCasesJSON, problem)
+
+	// 코드 검증
+	if validator, ok := w.validators[languageID]; ok {
+		if err := validator.Validate(code, problem); err != nil {
+			return "", fmt.Errorf("code validation failed: %w", err)
+		}
 	}
+
+	// 배치 테스트 케이스 검증
+	if err := w.validateBatchTestCases(testCasesJSON); err != nil {
+		return "", fmt.Errorf("batch test cases validation failed: %w", err)
+	}
+
+	// 언어별 배치 래핑 실행
+	if impl, ok := w.langWrappers[languageID]; ok {
+		wrappedCode, err := impl.WrapBatch(code, testCasesJSON, problem)
+		if err != nil {
+			return "", fmt.Errorf("failed to wrap code for batch testing: %w", err)
+		}
+		if wrappedCode == "" {
+			return "", fmt.Errorf("failed to wrap code for batch testing, language ID: %d", languageID)
+		}
+		return wrappedCode, nil
+	}
+	
 	return "", fmt.Errorf("unsupported batch wrapper for language ID: %d", languageID)
+}
+
+// validateBatchTestCases validates the batch test cases JSON
+func (w *CodeWrapper) validateBatchTestCases(testCasesJSON string) error {
+	if strings.TrimSpace(testCasesJSON) == "" {
+		return fmt.Errorf("batch test cases cannot be empty")
+	}
+	
+	// JSON 유효성 검사
+	var testData interface{}
+	if err := json.Unmarshal([]byte(testCasesJSON), &testData); err != nil {
+		return fmt.Errorf("invalid batch test cases JSON: %w", err)
+	}
+	
+	// 배열인지 확인
+	if _, ok := testData.([]interface{}); !ok {
+		return fmt.Errorf("batch test cases must be an array")
+	}
+	
+	return nil
 }
 
 func (w *CodeWrapper) getLanguageWrapper(languageID int) (func(string, string, *model.LeetCode) string, error) {

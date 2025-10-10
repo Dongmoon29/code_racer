@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -146,7 +147,9 @@ func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *mo
 
 	// submit
 	expectedOutputsJSON, _ := json.Marshal(expectedOutputs)
-	judgeResponse, err := s.submitToJudge(wrappedCode, languageID, string(expectedOutputsJSON), problem)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	judgeResponse, err := s.submitToJudge(ctx, wrappedCode, languageID, string(expectedOutputsJSON), problem)
 	if err != nil {
 		return nil, false, err
 	}
@@ -159,7 +162,7 @@ func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *mo
 	return evaluationResult, true, nil
 }
 
-func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expectedOutputsJSON string, problem *model.LeetCode) (*types.Judge0Response, error) {
+func (s *judgeService) submitToJudge(ctx context.Context, wrappedCode string, languageID int, expectedOutputsJSON string, problem *model.LeetCode) (*types.Judge0Response, error) {
 	compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB := s.deriveLimits(problem)
 	judgeRequest := types.Judge0Request{
 		SourceCode:       wrappedCode,
@@ -170,7 +173,7 @@ func (s *judgeService) submitToJudge(wrappedCode string, languageID int, expecte
 		MemoryLimit:      memoryLimitKB,
 		EnableNetworking: false,
 	}
-	judgeResponse, err := s.judge0Client.SubmitCode(judgeRequest)
+	judgeResponse, err := s.judge0Client.SubmitCode(ctx, judgeRequest)
 	if err != nil {
 		// Log quota exceeded identification
 		errorMessage := fmt.Errorf("Judge0 API error: %w", err)
@@ -376,7 +379,9 @@ func (s *judgeService) evaluateTestCase(
 		return early
 	}
 
-	response, early := s.submitSingle(wrapped, languageID, expectedStr, index, problem)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	response, early := s.submitSingle(ctx, wrapped, languageID, expectedStr, index, problem)
 	if early != nil {
 		return early
 	}
@@ -404,7 +409,7 @@ func (s *judgeService) buildSingleWrappedCode(code string, languageID int, testC
 	return wrappedCode, string(expectedJSON), nil
 }
 
-func (s *judgeService) submitSingle(wrappedCode string, languageID int, expectedJSON string, index int, problem *model.LeetCode) (*types.Judge0Response, *types.TestCaseResult) {
+func (s *judgeService) submitSingle(ctx context.Context, wrappedCode string, languageID int, expectedJSON string, index int, problem *model.LeetCode) (*types.Judge0Response, *types.TestCaseResult) {
 	compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
 	request := types.Judge0Request{
 		SourceCode:       wrappedCode,
@@ -415,7 +420,7 @@ func (s *judgeService) submitSingle(wrappedCode string, languageID int, expected
 		MemoryLimit:      memoryLimit,
 		EnableNetworking: false,
 	}
-	response, err := s.judge0Client.SubmitCode(request)
+	response, err := s.judge0Client.SubmitCode(ctx, request)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Judge0 API request failed")
 
@@ -579,7 +584,7 @@ func mustJSON(v interface{}) []byte {
 	return b
 }
 
-// EvaluateCodeWithRealtime Code evaluation with real-time notifications (per-test only)
+// EvaluateCodeWithRealtime Code evaluation with real-time notifications (hybrid: batch first, fallback to per-test)
 func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
 	// 1. Submission start notification (including total test cases)
 	s.notifySubmissionStarted(matchID, userID, len(problem.TestCases))
@@ -595,10 +600,22 @@ func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, pr
 		return nil, fmt.Errorf("failed to get language ID: %w", err)
 	}
 
-	// 2. Perform individual evaluation only (batch path disabled)
+	// 2. Try batch evaluation first with real-time notifications
+	batchResult, batchSuccess, batchError := s.tryBatchEvaluateWithRealtime(code, languageID, problem, matchID, userID)
+	if batchError != nil {
+		s.notifySubmissionFailed(matchID, userID, fmt.Sprintf("batch evaluation failed: %v", batchError))
+		return nil, batchError
+	}
+
+	if batchSuccess {
+		s.logEvaluationResult(batchResult, languageID, problem, "batch_realtime")
+		return batchResult, nil
+	}
+
+	// 3. Fallback to per-test evaluation with real-time notifications
+	s.logger.Info().Msg("Batch evaluation not supported, falling back to per-test evaluation")
 	perTestEvaluationResult, perTestEvaluationError := s.aggregatePerTestWithRealtime(code, languageID, problem, matchID, userID)
 	if perTestEvaluationError == nil && perTestEvaluationResult != nil {
-		s.notifySubmissionCompleted(matchID, userID, perTestEvaluationResult)
 		s.logEvaluationResult(perTestEvaluationResult, languageID, problem, "per_test")
 	}
 
@@ -744,4 +761,71 @@ func (s *judgeService) sendJudge0QuotaError() {
 	if s.eventBus != nil {
 		s.eventBus.Publish(events.TopicJudge0Quota, &events.Judge0QuotaEvent{})
 	}
+}
+
+// tryBatchEvaluateWithRealtime attempts batch evaluation with real-time notifications
+func (s *judgeService) tryBatchEvaluateWithRealtime(code string, languageID int, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, bool, error) {
+	// Build inputs for batch evaluation
+	testCaseInputs := make([][]interface{}, 0, len(problem.TestCases))
+	expectedOutputs := make([]interface{}, 0, len(problem.TestCases))
+	for _, testCase := range problem.TestCases {
+		testCaseInputs = append(testCaseInputs, testCase.Input)
+		expectedOutputs = append(expectedOutputs, testCase.Output)
+	}
+	inputsJSON, _ := json.Marshal(testCaseInputs)
+
+	// Wrap batch (may fail for unsupported languages)
+	wrappedCode, err := s.codeWrapper.WrapCodeBatch(code, languageID, string(inputsJSON), problem)
+	if err != nil {
+		return nil, false, nil
+	}
+
+	// Submit to Judge0
+	expectedOutputsJSON, _ := json.Marshal(expectedOutputs)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	judgeResponse, err := s.submitToJudge(ctx, wrappedCode, languageID, string(expectedOutputsJSON), problem)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Evaluate response
+	evaluationResult, err := s.evaluateBatchResponse(judgeResponse, expectedOutputs, testCaseInputs)
+	if err != nil {
+		return nil, false, nil // fall back on parse errors
+	}
+
+	// Send real-time notifications for batch results
+	s.notifyBatchResultsAsIndividual(matchID, userID, evaluationResult, problem)
+
+	return evaluationResult, true, nil
+}
+
+// notifyBatchResultsAsIndividual converts batch results to individual test case notifications
+func (s *judgeService) notifyBatchResultsAsIndividual(matchID uuid.UUID, userID uuid.UUID, result *types.EvaluationResult, problem *model.LeetCode) {
+	totalTestCases := len(result.TestResults)
+
+	// Simulate individual test case execution with small delays for UI feedback
+	for i, testResult := range result.TestResults {
+		// Get corresponding test case from problem
+		var testCase model.TestCase
+		if i < len(problem.TestCases) {
+			testCase = problem.TestCases[i]
+		}
+
+		// Send test case running notification
+		s.notifyTestCaseRunning(matchID, userID, testCase, i, totalTestCases)
+
+		// Small delay to allow UI to show running state
+		time.Sleep(50 * time.Millisecond)
+
+		// Send test case completed notification
+		s.notifyTestCaseCompleted(matchID, userID, testCase, i, &testResult)
+
+		// Small delay between test cases for better UX
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	// Send final submission completed notification
+	s.notifySubmissionCompleted(matchID, userID, result)
 }

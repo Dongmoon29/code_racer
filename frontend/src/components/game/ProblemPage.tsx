@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, FC } from 'react';
 import CodeEditor from './CodeEditor';
 import { getCodeTemplate } from '@/lib/api';
 import { LeetCodeDetail } from '@/types';
@@ -7,14 +7,13 @@ interface ProblemPageProps {
   problem: LeetCodeDetail;
 }
 
-const ProblemPage: React.FC<ProblemPageProps> = memo(({ problem }) => {
+const ProblemPage: FC<ProblemPageProps> = memo(({ problem }) => {
   const [selectedLanguage, setSelectedLanguage] =
     useState<string>('javascript');
   const [code, setCode] = useState<string>(() => {
     return getCodeTemplate(problem, 'javascript');
   });
 
-  // 언어가 변경될 때만 사용자에게 템플릿 변경 여부를 확인
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLanguage = e.target.value;
     if (

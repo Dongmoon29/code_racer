@@ -1,6 +1,8 @@
 package interfaces
 
 import (
+	"context"
+
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/types"
 	"github.com/google/uuid"
@@ -18,7 +20,9 @@ type CodeWrapper interface {
 }
 
 type Judge0Client interface {
-	SubmitCode(request types.Judge0Request) (*types.Judge0Response, error)
+	SubmitCode(ctx context.Context, request types.Judge0Request) (*types.Judge0Response, error)
+	Close()
+	GetRateLimitStatus() int
 }
 
 // WebSocketBroadcaster WebSocket 브로드캐스터 인터페이스
