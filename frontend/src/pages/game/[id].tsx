@@ -55,7 +55,7 @@ const GamePage: React.FC = () => {
       description="Compete in real-time coding challenge"
     >
       <div className="w-full min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
-        <div className="container mx-auto px-4 py-6">
+        <div className="mx-auto px-4 py-6">
           <GameRoom gameId={id} />
         </div>
       </div>
