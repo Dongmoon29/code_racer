@@ -48,23 +48,26 @@ export interface IOSchema {
   return_type: string;
 }
 
+export interface IOTemplate {
+  id: string;
+  problem_id: string;
+  language: string;
+  code: string;
+}
+
 export interface CreateProblemRequest {
   title: string;
   description: string;
-  examples: string;
+  examples: Example[];
   constraints: string;
   test_cases: TestCase[];
-  expected_outputs: string;
+  expected_outputs: string[];
   difficulty: 'Easy' | 'Medium' | 'Hard';
   input_format: string;
   output_format: string;
   function_name: string;
   io_schema: IOSchema;
-  javascript_template: string;
-  python_template: string;
-  go_template: string;
-  java_template: string;
-  cpp_template: string;
+  io_templates: IOTemplate[];
   time_limit?: number;
   memory_limit?: number;
 }
@@ -91,11 +94,7 @@ export interface ProblemDetail extends ProblemSummary {
   output_format: string;
   function_name: string;
   io_schema: IOSchema;
-  javascript_template: string;
-  python_template: string;
-  go_template: string;
-  java_template: string;
-  cpp_template: string;
+  io_templates: IOTemplate[];
   time_limit: number;
   memory_limit: number;
 }
@@ -104,20 +103,16 @@ export interface ProblemFormData {
   id?: string;
   title: string;
   description: string;
-  examples: string;
+  examples: Example[];
   constraints: string;
   test_cases: TestCase[];
-  expected_outputs: string;
+  expected_outputs: string[];
   difficulty: 'Easy' | 'Medium' | 'Hard';
   input_format: string;
   output_format: string;
   function_name: string;
   io_schema: IOSchema;
-  javascript_template: string;
-  python_template: string;
-  go_template: string;
-  java_template: string;
-  cpp_template: string;
+  io_templates: IOTemplate[];
   time_limit: number;
   memory_limit: number;
   created_at?: string;
@@ -224,7 +219,6 @@ export interface SubmitResult {
   is_winner: boolean;
 }
 
-// 사용자 통계 타입
 export interface Contributor {
   login: string;
   avatar_url: string;

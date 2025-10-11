@@ -204,20 +204,18 @@ export const getCodeTemplate = (
     return '';
   }
 
-  switch (language) {
-    case 'javascript':
-      return problem.javascript_template || '';
-    case 'python':
-      return problem.python_template || '';
-    case 'go':
-      return problem.go_template || '';
-    case 'java':
-      return problem.java_template || '';
-    case 'cpp':
-      return problem.cpp_template || '';
-    default:
-      return '';
+  if (!problem.io_templates || !Array.isArray(problem.io_templates)) {
+    console.error('Problem io_templates is not available', problem);
+    return '';
   }
+
+  console.log('Available io_templates:', problem.io_templates);
+  console.log('Looking for language:', language);
+
+  const template = problem.io_templates.find((t) => t.language === language);
+  console.log('Found template:', template);
+
+  return template ? template.code : '';
 };
 
 export const userApi = {

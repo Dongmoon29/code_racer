@@ -14,19 +14,15 @@ interface ProblemFormProps {
 const defaultFormData: ProblemFormData = {
   title: '',
   description: '',
-  examples: '',
+  examples: [],
   constraints: '',
-  test_cases: [{ input: [], output: '' }],
-  expected_outputs: '',
+  test_cases: [{ input: '', expected_output: '' }],
+  expected_outputs: [],
   difficulty: 'Easy',
   input_format: '',
   output_format: '',
   function_name: '',
-  javascript_template: '',
-  python_template: '',
-  go_template: '',
-  java_template: '',
-  cpp_template: '',
+  io_templates: [],
   time_limit: 1000,
   memory_limit: 128,
   io_schema: { param_types: [], return_type: '' },
@@ -62,18 +58,18 @@ export default function ProblemForm({
   const handleTestCaseChange = (
     index: number,
     field: keyof TestCase,
-    value: (string | number | boolean)[] | (string | number | boolean)
+    value: string
   ) => {
     const newTestCases = [...formData.test_cases];
     if (field === 'input') {
       newTestCases[index] = {
         ...newTestCases[index],
-        input: value as (string | number | boolean)[],
+        input: value,
       };
     } else {
       newTestCases[index] = {
         ...newTestCases[index],
-        output: value as string | number | boolean,
+        expected_output: value,
       };
     }
     setFormData((prev) => ({ ...prev, test_cases: newTestCases }));
@@ -82,7 +78,7 @@ export default function ProblemForm({
   const addTestCase = () => {
     setFormData((prev) => ({
       ...prev,
-      test_cases: [...prev.test_cases, { input: [], output: '' }],
+      test_cases: [...prev.test_cases, { input: '', expected_output: '' }],
     }));
   };
 
@@ -179,8 +175,15 @@ export default function ProblemForm({
         <div>
           <label className="block text-sm font-medium  mb-2">Examples *</label>
           <textarea
-            value={formData.examples}
-            onChange={(e) => handleInputChange('examples', e.target.value)}
+            value={JSON.stringify(formData.examples, null, 2)}
+            onChange={(e) => {
+              try {
+                const parsed = JSON.parse(e.target.value);
+                handleInputChange('examples', parsed);
+              } catch {
+                // Invalid JSON, ignore
+              }
+            }}
             rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Example 1: Input: nums = [2,7,11,15], target = 9 Output: [0,1]"
@@ -323,13 +326,9 @@ export default function ProblemForm({
                   <label className="block text-xs  mb-1">Input</label>
                   <input
                     type="text"
-                    value={testCase.input.join(', ')}
+                    value={testCase.input}
                     onChange={(e) =>
-                      handleTestCaseChange(
-                        index,
-                        'input',
-                        e.target.value.split(',').map((s) => s.trim())
-                      )
+                      handleTestCaseChange(index, 'input', e.target.value)
                     }
                     className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="1, 2, 3"
@@ -337,12 +336,16 @@ export default function ProblemForm({
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs  mb-1">Output</label>
+                  <label className="block text-xs  mb-1">Expected Output</label>
                   <input
                     type="text"
-                    value={String(testCase.output)}
+                    value={String(testCase.expected_output)}
                     onChange={(e) =>
-                      handleTestCaseChange(index, 'output', e.target.value)
+                      handleTestCaseChange(
+                        index,
+                        'expected_output',
+                        e.target.value
+                      )
                     }
                     className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="6"

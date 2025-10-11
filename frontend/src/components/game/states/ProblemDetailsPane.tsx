@@ -121,7 +121,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
                       <div>
                         <span className="font-medium">Expected Output: </span>
                         <code className="px-2 py-1 rounded bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
-                          {JSON.stringify(testCase.output)}
+                          {JSON.stringify(testCase.expected_output)}
                         </code>
                       </div>
                     </div>
