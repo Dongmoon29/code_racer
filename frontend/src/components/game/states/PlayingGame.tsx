@@ -128,6 +128,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                   examples={game.problem.examples}
                   constraints={game.problem.constraints}
                   testCases={game.problem.test_cases}
+                  ioSchema={game.problem.io_schema}
                   onToggle={handleToggleDescription}
                 />
               </div>
@@ -137,6 +138,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                   <TestCaseDisplay
                     submissionProgress={submissionProgress}
                     testCases={game.problem.test_cases}
+                    ioSchema={game.problem.io_schema}
                     compact
                   />
                 </div>
@@ -186,6 +188,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
             problemExamples={game.problem.examples}
             problemConstraints={game.problem.constraints}
             problemTestCases={game.problem.test_cases}
+            problemIOSchema={game.problem.io_schema}
             onCodeChange={onCodeChange}
             onMaximizeToggle={
               isSinglePlayerMode ? () => {} : handleMaximizeToggle

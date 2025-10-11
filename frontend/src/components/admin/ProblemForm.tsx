@@ -249,7 +249,11 @@ export default function ProblemForm({
             </label>
             <input
               type="text"
-              value={formData.io_schema.param_types.join(', ')}
+              value={
+                Array.isArray(formData.io_schema.param_types)
+                  ? formData.io_schema.param_types.join(', ')
+                  : formData.io_schema.param_types
+              }
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,

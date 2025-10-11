@@ -4,6 +4,11 @@ import { ProblemEditorSplit } from './CodeEditorSplitProps';
 import TestCaseDisplay from '../TestCaseDisplay';
 import { SubmissionProgress } from '@/types/websocket';
 
+interface IOSchema {
+  param_types: string | string[]; // Can come as JSON string from backend
+  return_type: string;
+}
+
 interface FullscreenOverlayProps {
   myCode: string;
   opponentCode: string;
@@ -26,6 +31,7 @@ interface FullscreenOverlayProps {
     input: string;
     expected_output: string;
   }>;
+  problemIOSchema?: IOSchema;
   onCodeChange: (code: string) => void;
   onMaximizeToggle: (editor: 'my' | 'opponent') => void;
   onToggleDescription: () => void;
@@ -50,6 +56,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
     problemExamples,
     problemConstraints,
     problemTestCases,
+    problemIOSchema,
     onCodeChange,
     onMaximizeToggle,
     onToggleDescription,
@@ -92,6 +99,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
                 examples={problemExamples}
                 constraints={problemConstraints}
                 testCases={problemTestCases}
+                ioSchema={problemIOSchema}
                 onToggle={onToggleDescription}
               />
             </div>
@@ -101,6 +109,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
                 <TestCaseDisplay
                   submissionProgress={submissionProgress}
                   testCases={problemTestCases || []}
+                  ioSchema={problemIOSchema}
                   compact
                 />
               </div>

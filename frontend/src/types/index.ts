@@ -44,7 +44,7 @@ export interface TestCase {
 }
 
 export interface IOSchema {
-  param_types: string[];
+  param_types: string | string[]; // Can come as JSON string from backend
   return_type: string;
 }
 

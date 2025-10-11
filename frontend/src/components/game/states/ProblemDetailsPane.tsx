@@ -1,6 +1,108 @@
 import React, { FC, memo } from 'react';
 import { FileText, Minimize2 } from 'lucide-react';
 
+interface IOSchema {
+  param_types: string | string[]; // Can come as JSON string from backend
+  return_type: string;
+}
+
+// Type-based value formatting function
+const formatTestCaseValue = (
+  value: string,
+  type: string
+): { formatted: string; isQuoted: boolean } => {
+  try {
+    // Try JSON parsing
+    const parsed = JSON.parse(value);
+
+    // Handle by type
+    switch (type.toLowerCase()) {
+      case 'number':
+      case 'int':
+      case 'integer':
+      case 'float':
+      case 'double':
+        return { formatted: String(parsed), isQuoted: false };
+
+      case 'boolean':
+      case 'bool':
+        return { formatted: String(parsed), isQuoted: false };
+
+      case 'string':
+      case 'str':
+        return { formatted: String(parsed), isQuoted: true };
+
+      case 'array':
+      case 'list':
+      case 'int[]':
+      case 'number[]':
+      case 'string[]':
+      case 'boolean[]':
+        return { formatted: JSON.stringify(parsed), isQuoted: false };
+
+      case 'object':
+      case 'dict':
+        return { formatted: JSON.stringify(parsed), isQuoted: false };
+
+      default:
+        // Return original value when type is not specified
+        return { formatted: value, isQuoted: true };
+    }
+  } catch {
+    // Return original value when JSON parsing fails
+    return { formatted: value, isQuoted: true };
+  }
+};
+
+// Helper function to convert IOSchema param_types to array
+const parseParamTypes = (paramTypes: string | string[]): string[] => {
+  if (Array.isArray(paramTypes)) {
+    return paramTypes;
+  }
+
+  try {
+    const parsed = JSON.parse(paramTypes);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const parseTestCaseInput = (
+  input: string,
+  paramTypes: string[]
+): { formatted: string; isQuoted: boolean } => {
+  try {
+    const parsed = JSON.parse(input);
+
+    if (paramTypes.length <= 1) {
+      const type = paramTypes[0] || 'unknown';
+      return formatTestCaseValue(input, type);
+    }
+
+    if (Array.isArray(parsed)) {
+      const formattedParams = parsed.map((param, index) => {
+        const type = paramTypes[index] || 'unknown';
+        const formatted = formatTestCaseValue(JSON.stringify(param), type);
+        return formatted.isQuoted
+          ? `"${formatted.formatted}"`
+          : formatted.formatted;
+      });
+
+      return {
+        formatted: formattedParams.join(', '),
+        isQuoted: false,
+      };
+    }
+
+    // Non-array case - process as original
+    return formatTestCaseValue(input, paramTypes[0] || 'unknown');
+  } catch {
+    // Return original value when parsing fails
+    return { formatted: input, isQuoted: true };
+  }
+};
+
 interface ProblemDetailsPaneProps {
   isExpanded: boolean;
   title: string;
@@ -17,11 +119,20 @@ interface ProblemDetailsPaneProps {
     input: string;
     expected_output: string;
   }>;
+  ioSchema?: IOSchema;
   onToggle: () => void;
 }
 
 export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
-  ({ isExpanded, description, examples, constraints, testCases, onToggle }) => {
+  ({
+    isExpanded,
+    description,
+    examples,
+    constraints,
+    testCases,
+    ioSchema,
+    onToggle,
+  }) => {
     if (!isExpanded) {
       return (
         <button
@@ -101,32 +212,53 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
             <div>
               <h3 className="text-lg font-medium mb-2">Test Cases</h3>
               <div className="space-y-3">
-                {testCases.map((testCase, index) => (
-                  <div
-                    key={index}
-                    className="p-3 rounded bg-[hsl(var(--muted))]"
-                  >
-                    <div className="mb-2">
-                      <span className="font-medium text-sm text-[hsl(var(--muted-foreground))]">
-                        Test Case {index + 1}:
-                      </span>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="font-medium">Input: </span>
-                        <code className="px-2 py-1 rounded bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
-                          {JSON.stringify(testCase.input)}
-                        </code>
+                {testCases.map((testCase, index) => {
+                  const paramTypes = ioSchema
+                    ? parseParamTypes(ioSchema.param_types)
+                    : [];
+                  const outputType = ioSchema?.return_type || 'unknown';
+
+                  // Format values
+                  const inputFormatted = parseTestCaseInput(
+                    testCase.input,
+                    paramTypes
+                  );
+                  const outputFormatted = formatTestCaseValue(
+                    testCase.expected_output,
+                    outputType
+                  );
+
+                  return (
+                    <div
+                      key={index}
+                      className="p-3 rounded bg-[hsl(var(--muted))]"
+                    >
+                      <div className="mb-2">
+                        <span className="font-medium text-sm text-[hsl(var(--muted-foreground))]">
+                          Test Case {index + 1}:
+                        </span>
                       </div>
-                      <div>
-                        <span className="font-medium">Expected Output: </span>
-                        <code className="px-2 py-1 rounded bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
-                          {JSON.stringify(testCase.expected_output)}
-                        </code>
+                      <div className="space-y-2 text-sm">
+                        <div>
+                          <span className="font-medium">Input: </span>
+                          <code className="ml-2 px-2 py-1 rounded bg-[hsl(var(--background))] text-[hsl(var(--foreground))] whitespace-pre-wrap">
+                            {inputFormatted.isQuoted
+                              ? `"${inputFormatted.formatted}"`
+                              : inputFormatted.formatted}
+                          </code>
+                        </div>
+                        <div>
+                          <span className="font-medium">Expected Output: </span>
+                          <code className="ml-2 px-2 py-1 rounded bg-[hsl(var(--background))] text-[hsl(var(--foreground))] whitespace-pre-wrap">
+                            {outputFormatted.isQuoted
+                              ? `"${outputFormatted.formatted}"`
+                              : outputFormatted.formatted}
+                          </code>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
