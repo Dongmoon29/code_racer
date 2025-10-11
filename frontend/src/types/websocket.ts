@@ -22,8 +22,10 @@ export interface TestCaseDetailMessage {
   total_test_cases: number;
   status: 'running' | 'completed';
   input: unknown;
-  expected_output: unknown;
+  expected_output?: unknown;
+  expected?: unknown; // Backend sends this field
   actual_output?: unknown;
+  actual?: unknown; // Backend sends this field
   passed?: boolean;
   execution_time?: number;
   memory_usage?: number;

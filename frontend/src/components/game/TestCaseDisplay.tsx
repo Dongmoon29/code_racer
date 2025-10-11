@@ -1,5 +1,6 @@
 import React, { FC, useState } from 'react';
 import { SubmissionProgress, TestCaseResult } from '@/types/websocket';
+import { TestCase } from '@/types';
 import { Spinner } from '@/components/ui/Spinner';
 import { Alert } from '@/components/ui/alert';
 import { Card } from '@/components/ui/Card';
@@ -7,12 +8,14 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface TestCaseDisplayProps {
   submissionProgress: SubmissionProgress;
+  testCases: TestCase[]; // Test case data (required)
   className?: string;
   compact?: boolean;
 }
 
 export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
   submissionProgress,
+  testCases,
   className = '',
   compact = false,
 }) => {
@@ -44,7 +47,20 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
   const progressPercentage =
     totalTestCases > 0 ? (completedTestCases / totalTestCases) * 100 : 0;
 
-  const renderTestCaseResult = (result: TestCaseResult) => {
+  const renderTestCaseResult = (
+    result: TestCaseResult | undefined,
+    testCase: TestCase,
+    index: number
+  ) => {
+    // Set default values when execution result is not available
+    const defaultResult: TestCaseResult = {
+      index,
+      input: testCase.input,
+      expectedOutput: testCase.output,
+      status: 'pending',
+    };
+    const testResult = result || defaultResult;
+
     // Computed class names for test case result
     const testCaseClass = compact ? 'p-2 rounded-md' : 'p-4 rounded-lg';
     const headerMargin = compact ? 'mb-1' : 'mb-2';
@@ -55,7 +71,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
 
     // Background color based on test result and theme compatibility
     const getBackgroundClass = () => {
-      if (result.status === 'completed' && !result.passed) {
+      if (testResult.status === 'completed' && !testResult.passed) {
         // Failed test case - red background for both light and dark themes
         return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
       }
@@ -63,11 +79,11 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
       return 'bg-card border-border';
     };
     const getStatusIcon = () => {
-      switch (result.status) {
+      switch (testResult.status) {
         case 'running':
           return <Spinner size="sm" className="text-blue-500" />;
         case 'completed':
-          return result.passed ? (
+          return testResult.passed ? (
             <span className="text-green-500 font-bold">✓</span>
           ) : (
             <span className="text-red-500 font-bold">✗</span>
@@ -92,24 +108,24 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
 
     return (
       <div
-        key={result.index}
+        key={testResult.index}
         className={`${testCaseClass} ${getBackgroundClass()} transition-all duration-300`}
       >
         <div className={`flex items-center justify-between ${headerMargin}`}>
           <div className="flex items-center gap-2">
             {getStatusIcon()}
             <span className={`${testCaseTextSize} font-medium`}>
-              Test Case {result.index + 1}
+              Test Case {testResult.index + 1}
             </span>
           </div>
-          {result.status === 'completed' && (
+          {testResult.status === 'completed' && (
             <div className={metricsTextSize}>
-              {result.executionTime && (
-                <span>{(result.executionTime * 1000).toFixed(2)}ms</span>
+              {testResult.executionTime && (
+                <span>{(testResult.executionTime * 1000).toFixed(2)}ms</span>
               )}
-              {result.memoryUsage && (
+              {testResult.memoryUsage && (
                 <span className="ml-2">
-                  {(result.memoryUsage / 1024).toFixed(2)}KB
+                  {(testResult.memoryUsage / 1024).toFixed(2)}KB
                 </span>
               )}
             </div>
@@ -117,12 +133,13 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
         </div>
 
         <div className={`space-y-2 ${inputOutputTextSize}`}>
+          {/* Input and Expected Output always use static data */}
           <div>
             <span className="font-medium">Input:</span>
             <div
               className={`mt-1 ${inputOutputPadding} rounded border font-mono`}
             >
-              {formatValue(result.input)}
+              {formatValue(testCase.input)}
             </div>
           </div>
 
@@ -131,18 +148,19 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
             <div
               className={`mt-1 ${inputOutputPadding} rounded border font-mono`}
             >
-              {formatValue(result.expectedOutput)}
+              {formatValue(testCase.output)}
             </div>
           </div>
 
-          {result.status === 'completed' &&
-            result.actualOutput !== undefined && (
+          {/* Actual Output only uses execution results from WebSocket */}
+          {testResult.status === 'completed' &&
+            testResult.actualOutput !== undefined && (
               <div>
                 <span className="font-medium">Actual Output:</span>
                 <div
                   className={`mt-1 ${inputOutputPadding} rounded border font-mono`}
                 >
-                  {formatValue(result.actualOutput)}
+                  {formatValue(testResult.actualOutput)}
                 </div>
               </div>
             )}
@@ -234,10 +252,14 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
             </Alert>
           )}
 
-          {/* Test case results */}
-          {testCaseResults.length > 0 && (
+          {/* Test case results - render based on test cases */}
+          {testCases.length > 0 && (
             <div className={testCaseSpacing}>
-              {testCaseResults.map(renderTestCaseResult)}
+              {testCases.map((testCase, index) => {
+                // Check if execution result exists for this index
+                const result = testCaseResults.find((r) => r.index === index);
+                return renderTestCaseResult(result, testCase, index);
+              })}
             </div>
           )}
         </>

@@ -139,8 +139,13 @@ export const useGameRoomWebSocket = ({
         list[message.test_case_index] = {
           index: message.test_case_index,
           input: message.input,
-          expectedOutput: message.expected_output,
-          actualOutput: message.actual_output,
+          expectedOutput:
+            message.expected_output ||
+            (message as TestCaseDetailMessage & { expected?: unknown })
+              .expected,
+          actualOutput:
+            message.actual_output ||
+            (message as TestCaseDetailMessage & { actual?: unknown }).actual,
           passed: message.passed,
           status: 'completed',
           executionTime: message.execution_time,

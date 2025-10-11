@@ -94,6 +94,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
               <div className="mt-3 p-4">
                 <TestCaseDisplay
                   submissionProgress={submissionProgress}
+                  testCases={problemTestCases || []}
                   compact
                 />
               </div>

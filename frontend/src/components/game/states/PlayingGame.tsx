@@ -136,6 +136,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                 <div className="mt-3">
                   <TestCaseDisplay
                     submissionProgress={submissionProgress}
+                    testCases={game.leetcode.test_cases}
                     compact
                   />
                 </div>
