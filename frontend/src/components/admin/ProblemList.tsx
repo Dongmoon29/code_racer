@@ -1,21 +1,18 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import {
-  useLeetCodeProblems,
-  useDeleteLeetCodeProblem,
-} from '@/hooks/useLeetCode';
+import { useProblems, useDeleteProblem } from '@/hooks/useProblem';
 import Link from 'next/link';
-import { LeetCodeSummary } from '@/types';
+import { ProblemSummary } from '@/types';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 
-export default function LeetCodeList() {
+export default function ProblemList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
 
   // Use React Query hooks
-  const { data: problems = [], isLoading, error } = useLeetCodeProblems();
-  const deleteProblemMutation = useDeleteLeetCodeProblem();
+  const { data: problems = [], isLoading, error } = useProblems();
+  const deleteProblemMutation = useDeleteProblem();
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Are you sure you want to delete "${title}" problem?`)) {
@@ -44,7 +41,7 @@ export default function LeetCodeList() {
   };
 
   const filteredProblems = useMemo(() => {
-    return problems.filter((problem: LeetCodeSummary) => {
+    return problems.filter((problem: ProblemSummary) => {
       const matchesSearch = problem.title
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
@@ -84,8 +81,8 @@ export default function LeetCodeList() {
     <div className="max-w-6xl mx-auto p-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">LeetCode Problem Management</h1>
-        <Link href="/admin/leetcode/create" className="px-6 py-2 rounded-md">
+        <h1 className="text-3xl font-bold">Problem Management</h1>
+        <Link href="/admin/problems/create" className="px-6 py-2 rounded-md">
           + Add New Problem
         </Link>
       </div>
@@ -148,7 +145,7 @@ export default function LeetCodeList() {
                   </td>
                 </tr>
               ) : (
-                filteredProblems.map((problem: LeetCodeSummary) => (
+                filteredProblems.map((problem: ProblemSummary) => (
                   <tr key={problem.id} className="">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium">{problem.title}</div>
@@ -170,7 +167,7 @@ export default function LeetCodeList() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <Link href={`/admin/leetcode/edit/${problem.id}`}>
+                        <Link href={`/admin/problems/edit/${problem.id}`}>
                           Edit
                         </Link>
                         <button
@@ -201,7 +198,7 @@ export default function LeetCodeList() {
           <div className="text-sm font-medium ">Easy</div>
           <div className="text-2xl font-bold text-green-600">
             {
-              problems.filter((p: LeetCodeSummary) => p.difficulty === 'Easy')
+              problems.filter((p: ProblemSummary) => p.difficulty === 'Easy')
                 .length
             }
           </div>
@@ -211,7 +208,7 @@ export default function LeetCodeList() {
           <div className="text-sm font-medium ">Medium</div>
           <div className="text-2xl font-bold text-yellow-600">
             {
-              problems.filter((p: LeetCodeSummary) => p.difficulty === 'Medium')
+              problems.filter((p: ProblemSummary) => p.difficulty === 'Medium')
                 .length
             }
           </div>
@@ -221,7 +218,7 @@ export default function LeetCodeList() {
           <div className="text-sm font-medium ">Hard</div>
           <div className="text-2xl font-bold text-red-600">
             {
-              problems.filter((p: LeetCodeSummary) => p.difficulty === 'Hard')
+              problems.filter((p: ProblemSummary) => p.difficulty === 'Hard')
                 .length
             }
           </div>

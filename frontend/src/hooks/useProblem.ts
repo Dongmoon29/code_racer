@@ -1,49 +1,46 @@
-// React Query hooks for LeetCode operations
+// React Query hooks for Problem operations
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  createLeetCodeProblem,
-  updateLeetCodeProblem,
-  deleteLeetCodeProblem,
-  getAllLeetCodeProblems,
-  getLeetCodeProblem,
-} from '@/lib/leetcode-api';
+  createProblem,
+  updateProblem,
+  deleteProblem,
+  getAllProblems,
+  getProblem,
+} from '@/lib/problem-api';
 import {
-  CreateLeetCodeRequest,
-  UpdateLeetCodeRequest,
-  LeetCodeDetail,
-  LeetCodeSummary,
+  CreateProblemRequest,
+  UpdateProblemRequest,
+  ProblemDetail,
+  ProblemSummary,
 } from '@/types';
 
 // Mutation variables types
-type UpdateLeetCodeVariables = {
+type UpdateProblemVariables = {
   id: string;
-  data: UpdateLeetCodeRequest;
+  data: UpdateProblemRequest;
 };
 import { createErrorHandler } from '@/lib/error-tracking';
 
 // Query keys
-export const LEETCODE_QUERY_KEYS = {
-  all: ['leetcode'] as const,
-  lists: () => [...LEETCODE_QUERY_KEYS.all, 'list'] as const,
+export const PROBLEM_QUERY_KEYS = {
+  all: ['problem'] as const,
+  lists: () => [...PROBLEM_QUERY_KEYS.all, 'list'] as const,
   list: (filters: Record<string, unknown>) =>
-    [...LEETCODE_QUERY_KEYS.lists(), { filters }] as const,
-  details: () => [...LEETCODE_QUERY_KEYS.all, 'detail'] as const,
-  detail: (id: string) => [...LEETCODE_QUERY_KEYS.details(), id] as const,
+    [...PROBLEM_QUERY_KEYS.lists(), { filters }] as const,
+  details: () => [...PROBLEM_QUERY_KEYS.all, 'detail'] as const,
+  detail: (id: string) => [...PROBLEM_QUERY_KEYS.details(), id] as const,
 };
 
-// Get all LeetCode problems
-export const useLeetCodeProblems = () => {
-  const errorHandler = createErrorHandler(
-    'useLeetCodeProblems',
-    'getAllProblems'
-  );
+// Get all problems
+export const useProblems = () => {
+  const errorHandler = createErrorHandler('useProblems', 'getAllProblems');
 
   return useQuery({
-    queryKey: LEETCODE_QUERY_KEYS.lists(),
+    queryKey: PROBLEM_QUERY_KEYS.lists(),
     queryFn: async () => {
       try {
-        const response = await getAllLeetCodeProblems();
-        return response.data as LeetCodeSummary[];
+        const response = await getAllProblems();
+        return response.data as ProblemSummary[];
       } catch (error) {
         errorHandler(error, { action: 'getAllProblems' });
         throw error;
@@ -54,18 +51,15 @@ export const useLeetCodeProblems = () => {
   });
 };
 
-// Get single LeetCode problem
-export const useLeetCodeProblem = (id: string) => {
-  const errorHandler = createErrorHandler(
-    'useLeetCodeProblem',
-    'getProblemById'
-  );
+// Get single problem
+export const useProblem = (id: string) => {
+  const errorHandler = createErrorHandler('useProblem', 'getProblemById');
 
   return useQuery({
-    queryKey: LEETCODE_QUERY_KEYS.detail(id),
+    queryKey: PROBLEM_QUERY_KEYS.detail(id),
     queryFn: async () => {
       try {
-        return await getLeetCodeProblem(id);
+        return await getProblem(id);
       } catch (error) {
         errorHandler(error, {
           action: 'getProblemById',
@@ -80,18 +74,15 @@ export const useLeetCodeProblem = (id: string) => {
   });
 };
 
-// Create LeetCode problem mutation
-export const useCreateLeetCodeProblem = () => {
+// Create problem mutation
+export const useCreateProblem = () => {
   const queryClient = useQueryClient();
-  const errorHandler = createErrorHandler(
-    'useCreateLeetCodeProblem',
-    'createProblem'
-  );
+  const errorHandler = createErrorHandler('useCreateProblem', 'createProblem');
 
   return useMutation({
-    mutationFn: async (data: CreateLeetCodeRequest) => {
+    mutationFn: async (data: CreateProblemRequest) => {
       try {
-        return await createLeetCodeProblem(data);
+        return await createProblem(data);
       } catch (error) {
         errorHandler(error, {
           action: 'createProblem',
@@ -101,19 +92,16 @@ export const useCreateLeetCodeProblem = () => {
       }
     },
     onSuccess: () => {
-      // Invalidate and refetch LeetCode problems list
-      queryClient.invalidateQueries({ queryKey: LEETCODE_QUERY_KEYS.lists() });
+      // Invalidate and refetch problems list
+      queryClient.invalidateQueries({ queryKey: PROBLEM_QUERY_KEYS.lists() });
     },
   });
 };
 
-// Update LeetCode problem mutation
-export const useUpdateLeetCodeProblem = () => {
+// Update problem mutation
+export const useUpdateProblem = () => {
   const queryClient = useQueryClient();
-  const errorHandler = createErrorHandler(
-    'useUpdateLeetCodeProblem',
-    'updateProblem'
-  );
+  const errorHandler = createErrorHandler('useUpdateProblem', 'updateProblem');
 
   return useMutation({
     mutationFn: async ({
@@ -121,10 +109,10 @@ export const useUpdateLeetCodeProblem = () => {
       data,
     }: {
       id: string;
-      data: UpdateLeetCodeRequest;
+      data: UpdateProblemRequest;
     }) => {
       try {
-        return await updateLeetCodeProblem(id, data);
+        return await updateProblem(id, data);
       } catch (error) {
         errorHandler(error, {
           action: 'updateProblem',
@@ -134,27 +122,24 @@ export const useUpdateLeetCodeProblem = () => {
         throw error;
       }
     },
-    onSuccess: (data: LeetCodeDetail, variables: UpdateLeetCodeVariables) => {
+    onSuccess: (data: ProblemDetail, variables: UpdateProblemVariables) => {
       // Update the specific problem in cache
-      queryClient.setQueryData(LEETCODE_QUERY_KEYS.detail(variables.id), data);
-      // Invalidate and refetch LeetCode problems list
-      queryClient.invalidateQueries({ queryKey: LEETCODE_QUERY_KEYS.lists() });
+      queryClient.setQueryData(PROBLEM_QUERY_KEYS.detail(variables.id), data);
+      // Invalidate and refetch problems list
+      queryClient.invalidateQueries({ queryKey: PROBLEM_QUERY_KEYS.lists() });
     },
   });
 };
 
-// Delete LeetCode problem mutation
-export const useDeleteLeetCodeProblem = () => {
+// Delete problem mutation
+export const useDeleteProblem = () => {
   const queryClient = useQueryClient();
-  const errorHandler = createErrorHandler(
-    'useDeleteLeetCodeProblem',
-    'deleteProblem'
-  );
+  const errorHandler = createErrorHandler('useDeleteProblem', 'deleteProblem');
 
   return useMutation({
     mutationFn: async (id: string) => {
       try {
-        await deleteLeetCodeProblem(id);
+        await deleteProblem(id);
         return id;
       } catch (error) {
         errorHandler(error, {
@@ -167,10 +152,10 @@ export const useDeleteLeetCodeProblem = () => {
     onSuccess: (deletedId: string) => {
       // Remove the problem from cache
       queryClient.removeQueries({
-        queryKey: LEETCODE_QUERY_KEYS.detail(deletedId),
+        queryKey: PROBLEM_QUERY_KEYS.detail(deletedId),
       });
-      // Invalidate and refetch LeetCode problems list
-      queryClient.invalidateQueries({ queryKey: LEETCODE_QUERY_KEYS.lists() });
+      // Invalidate and refetch problems list
+      queryClient.invalidateQueries({ queryKey: PROBLEM_QUERY_KEYS.lists() });
     },
   });
 };

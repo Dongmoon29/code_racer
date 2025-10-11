@@ -1,8 +1,8 @@
 import {
-  CreateLeetCodeRequest,
-  UpdateLeetCodeRequest,
-  LeetCodeDetail,
-  LeetCodeSummary,
+  CreateProblemRequest,
+  UpdateProblemRequest,
+  ProblemDetail,
+  ProblemSummary,
 } from '@/types';
 
 const API_BASE_URL =
@@ -15,7 +15,7 @@ async function apiRequest<T>(
 ): Promise<T> {
   const token = localStorage.getItem('authToken'); // Changed from accessToken to authToken
 
-  console.log('LeetCode API Request:', {
+  console.log('Problem API Request:', {
     endpoint: `${API_BASE_URL}${endpoint}`,
     token: token ? 'exists' : 'missing',
     tokenLength: token?.length || 0,
@@ -32,7 +32,7 @@ async function apiRequest<T>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    console.error('LeetCode API Error:', {
+    console.error('Problem API Error:', {
       status: response.status,
       statusText: response.statusText,
       endpoint: `${API_BASE_URL}${endpoint}`,
@@ -46,82 +46,80 @@ async function apiRequest<T>(
   return response.json();
 }
 
-// Create LeetCode problem (Admin only)
-export async function createLeetCodeProblem(
-  data: CreateLeetCodeRequest
-): Promise<LeetCodeDetail> {
-  return apiRequest<LeetCodeDetail>('/leetcode', {
+// Create problem (Admin only)
+export async function createProblem(
+  data: CreateProblemRequest
+): Promise<ProblemDetail> {
+  return apiRequest<ProblemDetail>('/problems', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
-// Update LeetCode problem (Admin only)
-export async function updateLeetCodeProblem(
+// Update problem (Admin only)
+export async function updateProblem(
   id: string,
-  data: UpdateLeetCodeRequest
-): Promise<LeetCodeDetail> {
-  return apiRequest<LeetCodeDetail>(`/leetcode/${id}`, {
+  data: UpdateProblemRequest
+): Promise<ProblemDetail> {
+  return apiRequest<ProblemDetail>(`/problems/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });
 }
 
-// Delete LeetCode problem (Admin only)
-export async function deleteLeetCodeProblem(id: string): Promise<void> {
-  return apiRequest<void>(`/leetcode/${id}`, {
+// Delete problem (Admin only)
+export async function deleteProblem(id: string): Promise<void> {
+  return apiRequest<void>(`/problems/${id}`, {
     method: 'DELETE',
   });
 }
 
-// Get all LeetCode problems
-export async function getAllLeetCodeProblems(): Promise<{
+// Get all problems
+export async function getAllProblems(): Promise<{
   success: boolean;
-  data: LeetCodeSummary[];
+  data: ProblemSummary[];
 }> {
-  return apiRequest<{ success: boolean; data: LeetCodeSummary[] }>('/leetcode');
+  return apiRequest<{ success: boolean; data: ProblemSummary[] }>('/problems');
 }
 
-// Get specific LeetCode problem
-export async function getLeetCodeProblem(id: string): Promise<LeetCodeDetail> {
-  const response = await apiRequest<{ success: boolean; data: LeetCodeDetail }>(
-    `/leetcode/${id}`
+// Get specific problem
+export async function getProblem(id: string): Promise<ProblemDetail> {
+  const response = await apiRequest<{ success: boolean; data: ProblemDetail }>(
+    `/problems/${id}`
   );
   return response.data;
 }
 
-// Get LeetCode problems by difficulty
-export async function getLeetCodeProblemsByDifficulty(
+// Get problems by difficulty
+export async function getProblemsByDifficulty(
   difficulty: string
-): Promise<LeetCodeSummary[]> {
-  return apiRequest<LeetCodeSummary[]>(
-    `/leetcode/difficulty?difficulty=${difficulty}`
+): Promise<ProblemSummary[]> {
+  return apiRequest<ProblemSummary[]>(
+    `/problems/difficulty?difficulty=${difficulty}`
   );
 }
 
-// Search LeetCode problems
-export async function searchLeetCodeProblems(
-  query: string
-): Promise<LeetCodeSummary[]> {
-  return apiRequest<LeetCodeSummary[]>(
-    `/leetcode/search?q=${encodeURIComponent(query)}`
+// Search problems
+export async function searchProblems(query: string): Promise<ProblemSummary[]> {
+  return apiRequest<ProblemSummary[]>(
+    `/problems/search?q=${encodeURIComponent(query)}`
   );
 }
 
-// Get LeetCode problems with pagination
-export async function getLeetCodeProblemsWithPagination(
+// Get problems with pagination
+export async function getProblemsWithPagination(
   page: number = 1,
   limit: number = 10
 ): Promise<{
-  problems: LeetCodeSummary[];
+  problems: ProblemSummary[];
   total: number;
   page: number;
   limit: number;
 }> {
   return apiRequest<{
-    problems: LeetCodeSummary[];
+    problems: ProblemSummary[];
     total: number;
     page: number;
     limit: number;
-  }>(`/leetcode/page?page=${page}&limit=${limit}`);
+  }>(`/problems/page?page=${page}&limit=${limit}`);
 }

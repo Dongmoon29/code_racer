@@ -1,9 +1,9 @@
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
-import type { LeetCodeDetail, Game } from '@/types';
+import type { ProblemDetail, Game } from '@/types';
 import { createErrorHandler } from '@/lib/error-tracking';
 
-// LeetCodeDetail type is imported from central types
+// ProblemDetail type is imported from central types
 
 export interface UserProfile {
   homepage?: string;
@@ -168,7 +168,7 @@ export const matchApi = {
             created_at: payload.winner.created_at,
           }
         : undefined,
-      leetcode: payload.leetcode,
+      problem: payload.problem,
       status: payload.status,
       mode: payload.mode || 'casual_pvp', // Add mode field mapping
       started_at: payload.started_at,
@@ -188,15 +188,15 @@ export const matchApi = {
   },
 };
 
-export const leetcodeApi = {
-  listLeetCodes: async () => {
-    const response = await api.get('/leetcode');
+export const problemApi = {
+  listProblems: async () => {
+    const response = await api.get('/problems');
     return response.data;
   },
 };
 
 export const getCodeTemplate = (
-  problem: LeetCodeDetail,
+  problem: ProblemDetail,
   language: string
 ): string => {
   if (!problem) {

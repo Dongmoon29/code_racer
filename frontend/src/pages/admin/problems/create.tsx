@@ -1,11 +1,11 @@
 import React from 'react';
-import LeetCodeForm from '../../../components/admin/LeetCodeForm';
+import ProblemForm from '../../../components/admin/ProblemForm';
 import { useAuth } from '../../../hooks/useAuth';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 
-export default function CreateLeetCodePage() {
+export default function CreateProblemPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
@@ -16,11 +16,11 @@ export default function CreateLeetCodePage() {
   }, [user, isLoading, router]);
 
   const handleSuccess = () => {
-    router.push('/admin/leetcode');
+    router.push('/admin/problems');
   };
 
   const handleCancel = () => {
-    router.push('/admin/leetcode');
+    router.push('/admin/problems');
   };
 
   if (isLoading) {
@@ -37,7 +37,7 @@ export default function CreateLeetCodePage() {
 
   return (
     <div className="min-h-screen py-8">
-      <LeetCodeForm
+      <ProblemForm
         mode="create"
         onSuccess={handleSuccess}
         onCancel={handleCancel}

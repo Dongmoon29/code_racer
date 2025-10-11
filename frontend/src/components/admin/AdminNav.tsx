@@ -7,8 +7,8 @@ export default function AdminNav() {
 
   const navItems = [
     {
-      href: '/admin/leetcode',
-      label: 'LeetCode Problems',
+      href: '/admin/problems',
+      label: 'Problems',
       description: 'Add, edit, delete problems',
     },
     // Additional admin features can be added here in the future

@@ -16,7 +16,7 @@ export interface ApiResponse<T = unknown> {
   data?: T;
   game?: {
     id: string;
-    leetcode: {
+    problem: {
       id: string;
       title: string;
       difficulty: string;
@@ -29,7 +29,7 @@ export interface ApiResponse<T = unknown> {
   is_winner?: boolean;
 }
 
-// LeetCode 관련 타입
+// Problem 관련 타입
 export interface TestCase {
   input: (string | number | boolean)[];
   output: string | number | boolean;
@@ -40,7 +40,7 @@ export interface IOSchema {
   return_type: string;
 }
 
-export interface CreateLeetCodeRequest {
+export interface CreateProblemRequest {
   title: string;
   description: string;
   examples: string;
@@ -61,11 +61,11 @@ export interface CreateLeetCodeRequest {
   memory_limit?: number;
 }
 
-export interface UpdateLeetCodeRequest extends Partial<CreateLeetCodeRequest> {
+export interface UpdateProblemRequest extends Partial<CreateProblemRequest> {
   id: string;
 }
 
-export interface LeetCodeSummary {
+export interface ProblemSummary {
   id: string;
   title: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
@@ -73,7 +73,7 @@ export interface LeetCodeSummary {
   updated_at: string;
 }
 
-export interface LeetCodeDetail extends LeetCodeSummary {
+export interface ProblemDetail extends ProblemSummary {
   description: string;
   examples: string;
   constraints: string;
@@ -92,7 +92,7 @@ export interface LeetCodeDetail extends LeetCodeSummary {
   memory_limit: number;
 }
 
-export interface LeetCodeFormData {
+export interface ProblemFormData {
   id?: string;
   title: string;
   description: string;
@@ -133,7 +133,7 @@ export interface GameState {
   id: string;
   status: 'waiting' | 'playing' | 'finished' | 'closed';
   players: Player[];
-  problem: LeetCodeDetail;
+  problem: ProblemDetail;
   start_time?: string;
   time_limit: number;
 }
@@ -196,7 +196,7 @@ export interface Game {
     name: string;
     created_at: string;
   };
-  leetcode: LeetCodeDetail;
+  problem: ProblemDetail;
   status: 'waiting' | 'playing' | 'finished' | 'closed';
   mode: 'ranked_pvp' | 'casual_pvp' | 'single';
   started_at?: string;

@@ -26,7 +26,7 @@ interface RecentGameSummary {
   id: string;
   mode: 'ranked_pvp' | 'casual_pvp' | 'single';
   status: 'waiting' | 'playing' | 'finished' | 'closed';
-  leetcode: { id: string; title: string; difficulty: string };
+  problem: { id: string; title: string; difficulty: string };
   player_a: { id: string; name: string };
   player_b?: { id: string; name: string };
   winner_id?: string;

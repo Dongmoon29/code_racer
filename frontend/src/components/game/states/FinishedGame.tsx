@@ -21,7 +21,7 @@ export const FinishedGame: React.FC<Props> = memo(
 
     return (
       <div className="p-6 max-w-4xl mx-auto rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold mb-4">{game.leetcode.title}</h1>
+        <h1 className="text-2xl font-bold mb-4">{game.problem.title}</h1>
         <Alert
           variant={
             game.winner?.id && me?.id && game.winner.id === me.id

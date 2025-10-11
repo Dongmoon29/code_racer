@@ -1,11 +1,11 @@
 import React from 'react';
-import LeetCodeList from '../../../components/admin/LeetCodeList';
+import ProblemList from '../../../components/admin/ProblemList';
 import { useAuth } from '../../../hooks/useAuth';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 
-export default function LeetCodeAdminPage() {
+export default function ProblemAdminPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
@@ -29,7 +29,7 @@ export default function LeetCodeAdminPage() {
 
   return (
     <div className="min-h-screen">
-      <LeetCodeList />
+      <ProblemList />
     </div>
   );
 }

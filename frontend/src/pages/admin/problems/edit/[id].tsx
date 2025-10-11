@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../../../hooks/useAuth';
-import { getLeetCodeProblem } from '../../../../lib/leetcode-api';
-import { LeetCodeFormData } from '@/types';
-import LeetCodeForm from '../../../../components/admin/LeetCodeForm';
+import { getProblem } from '../../../../lib/problem-api';
+import { ProblemFormData } from '@/types';
+import ProblemForm from '../../../../components/admin/ProblemForm';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 
-export default function EditLeetCodePage() {
+export default function EditProblemPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { id } = router.query;
 
-  const [problem, setProblem] = useState<LeetCodeFormData | null>(null);
+  const [problem, setProblem] = useState<ProblemFormData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
@@ -30,10 +30,10 @@ export default function EditLeetCodePage() {
   const loadProblem = async (problemId: string) => {
     try {
       setIsLoading(true);
-      const data = await getLeetCodeProblem(problemId);
+      const data = await getProblem(problemId);
 
       // API 응답을 폼 데이터 형식으로 변환
-      const formData: LeetCodeFormData = {
+      const formData: ProblemFormData = {
         id: data.id,
         title: data.title,
         description: data.description,
@@ -66,11 +66,11 @@ export default function EditLeetCodePage() {
   };
 
   const handleSuccess = () => {
-    router.push('/admin/leetcode');
+    router.push('/admin/problems');
   };
 
   const handleCancel = () => {
-    router.push('/admin/leetcode');
+    router.push('/admin/problems');
   };
 
   if (authLoading || isLoading) {
@@ -91,7 +91,7 @@ export default function EditLeetCodePage() {
         <div className="text-center">
           <div className="text-red-600 mb-4">{error}</div>
           <button
-            onClick={() => router.push('/admin/leetcode')}
+            onClick={() => router.push('/admin/problems')}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             Back to List
@@ -111,7 +111,7 @@ export default function EditLeetCodePage() {
 
   return (
     <div className="min-h-screen py-8">
-      <LeetCodeForm
+      <ProblemForm
         initialData={problem}
         mode="edit"
         onSuccess={handleSuccess}

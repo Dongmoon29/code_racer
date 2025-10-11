@@ -1,6 +1,6 @@
 import React, { FC, memo, useState } from 'react';
 import { ProblemDetailsPane } from './ProblemDetailsPane';
-import { LeetCodeEditorSplit } from './CodeEditorSplitProps';
+import { ProblemEditorSplit } from './CodeEditorSplitProps';
 import TestCaseDisplay from '../TestCaseDisplay';
 import { SubmissionProgress } from '@/types/websocket';
 
@@ -102,7 +102,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
           </div>
 
           <div className="flex-1 p-2 min-h-0 overflow-hidden">
-            <LeetCodeEditorSplit
+            <ProblemEditorSplit
               myCode={myCode}
               opponentCode={isSinglePlayerMode ? '' : opponentCode}
               opponentName={isSinglePlayerMode ? '' : opponentName}

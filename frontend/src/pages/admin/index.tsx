@@ -29,9 +29,9 @@ export default function AdminPage() {
 
   const adminFeatures = [
     {
-      title: 'LeetCode Problem Management',
+      title: 'Problem Management',
       description: 'Add new coding problems and edit/delete existing ones.',
-      href: '/admin/leetcode',
+      href: '/admin/problems',
       icon: '📝',
     },
     {

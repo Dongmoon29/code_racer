@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,6 +25,15 @@ func NewProblemController(problemService service.ProblemService, logger logger.L
 	}
 }
 
+// logJSON logs any struct as JSON for debugging
+func (c *ProblemController) logJSON(data interface{}, msg string) {
+	if jsonData, err := json.MarshalIndent(data, "", "  "); err != nil {
+		c.logger.Error().Err(err).Msg("Failed to marshal data to JSON")
+	} else {
+		c.logger.Debug().RawJSON("data", jsonData).Msg(msg)
+	}
+}
+
 func (c *ProblemController) GetAllProblems(ctx *gin.Context) {
 	problems, err := c.problemService.GetAllProblems()
 	if err != nil {
@@ -39,15 +49,25 @@ func (c *ProblemController) GetProblemByID(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
+		c.logger.Error().Err(err).Str("idStr", idStr).Msg("Failed to parse problem ID")
 		BadRequest(ctx, "Invalid problem ID")
 		return
 	}
+
+	c.logger.Debug().Str("problemID", id.String()).Msg("Getting problem by ID")
 
 	problem, err := c.problemService.GetProblemByID(id)
 	if err != nil {
 		c.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to get problem by ID")
 		NotFound(ctx, "Problem not found")
 		return
+	}
+
+	// Log problem data as JSON for easy debugging
+	if problem != nil {
+		c.logJSON(problem, "Problem data loaded successfully")
+	} else {
+		c.logger.Warn().Str("problemID", id.String()).Msg("Problem is nil")
 	}
 
 	OK(ctx, problem)

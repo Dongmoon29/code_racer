@@ -1,20 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { LeetCodeFormData, TestCase } from '@/types';
-import {
-  createLeetCodeProblem,
-  updateLeetCodeProblem,
-} from '../../lib/leetcode-api';
+import { ProblemFormData, TestCase } from '@/types';
+import { createProblem, updateProblem } from '../../lib/problem-api';
 
-interface LeetCodeFormProps {
-  initialData?: LeetCodeFormData;
+interface ProblemFormProps {
+  initialData?: ProblemFormData;
   mode: 'create' | 'edit';
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-const defaultFormData: LeetCodeFormData = {
+const defaultFormData: ProblemFormData = {
   title: '',
   description: '',
   examples: '',
@@ -37,13 +34,13 @@ const defaultFormData: LeetCodeFormData = {
 
 const difficultyOptions = ['Easy', 'Medium', 'Hard'];
 
-export default function LeetCodeForm({
+export default function ProblemForm({
   initialData,
   mode,
   onSuccess,
   onCancel,
-}: LeetCodeFormProps) {
-  const [formData, setFormData] = useState<LeetCodeFormData>(
+}: ProblemFormProps) {
+  const [formData, setFormData] = useState<ProblemFormData>(
     initialData || defaultFormData
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,7 +53,7 @@ export default function LeetCodeForm({
   }, [initialData]);
 
   const handleInputChange = (
-    field: keyof LeetCodeFormData,
+    field: keyof ProblemFormData,
     value: string | number
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -105,9 +102,9 @@ export default function LeetCodeForm({
 
     try {
       if (mode === 'create') {
-        await createLeetCodeProblem(formData);
+        await createProblem(formData);
       } else if (initialData && initialData.id) {
-        await updateLeetCodeProblem(initialData.id, {
+        await updateProblem(initialData.id, {
           ...formData,
           id: initialData.id,
         });
@@ -124,9 +121,7 @@ export default function LeetCodeForm({
   return (
     <div className="max-w-4xl mx-auto p-6 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-6 ">
-        {mode === 'create'
-          ? 'Add New LeetCode Problem'
-          : 'Edit LeetCode Problem'}
+        {mode === 'create' ? 'Add New Problem' : 'Edit Problem'}
       </h2>
       {error && (
         <div className="mb-4 p-4 border border-red-200 rounded-md">
@@ -397,12 +392,12 @@ export default function LeetCodeForm({
               <textarea
                 value={
                   formData[
-                    `${lang}_template` as keyof LeetCodeFormData
+                    `${lang}_template` as keyof ProblemFormData
                   ] as string
                 }
                 onChange={(e) =>
                   handleInputChange(
-                    `${lang}_template` as keyof LeetCodeFormData,
+                    `${lang}_template` as keyof ProblemFormData,
                     e.target.value
                   )
                 }
