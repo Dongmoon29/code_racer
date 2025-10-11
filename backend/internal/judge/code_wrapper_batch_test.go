@@ -18,7 +18,7 @@ func TestWrapCodeBatch_Javascript(t *testing.T) {
 	logger := batchTestLogger()
 	w := NewCodeWrapper(logger)
 
-	problem := &model.LeetCode{FunctionName: "solution"}
+	problem := &model.Problem{FunctionName: "solution"}
 	code := "function solution(a,b){ return a+b }"
 	cases := "[[1,2],[3,4]]"
 
@@ -44,7 +44,7 @@ func TestWrapCodeBatch_Python(t *testing.T) {
 	logger := batchTestLogger()
 	w := NewCodeWrapper(logger)
 
-	problem := &model.LeetCode{FunctionName: "solution"}
+	problem := &model.Problem{FunctionName: "solution"}
 	code := "def solution(a,b):\n    return a+b"
 	cases := "[[1,2],[3,4]]"
 
@@ -70,7 +70,7 @@ func TestWrapCodeBatch_Go(t *testing.T) {
 	logger := batchTestLogger()
 	w := NewCodeWrapper(logger)
 
-	problem := &model.LeetCode{FunctionName: "solution"}
+	problem := &model.Problem{FunctionName: "solution"}
 	code := "func solution(args ...interface{}) interface{} { return args }"
 	cases := "[[1,2],[3,4]]"
 

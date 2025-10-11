@@ -1,6 +1,7 @@
 package languages
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -10,11 +11,20 @@ type GoWrapper struct{}
 
 func NewGoWrapper() *GoWrapper { return &GoWrapper{} }
 
-func (g *GoWrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
+func (g *GoWrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
 	// Minimal adapter that keeps behavior consistent with existing wrapper (schema-aware fallback)
 	// We just call through to a formatted template similar to current implementation.
 	// For brevity here, delegate to single with loop would be inefficient; rely on judge service to call per test if needed.
-	if len(problem.IOSchema.ParamTypes) == 0 {
+	var paramTypes []string
+	if problem.IOSchema.ParamTypes != "" {
+		// Parse JSON string to []string
+		if err := json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes); err != nil {
+			// Fallback to empty slice if parsing fails
+			paramTypes = []string{}
+		}
+	}
+	
+	if len(paramTypes) == 0 {
 		template := `
 package main
 
@@ -44,7 +54,7 @@ func main() {
 	}
 
 	// schema-aware: declare args and call with typed variables
-	argDecl, callArgs := goArgLines("c", problem.IOSchema.ParamTypes)
+	argDecl, callArgs := goArgLines("c", paramTypes)
 	template := `
 package main
 
@@ -80,8 +90,17 @@ func main() {
 	return fmt.Sprintf(template, code, testCasesJSON, argDecl, problem.FunctionName, callArgs), nil
 }
 
-func (g *GoWrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
-	if len(problem.IOSchema.ParamTypes) == 0 {
+func (g *GoWrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
+	var paramTypes []string
+	if problem.IOSchema.ParamTypes != "" {
+		// Parse JSON string to []string
+		if err := json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes); err != nil {
+			// Fallback to empty slice if parsing fails
+			paramTypes = []string{}
+		}
+	}
+	
+	if len(paramTypes) == 0 {
 		template := `
 package main
 
@@ -105,7 +124,7 @@ func main() {
 }`
 		return fmt.Sprintf(template, code, testCase, problem.FunctionName)
 	}
-	argDecl, callArgs := goArgLines("testCase", problem.IOSchema.ParamTypes)
+	argDecl, callArgs := goArgLines("testCase", paramTypes)
 	template := `
 package main
 

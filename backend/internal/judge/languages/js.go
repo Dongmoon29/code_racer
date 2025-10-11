@@ -10,7 +10,7 @@ type JSWrapper struct{}
 
 func NewJSWrapper() *JSWrapper { return &JSWrapper{} }
 
-func (w *JSWrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
+func (w *JSWrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
 	template := `
 // user code
 %s
@@ -34,12 +34,12 @@ runAll();`
 	return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
 }
 
-func (w *JSWrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
+func (w *JSWrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
 	template := `
-// 사용자 코드
+// User code
 %s
 
-// 테스트 실행
+// Test execution
 function runTest() {
     try {
         const testCase = JSON.parse(%q);

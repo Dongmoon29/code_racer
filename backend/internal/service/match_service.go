@@ -24,7 +24,7 @@ type MatchService interface {
 	GetPlayerCode(gameID uuid.UUID, userID uuid.UUID) (string, error)
 
 	// Matchmaking methods
-	GetRandomLeetCodeByDifficulty(difficulty string) (*model.LeetCode, error)
+	GetRandomProblemByDifficulty(difficulty string) (*model.Problem, error)
 	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error)
 	CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (*model.Match, error)
 
@@ -33,7 +33,7 @@ type MatchService interface {
 }
 type matchService struct {
 	matchRepo     repository.MatchRepository
-	leetCodeRepo  repository.LeetCodeRepository
+	problemRepo   repository.ProblemRepository
 	rdb           *redis.Client
 	redisManager  *RedisManager
 	logger        logger.Logger
@@ -46,7 +46,7 @@ type matchService struct {
 // NewMatchService creates a new MatchService instance with the provided dependencies
 func NewMatchService(
 	matchRepo repository.MatchRepository,
-	leetCodeRepo repository.LeetCodeRepository,
+	problemRepo repository.ProblemRepository,
 	rdb *redis.Client,
 	judgeService interfaces.JudgeService,
 	userRepo interfaces.UserRepository,
@@ -56,7 +56,7 @@ func NewMatchService(
 ) MatchService {
 	svc := &matchService{
 		matchRepo:     matchRepo,
-		leetCodeRepo:  leetCodeRepo,
+		problemRepo:   problemRepo,
 		rdb:           rdb,
 		redisManager:  NewRedisManager(rdb, logger),
 		judgeService:  judgeService,
@@ -93,7 +93,7 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 		Msg("Evaluating submitted code")
 
 		// Evaluate code via Judge service (Judge0) with realtime notifications
-	result, err := s.judgeService.EvaluateCodeWithRealtime(req.Code, req.Language, &match.LeetCode, matchID, userID)
+	result, err := s.judgeService.EvaluateCodeWithRealtime(req.Code, req.Language, &match.Problem, matchID, userID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Code evaluation failed")
 		return nil, err
@@ -301,18 +301,18 @@ func (s *matchService) GetMatch(matchID uuid.UUID) (*model.Match, error) {
 // CreateMatch persists a new match and initializes Redis state
 func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error) {
 	// Pick a random LeetCode problem for the requested difficulty
-	leetcode, err := s.GetRandomLeetCodeByDifficulty(difficulty)
+	problem, err := s.GetRandomProblemByDifficulty(difficulty)
 	if err != nil {
 		s.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to get random LeetCode problem")
 		return nil, fmt.Errorf("failed to get problem for difficulty %s: %w", difficulty, err)
 	}
 
 	match := &model.Match{
-		PlayerAID:  player1ID,
-		PlayerBID:  &player2ID,
-		LeetCodeID: leetcode.ID,
-		Status:     model.MatchStatusPlaying,
-		Mode:       model.MatchMode(mode),
+		PlayerAID: player1ID,
+		PlayerBID: &player2ID,
+		ProblemID: problem.ID,
+		Status:    model.MatchStatusPlaying,
+		Mode:      model.MatchMode(mode),
 	}
 
 	// Save to database
@@ -329,7 +329,7 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 	}
 
 	// Initialize Redis data using RedisManager
-	if err := s.redisManager.CreateMatch(match.ID, player1ID, player2ID, leetcode.ID, difficulty, mode); err != nil {
+	if err := s.redisManager.CreateMatch(match.ID, player1ID, player2ID, problem.ID, difficulty, mode); err != nil {
 		s.logger.Error().Err(err).Msg("Failed to initialize Redis data for match")
 		// Try to rollback the database record
 		if deleteErr := s.matchRepo.Delete(match.ID); deleteErr != nil {
@@ -343,7 +343,7 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 		Str("player1ID", player1ID.String()).
 		Str("player2ID", player2ID.String()).
 		Str("difficulty", difficulty).
-		Str("problem", leetcode.Title).
+		Str("problem", problem.Title).
 		Msg("Successfully created match")
 
 	return createdMatch, nil
@@ -352,18 +352,18 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 // CreateSinglePlayerMatch creates a single player match for practice mode
 func (s *matchService) CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (*model.Match, error) {
 	// Pick a random LeetCode problem for the requested difficulty
-	leetcode, err := s.GetRandomLeetCodeByDifficulty(difficulty)
+	problem, err := s.GetRandomProblemByDifficulty(difficulty)
 	if err != nil {
 		s.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to get random LeetCode problem")
 		return nil, fmt.Errorf("failed to get problem for difficulty %s: %w", difficulty, err)
 	}
 
 	match := &model.Match{
-		PlayerAID:  playerID,
-		PlayerBID:  nil, // No second player for single mode
-		LeetCodeID: leetcode.ID,
-		Status:     model.MatchStatusPlaying,
-		Mode:       model.MatchModeSingle,
+		PlayerAID: playerID,
+		PlayerBID: nil, // No second player for single mode
+		ProblemID: problem.ID,
+		Status:    model.MatchStatusPlaying,
+		Mode:      model.MatchModeSingle,
 	}
 
 	// Save to database
@@ -380,7 +380,7 @@ func (s *matchService) CreateSinglePlayerMatch(playerID uuid.UUID, difficulty st
 	}
 
 	// Initialize Redis data for single player match
-	if err := s.redisManager.CreateSinglePlayerMatch(match.ID, playerID, leetcode.ID, difficulty); err != nil {
+	if err := s.redisManager.CreateSinglePlayerMatch(match.ID, playerID, problem.ID, difficulty); err != nil {
 		s.logger.Error().Err(err).Msg("Failed to initialize Redis data for single player match")
 		// Try to rollback the database record
 		if deleteErr := s.matchRepo.Delete(match.ID); deleteErr != nil {
@@ -393,15 +393,15 @@ func (s *matchService) CreateSinglePlayerMatch(playerID uuid.UUID, difficulty st
 		Str("matchID", match.ID.String()).
 		Str("playerID", playerID.String()).
 		Str("difficulty", difficulty).
-		Str("problem", leetcode.Title).
+		Str("problem", problem.Title).
 		Msg("Successfully created single player match")
 
 	return createdMatch, nil
 }
 
-// GetRandomLeetCodeByDifficulty gets a random LeetCode problem by difficulty
-func (s *matchService) GetRandomLeetCodeByDifficulty(difficulty string) (*model.LeetCode, error) {
-	problems, err := s.leetCodeRepo.FindByDifficulty(difficulty)
+// GetRandomProblemByDifficulty gets a random problem by difficulty
+func (s *matchService) GetRandomProblemByDifficulty(difficulty string) (*model.Problem, error) {
+	problems, err := s.problemRepo.FindByDifficulty(difficulty)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find problems for difficulty %s: %w", difficulty, err)
 	}

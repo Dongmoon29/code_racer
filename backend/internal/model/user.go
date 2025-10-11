@@ -91,11 +91,11 @@ type RecentGameSummary struct {
 	ID       uuid.UUID   `json:"id"`
 	Mode     MatchMode   `json:"mode"`
 	Status   MatchStatus `json:"status"`
-	LeetCode struct {
+	Problem struct {
 		ID         uuid.UUID `json:"id"`
 		Title      string    `json:"title"`
 		Difficulty string    `json:"difficulty"`
-	} `json:"leetcode"`
+	} `json:"problem"`
 	PlayerA struct {
 		ID   uuid.UUID `json:"id"`
 		Name string    `json:"name"`

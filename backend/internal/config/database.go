@@ -24,12 +24,12 @@ func SetupDatabase(db *gorm.DB) error {
 		}},
 		{"Auto migrate (dev only)", func() error {
 			if !util.IsProduction() {
-				return db.AutoMigrate(&model.User{}, &model.LeetCode{}, &model.Match{})
+				return db.AutoMigrate(&model.User{}, &model.Problem{}, &model.Example{}, &model.TestCase{}, &model.IOTemplate{}, &model.IOSchema{}, &model.Match{})
 			}
 			return nil
 		}},
 		{"Seed data", func() error {
-			return seed.SeedLeetCodeProblem(db)
+			return seed.SeedProblems(db)
 		}},
 	}
 

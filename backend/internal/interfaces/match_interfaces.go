@@ -10,6 +10,6 @@ type MatchService interface {
 	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error)
 	CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (*model.Match, error)
 	GetMatch(matchID uuid.UUID) (*model.Match, error)
-	GetRandomLeetCodeByDifficulty(difficulty string) (*model.LeetCode, error)
+	GetRandomProblemByDifficulty(difficulty string) (*model.Problem, error)
 	SubmitSolution(matchID, userID uuid.UUID, req *model.SubmitSolutionRequest) (*model.SubmitSolutionResponse, error)
 }

@@ -9,14 +9,14 @@ import (
 )
 
 type JudgeService interface {
-	EvaluateCode(code string, language string, problem *model.LeetCode) (*types.EvaluationResult, error)
-	EvaluateCodeWithRealtime(code string, language string, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error)
-	WrapCodeWithTestCase(code string, languageID int, testCase string, problem *model.LeetCode) (string, error)
+	EvaluateCode(code string, language string, problem *model.Problem) (*types.EvaluationResult, error)
+	EvaluateCodeWithRealtime(code string, language string, problem *model.Problem, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error)
+	WrapCodeWithTestCase(code string, languageID int, testCase string, problem *model.Problem) (string, error)
 }
 
 type CodeWrapper interface {
-	WrapCode(code string, languageID int, testCase string, problem *model.LeetCode) (string, error)
-	WrapCodeBatch(code string, languageID int, testCasesJSON string, problem *model.LeetCode) (string, error)
+	WrapCode(code string, languageID int, testCase string, problem *model.Problem) (string, error)
+	WrapCodeBatch(code string, languageID int, testCasesJSON string, problem *model.Problem) (string, error)
 }
 
 type Judge0Client interface {
@@ -25,7 +25,7 @@ type Judge0Client interface {
 	GetRateLimitStatus() int
 }
 
-// WebSocketBroadcaster WebSocket 브로드캐스터 인터페이스
+// WebSocketBroadcaster WebSocket broadcaster interface
 type WebSocketBroadcaster interface {
 	BroadcastToMatch(matchID uuid.UUID, message []byte)
 	BroadcastToAllClients(message []byte)

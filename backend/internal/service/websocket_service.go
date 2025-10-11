@@ -743,10 +743,10 @@ func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, match interf
 		Type:   constants.MatchFound,
 		GameID: actualMatch.ID.String(),
 		Problem: map[string]interface{}{
-			"id":          actualMatch.LeetCode.ID.String(),
-			"title":       actualMatch.LeetCode.Title,
-			"difficulty":  actualMatch.LeetCode.Difficulty,
-			"description": actualMatch.LeetCode.Description,
+			"id":          actualMatch.Problem.ID.String(),
+			"title":       actualMatch.Problem.Title,
+			"difficulty":  string(actualMatch.Problem.Difficulty),
+			"description": actualMatch.Problem.Description,
 		},
 		Opponent: map[string]interface{}{
 			"id":   player2.userID.String(),
@@ -758,10 +758,10 @@ func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, match interf
 		Type:   constants.MatchFound,
 		GameID: actualMatch.ID.String(),
 		Problem: map[string]interface{}{
-			"id":          actualMatch.LeetCode.ID.String(),
-			"title":       actualMatch.LeetCode.Title,
-			"difficulty":  actualMatch.LeetCode.Difficulty,
-			"description": actualMatch.LeetCode.Description,
+			"id":          actualMatch.Problem.ID.String(),
+			"title":       actualMatch.Problem.Title,
+			"difficulty":  string(actualMatch.Problem.Difficulty),
+			"description": actualMatch.Problem.Description,
 		},
 		Opponent: map[string]interface{}{
 			"id":   player1.userID.String(),

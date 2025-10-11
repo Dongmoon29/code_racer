@@ -10,7 +10,7 @@ import (
 func TestWrapper_WrapSingle_WithImports(t *testing.T) {
 	wrapper := NewWrapper()
 
-	problem := &model.LeetCode{
+	problem := &model.Problem{
 		FunctionName: "solution",
 		InputFormat:  "array",
 		OutputFormat: "array",
@@ -170,7 +170,7 @@ func main() {
 func TestWrapper_WrapBatch_WithImports(t *testing.T) {
 	wrapper := NewWrapper()
 
-	problem := &model.LeetCode{
+	problem := &model.Problem{
 		FunctionName: "solution",
 		InputFormat:  "array",
 		OutputFormat: "array",

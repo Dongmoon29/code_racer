@@ -12,7 +12,7 @@ type Wrapper struct{}
 
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
-func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
+func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
 	// Use simple regex-based parser for JavaScript
 	parser := parser.NewJavaScriptParser()
 	imports := parser.GetImports(code)
@@ -46,7 +46,7 @@ runAll();`
 	return fmt.Sprintf(template, importsSection, userCode, testCasesJSON, problem.FunctionName), nil
 }
 
-func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
+func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
 	// Use simple regex-based parser for JavaScript
 	parser := parser.NewJavaScriptParser()
 	imports := parser.GetImports(code)

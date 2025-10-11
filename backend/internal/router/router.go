@@ -20,7 +20,7 @@ func Setup(
 	authController *controller.AuthController,
 	matchController *controller.MatchController,
 	userController *controller.UserController,
-	leetcodeController *controller.LeetCodeController,
+	problemController *controller.ProblemController,
 	wsController *controller.WebSocketController,
 	authMiddleware *middleware.AuthMiddleware,
 	cfg *config.Config,
@@ -101,17 +101,17 @@ func Setup(
 			// leetcode
 			leetcode := secured.Group("/leetcode")
 			{
-				leetcode.GET("", leetcodeController.GetAllProblems)
-				leetcode.GET("/search", leetcodeController.SearchProblems)
-				leetcode.GET("/difficulty", leetcodeController.GetProblemsByDifficulty)
-				leetcode.GET("/page", leetcodeController.GetProblemsWithPagination)
-				leetcode.GET("/:id", leetcodeController.GetProblemByID)
+				leetcode.GET("", problemController.GetAllProblems)
+				leetcode.GET("/search", problemController.SearchProblems)
+				leetcode.GET("/difficulty", problemController.GetProblemsByDifficulty)
+				leetcode.GET("/page", problemController.GetProblemsWithPagination)
+				leetcode.GET("/:id", problemController.GetProblemByID)
 
 				leetcode.Use(authMiddleware.AdminRequired())
 				{
-					leetcode.POST("", leetcodeController.CreateProblem)
-					leetcode.PUT("/:id", leetcodeController.UpdateProblem)
-					leetcode.DELETE("/:id", leetcodeController.DeleteProblem)
+					leetcode.POST("", problemController.CreateProblem)
+					leetcode.PUT("/:id", problemController.UpdateProblem)
+					leetcode.DELETE("/:id", problemController.DeleteProblem)
 				}
 			}
 		}

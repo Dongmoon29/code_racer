@@ -10,7 +10,7 @@ type PyWrapper struct{}
 
 func NewPyWrapper() *PyWrapper { return &PyWrapper{} }
 
-func (w *PyWrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
+func (w *PyWrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
 	template := `
 import json, sys
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
 	return fmt.Sprintf(template, code, testCasesJSON, problem.FunctionName), nil
 }
 
-func (w *PyWrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
+func (w *PyWrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
 	template := `
 import json
 import sys
