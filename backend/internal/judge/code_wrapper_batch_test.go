@@ -18,8 +18,8 @@ func TestWrapCodeBatch_Javascript(t *testing.T) {
 	logger := batchTestLogger()
 	w := NewCodeWrapper(logger)
 
-	problem := &model.Problem{FunctionName: "solution"}
-	code := "function solution(a,b){ return a+b }"
+	problem := &model.Problem{FunctionName: "twoSum"}
+	code := "function twoSum(nums, target) { return [0, 1]; }"
 	cases := "[[1,2],[3,4]]"
 
 	out, err := w.WrapCodeBatch(code, 63, cases, problem)
@@ -28,10 +28,9 @@ func TestWrapCodeBatch_Javascript(t *testing.T) {
 	}
 
 	mustContain := []string{
-		"runAll()",
-		"const cases =",
-		"solution(...inputs)",
-		cases,
+		"process.argv[2]",
+		"twoSum(...inputs)",
+		"function twoSum",
 	}
 	for _, s := range mustContain {
 		if !strings.Contains(out, s) {
@@ -44,8 +43,8 @@ func TestWrapCodeBatch_Python(t *testing.T) {
 	logger := batchTestLogger()
 	w := NewCodeWrapper(logger)
 
-	problem := &model.Problem{FunctionName: "solution"}
-	code := "def solution(a,b):\n    return a+b"
+	problem := &model.Problem{FunctionName: "twoSum"}
+	code := "def twoSum(nums, target):\n    return [0, 1]"
 	cases := "[[1,2],[3,4]]"
 
 	out, err := w.WrapCodeBatch(code, 71, cases, problem)
@@ -54,10 +53,9 @@ func TestWrapCodeBatch_Python(t *testing.T) {
 	}
 
 	mustContain := []string{
-		"def run_all():",
-		"json.loads('''",
-		"solution(*inputs)",
-		cases,
+		"sys.argv[1]",
+		"twoSum(*inputs)",
+		"def twoSum",
 	}
 	for _, s := range mustContain {
 		if !strings.Contains(out, s) {
@@ -70,8 +68,8 @@ func TestWrapCodeBatch_Go(t *testing.T) {
 	logger := batchTestLogger()
 	w := NewCodeWrapper(logger)
 
-	problem := &model.Problem{FunctionName: "solution"}
-	code := "func solution(args ...interface{}) interface{} { return args }"
+	problem := &model.Problem{FunctionName: "twoSum"}
+	code := "func twoSum(nums []int, target int) []int { return []int{0, 1} }"
 	cases := "[[1,2],[3,4]]"
 
 	out, err := w.WrapCodeBatch(code, 60, cases, problem)
@@ -81,10 +79,9 @@ func TestWrapCodeBatch_Go(t *testing.T) {
 
 	mustContain := []string{
 		"package main",
-		"json.Unmarshal",
-		"solution(",
-		"toInt(c[0])",
-		cases,
+		"os.Args[1]",
+		"twoSum(",
+		"toIntSlice",
 	}
 	for _, s := range mustContain {
 		if !strings.Contains(out, s) {

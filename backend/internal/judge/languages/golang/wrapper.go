@@ -15,235 +15,279 @@ type Wrapper struct{}
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
 func (g *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
-	// Parse user imports
-	importParser := parser.NewImportParser()
-	importInfo := importParser.ParseImports(code, 60) // Go language ID
+	// Clean user code - remove any existing wrapper functions
+	userCode := strings.TrimSpace(code)
 
-	// Build imports section with duplicate removal
-	baseImports := []string{`"encoding/json"`, `"fmt"`, `"os"`}
-	allImports := make([]string, 0, len(baseImports)+len(importInfo.Imports))
+	// Remove common wrapper patterns carefully
+	lines := strings.Split(userCode, "\n")
+	var cleanedLines []string
+	inImport := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "package ") {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "import ") {
+			inImport = true
+			continue
+		}
+		if inImport && trimmed == ")" {
+			inImport = false
+			continue
+		}
+		if inImport {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "func main()") {
+			continue
+		}
+		cleanedLines = append(cleanedLines, line)
+	}
+	userCode = strings.Join(cleanedLines, "\n")
+	userCode = strings.TrimSpace(userCode)
 
-	// Add base imports
-	allImports = append(allImports, baseImports...)
+	// Infer parameter types from function signature
+	sigParser := parser.NewGoSignatureParser()
+	paramTypes := sigParser.InferParamTypesFromSignature(userCode, problem.FunctionName)
 
-	// Add user imports and remove duplicates
-	importSet := make(map[string]bool)
-	for _, imp := range baseImports {
-		importSet[imp] = true
+	// Fallback to common patterns if inference fails
+	if len(paramTypes) == 0 {
+		if problem.IOSchema.ParamTypes != "" {
+			json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes)
+		}
+		if len(paramTypes) == 0 {
+			paramTypes = []string{"array", "int"} // Common pattern: array + int
+		}
 	}
 
-	for _, imp := range importInfo.Imports {
-		// Remove "import " prefix if present for multi-line imports
-		if after, ok := strings.CutPrefix(imp, "import "); ok {
-			imp = after
-		}
-		// Add quotes if not present
-		if !strings.HasPrefix(imp, `"`) {
-			imp = `"` + imp + `"`
-		}
-		// Check for duplicates
-		if !importSet[imp] {
-			allImports = append(allImports, imp)
-			importSet[imp] = true
-		}
-	}
+	template := `package main
 
-	// Build final imports section
-	importsSection := `import (
+import (
     "encoding/json"
     "fmt"
     "os"
-)`
-	if len(allImports) > len(baseImports) {
-		importsSection = `import (`
-		for _, imp := range allImports {
-			importsSection += "\n    " + imp
-		}
-		importsSection += "\n)"
-	}
+)
 
-	// Try to infer parameter types from function signature if IOSchema is empty
-	var paramTypes []string
-	if problem.IOSchema.ParamTypes != "" {
-		// Parse JSON string to []string
-		if err := json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes); err != nil {
-			// Fallback to empty slice if parsing fails
-			paramTypes = []string{}
-		}
-	}
-	if len(paramTypes) == 0 {
-		sigParser := parser.NewGoSignatureParser()
-		inferredTypes := sigParser.InferParamTypesFromSignature(code, problem.FunctionName)
-		if len(inferredTypes) > 0 {
-			paramTypes = inferredTypes
-		}
-	}
-
-	if len(paramTypes) == 0 {
-		// Fallback: assume all parameters are arrays for backward compatibility
-		template := `package main
-
+// ===== 사용자 코드 (그대로 유지) =====
 %s
+// ====================================
 
-// user code
-%s
+// ===== 타입 변환 헬퍼 =====
+func toInt(v interface{}) int {
+    if f, ok := v.(float64); ok {
+        return int(f)
+    }
+    if i, ok := v.(int); ok {
+        return i
+    }
+    return 0
+}
 
-func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
-func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
+func toFloat(v interface{}) float64 {
+    if f, ok := v.(float64); ok {
+        return f
+    }
+    if i, ok := v.(int); ok {
+        return float64(i)
+    }
+    return 0
+}
 
+func toBool(v interface{}) bool {
+    if b, ok := v.(bool); ok {
+        return b
+    }
+    return false
+}
+
+func toString(v interface{}) string {
+    if s, ok := v.(string); ok {
+        return s
+    }
+    return ""
+}
+
+func toIntSlice(v interface{}) []int {
+    arr, ok := v.([]interface{})
+    if !ok {
+        return nil
+    }
+    result := make([]int, len(arr))
+    for i, val := range arr {
+        result[i] = toInt(val)
+    }
+    return result
+}
+
+func toIntSliceSlice(v interface{}) [][]int {
+    arr, ok := v.([]interface{})
+    if !ok {
+        return nil
+    }
+    result := make([][]int, len(arr))
+    for i, val := range arr {
+        result[i] = toIntSlice(val)
+    }
+    return result
+}
+
+// ===== 실행 래퍼 =====
 func main() {
-    var cases [][]interface{}
-    if err := json.Unmarshal([]byte(%q), &cases); err != nil {
-        fmt.Fprintf(os.Stderr, "Error parsing cases: %%v\n", err)
+    var testCases [][]interface{}
+    if err := json.Unmarshal([]byte(os.Args[1]), &testCases); err != nil {
+        fmt.Fprintf(os.Stderr, "Error parsing test cases: %%v\n", err)
         os.Exit(1)
     }
-    results := make([]interface{}, 0, len(cases))
-    for _, c := range cases {
-        arg0 := toIntSlice(c[0])
-        arg1 := toIntSlice(c[1])
-        out := %s(arg0, arg1)
-        results = append(results, out)
+    
+    results := []interface{}{}
+    for _, inputs := range testCases {
+%s
+        result := %s(%s)
+        results = append(results, result)
     }
-    b, _ := json.Marshal(results)
-    fmt.Print(string(b))
+    
+    output, _ := json.Marshal(results)
+    fmt.Println(string(output))
 }`
-		return fmt.Sprintf(template, importsSection, importInfo.Code, testCasesJSON, problem.FunctionName), nil
-	}
 
-	argDecl, callArgs := goArgLines("c", paramTypes)
-	template := `package main
-
-%s
-
-// user code
-%s
-
-func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
-func toFloat(v interface{}) float64 { if f, ok := v.(float64); ok { return f }; if i, ok := v.(int); ok { return float64(i) }; return 0 }
-func toBool(v interface{}) bool { if b, ok := v.(bool); ok { return b }; return false }
-func toString(v interface{}) string { if s, ok := v.(string); ok { return s }; return "" }
-func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
-
-func main() {
-    var cases [][]interface{}
-    if err := json.Unmarshal([]byte(%q), &cases); err != nil {
-        fmt.Fprintf(os.Stderr, "Error parsing cases: %%v\n", err)
-        os.Exit(1)
-    }
-    results := make([]interface{}, 0, len(cases))
-    for _, c := range cases {
-%s
-        out := %s(%s)
-        results = append(results, out)
-    }
-    b, _ := json.Marshal(results)
-    // Remove debug prints - use proper logging instead
-}`
-	return fmt.Sprintf(template, importsSection, importInfo.Code, testCasesJSON, argDecl, problem.FunctionName, callArgs), nil
+	argDecl, callArgs := goArgLines("inputs", paramTypes)
+	return fmt.Sprintf(template, userCode, argDecl, problem.FunctionName, callArgs), nil
 }
 
 func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
-	// Parse user imports
-	importParser := parser.NewImportParser()
-	importInfo := importParser.ParseImports(code, 60) // Go language ID
+	// Clean user code - remove any existing wrapper functions
+	userCode := strings.TrimSpace(code)
 
-	// Build imports section with duplicate removal
-	baseImports := []string{`"encoding/json"`, `"fmt"`, `"os"`}
-	allImports := make([]string, 0, len(baseImports)+len(importInfo.Imports))
+	// Remove common wrapper patterns carefully
+	lines := strings.Split(userCode, "\n")
+	var cleanedLines []string
+	inImport := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "package ") {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "import ") {
+			inImport = true
+			continue
+		}
+		if inImport && trimmed == ")" {
+			inImport = false
+			continue
+		}
+		if inImport {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "func main()") {
+			continue
+		}
+		cleanedLines = append(cleanedLines, line)
+	}
+	userCode = strings.Join(cleanedLines, "\n")
+	userCode = strings.TrimSpace(userCode)
 
-	// Add base imports
-	allImports = append(allImports, baseImports...)
+	// Infer parameter types from function signature
+	sigParser := parser.NewGoSignatureParser()
+	paramTypes := sigParser.InferParamTypesFromSignature(userCode, problem.FunctionName)
 
-	// Add user imports and remove duplicates
-	importSet := make(map[string]bool)
-	for _, imp := range baseImports {
-		importSet[imp] = true
+	// Fallback to common patterns if inference fails
+	if len(paramTypes) == 0 {
+		if problem.IOSchema.ParamTypes != "" {
+			json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes)
+		}
+		if len(paramTypes) == 0 {
+			paramTypes = []string{"array", "int"} // Common pattern: array + int
+		}
 	}
 
-	for _, imp := range importInfo.Imports {
-		// Remove "import " prefix if present for multi-line imports
-		if strings.HasPrefix(imp, "import ") {
-			imp = strings.TrimPrefix(imp, "import ")
-		}
-		// Add quotes if not present
-		if !strings.HasPrefix(imp, `"`) {
-			imp = `"` + imp + `"`
-		}
-		// Check for duplicates
-		if !importSet[imp] {
-			allImports = append(allImports, imp)
-			importSet[imp] = true
-		}
-	}
+	template := `package main
 
-	// Build final imports section
-	importsSection := `import (
+import (
     "encoding/json"
     "fmt"
     "os"
-)`
-	if len(allImports) > len(baseImports) {
-		importsSection = `import (`
-		for _, imp := range allImports {
-			importsSection += "\n    " + imp
-		}
-		importsSection += "\n)"
-	}
+)
 
-	// Try to infer parameter types from function signature if IOSchema is empty
-	var paramTypes []string
-	if problem.IOSchema.ParamTypes != "" {
-		// Parse JSON string to []string
-		if err := json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes); err != nil {
-			// Fallback to empty slice if parsing fails
-			paramTypes = []string{}
-		}
-	}
-	if len(paramTypes) == 0 {
-		sigParser := parser.NewGoSignatureParser()
-		inferredTypes := sigParser.InferParamTypesFromSignature(code, problem.FunctionName)
-		if len(inferredTypes) > 0 {
-			paramTypes = inferredTypes
-		}
-	}
-
-	if len(paramTypes) == 0 {
-		// Fallback: try to infer parameter count from function signature
-		sigParser := parser.NewGoSignatureParser()
-		inferredTypes := sigParser.InferParamTypesFromSignature(code, problem.FunctionName)
-		if len(inferredTypes) > 0 {
-			paramTypes = inferredTypes
-		}
-	}
-
-	if len(paramTypes) == 0 {
-		// Ultimate fallback: assume single int parameter for common cases
-		paramTypes = []string{"int"}
-	}
-
-	argDecl, callArgs := goArgLines("testCase", paramTypes)
-	template := `package main
-
+// ===== 사용자 코드 (그대로 유지) =====
 %s
+// ====================================
 
-// user code
-%s
+// ===== 타입 변환 헬퍼 =====
+func toInt(v interface{}) int {
+    if f, ok := v.(float64); ok {
+        return int(f)
+    }
+    if i, ok := v.(int); ok {
+        return i
+    }
+    return 0
+}
 
-func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
-func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
+func toFloat(v interface{}) float64 {
+    if f, ok := v.(float64); ok {
+        return f
+    }
+    if i, ok := v.(int); ok {
+        return float64(i)
+    }
+    return 0
+}
 
+func toBool(v interface{}) bool {
+    if b, ok := v.(bool); ok {
+        return b
+    }
+    return false
+}
+
+func toString(v interface{}) string {
+    if s, ok := v.(string); ok {
+        return s
+    }
+    return ""
+}
+
+func toIntSlice(v interface{}) []int {
+    arr, ok := v.([]interface{})
+    if !ok {
+        return nil
+    }
+    result := make([]int, len(arr))
+    for i, val := range arr {
+        result[i] = toInt(val)
+    }
+    return result
+}
+
+func toIntSliceSlice(v interface{}) [][]int {
+    arr, ok := v.([]interface{})
+    if !ok {
+        return nil
+    }
+    result := make([][]int, len(arr))
+    for i, val := range arr {
+        result[i] = toIntSlice(val)
+    }
+    return result
+}
+
+// ===== 실행 래퍼 =====
 func main() {
     var testCase []interface{}
-    if err := json.Unmarshal([]byte(%q), &testCase); err != nil {
+    if err := json.Unmarshal([]byte('%s'), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %%v\n", err)
         os.Exit(1)
     }
+    
 %s
-    out := %s(%s)
-    b, _ := json.Marshal(out)
-    fmt.Print(string(b))
+    result := %s(%s)
+    
+    output, _ := json.Marshal(result)
+    fmt.Println(string(output))
 }`
-	return fmt.Sprintf(template, importsSection, importInfo.Code, testCase, argDecl, problem.FunctionName, callArgs)
+
+	argDecl, callArgs := goArgLines("testCase", paramTypes)
+	return fmt.Sprintf(template, userCode, testCase, argDecl, problem.FunctionName, callArgs)
 }
 
 func goArgLines(varName string, paramTypes []string) (string, string) {
@@ -265,8 +309,11 @@ func goArgLines(varName string, paramTypes []string) (string, string) {
 		case "string":
 			decl += fmt.Sprintf("    %s := toString(%s)\n", arg, idx)
 			call += arg
-		case "array":
+		case "array", "int[]", "[]int":
 			decl += fmt.Sprintf("    %s := toIntSlice(%s)\n", arg, idx)
+			call += arg
+		case "int[][]", "array[]":
+			decl += fmt.Sprintf("    %s := toIntSliceSlice(%s)\n", arg, idx)
 			call += arg
 		default:
 			decl += fmt.Sprintf("    %s := %s\n", arg, idx)

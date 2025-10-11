@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Dongmoon29/code_racer/internal/judge/parser"
 	"github.com/Dongmoon29/code_racer/internal/model"
 )
 
@@ -13,67 +12,72 @@ type Wrapper struct{}
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
 func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
-	// Parse user imports
-	importParser := parser.NewImportParser()
-	importInfo := importParser.ParseImports(code, 71) // Python language ID
+	// Clean user code - remove any existing wrapper functions
+	userCode := strings.TrimSpace(code)
 
-	// Build imports section
-	importsSection := "import json, sys"
-	if len(importInfo.Imports) > 0 {
-		importsSection += "\n" + strings.Join(importInfo.Imports, "\n")
-	}
+	// Remove common wrapper patterns
+	userCode = strings.ReplaceAll(userCode, "def run_all():", "")
+	userCode = strings.ReplaceAll(userCode, "def run_test():", "")
+	userCode = strings.ReplaceAll(userCode, "if __name__ == \"__main__\":", "")
+	userCode = strings.ReplaceAll(userCode, "    run_all()", "")
+	userCode = strings.ReplaceAll(userCode, "    run_test()", "")
+	userCode = strings.TrimSpace(userCode)
 
-	template := `%s
+	template := `import json
+import sys
 
-# user code
+# ===== 사용자 코드 (그대로 유지) =====
 %s
+# ====================================
 
-def run_all():
+# ===== 실행 래퍼 (자동 생성) =====
+if __name__ == "__main__":
     try:
-        cases = json.loads('''%s''')
+        test_cases = json.loads(sys.argv[1] if len(sys.argv) > 1 else '[]')
         results = []
-        for c in cases:
-            inputs = c if isinstance(c, list) else [c]
-            out = %s(*inputs)
-            results.append(out)
+        for inputs in test_cases:
+            if isinstance(inputs, list):
+                result = %s(*inputs)
+            else:
+                result = %s(inputs)
+            results.append(result)
         print(json.dumps(results))
     except Exception as e:
         print(str(e), file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    run_all()`
-	return fmt.Sprintf(template, importsSection, importInfo.Code, testCasesJSON, problem.FunctionName), nil
+        sys.exit(1)`
+	return fmt.Sprintf(template, userCode, problem.FunctionName, problem.FunctionName), nil
 }
 
 func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
-	// Parse user imports
-	importParser := parser.NewImportParser()
-	importInfo := importParser.ParseImports(code, 71) // Python language ID
+	// Clean user code - remove any existing wrapper functions
+	userCode := strings.TrimSpace(code)
 
-	// Build imports section
-	importsSection := "import json\nimport sys"
-	if len(importInfo.Imports) > 0 {
-		importsSection += "\n" + strings.Join(importInfo.Imports, "\n")
-	}
+	// Remove common wrapper patterns
+	userCode = strings.ReplaceAll(userCode, "def run_all():", "")
+	userCode = strings.ReplaceAll(userCode, "def run_test():", "")
+	userCode = strings.ReplaceAll(userCode, "if __name__ == \"__main__\":", "")
+	userCode = strings.ReplaceAll(userCode, "    run_all()", "")
+	userCode = strings.ReplaceAll(userCode, "    run_test()", "")
+	userCode = strings.TrimSpace(userCode)
 
-	template := `%s
+	template := `import json
+import sys
 
-# 사용자 코드
+# ===== 사용자 코드 (그대로 유지) =====
 %s
+# ====================================
 
-# 테스트 실행
-def run_test():
+# ===== 실행 래퍼 (자동 생성) =====
+if __name__ == "__main__":
     try:
         test_case = json.loads('%s')
-        inputs = test_case if isinstance(test_case, list) else [test_case]
-        result = %s(*inputs)
+        if isinstance(test_case, list):
+            result = %s(*test_case)
+        else:
+            result = %s(test_case)
         print(json.dumps(result))
     except Exception as e:
         print(str(e), file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    run_test()`
-	return fmt.Sprintf(template, importsSection, importInfo.Code, testCase, problem.FunctionName)
+        sys.exit(1)`
+	return fmt.Sprintf(template, userCode, testCase, problem.FunctionName, problem.FunctionName)
 }
