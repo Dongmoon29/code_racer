@@ -8,7 +8,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Difficulty represents the difficulty level of LeetCode problems
 type Difficulty string
 
 const (

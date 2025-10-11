@@ -14,65 +14,60 @@ interface Props {
   selectedLanguage: 'python' | 'javascript' | 'go';
 }
 
-export const FinishedGame: React.FC<Props> = memo(({
-  game,
-  me,
-  opponent,
-  myCode,
-  opponentCode,
-  selectedLanguage,
-}) => {
-  const router = useRouter();
-  // perspective is provided by parent
+export const FinishedGame: React.FC<Props> = memo(
+  ({ game, me, opponent, myCode, opponentCode, selectedLanguage }) => {
+    const router = useRouter();
+    // perspective is provided by parent
 
-  return (
-    <div className="p-6 max-w-4xl mx-auto rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold mb-4">{game.leetcode.title}</h1>
-      <Alert
-        variant={
-          game.winner?.id && me?.id && game.winner.id === me.id
-            ? 'success'
-            : 'warning'
-        }
-      >
-        <h3>Game Finished</h3>
-        <p>
-          Winner: <strong>{game.winner?.name}</strong>
-        </p>
-      </Alert>
+    return (
+      <div className="p-6 max-w-4xl mx-auto rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold mb-4">{game.leetcode.title}</h1>
+        <Alert
+          variant={
+            game.winner?.id && me?.id && game.winner.id === me.id
+              ? 'success'
+              : 'warning'
+          }
+        >
+          <h3>Game Finished</h3>
+          <p>
+            Winner: <strong>{game.winner?.name}</strong>
+          </p>
+        </Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-2">
-            {me?.id ? 'Your Code' : (me?.name || '') + "'s Code"}
-          </h2>
-          <div className="h-[400px] border border-gray-200 rounded overflow-hidden">
-            <CodeEditor
-              value={me?.id ? myCode : opponentCode}
-              readOnly={true}
-              language={selectedLanguage}
-            />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+          <div>
+            <h2 className="text-xl font-semibold mb-2">
+              {me?.id ? 'Your Code' : (me?.name || '') + "'s Code"}
+            </h2>
+            <div className="h-[400px] border border-gray-200 rounded overflow-hidden">
+              <CodeEditor
+                value={me?.id ? myCode : opponentCode}
+                readOnly={true}
+                language={selectedLanguage}
+              />
+            </div>
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold mb-2">
+              {!me?.id ? 'Your Code' : (opponent?.name || '') + "'s Code"}
+            </h2>
+            <div className="h-[400px] border border-gray-200 rounded overflow-hidden">
+              <CodeEditor
+                value={!me?.id ? myCode : opponentCode}
+                readOnly={true}
+                language={selectedLanguage}
+              />
+            </div>
           </div>
         </div>
-        <div>
-          <h2 className="text-xl font-semibold mb-2">
-            {!me?.id ? 'Your Code' : (opponent?.name || '') + "'s Code"}
-          </h2>
-          <div className="h-[400px] border border-gray-200 rounded overflow-hidden">
-            <CodeEditor
-              value={!me?.id ? myCode : opponentCode}
-              readOnly={true}
-              language={selectedLanguage}
-            />
-          </div>
-        </div>
+
+        <Button onClick={() => router.push('/dashboard')}>
+          Back to Dashboard
+        </Button>
       </div>
-
-      <Button onClick={() => router.push('/dashboard')}>
-        Back to Dashboard
-      </Button>
-    </div>
-  );
-});
+    );
+  }
+);
 
 FinishedGame.displayName = 'FinishedGame';

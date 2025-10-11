@@ -7,7 +7,7 @@ export type GameHistoryItem = {
   status: MatchStatus;
   playerA: { id: string; name: string };
   playerB?: { id: string; name: string };
-  leetcode: {
+  problem: {
     id: string;
     title: string;
     difficulty: Difficulty;
@@ -19,7 +19,9 @@ export type GameHistoryItem = {
 };
 
 type ApiUserRef = { id?: string; name?: string } | undefined;
-type ApiLeet = { id?: string; title?: string; difficulty?: string } | undefined;
+type ApiProblem =
+  | { id?: string; title?: string; difficulty?: string }
+  | undefined;
 type ApiGame = {
   id?: string;
   mode?: string;
@@ -28,8 +30,7 @@ type ApiGame = {
   player_a?: ApiUserRef;
   playerB?: ApiUserRef;
   player_b?: ApiUserRef;
-  leetcode?: ApiLeet;
-  leetCode?: ApiLeet;
+  problem?: ApiProblem;
   winner?: ApiUserRef;
   winner_id?: string;
   startedAt?: string;
@@ -46,7 +47,7 @@ export function normalizeRecentGames(games: unknown[]): GameHistoryItem[] {
   return (games as ApiGame[]).filter(Boolean).map((g) => {
     const playerA = g.playerA || g.player_a;
     const playerB = g.playerB || g.player_b;
-    const leet = g.leetcode || g.leetCode;
+    const problem = g.problem;
     const winnerObj = g.winner;
     const winnerId = winnerObj?.id || g.winner_id;
 
@@ -68,7 +69,7 @@ export function normalizeRecentGames(games: unknown[]): GameHistoryItem[] {
           : undefined
         : undefined);
 
-    const difficulty = String(leet?.difficulty || '').toLowerCase();
+    const difficulty = String(problem?.difficulty || '').toLowerCase();
     const difficultyMap: Record<string, Difficulty> = {
       easy: 'easy',
       medium: 'medium',
@@ -84,9 +85,9 @@ export function normalizeRecentGames(games: unknown[]): GameHistoryItem[] {
         ? { id: playerA.id, name: playerA.name }
         : { id: '', name: 'Unknown' },
       playerB: playerB ? { id: playerB.id, name: playerB.name } : undefined,
-      leetcode: {
-        id: leet?.id || '',
-        title: leet?.title || 'Unknown problem',
+      problem: {
+        id: problem?.id || '',
+        title: problem?.title || 'Unknown problem',
         difficulty: diffNorm,
       },
       winner,

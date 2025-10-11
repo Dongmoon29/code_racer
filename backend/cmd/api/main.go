@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/Dongmoon29/code_racer/docs" // Import docs for swagger
 	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/controller"
 	"github.com/Dongmoon29/code_racer/internal/events"

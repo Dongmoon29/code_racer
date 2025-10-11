@@ -24,11 +24,6 @@ type problemRepository struct {
 	logger logger.Logger
 }
 
-type leetCodeRepository struct {
-	db     *gorm.DB
-	logger logger.Logger
-}
-
 func NewProblemRepository(db *gorm.DB, logger logger.Logger) ProblemRepository {
 	return &problemRepository{
 		db:     db,

@@ -1,8 +1,8 @@
 // LeetCode Form related constants
-import { LeetCodeFormData, TestCase } from '@/types';
+import { ProblemFormData, TestCase } from '@/types';
 import { DEFAULT_VALUES } from '@/constants';
 
-export const LEETCODE_FORM_CONSTANTS = {
+export const PROBLEM_FORM_CONSTANTS = {
   // Default values
   DEFAULTS: {
     TITLE: '',

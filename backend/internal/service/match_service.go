@@ -300,10 +300,9 @@ func (s *matchService) GetMatch(matchID uuid.UUID) (*model.Match, error) {
 
 // CreateMatch persists a new match and initializes Redis state
 func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error) {
-	// Pick a random LeetCode problem for the requested difficulty
 	problem, err := s.GetRandomProblemByDifficulty(difficulty)
 	if err != nil {
-		s.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to get random LeetCode problem")
+		s.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to get random problem")
 		return nil, fmt.Errorf("failed to get problem for difficulty %s: %w", difficulty, err)
 	}
 
@@ -321,7 +320,7 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 		return nil, fmt.Errorf("failed to create match: %w", err)
 	}
 
-	// Load the complete match with associated LeetCode details
+	// Load the complete match with associated Problem details
 	createdMatch, err := s.matchRepo.FindByID(match.ID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to load created match")
@@ -351,10 +350,10 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 
 // CreateSinglePlayerMatch creates a single player match for practice mode
 func (s *matchService) CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (*model.Match, error) {
-	// Pick a random LeetCode problem for the requested difficulty
+	// Pick a random problem for the requested difficulty
 	problem, err := s.GetRandomProblemByDifficulty(difficulty)
 	if err != nil {
-		s.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to get random LeetCode problem")
+		s.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to get random problem")
 		return nil, fmt.Errorf("failed to get problem for difficulty %s: %w", difficulty, err)
 	}
 
@@ -372,7 +371,7 @@ func (s *matchService) CreateSinglePlayerMatch(playerID uuid.UUID, difficulty st
 		return nil, fmt.Errorf("failed to create single player match: %w", err)
 	}
 
-	// Load the complete match with associated LeetCode details
+	// Load the complete match with associated problem details
 	createdMatch, err := s.matchRepo.FindByID(match.ID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to load created single player match")
@@ -418,7 +417,7 @@ func (s *matchService) GetRandomProblemByDifficulty(difficulty string) (*model.P
 		Str("difficulty", difficulty).
 		Str("selectedProblem", selectedProblem.Title).
 		Int("totalProblems", len(problems)).
-		Msg("Selected random LeetCode problem")
+		Msg("Selected random problem")
 
 	return selectedProblem, nil
 }

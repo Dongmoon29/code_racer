@@ -39,7 +39,7 @@ func (r *matchRepository) FindByID(id uuid.UUID) (*model.Match, error) {
 		Preload("PlayerA").
 		Preload("PlayerB").
 		Preload("Winner").
-		Preload("LeetCode").
+		Preload("Problem").
 		Where("id = ?", id).
 		First(&match).Error
 	if err != nil {
@@ -55,7 +55,7 @@ func (r *matchRepository) FindPlayingMatchByID(id uuid.UUID) (*model.Match, erro
 		Preload("PlayerA").
 		Preload("PlayerB").
 		Preload("Winner").
-		Preload("LeetCode").
+		Preload("Problem").
 		Where("id = ? AND status = ?", id, model.MatchStatusPlaying).
 		First(&match).Error
 	if err != nil {
@@ -70,7 +70,7 @@ func (r *matchRepository) FindByUserID(userID uuid.UUID) ([]model.Match, error) 
 		Preload("PlayerA").
 		Preload("PlayerB").
 		Preload("Winner").
-		Preload("LeetCode").
+		Preload("Problem").
 		Where("player_a_id = ? OR player_b_id = ?", userID, userID).
 		Order("created_at DESC").
 		Find(&matches).Error
@@ -86,7 +86,7 @@ func (r *matchRepository) FindRecentByUserID(userID uuid.UUID, limit int) ([]mod
 		Preload("PlayerA").
 		Preload("PlayerB").
 		Preload("Winner").
-		Preload("LeetCode").
+		Preload("Problem").
 		Where("(player_a_id = ? OR player_b_id = ?) AND status = ?", userID, userID, model.MatchStatusFinished).
 		Order("created_at DESC")
 	if limit > 0 {

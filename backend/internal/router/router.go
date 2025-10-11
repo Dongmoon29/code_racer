@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	_ "github.com/Dongmoon29/code_racer/docs"
 	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/controller"
 	"github.com/Dongmoon29/code_racer/internal/middleware"
@@ -98,20 +97,20 @@ func Setup(
 				admin.GET("/users", userController.AdminListUsers)
 			}
 
-			// leetcode
-			leetcode := secured.Group("/leetcode")
+			// problems
+			problems := secured.Group("/problems")
 			{
-				leetcode.GET("", problemController.GetAllProblems)
-				leetcode.GET("/search", problemController.SearchProblems)
-				leetcode.GET("/difficulty", problemController.GetProblemsByDifficulty)
-				leetcode.GET("/page", problemController.GetProblemsWithPagination)
-				leetcode.GET("/:id", problemController.GetProblemByID)
+				problems.GET("", problemController.GetAllProblems)
+				problems.GET("/search", problemController.SearchProblems)
+				problems.GET("/difficulty", problemController.GetProblemsByDifficulty)
+				problems.GET("/page", problemController.GetProblemsWithPagination)
+				problems.GET("/:id", problemController.GetProblemByID)
 
-				leetcode.Use(authMiddleware.AdminRequired())
+				problems.Use(authMiddleware.AdminRequired())
 				{
-					leetcode.POST("", problemController.CreateProblem)
-					leetcode.PUT("/:id", problemController.UpdateProblem)
-					leetcode.DELETE("/:id", problemController.DeleteProblem)
+					problems.POST("", problemController.CreateProblem)
+					problems.PUT("/:id", problemController.UpdateProblem)
+					problems.DELETE("/:id", problemController.DeleteProblem)
 				}
 			}
 		}

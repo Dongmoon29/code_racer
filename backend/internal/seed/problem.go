@@ -31,12 +31,12 @@ func SeedProblems(db *gorm.DB) error {
 -10^9 <= nums[i] <= 10^9
 -10^9 <= target <= 10^9
 Only one valid answer exists.`,
-			Difficulty:    "Easy",
-			InputFormat:   "array,number",
-			OutputFormat:  "array",
-			FunctionName:  "twoSum",
-			TimeLimit:     1000,
-			MemoryLimit:   128,
+			Difficulty:   "Easy",
+			InputFormat:  "array,number",
+			OutputFormat: "array",
+			FunctionName: "twoSum",
+			TimeLimit:    1000,
+			MemoryLimit:  128,
 			Examples: []model.Example{
 				{
 					Input:       `[2,7,11,15], 9`,
@@ -110,15 +110,15 @@ function twoSum(nums, target) {
 			},
 		},
 		{
-			Title:       "Palindrome Number",
-			Description: "Given an integer x, return true if x is a palindrome, and false otherwise.",
-			Constraints: `-2^31 <= x <= 2^31 - 1`,
-			Difficulty:    "Easy",
-			InputFormat:   "number",
-			OutputFormat:  "boolean",
-			FunctionName:  "isPalindrome",
-			TimeLimit:     1000,
-			MemoryLimit:   128,
+			Title:        "Palindrome Number",
+			Description:  "Given an integer x, return true if x is a palindrome, and false otherwise.",
+			Constraints:  `-2^31 <= x <= 2^31 - 1`,
+			Difficulty:   "Easy",
+			InputFormat:  "number",
+			OutputFormat: "boolean",
+			FunctionName: "isPalindrome",
+			TimeLimit:    1000,
+			MemoryLimit:  128,
 			Examples: []model.Example{
 				{
 					Input:       `121`,
@@ -195,12 +195,12 @@ function isPalindrome(x) {
 			Description: "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.",
 			Constraints: `1 <= s.length <= 10^4
 s consists of parentheses only '()[]{}'`,
-			Difficulty:    "Easy",
-			InputFormat:   "string",
-			OutputFormat:  "boolean",
-			FunctionName:  "isValid",
-			TimeLimit:     1000,
-			MemoryLimit:   128,
+			Difficulty:   "Easy",
+			InputFormat:  "string",
+			OutputFormat: "boolean",
+			FunctionName: "isValid",
+			TimeLimit:    1000,
+			MemoryLimit:  128,
 			Examples: []model.Example{
 				{
 					Input:       `"()"`,
@@ -284,4 +284,3 @@ function isValid(s) {
 	fmt.Printf("Successfully seeded %d problems\n", len(problems))
 	return nil
 }
-

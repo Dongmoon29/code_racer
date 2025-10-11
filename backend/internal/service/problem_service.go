@@ -10,12 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// Default limits for LeetCode problems
-const (
-	defaultTimeLimit   = 1000 // milliseconds
-	defaultMemoryLimit = 128  // MB
-)
-
 // ProblemService represents the new normalized problem service interface
 type ProblemService interface {
 	GetAllProblems() ([]*model.ProblemSummary, error)
@@ -62,6 +56,7 @@ func (s *problemService) GetAllProblems() ([]*model.ProblemSummary, error) {
 
 func (s *problemService) GetProblemByID(id uuid.UUID) (*model.ProblemDetail, error) {
 	problem, err := s.problemRepo.FindWithRelations(id)
+	s.logger.Debug().Str("problemID", id.String()).Msg("problem")
 	if err != nil {
 		s.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to fetch problem by ID")
 		return nil, fmt.Errorf("problem not found: %w", err)

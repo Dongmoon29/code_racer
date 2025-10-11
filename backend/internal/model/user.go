@@ -88,9 +88,9 @@ func (u *User) ToResponse() *UserResponse {
 
 // RecentGameSummary is a compact DTO for recent matches displayed on My Page
 type RecentGameSummary struct {
-	ID       uuid.UUID   `json:"id"`
-	Mode     MatchMode   `json:"mode"`
-	Status   MatchStatus `json:"status"`
+	ID      uuid.UUID   `json:"id"`
+	Mode    MatchMode   `json:"mode"`
+	Status  MatchStatus `json:"status"`
 	Problem struct {
 		ID         uuid.UUID `json:"id"`
 		Title      string    `json:"title"`

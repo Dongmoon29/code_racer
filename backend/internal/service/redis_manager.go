@@ -38,7 +38,7 @@ const (
 	FieldCreatedAt  = "created_at"
 	FieldStartedAt  = "started_at"
 	FieldFinishedAt = "finished_at"
-	FieldLeetCodeID = "leetcode_id"
+	FieldProblemID  = "problem_id"
 	FieldDifficulty = "difficulty"
 	FieldMode       = "mode"
 )
@@ -52,7 +52,7 @@ func NewRedisManager(rdb *redis.Client, logger logger.Logger) *RedisManager {
 }
 
 // CreateMatch creates Redis data structure for a new match
-func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid.UUID, leetcodeID uuid.UUID, difficulty string, mode string) error {
+func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid.UUID, problemID uuid.UUID, difficulty string, mode string) error {
 	ctx := context.Background()
 	now := time.Now()
 
@@ -67,7 +67,7 @@ func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid
 		FieldStatus:     string(model.MatchStatusPlaying),
 		FieldCreatedAt:  now.Unix(),
 		FieldStartedAt:  now.Unix(),
-		FieldLeetCodeID: leetcodeID,
+		FieldProblemID:  problemID,
 		FieldDifficulty: difficulty,
 		FieldMode:       mode,
 	})
@@ -105,7 +105,7 @@ func (rm *RedisManager) CreateMatch(matchID uuid.UUID, player1ID, player2ID uuid
 }
 
 // CreateSinglePlayerMatch creates Redis data structure for a single player match
-func (rm *RedisManager) CreateSinglePlayerMatch(matchID uuid.UUID, playerID uuid.UUID, leetcodeID uuid.UUID, difficulty string) error {
+func (rm *RedisManager) CreateSinglePlayerMatch(matchID uuid.UUID, playerID uuid.UUID, problemID uuid.UUID, difficulty string) error {
 	ctx := context.Background()
 	now := time.Now()
 
@@ -120,7 +120,7 @@ func (rm *RedisManager) CreateSinglePlayerMatch(matchID uuid.UUID, playerID uuid
 		FieldStatus:     string(model.MatchStatusPlaying),
 		FieldCreatedAt:  now.Unix(),
 		FieldStartedAt:  now.Unix(),
-		FieldLeetCodeID: leetcodeID,
+		FieldProblemID:  problemID,
 		FieldDifficulty: difficulty,
 		FieldMode:       string(model.MatchModeSingle),
 	})
