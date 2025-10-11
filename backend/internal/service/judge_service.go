@@ -39,6 +39,7 @@ type judgeService struct {
 	logger            logger.Logger
 	functionExtractor *judge.FunctionExtractor
 	eventBus          events.EventBus
+	codeAnalyzer      *CodeAnalyzer
 }
 
 // Interface implementation check
@@ -52,6 +53,7 @@ func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger, ev
 		logger:            logger,
 		functionExtractor: judge.NewFunctionExtractor(logger),
 		eventBus:          eventBus,
+		codeAnalyzer:      NewCodeAnalyzer(),
 	}
 }
 
@@ -130,13 +132,27 @@ func (s *judgeService) ensureFunctionNameMatches(code string, language string, e
 
 // tryBatchEvaluate attempts batch harness path; returns (result, usedBatch, error)
 func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *model.Problem) (*types.EvaluationResult, bool, error) {
+	language := s.getLanguageName(languageID)
 	// build inputs
 	testCaseInputs := make([][]interface{}, 0, len(problem.TestCases))
 	expectedOutputs := make([]interface{}, 0, len(problem.TestCases))
+
+	// Extract function signature to infer parameter types
+	signature := s.codeAnalyzer.ExtractFunctionSignature(code, language)
+	var paramTypes []string
+	if signature != nil {
+		paramTypes = s.codeAnalyzer.InferParameterTypes(code, signature)
+		s.logger.Debug().
+			Str("functionName", signature.Name).
+			Strs("parameters", signature.Parameters).
+			Strs("inferredTypes", paramTypes).
+			Msg("Function signature extracted")
+	}
+
 	for _, testCase := range problem.TestCases {
-		// Parse input JSON string to []interface{}
-		var input []interface{}
-		if err := json.Unmarshal([]byte(testCase.Input), &input); err != nil {
+		// Use simple parser for better test case parsing
+		input, err := s.codeAnalyzer.ParseTestCaseInput(testCase.Input, paramTypes)
+		if err != nil {
 			s.logger.Error().Err(err).Str("input", testCase.Input).Msg("Failed to parse test case input")
 			continue
 		}
@@ -144,6 +160,12 @@ func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *mo
 		expectedOutputs = append(expectedOutputs, testCase.ExpectedOutput)
 	}
 	inputsJSON, _ := json.Marshal(testCaseInputs)
+
+	s.logger.Debug().
+		Int("testCaseInputsCount", len(testCaseInputs)).
+		Int("expectedOutputsCount", len(expectedOutputs)).
+		Str("inputsJSON", string(inputsJSON)).
+		Msg("Prepared test case data for Judge0")
 
 	// wrap batch (may fail for unsupported languages)
 	wrappedCode, err := s.codeWrapper.WrapCodeBatch(code, languageID, string(inputsJSON), problem)
@@ -260,17 +282,59 @@ func (s *judgeService) createRuntimeErrorResult(response *types.Judge0Response) 
 // parseActualResults parses the actual results from stdout
 func (s *judgeService) parseActualResults(stdout string) ([]interface{}, error) {
 	actualTrimmed := strings.TrimSpace(stdout)
+
+	s.logger.Debug().
+		Str("raw_stdout", stdout).
+		Str("trimmed_stdout", actualTrimmed).
+		Int("stdout_length", len(actualTrimmed)).
+		Msg("Parsing Judge0 stdout")
+
+	// Handle empty stdout
+	if actualTrimmed == "" {
+		s.logger.Warn().Msg("Empty stdout received from Judge0")
+		return []interface{}{}, nil
+	}
+
 	var actual []interface{}
 	if err := json.Unmarshal([]byte(actualTrimmed), &actual); err != nil {
+		s.logger.Error().
+			Err(err).
+			Str("stdout", actualTrimmed).
+			Msg("Failed to parse actual results from stdout")
 		return nil, fmt.Errorf("invalid runner output: %v", err)
 	}
+
+	s.logger.Debug().
+		Int("result_count", len(actual)).
+		Interface("parsed_results", actual).
+		Msg("Successfully parsed actual results")
+
 	return actual, nil
 }
 
 // buildTestResults builds test results from expected, inputs, and actual results
 func (s *judgeService) buildTestResults(expected []interface{}, inputs [][]interface{}, actual []interface{}, response *types.Judge0Response) []types.TestCaseResult {
 	var results []types.TestCaseResult
-	for i := range expected {
+
+	// Find the minimum length to avoid index out of range
+	minLength := len(expected)
+	if len(inputs) < minLength {
+		minLength = len(inputs)
+	}
+	if len(actual) < minLength {
+		minLength = len(actual)
+	}
+
+	// Log warning if arrays have different lengths
+	if len(expected) != len(inputs) || len(expected) != len(actual) {
+		s.logger.Warn().
+			Int("expected_len", len(expected)).
+			Int("inputs_len", len(inputs)).
+			Int("actual_len", len(actual)).
+			Msg("Array lengths mismatch in buildTestResults")
+	}
+
+	for i := 0; i < minLength; i++ {
 		testResult := s.createTestCaseResult(i, expected[i], inputs[i], actual[i], response)
 		results = append(results, testResult)
 	}
@@ -761,13 +825,27 @@ func (s *judgeService) sendJudge0QuotaError() {
 
 // tryBatchEvaluateWithRealtime attempts batch evaluation with real-time notifications
 func (s *judgeService) tryBatchEvaluateWithRealtime(code string, languageID int, problem *model.Problem, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, bool, error) {
+	language := s.getLanguageName(languageID)
 	// Build inputs for batch evaluation
 	testCaseInputs := make([][]interface{}, 0, len(problem.TestCases))
 	expectedOutputs := make([]interface{}, 0, len(problem.TestCases))
+
+	// Extract function signature to infer parameter types
+	signature := s.codeAnalyzer.ExtractFunctionSignature(code, language)
+	var paramTypes []string
+	if signature != nil {
+		paramTypes = s.codeAnalyzer.InferParameterTypes(code, signature)
+		s.logger.Debug().
+			Str("functionName", signature.Name).
+			Strs("parameters", signature.Parameters).
+			Strs("inferredTypes", paramTypes).
+			Msg("Function signature extracted")
+	}
+
 	for _, testCase := range problem.TestCases {
-		// Parse input JSON string to []interface{}
-		var input []interface{}
-		if err := json.Unmarshal([]byte(testCase.Input), &input); err != nil {
+		// Use simple parser for better test case parsing
+		input, err := s.codeAnalyzer.ParseTestCaseInput(testCase.Input, paramTypes)
+		if err != nil {
 			s.logger.Error().Err(err).Str("input", testCase.Input).Msg("Failed to parse test case input")
 			continue
 		}
@@ -830,4 +908,18 @@ func (s *judgeService) notifyBatchResultsAsIndividual(matchID uuid.UUID, userID 
 
 	// Send final submission completed notification
 	s.notifySubmissionCompleted(matchID, userID, result)
+}
+
+// getLanguageName converts Judge0 language ID to language string
+func (s *judgeService) getLanguageName(languageID int) string {
+	switch languageID {
+	case 63:
+		return "javascript"
+	case 71:
+		return "python"
+	case 60:
+		return "go"
+	default:
+		return "unknown"
+	}
 }
