@@ -15,34 +15,50 @@ type Wrapper struct{}
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
 func (g *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
-	// Clean user code - remove any existing wrapper functions
+	// Clean user code - remove only package declaration and main function, keep imports and user functions
 	userCode := strings.TrimSpace(code)
 
-	// Remove common wrapper patterns carefully
+	// Remove only package declaration and main function, keep imports and user functions
 	lines := strings.Split(userCode, "\n")
 	var cleanedLines []string
-	inImport := false
+	inMain := false
+	braceCount := 0
+
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
+
+		// Skip package declaration
 		if strings.HasPrefix(trimmed, "package ") {
 			continue
 		}
-		if strings.HasPrefix(trimmed, "import ") {
-			inImport = true
-			continue
-		}
-		if inImport && trimmed == ")" {
-			inImport = false
-			continue
-		}
-		if inImport {
-			continue
-		}
+
+		// Track main function and skip it
 		if strings.HasPrefix(trimmed, "func main()") {
+			inMain = true
+			braceCount = 0
 			continue
 		}
+
+		if inMain {
+			// Count braces to know when main function ends
+			for _, char := range trimmed {
+				if char == '{' {
+					braceCount++
+				} else if char == '}' {
+					braceCount--
+					if braceCount == 0 {
+						inMain = false
+						continue
+					}
+				}
+			}
+			continue
+		}
+
+		// Keep everything else (imports, user functions, etc.)
 		cleanedLines = append(cleanedLines, line)
 	}
+
 	userCode = strings.Join(cleanedLines, "\n")
 	userCode = strings.TrimSpace(userCode)
 
@@ -155,34 +171,50 @@ func main() {
 }
 
 func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
-	// Clean user code - remove any existing wrapper functions
+	// Clean user code - remove only package declaration and main function, keep imports and user functions
 	userCode := strings.TrimSpace(code)
 
-	// Remove common wrapper patterns carefully
+	// Remove only package declaration and main function, keep imports and user functions
 	lines := strings.Split(userCode, "\n")
 	var cleanedLines []string
-	inImport := false
+	inMain := false
+	braceCount := 0
+
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
+
+		// Skip package declaration
 		if strings.HasPrefix(trimmed, "package ") {
 			continue
 		}
-		if strings.HasPrefix(trimmed, "import ") {
-			inImport = true
-			continue
-		}
-		if inImport && trimmed == ")" {
-			inImport = false
-			continue
-		}
-		if inImport {
-			continue
-		}
+
+		// Track main function and skip it
 		if strings.HasPrefix(trimmed, "func main()") {
+			inMain = true
+			braceCount = 0
 			continue
 		}
+
+		if inMain {
+			// Count braces to know when main function ends
+			for _, char := range trimmed {
+				if char == '{' {
+					braceCount++
+				} else if char == '}' {
+					braceCount--
+					if braceCount == 0 {
+						inMain = false
+						continue
+					}
+				}
+			}
+			continue
+		}
+
+		// Keep everything else (imports, user functions, etc.)
 		cleanedLines = append(cleanedLines, line)
 	}
+
 	userCode = strings.Join(cleanedLines, "\n")
 	userCode = strings.TrimSpace(userCode)
 

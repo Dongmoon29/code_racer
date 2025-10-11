@@ -30,28 +30,30 @@ function solution(nums) {
     return nums.sort((a, b) => a - b);
 }`,
 			testCase: "[3,1,4,1,5]",
-			expected: `const fs = require('fs');
+			expected: `// ===== 사용자 코드 (그대로 유지) =====
+const fs = require('fs');
 
-// User code
 function solution(nums) {
     return nums.sort((a, b) => a - b);
 }
+// ====================================
 
-
-// Test execution
-function runTest() {
+// ===== 실행 래퍼 (자동 생성) =====
+(function() {
     try {
-        const testCase = JSON.parse("[3,1,4,1,5]");
-        const inputs = Array.isArray(testCase) ? testCase : [testCase];
-        const result = solution(...inputs);
+        const testCase = JSON.parse('[3,1,4,1,5]');
+        let result;
+        if (Array.isArray(testCase)) {
+            result = solution(...testCase);
+        } else {
+            result = solution(testCase);
+        }
         console.log(JSON.stringify(result));
     } catch (error) {
         console.error(String(error));
         process.exit(1);
     }
-}
-
-runTest();`,
+})();`,
 		},
 		{
 			name: "with_es6_import",
@@ -61,28 +63,30 @@ function solution(nums) {
     return nums.sort((a, b) => a - b);
 }`,
 			testCase: "[3,1,4,1,5]",
-			expected: `import { readFile } from 'fs';
+			expected: `// ===== 사용자 코드 (그대로 유지) =====
+import { readFile } from 'fs';
 
-// User code
 function solution(nums) {
     return nums.sort((a, b) => a - b);
 }
+// ====================================
 
-
-// Test execution
-function runTest() {
+// ===== 실행 래퍼 (자동 생성) =====
+(function() {
     try {
-        const testCase = JSON.parse("[3,1,4,1,5]");
-        const inputs = Array.isArray(testCase) ? testCase : [testCase];
-        const result = solution(...inputs);
+        const testCase = JSON.parse('[3,1,4,1,5]');
+        let result;
+        if (Array.isArray(testCase)) {
+            result = solution(...testCase);
+        } else {
+            result = solution(testCase);
+        }
         console.log(JSON.stringify(result));
     } catch (error) {
         console.error(String(error));
         process.exit(1);
     }
-}
-
-runTest();`,
+})();`,
 		},
 		{
 			name: "with_multiple_imports",
@@ -93,29 +97,31 @@ function solution(nums) {
     return nums.sort((a, b) => a - b);
 }`,
 			testCase: "[3,1,4,1,5]",
-			expected: `const fs = require('fs');
+			expected: `// ===== 사용자 코드 (그대로 유지) =====
+const fs = require('fs');
 const path = require('path');
 
-// User code
 function solution(nums) {
     return nums.sort((a, b) => a - b);
 }
+// ====================================
 
-
-// Test execution
-function runTest() {
+// ===== 실행 래퍼 (자동 생성) =====
+(function() {
     try {
-        const testCase = JSON.parse("[3,1,4,1,5]");
-        const inputs = Array.isArray(testCase) ? testCase : [testCase];
-        const result = solution(...inputs);
+        const testCase = JSON.parse('[3,1,4,1,5]');
+        let result;
+        if (Array.isArray(testCase)) {
+            result = solution(...testCase);
+        } else {
+            result = solution(testCase);
+        }
         console.log(JSON.stringify(result));
     } catch (error) {
         console.error(String(error));
         process.exit(1);
     }
-}
-
-runTest();`,
+})();`,
 		},
 		{
 			name: "no_imports",
@@ -123,25 +129,28 @@ runTest();`,
     return nums.sort((a, b) => a - b);
 }`,
 			testCase: "[3,1,4,1,5]",
-			expected: `// User code
+			expected: `// ===== 사용자 코드 (그대로 유지) =====
 function solution(nums) {
     return nums.sort((a, b) => a - b);
 }
+// ====================================
 
-// Test execution
-function runTest() {
+// ===== 실행 래퍼 (자동 생성) =====
+(function() {
     try {
-        const testCase = JSON.parse("[3,1,4,1,5]");
-        const inputs = Array.isArray(testCase) ? testCase : [testCase];
-        const result = solution(...inputs);
+        const testCase = JSON.parse('[3,1,4,1,5]');
+        let result;
+        if (Array.isArray(testCase)) {
+            result = solution(...testCase);
+        } else {
+            result = solution(testCase);
+        }
         console.log(JSON.stringify(result));
     } catch (error) {
         console.error(String(error));
         process.exit(1);
     }
-}
-
-runTest();`,
+})();`,
 		},
 	}
 
@@ -176,30 +185,31 @@ function solution(nums) {
     return nums.sort((a, b) => a - b);
 }`,
 			testCasesJSON: "[[3,1,4,1,5], [1,2,3]]",
-			expected: `const fs = require('fs');
+			expected: `// ===== 사용자 코드 (그대로 유지) =====
+const fs = require('fs');
 
-// user code
 function solution(nums) {
     return nums.sort((a, b) => a - b);
 }
+// ====================================
 
-
-function runAll() {
-  try {
-    const cases = [[3,1,4,1,5], [1,2,3]];
-    const results = [];
-    for (let i = 0; i < cases.length; i++) {
-      const inputs = Array.isArray(cases[i]) ? cases[i] : [cases[i]];
-      const out = solution(...inputs);
-      results.push(out);
+// ===== 실행 래퍼 (자동 생성) =====
+(function() {
+    try {
+        const testCases = JSON.parse(process.argv[2] || '[]');
+        const results = testCases.map(inputs => {
+            if (Array.isArray(inputs)) {
+                return solution(...inputs);
+            } else {
+                return solution(inputs);
+            }
+        });
+        console.log(JSON.stringify(results));
+    } catch (error) {
+        console.error(String(error));
+        process.exit(1);
     }
-    console.log(JSON.stringify(results));
-  } catch (e) {
-    console.error(String(e));
-    process.exit(1);
-  }
-}
-runAll();`,
+})();`,
 		},
 	}
 

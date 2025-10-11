@@ -37,29 +37,90 @@ import (
     "encoding/json"
     "fmt"
     "os"
-    "sort"
 )
 
-// user code
+// ===== 사용자 코드 (그대로 유지) =====
+import "sort"
+
 func solution(nums []int) []int {
     sort.Ints(nums)
     return nums
 }
+// ====================================
 
-func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
-func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
+// ===== 타입 변환 헬퍼 =====
+func toInt(v interface{}) int {
+    if f, ok := v.(float64); ok {
+        return int(f)
+    }
+    if i, ok := v.(int); ok {
+        return i
+    }
+    return 0
+}
 
+func toFloat(v interface{}) float64 {
+    if f, ok := v.(float64); ok {
+        return f
+    }
+    if i, ok := v.(int); ok {
+        return float64(i)
+    }
+    return 0
+}
+
+func toBool(v interface{}) bool {
+    if b, ok := v.(bool); ok {
+        return b
+    }
+    return false
+}
+
+func toString(v interface{}) string {
+    if s, ok := v.(string); ok {
+        return s
+    }
+    return ""
+}
+
+func toIntSlice(v interface{}) []int {
+    arr, ok := v.([]interface{})
+    if !ok {
+        return nil
+    }
+    result := make([]int, len(arr))
+    for i, val := range arr {
+        result[i] = toInt(val)
+    }
+    return result
+}
+
+func toIntSliceSlice(v interface{}) [][]int {
+    arr, ok := v.([]interface{})
+    if !ok {
+        return nil
+    }
+    result := make([][]int, len(arr))
+    for i, val := range arr {
+        result[i] = toIntSlice(val)
+    }
+    return result
+}
+
+// ===== 실행 래퍼 =====
 func main() {
     var testCase []interface{}
-    if err := json.Unmarshal([]byte("[3,1,4,1,5]"), &testCase); err != nil {
+    if err := json.Unmarshal([]byte('[3,1,4,1,5]'), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %v\n", err)
         os.Exit(1)
     }
+    
     arg0 := toIntSlice(testCase[0])
 
-    out := solution(arg0)
-    b, _ := json.Marshal(out)
-    fmt.Print(string(b))
+    result := solution(arg0)
+    
+    output, _ := json.Marshal(result)
+    fmt.Println(string(output))
 }`,
 		},
 		{
@@ -80,30 +141,93 @@ import (
     "encoding/json"
     "fmt"
     "os"
+)
+
+// ===== 사용자 코드 (그대로 유지) =====
+import (
     "sort"
     "strings"
 )
 
-// user code
 func solution(nums []int) []int {
     sort.Ints(nums)
     return nums
 }
+// ====================================
 
-func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
-func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
+// ===== 타입 변환 헬퍼 =====
+func toInt(v interface{}) int {
+    if f, ok := v.(float64); ok {
+        return int(f)
+    }
+    if i, ok := v.(int); ok {
+        return i
+    }
+    return 0
+}
 
+func toFloat(v interface{}) float64 {
+    if f, ok := v.(float64); ok {
+        return f
+    }
+    if i, ok := v.(int); ok {
+        return float64(i)
+    }
+    return 0
+}
+
+func toBool(v interface{}) bool {
+    if b, ok := v.(bool); ok {
+        return b
+    }
+    return false
+}
+
+func toString(v interface{}) string {
+    if s, ok := v.(string); ok {
+        return s
+    }
+    return ""
+}
+
+func toIntSlice(v interface{}) []int {
+    arr, ok := v.([]interface{})
+    if !ok {
+        return nil
+    }
+    result := make([]int, len(arr))
+    for i, val := range arr {
+        result[i] = toInt(val)
+    }
+    return result
+}
+
+func toIntSliceSlice(v interface{}) [][]int {
+    arr, ok := v.([]interface{})
+    if !ok {
+        return nil
+    }
+    result := make([][]int, len(arr))
+    for i, val := range arr {
+        result[i] = toIntSlice(val)
+    }
+    return result
+}
+
+// ===== 실행 래퍼 =====
 func main() {
     var testCase []interface{}
-    if err := json.Unmarshal([]byte("[3,1,4,1,5]"), &testCase); err != nil {
+    if err := json.Unmarshal([]byte('[3,1,4,1,5]'), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %v\n", err)
         os.Exit(1)
     }
+    
     arg0 := toIntSlice(testCase[0])
 
-    out := solution(arg0)
-    b, _ := json.Marshal(out)
-    fmt.Print(string(b))
+    result := solution(arg0)
+    
+    output, _ := json.Marshal(result)
+    fmt.Println(string(output))
 }`,
 		},
 		{
@@ -128,7 +252,7 @@ import (
     "os"
 )
 
-// user code
+// ===== 사용자 코드 (그대로 유지) =====
 func solution(nums []int) []int {
     // Simple bubble sort
     for i := 0; i < len(nums); i++ {
@@ -140,21 +264,81 @@ func solution(nums []int) []int {
     }
     return nums
 }
+// ====================================
 
-func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
-func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
+// ===== 타입 변환 헬퍼 =====
+func toInt(v interface{}) int {
+    if f, ok := v.(float64); ok {
+        return int(f)
+    }
+    if i, ok := v.(int); ok {
+        return i
+    }
+    return 0
+}
 
+func toFloat(v interface{}) float64 {
+    if f, ok := v.(float64); ok {
+        return f
+    }
+    if i, ok := v.(int); ok {
+        return float64(i)
+    }
+    return 0
+}
+
+func toBool(v interface{}) bool {
+    if b, ok := v.(bool); ok {
+        return b
+    }
+    return false
+}
+
+func toString(v interface{}) string {
+    if s, ok := v.(string); ok {
+        return s
+    }
+    return ""
+}
+
+func toIntSlice(v interface{}) []int {
+    arr, ok := v.([]interface{})
+    if !ok {
+        return nil
+    }
+    result := make([]int, len(arr))
+    for i, val := range arr {
+        result[i] = toInt(val)
+    }
+    return result
+}
+
+func toIntSliceSlice(v interface{}) [][]int {
+    arr, ok := v.([]interface{})
+    if !ok {
+        return nil
+    }
+    result := make([][]int, len(arr))
+    for i, val := range arr {
+        result[i] = toIntSlice(val)
+    }
+    return result
+}
+
+// ===== 실행 래퍼 =====
 func main() {
     var testCase []interface{}
-    if err := json.Unmarshal([]byte("[3,1,4,1,5]"), &testCase); err != nil {
+    if err := json.Unmarshal([]byte('[3,1,4,1,5]'), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %v\n", err)
         os.Exit(1)
     }
+    
     arg0 := toIntSlice(testCase[0])
 
-    out := solution(arg0)
-    b, _ := json.Marshal(out)
-    fmt.Print(string(b))
+    result := solution(arg0)
+    
+    output, _ := json.Marshal(result)
+    fmt.Println(string(output))
 }`,
 		},
 	}
@@ -197,36 +381,94 @@ import (
     "encoding/json"
     "fmt"
     "os"
-    "sort"
 )
 
-// user code
+// ===== 사용자 코드 (그대로 유지) =====
+import "sort"
+
 func solution(nums []int) []int {
     sort.Ints(nums)
     return nums
 }
+// ====================================
 
-func toInt(v interface{}) int { if f, ok := v.(float64); ok { return int(f) }; if i, ok := v.(int); ok { return i }; return 0 }
-func toFloat(v interface{}) float64 { if f, ok := v.(float64); ok { return f }; if i, ok := v.(int); ok { return float64(i) }; return 0 }
-func toBool(v interface{}) bool { if b, ok := v.(bool); ok { return b }; return false }
-func toString(v interface{}) string { if s, ok := v.(string); ok { return s }; return "" }
-func toIntSlice(v interface{}) []int { arr, ok := v.([]interface{}); if !ok { return nil }; out := make([]int,0,len(arr)); for _, it := range arr { out = append(out, toInt(it)) }; return out }
+// ===== 타입 변환 헬퍼 =====
+func toInt(v interface{}) int {
+    if f, ok := v.(float64); ok {
+        return int(f)
+    }
+    if i, ok := v.(int); ok {
+        return i
+    }
+    return 0
+}
 
+func toFloat(v interface{}) float64 {
+    if f, ok := v.(float64); ok {
+        return f
+    }
+    if i, ok := v.(int); ok {
+        return float64(i)
+    }
+    return 0
+}
+
+func toBool(v interface{}) bool {
+    if b, ok := v.(bool); ok {
+        return b
+    }
+    return false
+}
+
+func toString(v interface{}) string {
+    if s, ok := v.(string); ok {
+        return s
+    }
+    return ""
+}
+
+func toIntSlice(v interface{}) []int {
+    arr, ok := v.([]interface{})
+    if !ok {
+        return nil
+    }
+    result := make([]int, len(arr))
+    for i, val := range arr {
+        result[i] = toInt(val)
+    }
+    return result
+}
+
+func toIntSliceSlice(v interface{}) [][]int {
+    arr, ok := v.([]interface{})
+    if !ok {
+        return nil
+    }
+    result := make([][]int, len(arr))
+    for i, val := range arr {
+        result[i] = toIntSlice(val)
+    }
+    return result
+}
+
+// ===== 실행 래퍼 =====
 func main() {
-    var cases [][]interface{}
-    if err := json.Unmarshal([]byte("[[3,1,4,1,5], [1,2,3]]"), &cases); err != nil {
-        fmt.Fprintf(os.Stderr, "Error parsing cases: %v\n", err)
+    var testCases [][]interface{}
+    if err := json.Unmarshal([]byte(os.Args[1]), &testCases); err != nil {
+        fmt.Fprintf(os.Stderr, "Error parsing test cases: %v\n", err)
         os.Exit(1)
     }
-    results := make([]interface{}, 0, len(cases))
-    for _, c := range cases {
-    arg0 := toIntSlice(c[0])
+    
+    results := []interface{}{}
+    for _, inputs := range testCases {
+    arg0 := toIntSlice(inputs[0])
 
-        out := solution(arg0)
-        results = append(results, out)
+        result := solution(arg0)
+        results = append(results, result)
     }
-    b, _ := json.Marshal(results)
-    // Remove debug prints - use proper logging instead
+    
+    output, _ := json.Marshal(results)
+    fmt.Println(string(output))
 }`,
 		},
 	}

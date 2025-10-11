@@ -32,26 +32,27 @@ def solution(nums):
 			testCase: "[3,1,4,1,5]",
 			expected: `import json
 import sys
+
+# ===== 사용자 코드 (그대로 유지) =====
 import heapq
 
-# 사용자 코드
 def solution(nums):
     heapq.heapify(nums)
     return nums
+# ====================================
 
-# 테스트 실행
-def run_test():
+# ===== 실행 래퍼 (자동 생성) =====
+if __name__ == "__main__":
     try:
         test_case = json.loads('[3,1,4,1,5]')
-        inputs = test_case if isinstance(test_case, list) else [test_case]
-        result = solution(*inputs)
+        if isinstance(test_case, list):
+            result = solution(*test_case)
+        else:
+            result = solution(test_case)
         print(json.dumps(result))
     except Exception as e:
         print(str(e), file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    run_test()`,
+        sys.exit(1)`,
 		},
 		{
 			name: "with_multiple_imports",
@@ -65,28 +66,29 @@ def solution(nums):
 			testCase: "[3,1,4,1,5]",
 			expected: `import json
 import sys
+
+# ===== 사용자 코드 (그대로 유지) =====
 import heapq
 import math
 from collections import defaultdict
 
-# 사용자 코드
 def solution(nums):
     heapq.heapify(nums)
     return nums
+# ====================================
 
-# 테스트 실행
-def run_test():
+# ===== 실행 래퍼 (자동 생성) =====
+if __name__ == "__main__":
     try:
         test_case = json.loads('[3,1,4,1,5]')
-        inputs = test_case if isinstance(test_case, list) else [test_case]
-        result = solution(*inputs)
+        if isinstance(test_case, list):
+            result = solution(*test_case)
+        else:
+            result = solution(test_case)
         print(json.dumps(result))
     except Exception as e:
         print(str(e), file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    run_test()`,
+        sys.exit(1)`,
 		},
 		{
 			name: "no_imports",
@@ -96,23 +98,23 @@ if __name__ == "__main__":
 			expected: `import json
 import sys
 
-# 사용자 코드
+# ===== 사용자 코드 (그대로 유지) =====
 def solution(nums):
     return sorted(nums)
+# ====================================
 
-# 테스트 실행
-def run_test():
+# ===== 실행 래퍼 (자동 생성) =====
+if __name__ == "__main__":
     try:
         test_case = json.loads('[3,1,4,1,5]')
-        inputs = test_case if isinstance(test_case, list) else [test_case]
-        result = solution(*inputs)
+        if isinstance(test_case, list):
+            result = solution(*test_case)
+        else:
+            result = solution(test_case)
         print(json.dumps(result))
     except Exception as e:
         print(str(e), file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    run_test()`,
+        sys.exit(1)`,
 		},
 	}
 
@@ -147,29 +149,32 @@ def solution(nums):
     heapq.heapify(nums)
     return nums`,
 			testCasesJSON: "[[3,1,4,1,5], [1,2,3]]",
-			expected: `import json, sys
+			expected: `import json
+import sys
+
+# ===== 사용자 코드 (그대로 유지) =====
 import heapq
 
-# user code
 def solution(nums):
     heapq.heapify(nums)
     return nums
+# ====================================
 
-def run_all():
+# ===== 실행 래퍼 (자동 생성) =====
+if __name__ == "__main__":
     try:
-        cases = json.loads('''[[3,1,4,1,5], [1,2,3]]''')
+        test_cases = json.loads(sys.argv[1] if len(sys.argv) > 1 else '[]')
         results = []
-        for c in cases:
-            inputs = c if isinstance(c, list) else [c]
-            out = solution(*inputs)
-            results.append(out)
+        for inputs in test_cases:
+            if isinstance(inputs, list):
+                result = solution(*inputs)
+            else:
+                result = solution(inputs)
+            results.append(result)
         print(json.dumps(results))
     except Exception as e:
         print(str(e), file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    run_all()`,
+        sys.exit(1)`,
 		},
 	}
 
