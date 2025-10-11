@@ -14,11 +14,17 @@ interface FullscreenOverlayProps {
   isDescriptionExpanded: boolean;
   problemTitle: string;
   problemDescription: string;
-  problemExamples: string;
+  problemExamples: Array<{
+    id: string;
+    problem_id: string;
+    input: string;
+    output: string;
+    explanation: string;
+  }>;
   problemConstraints: string;
   problemTestCases?: Array<{
-    input: (string | number | boolean)[];
-    output: string | number | boolean;
+    input: string;
+    expected_output: string;
   }>;
   onCodeChange: (code: string) => void;
   onMaximizeToggle: (editor: 'my' | 'opponent') => void;

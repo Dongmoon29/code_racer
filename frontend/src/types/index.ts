@@ -30,9 +30,17 @@ export interface ApiResponse<T = unknown> {
 }
 
 // Problem 관련 타입
+export interface Example {
+  id: string;
+  problem_id: string;
+  input: string;
+  output: string;
+  explanation: string;
+}
+
 export interface TestCase {
-  input: (string | number | boolean)[];
-  output: string | number | boolean;
+  input: string;
+  expected_output: string;
 }
 
 export interface IOSchema {
@@ -75,10 +83,10 @@ export interface ProblemSummary {
 
 export interface ProblemDetail extends ProblemSummary {
   description: string;
-  examples: string;
+  examples: Example[];
   constraints: string;
   test_cases: TestCase[];
-  expected_outputs: string;
+  expected_outputs: string[];
   input_format: string;
   output_format: string;
   function_name: string;

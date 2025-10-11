@@ -1,7 +1,6 @@
 package model
 
 import (
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -140,7 +139,7 @@ type ProblemDetail struct {
 	ID                 uuid.UUID  `json:"id"`
 	Title              string     `json:"title"`
 	Description        string     `json:"description"`
-	Examples           string     `json:"examples"`
+	Examples           []Example  `json:"examples"`
 	Constraints        string     `json:"constraints"`
 	Difficulty         Difficulty `json:"difficulty"`
 	TestCases          []TestCase `json:"test_cases"`
@@ -158,18 +157,6 @@ type ProblemDetail struct {
 
 // ToDetailResponse converts Problem model to ProblemDetail DTO
 func (p *Problem) ToDetailResponse() *ProblemDetail {
-	// Convert Examples to string
-	var examplesStr strings.Builder
-	for i, example := range p.Examples {
-		if i > 0 {
-			examplesStr.WriteString("\n")
-		}
-		examplesStr.WriteString("Input: " + example.Input)
-		examplesStr.WriteString("\nOutput: " + example.Output)
-		if example.Explanation != "" {
-			examplesStr.WriteString("\nExplanation: " + example.Explanation)
-		}
-	}
 
 	// Convert TestCases
 	var testCases []TestCase
@@ -189,7 +176,7 @@ func (p *Problem) ToDetailResponse() *ProblemDetail {
 		ID:                 p.ID,
 		Title:              p.Title,
 		Description:        p.Description,
-		Examples:           examplesStr.String(),
+		Examples:           p.Examples,
 		Constraints:        p.Constraints,
 		Difficulty:         p.Difficulty,
 		TestCases:          testCases,

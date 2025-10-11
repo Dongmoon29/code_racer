@@ -291,10 +291,25 @@ func (s *matchService) CloseMatch(matchID uuid.UUID, userID uuid.UUID) error {
 
 // GetMatch finds a match by ID
 func (s *matchService) GetMatch(matchID uuid.UUID) (*model.Match, error) {
+	s.logger.Debug().Str("matchID", matchID.String()).Msg("Getting match by ID")
+
 	match, err := s.matchRepo.FindByID(matchID)
 	if err != nil {
+		s.logger.Error().Err(err).Str("matchID", matchID.String()).Msg("Failed to get match by ID")
 		return nil, err
 	}
+
+	// Log match data as JSON for easy debugging
+	if match != nil {
+		if jsonData, err := json.MarshalIndent(match, "", "  "); err != nil {
+			s.logger.Error().Err(err).Msg("Failed to marshal match data to JSON")
+		} else {
+			s.logger.Debug().RawJSON("match", jsonData).Msg("Match data loaded successfully")
+		}
+	} else {
+		s.logger.Warn().Str("matchID", matchID.String()).Msg("Match is nil")
+	}
+
 	return match, nil
 }
 
