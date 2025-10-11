@@ -56,7 +56,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
     const defaultResult: TestCaseResult = {
       index,
       input: testCase.input,
-      expectedOutput: testCase.output,
+      expectedOutput: testCase.expected_output,
       status: 'pending',
     };
     const testResult = result || defaultResult;
@@ -148,7 +148,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
             <div
               className={`mt-1 ${inputOutputPadding} rounded border font-mono`}
             >
-              {formatValue(testCase.output)}
+              {formatValue(testCase.expected_output)}
             </div>
           </div>
 

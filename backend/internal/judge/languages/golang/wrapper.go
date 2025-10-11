@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -13,7 +14,7 @@ type Wrapper struct{}
 
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
-func (g *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
+func (g *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
 	// Parse user imports
 	importParser := parser.NewImportParser()
 	importInfo := importParser.ParseImports(code, 60) // Go language ID
@@ -62,7 +63,14 @@ func (g *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Le
 	}
 
 	// Try to infer parameter types from function signature if IOSchema is empty
-	paramTypes := problem.IOSchema.ParamTypes
+	var paramTypes []string
+	if problem.IOSchema.ParamTypes != "" {
+		// Parse JSON string to []string
+		if err := json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes); err != nil {
+			// Fallback to empty slice if parsing fails
+			paramTypes = []string{}
+		}
+	}
 	if len(paramTypes) == 0 {
 		sigParser := parser.NewGoSignatureParser()
 		inferredTypes := sigParser.InferParamTypesFromSignature(code, problem.FunctionName)
@@ -134,7 +142,7 @@ func main() {
 	return fmt.Sprintf(template, importsSection, importInfo.Code, testCasesJSON, argDecl, problem.FunctionName, callArgs), nil
 }
 
-func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
+func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
 	// Parse user imports
 	importParser := parser.NewImportParser()
 	importInfo := importParser.ParseImports(code, 60) // Go language ID
@@ -183,7 +191,14 @@ func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.LeetCo
 	}
 
 	// Try to infer parameter types from function signature if IOSchema is empty
-	paramTypes := problem.IOSchema.ParamTypes
+	var paramTypes []string
+	if problem.IOSchema.ParamTypes != "" {
+		// Parse JSON string to []string
+		if err := json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes); err != nil {
+			// Fallback to empty slice if parsing fails
+			paramTypes = []string{}
+		}
+	}
 	if len(paramTypes) == 0 {
 		sigParser := parser.NewGoSignatureParser()
 		inferredTypes := sigParser.InferParamTypesFromSignature(code, problem.FunctionName)

@@ -1,7 +1,7 @@
 import React, { FC, memo } from 'react';
 import { EditorPane } from './EditorPane';
 import { ResizeHandle } from '../ResizeHandle';
-import { useLeetCodeResize } from './hooks/useLeetCodeResize';
+import { useProblemResize } from './hooks/useProblemResize';
 
 interface CodeEditorSplitProps {
   myCode: string;
@@ -22,7 +22,7 @@ interface CodeEditorSplitProps {
   isSinglePlayerMode?: boolean;
 }
 
-export const LeetCodeEditorSplit: FC<CodeEditorSplitProps> = memo(
+export const ProblemEditorSplit: FC<CodeEditorSplitProps> = memo(
   ({
     myCode,
     opponentCode,
@@ -48,7 +48,7 @@ export const LeetCodeEditorSplit: FC<CodeEditorSplitProps> = memo(
       handleResize,
       handleResizeStart,
       handleResizeEnd,
-    } = useLeetCodeResize({
+    } = useProblemResize({
       initialSizes: sizesNormal,
       onSizesChange: onDragEnd,
     });
@@ -161,4 +161,4 @@ export const LeetCodeEditorSplit: FC<CodeEditorSplitProps> = memo(
   }
 );
 
-LeetCodeEditorSplit.displayName = 'LeetCodeEditorSplit';
+ProblemEditorSplit.displayName = 'ProblemEditorSplit';

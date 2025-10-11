@@ -88,14 +88,14 @@ func (u *User) ToResponse() *UserResponse {
 
 // RecentGameSummary is a compact DTO for recent matches displayed on My Page
 type RecentGameSummary struct {
-	ID       uuid.UUID   `json:"id"`
-	Mode     MatchMode   `json:"mode"`
-	Status   MatchStatus `json:"status"`
-	LeetCode struct {
+	ID      uuid.UUID   `json:"id"`
+	Mode    MatchMode   `json:"mode"`
+	Status  MatchStatus `json:"status"`
+	Problem struct {
 		ID         uuid.UUID `json:"id"`
 		Title      string    `json:"title"`
 		Difficulty string    `json:"difficulty"`
-	} `json:"leetcode"`
+	} `json:"problem"`
 	PlayerA struct {
 		ID   uuid.UUID `json:"id"`
 		Name string    `json:"name"`

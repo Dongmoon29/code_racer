@@ -10,10 +10,10 @@ import (
 type MatchStatus string
 
 const (
-	MatchStatusWaiting  MatchStatus = "waiting"  // 상대방을 기다리는 중
-	MatchStatusPlaying  MatchStatus = "playing"  // 게임 진행 중
-	MatchStatusFinished MatchStatus = "finished" // 게임 종료
-	MatchStatusClosed   MatchStatus = "closed"   // 방장이 닫은 상태
+	MatchStatusWaiting  MatchStatus = "waiting"  // Waiting for opponent
+	MatchStatusPlaying  MatchStatus = "playing"  // Game in progress
+	MatchStatusFinished MatchStatus = "finished" // Game finished
+	MatchStatusClosed   MatchStatus = "closed"   // Room closed by host
 )
 
 type MatchMode string
@@ -33,8 +33,8 @@ type Match struct {
 	PlayerBID *uuid.UUID `gorm:"type:uuid;index" json:"player_b_id"`
 	PlayerB   *User      `gorm:"foreignKey:PlayerBID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"player_b,omitempty"`
 
-	LeetCodeID uuid.UUID `gorm:"type:uuid;not null;index" json:"leetcode_id"`
-	LeetCode   LeetCode  `gorm:"foreignKey:LeetCodeID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"leetcode"`
+	ProblemID uuid.UUID `gorm:"type:uuid;not null;index" json:"problem_id"`
+	Problem   Problem   `gorm:"foreignKey:ProblemID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"problem"`
 
 	WinnerID *uuid.UUID `gorm:"type:uuid;index" json:"winner_id,omitempty"`
 	Winner   *User      `gorm:"foreignKey:WinnerID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"winner,omitempty"`
@@ -56,16 +56,16 @@ func (m *Match) BeforeCreate(tx *gorm.DB) error {
 }
 
 type MatchResponse struct {
-	ID        uuid.UUID       `json:"id"`
-	Mode      MatchMode       `gorm:"type:varchar(20);not null;default:'casual_pvp'" json:"mode"`
-	PlayerA   *UserResponse   `json:"player_a"`
-	PlayerB   *UserResponse   `json:"player_b,omitempty"`
-	LeetCode  *LeetCodeDetail `json:"leetcode"`
-	Status    MatchStatus     `json:"status"`
-	Winner    *UserResponse   `json:"winner,omitempty"`
-	StartedAt *time.Time      `json:"started_at,omitempty"`
-	EndedAt   *time.Time      `json:"ended_at,omitempty"`
-	CreatedAt time.Time       `json:"created_at"`
+	ID        uuid.UUID      `json:"id"`
+	Mode      MatchMode      `gorm:"type:varchar(20);not null;default:'casual_pvp'" json:"mode"`
+	PlayerA   *UserResponse  `json:"player_a"`
+	PlayerB   *UserResponse  `json:"player_b,omitempty"`
+	Problem   *ProblemDetail `json:"problem"`
+	Status    MatchStatus    `json:"status"`
+	Winner    *UserResponse  `json:"winner,omitempty"`
+	StartedAt *time.Time     `json:"started_at,omitempty"`
+	EndedAt   *time.Time     `json:"ended_at,omitempty"`
+	CreatedAt time.Time      `json:"created_at"`
 }
 
 func (m *Match) ToResponse() *MatchResponse {
@@ -84,13 +84,13 @@ func (m *Match) ToResponse() *MatchResponse {
 		winnerResp = m.Winner.ToResponse()
 	}
 
-	leetcodeResp := m.LeetCode.ToDetailResponse()
+	problemResp := m.Problem.ToDetailResponse()
 
 	return &MatchResponse{
 		ID:        m.ID,
 		PlayerA:   playerAResp,
 		PlayerB:   playerBResp,
-		LeetCode:  leetcodeResp,
+		Problem:   problemResp,
 		Status:    m.Status,
 		Winner:    winnerResp,
 		StartedAt: m.StartedAt,

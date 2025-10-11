@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/Button';
 import { ProblemDetailsPane } from './ProblemDetailsPane';
 import { FullscreenOverlay } from './FullscreenOverlay';
-import { LeetCodeEditorSplit } from './CodeEditorSplitProps';
+import { ProblemEditorSplit } from './CodeEditorSplitProps';
 import { useFullscreen } from '@/contexts/FullscreenContext';
 import TestCaseDisplay from '../TestCaseDisplay';
 
@@ -85,7 +85,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
         {!isFullscreen && (
           <div className="grid grid-cols-12 gap-4 mb-4">
             <div className="col-span-12 md:col-span-8">
-              <h1 className="text-2xl font-bold">{game.leetcode.title}</h1>
+              <h1 className="text-2xl font-bold">{game.problem.title}</h1>
               <div className="flex items-center gap-4 mt-2">
                 <LanguageSelector
                   selectedLanguage={selectedLanguage}
@@ -123,11 +123,11 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
               <div className="flex-1 min-h-0 overflow-auto">
                 <ProblemDetailsPane
                   isExpanded={isDescriptionExpanded}
-                  title={game.leetcode.title}
-                  description={game.leetcode.description}
-                  examples={game.leetcode.examples}
-                  constraints={game.leetcode.constraints}
-                  testCases={game.leetcode.test_cases}
+                  title={game.problem.title}
+                  description={game.problem.description}
+                  examples={game.problem.examples}
+                  constraints={game.problem.constraints}
+                  testCases={game.problem.test_cases}
                   onToggle={handleToggleDescription}
                 />
               </div>
@@ -136,7 +136,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                 <div className="mt-3">
                   <TestCaseDisplay
                     submissionProgress={submissionProgress}
-                    testCases={game.leetcode.test_cases}
+                    testCases={game.problem.test_cases}
                     compact
                   />
                 </div>
@@ -145,7 +145,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
 
             {/* Editor Panes */}
             <div className="flex-1 ml-4">
-              <LeetCodeEditorSplit
+              <ProblemEditorSplit
                 myCode={myCode}
                 opponentCode={opponentCode}
                 opponentName={opponentName}
@@ -181,11 +181,11 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
             theme={theme}
             maximizedEditor={isSinglePlayerMode ? null : maximizedEditor}
             isDescriptionExpanded={isDescriptionExpanded}
-            problemTitle={game.leetcode.title}
-            problemDescription={game.leetcode.description}
-            problemExamples={game.leetcode.examples}
-            problemConstraints={game.leetcode.constraints}
-            problemTestCases={game.leetcode.test_cases}
+            problemTitle={game.problem.title}
+            problemDescription={game.problem.description}
+            problemExamples={game.problem.examples}
+            problemConstraints={game.problem.constraints}
+            problemTestCases={game.problem.test_cases}
             onCodeChange={onCodeChange}
             onMaximizeToggle={
               isSinglePlayerMode ? () => {} : handleMaximizeToggle

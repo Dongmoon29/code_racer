@@ -70,7 +70,7 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
                 <span className="text-sm">
                   {game.mode.replace('_', ' ').toUpperCase()}
                 </span>
-                <DifficultyBadge difficulty={game.leetcode.difficulty} />
+                <DifficultyBadge difficulty={game.problem.difficulty} />
               </div>
               <div className="flex items-center space-x-2">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -80,7 +80,7 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
 
             <div className="mb-2 flex gap-2 items-center ">
               <Clock className="w-4 h-4" />
-              <h4 className="font-medium text-sm">{game.leetcode.title}</h4>
+              <h4 className="font-medium text-sm">{game.problem.title}</h4>
             </div>
 
             <div className="flex items-center justify-between text-sm">

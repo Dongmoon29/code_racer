@@ -12,7 +12,7 @@ type Wrapper struct{}
 
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
-func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.LeetCode) (string, error) {
+func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
 	// Parse user imports
 	importParser := parser.NewImportParser()
 	importInfo := importParser.ParseImports(code, 71) // Python language ID
@@ -46,7 +46,7 @@ if __name__ == "__main__":
 	return fmt.Sprintf(template, importsSection, importInfo.Code, testCasesJSON, problem.FunctionName), nil
 }
 
-func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.LeetCode) string {
+func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
 	// Parse user imports
 	importParser := parser.NewImportParser()
 	importInfo := importParser.ParseImports(code, 71) // Python language ID

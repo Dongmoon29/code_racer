@@ -16,7 +16,7 @@ export interface ApiResponse<T = unknown> {
   data?: T;
   game?: {
     id: string;
-    leetcode: {
+    problem: {
       id: string;
       title: string;
       difficulty: string;
@@ -29,10 +29,18 @@ export interface ApiResponse<T = unknown> {
   is_winner?: boolean;
 }
 
-// LeetCode 관련 타입
+// Problem 관련 타입
+export interface Example {
+  id: string;
+  problem_id: string;
+  input: string;
+  output: string;
+  explanation: string;
+}
+
 export interface TestCase {
-  input: (string | number | boolean)[];
-  output: string | number | boolean;
+  input: string;
+  expected_output: string;
 }
 
 export interface IOSchema {
@@ -40,32 +48,35 @@ export interface IOSchema {
   return_type: string;
 }
 
-export interface CreateLeetCodeRequest {
+export interface IOTemplate {
+  id: string;
+  problem_id: string;
+  language: string;
+  code: string;
+}
+
+export interface CreateProblemRequest {
   title: string;
   description: string;
-  examples: string;
+  examples: Example[];
   constraints: string;
   test_cases: TestCase[];
-  expected_outputs: string;
+  expected_outputs: string[];
   difficulty: 'Easy' | 'Medium' | 'Hard';
   input_format: string;
   output_format: string;
   function_name: string;
   io_schema: IOSchema;
-  javascript_template: string;
-  python_template: string;
-  go_template: string;
-  java_template: string;
-  cpp_template: string;
+  io_templates: IOTemplate[];
   time_limit?: number;
   memory_limit?: number;
 }
 
-export interface UpdateLeetCodeRequest extends Partial<CreateLeetCodeRequest> {
+export interface UpdateProblemRequest extends Partial<CreateProblemRequest> {
   id: string;
 }
 
-export interface LeetCodeSummary {
+export interface ProblemSummary {
   id: string;
   title: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
@@ -73,43 +84,35 @@ export interface LeetCodeSummary {
   updated_at: string;
 }
 
-export interface LeetCodeDetail extends LeetCodeSummary {
+export interface ProblemDetail extends ProblemSummary {
   description: string;
-  examples: string;
+  examples: Example[];
   constraints: string;
   test_cases: TestCase[];
-  expected_outputs: string;
+  expected_outputs: string[];
   input_format: string;
   output_format: string;
   function_name: string;
   io_schema: IOSchema;
-  javascript_template: string;
-  python_template: string;
-  go_template: string;
-  java_template: string;
-  cpp_template: string;
+  io_templates: IOTemplate[];
   time_limit: number;
   memory_limit: number;
 }
 
-export interface LeetCodeFormData {
+export interface ProblemFormData {
   id?: string;
   title: string;
   description: string;
-  examples: string;
+  examples: Example[];
   constraints: string;
   test_cases: TestCase[];
-  expected_outputs: string;
+  expected_outputs: string[];
   difficulty: 'Easy' | 'Medium' | 'Hard';
   input_format: string;
   output_format: string;
   function_name: string;
   io_schema: IOSchema;
-  javascript_template: string;
-  python_template: string;
-  go_template: string;
-  java_template: string;
-  cpp_template: string;
+  io_templates: IOTemplate[];
   time_limit: number;
   memory_limit: number;
   created_at?: string;
@@ -133,7 +136,7 @@ export interface GameState {
   id: string;
   status: 'waiting' | 'playing' | 'finished' | 'closed';
   players: Player[];
-  problem: LeetCodeDetail;
+  problem: ProblemDetail;
   start_time?: string;
   time_limit: number;
 }
@@ -196,7 +199,7 @@ export interface Game {
     name: string;
     created_at: string;
   };
-  leetcode: LeetCodeDetail;
+  problem: ProblemDetail;
   status: 'waiting' | 'playing' | 'finished' | 'closed';
   mode: 'ranked_pvp' | 'casual_pvp' | 'single';
   started_at?: string;
@@ -216,7 +219,6 @@ export interface SubmitResult {
   is_winner: boolean;
 }
 
-// 사용자 통계 타입
 export interface Contributor {
   login: string;
   avatar_url: string;

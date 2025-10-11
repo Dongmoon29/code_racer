@@ -36,8 +36,8 @@ export const DifficultySelector = dynamic(
 );
 
 // Admin components
-export const LeetCodeForm = dynamic(
-  () => import('@/components/admin/LeetCodeForm'),
+export const ProblemForm = dynamic(
+  () => import('@/components/admin/ProblemForm'),
   {
     loading: () => (
       <div className="flex items-center justify-center h-screen">
@@ -48,8 +48,8 @@ export const LeetCodeForm = dynamic(
   }
 );
 
-export const LeetCodeList = dynamic(
-  () => import('@/components/admin/LeetCodeList'),
+export const ProblemList = dynamic(
+  () => import('@/components/admin/ProblemList'),
   {
     loading: () => (
       <div className="flex items-center justify-center h-screen">

@@ -16,67 +16,67 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockLeetCodeService는 테스트를 위한 LeetCodeService 모의 객체
-type MockLeetCodeService struct {
+// MockProblemService is a mock object for ProblemService for testing
+type MockProblemService struct {
 	mock.Mock
 }
 
-func (m *MockLeetCodeService) GetAllProblems() ([]*model.LeetCodeSummary, error) {
+func (m *MockProblemService) GetAllProblems() ([]*model.ProblemSummary, error) {
 	args := m.Called()
-	return args.Get(0).([]*model.LeetCodeSummary), args.Error(1)
+	return args.Get(0).([]*model.ProblemSummary), args.Error(1)
 }
 
-func (m *MockLeetCodeService) GetProblemByID(id uuid.UUID) (*model.LeetCodeDetail, error) {
+func (m *MockProblemService) GetProblemByID(id uuid.UUID) (*model.ProblemDetail, error) {
 	args := m.Called(id)
-	return args.Get(0).(*model.LeetCodeDetail), args.Error(1)
+	return args.Get(0).(*model.ProblemDetail), args.Error(1)
 }
 
-func (m *MockLeetCodeService) CreateProblem(req *model.CreateLeetCodeRequest) (*model.LeetCodeDetail, error) {
+func (m *MockProblemService) CreateProblem(req *model.CreateProblemRequest) (*model.ProblemDetail, error) {
 	args := m.Called(req)
-	return args.Get(0).(*model.LeetCodeDetail), args.Error(1)
+	return args.Get(0).(*model.ProblemDetail), args.Error(1)
 }
 
-func (m *MockLeetCodeService) UpdateProblem(id uuid.UUID, req *model.UpdateLeetCodeRequest) (*model.LeetCodeDetail, error) {
+func (m *MockProblemService) UpdateProblem(id uuid.UUID, req *model.UpdateProblemRequest) (*model.ProblemDetail, error) {
 	args := m.Called(id, req)
-	return args.Get(0).(*model.LeetCodeDetail), args.Error(1)
+	return args.Get(0).(*model.ProblemDetail), args.Error(1)
 }
 
-func (m *MockLeetCodeService) DeleteProblem(id uuid.UUID) error {
+func (m *MockProblemService) DeleteProblem(id uuid.UUID) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
 
-func (m *MockLeetCodeService) GetProblemsByDifficulty(difficulty string) ([]*model.LeetCodeSummary, error) {
+func (m *MockProblemService) GetProblemsByDifficulty(difficulty string) ([]*model.ProblemSummary, error) {
 	args := m.Called(difficulty)
-	return args.Get(0).([]*model.LeetCodeSummary), args.Error(1)
+	return args.Get(0).([]*model.ProblemSummary), args.Error(1)
 }
 
-func (m *MockLeetCodeService) SearchProblems(query string) ([]*model.LeetCodeSummary, error) {
+func (m *MockProblemService) SearchProblems(query string) ([]*model.ProblemSummary, error) {
 	args := m.Called(query)
-	return args.Get(0).([]*model.LeetCodeSummary), args.Error(1)
+	return args.Get(0).([]*model.ProblemSummary), args.Error(1)
 }
 
-func (m *MockLeetCodeService) ValidateTestCases(testCases model.TestCases, schema model.IOSchema) error {
+func (m *MockProblemService) ValidateTestCases(testCases []model.CreateTestCaseRequest, schema model.CreateIOSchemaRequest) error {
 	args := m.Called(testCases, schema)
 	return args.Error(0)
 }
 
-func setupLeetCodeControllerTest() (*gin.Engine, *MockLeetCodeService, *LeetCodeController) {
+func setupProblemControllerTest() (*gin.Engine, *MockProblemService, *ProblemController) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
-	mockService := &MockLeetCodeService{}
+	mockService := &MockProblemService{}
 	testLogger := logger.NewZerologLogger(zerolog.New(zerolog.NewConsoleWriter()).With().Caller().Logger())
-	controller := NewLeetCodeController(mockService, testLogger)
+	controller := NewProblemController(mockService, testLogger)
 
 	return router, mockService, controller
 }
 
-func TestLeetCodeController_GetAllProblems(t *testing.T) {
-	router, mockService, controller := setupLeetCodeControllerTest()
+func TestProblemController_GetAllProblems(t *testing.T) {
+	router, mockService, controller := setupProblemControllerTest()
 
 	// 테스트 데이터 준비
-	problems := []*model.LeetCodeSummary{
+	problems := []*model.ProblemSummary{
 		{
 			ID:         uuid.New(),
 			Title:      "Two Sum",
@@ -116,12 +116,12 @@ func TestLeetCodeController_GetAllProblems(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
-func TestLeetCodeController_GetProblemByID(t *testing.T) {
-	router, mockService, controller := setupLeetCodeControllerTest()
+func TestProblemController_GetProblemByID(t *testing.T) {
+	router, mockService, controller := setupProblemControllerTest()
 
 	// 테스트 데이터 준비
 	problemID := uuid.New()
-	problem := &model.LeetCodeDetail{
+	problem := &model.ProblemDetail{
 		ID:          problemID,
 		Title:       "Two Sum",
 		Difficulty:  model.DifficultyEasy,
@@ -154,42 +154,53 @@ func TestLeetCodeController_GetProblemByID(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
-func TestLeetCodeController_CreateProblem(t *testing.T) {
-	router, mockService, controller := setupLeetCodeControllerTest()
+func TestProblemController_CreateProblem(t *testing.T) {
+	router, mockService, controller := setupProblemControllerTest()
 
 	// 테스트 데이터 준비
-	createReq := &model.CreateLeetCodeRequest{
-		Title:              "New Problem",
-		Description:        "Problem description",
-		Examples:           "Example 1: ...",
-		Constraints:        "1 <= n <= 100",
-		Difficulty:         "Easy",
-		InputFormat:        "array",
-		OutputFormat:       "number",
-		FunctionName:       "solve",
-		JavaScriptTemplate: "function solve() {}",
-		PythonTemplate:     "def solve(): pass",
-		GoTemplate:         "func solve() {}",
-		JavaTemplate:       "public int solve() {}",
-		CPPTemplate:        "int solve() {}",
-		TestCases: model.TestCases{
+	createReq := &model.CreateProblemRequest{
+		Title:        "New Problem",
+		Description:  "Problem description",
+		Constraints:  "1 <= n <= 100",
+		Difficulty:   "Easy",
+		InputFormat:  "array",
+		OutputFormat: "number",
+		FunctionName: "solve",
+		TimeLimit:    1000,
+		MemoryLimit:  128,
+		Examples: []model.CreateExampleRequest{
 			{
-				Input:  []interface{}{1, 2, 3},
-				Output: 6,
+				Input:       "Example 1: ...",
+				Output:      "Expected output",
+				Explanation: "Explanation",
 			},
 		},
-		ExpectedOutputs: "6",
-		IOSchema:        model.IOSchema{ParamTypes: []string{"number", "number", "number"}, ReturnType: "number"},
+		TestCases: []model.CreateTestCaseRequest{
+			{
+				Input:          `[1, 2, 3]`,
+				ExpectedOutput: "6",
+			},
+		},
+		IOTemplates: []model.CreateIOTemplateRequest{
+			{
+				Language: "javascript",
+				Code:     "function solve() {}",
+			},
+		},
+		IOSchema: model.CreateIOSchemaRequest{
+			ParamTypes: []string{"number", "number", "number"},
+			ReturnType: "number",
+		},
 	}
 
-	createdProblem := &model.LeetCodeDetail{
+	createdProblem := &model.ProblemDetail{
 		ID:         uuid.New(),
 		Title:      "New Problem",
 		Difficulty: model.DifficultyEasy,
 	}
 
 	// 모의 서비스 설정 - 타입 검증을 완화하여 JSON 파싱 결과와 일치
-	mockService.On("CreateProblem", mock.AnythingOfType("*model.CreateLeetCodeRequest")).Return(createdProblem, nil)
+	mockService.On("CreateProblem", mock.AnythingOfType("*model.CreateProblemRequest")).Return(createdProblem, nil)
 
 	// 라우터 설정
 	router.POST("/problems", controller.CreateProblem)
@@ -216,31 +227,43 @@ func TestLeetCodeController_CreateProblem(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
-func TestLeetCodeController_CreateProblem_InvalidDifficulty(t *testing.T) {
-	router, _, controller := setupLeetCodeControllerTest()
+func TestProblemController_CreateProblem_InvalidDifficulty(t *testing.T) {
+	router, _, controller := setupProblemControllerTest()
 
 	// 잘못된 난이도로 요청 생성
-	createReq := &model.CreateLeetCodeRequest{
-		Title:              "New Problem",
-		Description:        "Problem description",
-		Examples:           "Example 1: ...",
-		Constraints:        "1 <= n <= 100",
-		Difficulty:         "Invalid", // 잘못된 난이도
-		InputFormat:        "array",
-		OutputFormat:       "number",
-		FunctionName:       "solve",
-		JavaScriptTemplate: "function solve() {}",
-		PythonTemplate:     "def solve(): pass",
-		GoTemplate:         "func solve() {}",
-		JavaTemplate:       "public int solve() {}",
-		CPPTemplate:        "int solve() {}",
-		TestCases: model.TestCases{
+	createReq := &model.CreateProblemRequest{
+		Title:        "New Problem",
+		Description:  "Problem description",
+		Constraints:  "1 <= n <= 100",
+		Difficulty:   "Invalid", // 잘못된 난이도
+		InputFormat:  "array",
+		OutputFormat: "number",
+		FunctionName: "solve",
+		TimeLimit:    1000,
+		MemoryLimit:  128,
+		Examples: []model.CreateExampleRequest{
 			{
-				Input:  []interface{}{1, 2, 3},
-				Output: 6,
+				Input:       "Example 1: ...",
+				Output:      "Expected output",
+				Explanation: "Explanation",
 			},
 		},
-		ExpectedOutputs: "6",
+		TestCases: []model.CreateTestCaseRequest{
+			{
+				Input:          `[1, 2, 3]`,
+				ExpectedOutput: "6",
+			},
+		},
+		IOTemplates: []model.CreateIOTemplateRequest{
+			{
+				Language: "javascript",
+				Code:     "function solve() {}",
+			},
+		},
+		IOSchema: model.CreateIOSchemaRequest{
+			ParamTypes: []string{"number", "number", "number"},
+			ReturnType: "number",
+		},
 	}
 
 	// 라우터 설정
@@ -264,43 +287,54 @@ func TestLeetCodeController_CreateProblem_InvalidDifficulty(t *testing.T) {
 	assert.False(t, response["success"].(bool))
 }
 
-func TestLeetCodeController_UpdateProblem(t *testing.T) {
-	router, mockService, controller := setupLeetCodeControllerTest()
+func TestProblemController_UpdateProblem(t *testing.T) {
+	router, mockService, controller := setupProblemControllerTest()
 
 	// 테스트 데이터 준비
 	problemID := uuid.New()
-	updateReq := &model.UpdateLeetCodeRequest{
-		Title:              "Updated Problem",
-		Description:        "Updated description",
-		Examples:           "Updated examples",
-		Constraints:        "1 <= n <= 1000",
-		Difficulty:         "Medium",
-		InputFormat:        "array",
-		OutputFormat:       "number",
-		FunctionName:       "solve",
-		JavaScriptTemplate: "function solve() {}",
-		PythonTemplate:     "def solve(): pass",
-		GoTemplate:         "func solve() {}",
-		JavaTemplate:       "public int solve() {}",
-		CPPTemplate:        "int solve() {}",
-		TestCases: model.TestCases{
+	updateReq := &model.UpdateProblemRequest{
+		Title:        "Updated Problem",
+		Description:  "Updated description",
+		Constraints:  "1 <= n <= 1000",
+		Difficulty:   "Medium",
+		InputFormat:  "array",
+		OutputFormat: "number",
+		FunctionName: "solve",
+		TimeLimit:    1000,
+		MemoryLimit:  128,
+		Examples: []model.CreateExampleRequest{
 			{
-				Input:  []interface{}{1, 2, 3, 4},
-				Output: 10,
+				Input:       "Updated example",
+				Output:      "Updated output",
+				Explanation: "Updated explanation",
 			},
 		},
-		ExpectedOutputs: "10",
-		IOSchema:        model.IOSchema{ParamTypes: []string{"number", "number", "number", "number"}, ReturnType: "number"},
+		TestCases: []model.CreateTestCaseRequest{
+			{
+				Input:          `[1, 2, 3, 4]`,
+				ExpectedOutput: "10",
+			},
+		},
+		IOTemplates: []model.CreateIOTemplateRequest{
+			{
+				Language: "javascript",
+				Code:     "function solve() {}",
+			},
+		},
+		IOSchema: model.CreateIOSchemaRequest{
+			ParamTypes: []string{"number", "number", "number", "number"},
+			ReturnType: "number",
+		},
 	}
 
-	updatedProblem := &model.LeetCodeDetail{
+	updatedProblem := &model.ProblemDetail{
 		ID:         problemID,
 		Title:      "Updated Problem",
 		Difficulty: model.DifficultyMedium,
 	}
 
 	// 모의 서비스 설정 - 타입 검증을 완화하여 JSON 파싱 결과와 일치
-	mockService.On("UpdateProblem", problemID, mock.AnythingOfType("*model.UpdateLeetCodeRequest")).Return(updatedProblem, nil)
+	mockService.On("UpdateProblem", problemID, mock.AnythingOfType("*model.UpdateProblemRequest")).Return(updatedProblem, nil)
 
 	// 라우터 설정
 	router.PUT("/problems/:id", controller.UpdateProblem)
@@ -327,8 +361,8 @@ func TestLeetCodeController_UpdateProblem(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
-func TestLeetCodeController_DeleteProblem(t *testing.T) {
-	router, mockService, controller := setupLeetCodeControllerTest()
+func TestProblemController_DeleteProblem(t *testing.T) {
+	router, mockService, controller := setupProblemControllerTest()
 
 	// 테스트 데이터 준비
 	problemID := uuid.New()
@@ -358,11 +392,11 @@ func TestLeetCodeController_DeleteProblem(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
-func TestLeetCodeController_GetProblemsByDifficulty(t *testing.T) {
-	router, mockService, controller := setupLeetCodeControllerTest()
+func TestProblemController_GetProblemsByDifficulty(t *testing.T) {
+	router, mockService, controller := setupProblemControllerTest()
 
 	// 테스트 데이터 준비
-	problems := []*model.LeetCodeSummary{
+	problems := []*model.ProblemSummary{
 		{
 			ID:         uuid.New(),
 			Title:      "Easy Problem 1",
@@ -400,11 +434,11 @@ func TestLeetCodeController_GetProblemsByDifficulty(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
-func TestLeetCodeController_SearchProblems(t *testing.T) {
-	router, mockService, controller := setupLeetCodeControllerTest()
+func TestProblemController_SearchProblems(t *testing.T) {
+	router, mockService, controller := setupProblemControllerTest()
 
 	// 테스트 데이터 준비
-	problems := []*model.LeetCodeSummary{
+	problems := []*model.ProblemSummary{
 		{
 			ID:         uuid.New(),
 			Title:      "Two Sum Problem",
@@ -437,11 +471,11 @@ func TestLeetCodeController_SearchProblems(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
-func TestLeetCodeController_GetProblemsWithPagination(t *testing.T) {
-	router, mockService, controller := setupLeetCodeControllerTest()
+func TestProblemController_GetProblemsWithPagination(t *testing.T) {
+	router, mockService, controller := setupProblemControllerTest()
 
 	// 테스트 데이터 준비
-	problems := []*model.LeetCodeSummary{
+	problems := []*model.ProblemSummary{
 		{
 			ID:         uuid.New(),
 			Title:      "Problem 1",

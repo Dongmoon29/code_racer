@@ -19,7 +19,7 @@ export const ROUTES = {
 
   // Admin routes
   ADMIN: '/admin',
-  ADMIN_LEETCODE: '/admin/leetcode',
+  ADMIN_PROBLEMS: '/admin/problems',
   ADMIN_USERS: '/admin/users',
 
   // API routes (for reference)
@@ -37,12 +37,12 @@ export const ROUTES = {
       CREATE: '/api/games/create',
       GET: (gameId: string) => `/api/games/${gameId}`,
     },
-    LEETCODE: {
-      LIST: '/api/leetcode',
-      CREATE: '/api/leetcode',
-      GET: (id: string) => `/api/leetcode/${id}`,
-      UPDATE: (id: string) => `/api/leetcode/${id}`,
-      DELETE: (id: string) => `/api/leetcode/${id}`,
+    PROBLEMS: {
+      LIST: '/api/problems',
+      CREATE: '/api/problems',
+      GET: (id: string) => `/api/problems/${id}`,
+      UPDATE: (id: string) => `/api/problems/${id}`,
+      DELETE: (id: string) => `/api/problems/${id}`,
     },
   },
 } as const;
@@ -111,8 +111,8 @@ export class RouterHelper {
     return this.push(ROUTES.ADMIN);
   }
 
-  goToAdminLeetCode() {
-    return this.push(ROUTES.ADMIN_LEETCODE);
+  goToAdminProblems() {
+    return this.push(ROUTES.ADMIN_PROBLEMS);
   }
 
   goToAdminUsers() {
@@ -161,7 +161,7 @@ export class RouterHelper {
     return uuidRegex.test(gameId);
   }
 
-  isValidLeetCodeId(id: string): boolean {
+  isValidProblemId(id: string): boolean {
     // Check if it's a valid UUID or numeric ID
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -188,7 +188,7 @@ export const validateRoute = {
     return uuidRegex.test(gameId);
   },
 
-  leetCodeId: (id: string): boolean => {
+  problemId: (id: string): boolean => {
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     const numericRegex = /^\d+$/;
@@ -205,11 +205,11 @@ export const buildRoute = {
     return ROUTES.GAME_ROOM(gameId);
   },
 
-  leetCodeDetail: (id: string) => {
-    if (!validateRoute.leetCodeId(id)) {
-      throw new Error(`Invalid LeetCode ID: ${id}`);
+  problemDetail: (id: string) => {
+    if (!validateRoute.problemId(id)) {
+      throw new Error(`Invalid Problem ID: ${id}`);
     }
-    return `/leetcode/${id}`;
+    return `/problems/${id}`;
   },
 };
 

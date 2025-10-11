@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/Dongmoon29/code_racer/docs" // Import docs for swagger
 	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/controller"
 	"github.com/Dongmoon29/code_racer/internal/events"
@@ -90,7 +89,7 @@ func main() {
 		deps.authController,
 		deps.matchController,
 		deps.userController,
-		deps.leetcodeController,
+		deps.problemController,
 		deps.wsController,
 		deps.authMiddleware,
 		cfg,
@@ -101,12 +100,12 @@ func main() {
 }
 
 type dependencies struct {
-	authController     *controller.AuthController
-	matchController    *controller.MatchController
-	userController     *controller.UserController
-	leetcodeController *controller.LeetCodeController
-	wsController       *controller.WebSocketController
-	authMiddleware     *middleware.AuthMiddleware
+	authController    *controller.AuthController
+	matchController   *controller.MatchController
+	userController    *controller.UserController
+	problemController *controller.ProblemController
+	wsController      *controller.WebSocketController
+	authMiddleware    *middleware.AuthMiddleware
 }
 
 func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *dependencies {
@@ -116,12 +115,12 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 	middleware := initializeMiddleware(services, repositories, appLogger)
 
 	return &dependencies{
-		authController:     controllers.authController,
-		matchController:    controllers.matchController,
-		userController:     controllers.userController,
-		leetcodeController: controllers.leetcodeController,
-		wsController:       controllers.wsController,
-		authMiddleware:     middleware.authMiddleware,
+		authController:    controllers.authController,
+		matchController:   controllers.matchController,
+		userController:    controllers.userController,
+		problemController: controllers.problemController,
+		wsController:      controllers.wsController,
+		authMiddleware:    middleware.authMiddleware,
 	}
 }
 
@@ -130,7 +129,7 @@ func initializeRepositories(db *gorm.DB, appLogger logger.Logger) *repositories 
 	return &repositories{
 		userRepository:  repository.NewUserRepository(db, appLogger),
 		matchRepository: repository.NewMatchRepository(db, appLogger),
-		leetCodeRepo:    repository.NewLeetCodeRepository(db, appLogger),
+		problemRepo:     repository.NewProblemRepository(db, appLogger),
 	}
 }
 
@@ -146,7 +145,7 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger, eventBus)
 
 	// Create MatchService without WebSocket dependency
-	matchService := service.NewMatchService(repos.matchRepository, repos.leetCodeRepo, rdb, judgeService, repos.userRepository, appLogger, nil, eventBus)
+	matchService := service.NewMatchService(repos.matchRepository, repos.problemRepo, rdb, judgeService, repos.userRepository, appLogger, nil, eventBus)
 
 	// Initialize Matchmaking and WebSocket services
 	matchmakingService := service.NewMatchmakingService(matchService, rdb, appLogger, eventBus)
@@ -156,7 +155,7 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 	wsHub := wsService.InitHub()
 	go wsHub.Run()
 
-	leetCodeService := service.NewLeetCodeService(repos.leetCodeRepo, appLogger)
+	problemService := service.NewProblemService(repos.problemRepo, appLogger)
 
 	return &services{
 		authService:        authService,
@@ -165,7 +164,7 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 		matchService:       matchService,
 		matchmakingService: matchmakingService,
 		wsService:          wsService,
-		leetCodeService:    leetCodeService,
+		problemService:     problemService,
 	}
 }
 
@@ -179,11 +178,11 @@ func initializeControllers(services *services, appLogger logger.Logger) *control
 	oauthConfigProvider := controller.NewOAuthConfigProvider()
 
 	return &controllers{
-		authController:     controller.NewAuthController(services.authService, appLogger, oauthConfigProvider),
-		matchController:    controller.NewMatchController(services.matchService, appLogger),
-		userController:     controller.NewUserController(services.userService, appLogger),
-		leetcodeController: controller.NewLeetCodeController(services.leetCodeService, appLogger),
-		wsController:       controller.NewWebSocketController(services.wsService, appLogger, allowedOrigins, environment),
+		authController:    controller.NewAuthController(services.authService, appLogger, oauthConfigProvider),
+		matchController:   controller.NewMatchController(services.matchService, appLogger),
+		userController:    controller.NewUserController(services.userService, appLogger),
+		problemController: controller.NewProblemController(services.problemService, appLogger),
+		wsController:      controller.NewWebSocketController(services.wsService, appLogger, allowedOrigins, environment),
 	}
 }
 
@@ -239,7 +238,7 @@ func initializeMiddleware(services *services, repos *repositories, appLogger log
 type repositories struct {
 	userRepository  interfaces.UserRepository
 	matchRepository repository.MatchRepository
-	leetCodeRepo    repository.LeetCodeRepository
+	problemRepo     repository.ProblemRepository
 }
 
 type services struct {
@@ -249,15 +248,15 @@ type services struct {
 	matchService       service.MatchService
 	matchmakingService service.MatchmakingService
 	wsService          service.WebSocketService
-	leetCodeService    service.LeetCodeService
+	problemService     service.ProblemService
 }
 
 type controllers struct {
-	authController     *controller.AuthController
-	matchController    *controller.MatchController
-	userController     *controller.UserController
-	leetcodeController *controller.LeetCodeController
-	wsController       *controller.WebSocketController
+	authController    *controller.AuthController
+	matchController   *controller.MatchController
+	userController    *controller.UserController
+	problemController *controller.ProblemController
+	wsController      *controller.WebSocketController
 }
 
 type middlewareInstances struct {

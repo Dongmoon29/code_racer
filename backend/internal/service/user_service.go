@@ -76,11 +76,11 @@ func (s *userService) GetRecentGames(userID uuid.UUID, limit int) ([]model.Recen
 			EndedAt:   m.EndedAt,
 			CreatedAt: m.CreatedAt,
 		}
-		g.LeetCode = struct {
+		g.Problem = struct {
 			ID         uuid.UUID `json:"id"`
 			Title      string    `json:"title"`
 			Difficulty string    `json:"difficulty"`
-		}{ID: m.LeetCode.ID, Title: m.LeetCode.Title, Difficulty: m.LeetCode.Difficulty}
+		}{ID: m.Problem.ID, Title: m.Problem.Title, Difficulty: string(m.Problem.Difficulty)}
 		g.PlayerA = struct {
 			ID   uuid.UUID `json:"id"`
 			Name string    `json:"name"`

@@ -1,10 +1,10 @@
 import React, { memo, useState, FC } from 'react';
 import CodeEditor from './CodeEditor';
 import { getCodeTemplate } from '@/lib/api';
-import { LeetCodeDetail } from '@/types';
+import { ProblemDetail } from '@/types';
 
 interface ProblemPageProps {
-  problem: LeetCodeDetail;
+  problem: ProblemDetail;
 }
 
 const ProblemPage: FC<ProblemPageProps> = memo(({ problem }) => {

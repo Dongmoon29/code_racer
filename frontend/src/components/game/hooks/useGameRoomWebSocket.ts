@@ -58,12 +58,12 @@ export const useGameRoomWebSocket = ({
 
   // Template setup
   useEffect(() => {
-    if (game?.leetcode && !isTemplateSet.current && !myCode) {
-      const template = getCodeTemplate(game.leetcode, selectedLanguage);
+    if (game?.problem && !isTemplateSet.current && !myCode) {
+      const template = getCodeTemplate(game.problem, selectedLanguage);
       setMyCode(template);
       isTemplateSet.current = true;
     }
-  }, [game?.leetcode, isTemplateSet, myCode, selectedLanguage, setMyCode]);
+  }, [game?.problem, isTemplateSet, myCode, selectedLanguage, setMyCode]);
 
   // Message type handlers
   const handleCodeUpdate = useCallback(
@@ -87,11 +87,11 @@ export const useGameRoomWebSocket = ({
       setSubmissionProgress({
         isSubmitting: true,
         totalTestCases:
-          message.total_test_cases || game?.leetcode?.test_cases?.length || 0,
+          message.total_test_cases || game?.problem?.test_cases?.length || 0,
         completedTestCases: 0,
         testCaseResults: Array.from({
           length:
-            message.total_test_cases || game?.leetcode?.test_cases?.length || 0,
+            message.total_test_cases || game?.problem?.test_cases?.length || 0,
         }).map((_, i) => ({
           index: i,
           input: undefined,
@@ -105,7 +105,7 @@ export const useGameRoomWebSocket = ({
       currentUser?.id,
       setIsSubmitting,
       setSubmissionProgress,
-      game?.leetcode?.test_cases?.length,
+      game?.problem?.test_cases?.length,
     ]
   );
 
@@ -373,8 +373,8 @@ export const useGameRoomWebSocket = ({
       setSubmitResult(null);
       setSelectedLanguage(newLanguage);
 
-      if (game?.leetcode) {
-        const template = getCodeTemplate(game.leetcode, newLanguage);
+      if (game?.problem) {
+        const template = getCodeTemplate(game.problem, newLanguage);
         setMyCode(template);
 
         if (wsRef.current) {
@@ -383,7 +383,7 @@ export const useGameRoomWebSocket = ({
       }
     },
     [
-      game?.leetcode,
+      game?.problem,
       setMyCode,
       setIsSubmitting,
       setSubmitResult,

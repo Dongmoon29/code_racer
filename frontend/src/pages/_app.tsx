@@ -28,7 +28,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     if (!path.startsWith('/admin')) return 'CRAdmin';
     if (path === '/admin') return 'CRAdmin | Overview';
     if (path.startsWith('/admin/users')) return 'CRAdmin | Users';
-    if (path.startsWith('/admin/leetcode')) return 'CRAdmin | LeetCode';
+    if (path.startsWith('/admin/problems')) return 'CRAdmin | Problems';
     return 'CRAdmin';
   })();
 

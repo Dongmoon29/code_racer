@@ -5,11 +5,17 @@ interface ProblemDetailsPaneProps {
   isExpanded: boolean;
   title: string;
   description: string;
-  examples: string;
+  examples: Array<{
+    id: string;
+    problem_id: string;
+    input: string;
+    output: string;
+    explanation: string;
+  }>;
   constraints: string;
   testCases?: Array<{
-    input: (string | number | boolean)[];
-    output: string | number | boolean;
+    input: string;
+    expected_output: string;
   }>;
   onToggle: () => void;
 }
@@ -51,9 +57,36 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
             </div>
             <div>
               <h3 className="text-lg font-medium mb-2">Examples</h3>
-              <pre className="p-3 rounded whitespace-pre-wrap text-xs font-medium">
-                {examples}
-              </pre>
+              {examples && examples.length > 0 ? (
+                <div className="space-y-3">
+                  {examples.map((example, index) => (
+                    <div
+                      key={example.id || index}
+                      className="p-3 rounded text-xs"
+                    >
+                      <div className="font-medium mb-1">
+                        Example {index + 1}:
+                      </div>
+                      <div className="mb-1">
+                        <span className="font-medium">Input:</span>{' '}
+                        {example.input}
+                      </div>
+                      <div className="mb-1">
+                        <span className="font-medium">Output:</span>{' '}
+                        {example.output}
+                      </div>
+                      {example.explanation && (
+                        <div>
+                          <span className="font-medium">Explanation:</span>{' '}
+                          {example.explanation}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-3 rounded text-xs">No examples available</div>
+              )}
             </div>
             <div>
               <h3 className="text-lg font-medium mb-2">Constraints</h3>
@@ -88,7 +121,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
                       <div>
                         <span className="font-medium">Expected Output: </span>
                         <code className="px-2 py-1 rounded bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
-                          {JSON.stringify(testCase.output)}
+                          {JSON.stringify(testCase.expected_output)}
                         </code>
                       </div>
                     </div>

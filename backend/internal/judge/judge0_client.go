@@ -14,7 +14,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/types"
 )
 
-// Judge0Client는 Judge0 API와의 통신을 담당하는 개선된 클라이언트입니다
+// Judge0Client is an improved client responsible for communication with Judge0 API
 type Judge0Client struct {
 	apiKey      string
 	apiEndpoint string
@@ -23,7 +23,7 @@ type Judge0Client struct {
 	mutex       sync.RWMutex
 }
 
-// RateLimiter는 API 호출 제한을 관리합니다
+// RateLimiter manages API call rate limiting
 type RateLimiter struct {
 	tokens chan struct{}
 	ticker *time.Ticker
@@ -64,7 +64,7 @@ func (rl *RateLimiter) Close() {
 	rl.ticker.Stop()
 }
 
-// Judge0Config는 Judge0 클라이언트 설정을 담습니다
+// Judge0Config holds Judge0 client configuration
 type Judge0Config struct {
 	APIKey      string
 	APIEndpoint string
@@ -100,7 +100,7 @@ func NewJudge0Client(config *Judge0Config) *Judge0Client {
 	}
 }
 
-// SubmitCode Judge0 API에 코드를 제출하고 결과를 반환합니다 (개선된 버전)
+// SubmitCode submits code to Judge0 API and returns results (improved version)
 func (c *Judge0Client) SubmitCode(ctx context.Context, req types.Judge0Request) (*types.Judge0Response, error) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
@@ -159,13 +159,13 @@ func (c *Judge0Client) validateRequest(req types.Judge0Request) error {
 
 // executeRequest executes a single Judge0 API request
 func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Request) (*types.Judge0Response, error) {
-	// 요청 데이터 직렬화
+	// Serialize request data
 	reqBody, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// API 요청 생성
+	// Create API request
 	request, err := http.NewRequestWithContext(
 		ctx,
 		"POST",
@@ -176,7 +176,7 @@ func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Reque
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// 헤더 설정
+	// Set headers
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("X-RapidAPI-Key", c.apiKey)
 	if parsed, perr := url.Parse(c.apiEndpoint); perr == nil {
@@ -185,25 +185,25 @@ func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Reque
 		}
 	}
 
-	// API 요청 실행
+	// Execute API request
 	resp, err := c.httpClient.Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// 응답 바디 읽기
+	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	// 응답 상태 코드 확인
+	// Check response status code
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("judge0 API error (status %d): %s", resp.StatusCode, string(body))
 	}
 
-	// 응답 파싱
+	// Parse response
 	var result types.Judge0Response
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)

@@ -1,18 +1,18 @@
 import { useState, useCallback, useRef } from 'react';
 
-interface UseLeetCodeResizeProps {
+interface UseProblemResizeProps {
   initialSizes: number[];
   onSizesChange: (sizes: number[]) => void;
   minSize?: number;
   maxSize?: number;
 }
 
-export const useLeetCodeResize = ({
+export const useProblemResize = ({
   initialSizes,
   onSizesChange,
   minSize = 20,
   maxSize = 80,
-}: UseLeetCodeResizeProps) => {
+}: UseProblemResizeProps) => {
   const [sizes, setSizes] = useState<number[]>(initialSizes);
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

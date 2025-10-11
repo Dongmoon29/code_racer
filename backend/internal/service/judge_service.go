@@ -55,7 +55,7 @@ func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger, ev
 	}
 }
 
-func (s *judgeService) EvaluateCode(code string, language string, problem *model.LeetCode) (*types.EvaluationResult, error) {
+func (s *judgeService) EvaluateCode(code string, language string, problem *model.Problem) (*types.EvaluationResult, error) {
 	if err := s.ensureFunctionNameMatches(code, language, problem.FunctionName); err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 }
 
 // logEvaluationResult logs the evaluation result with detailed metrics
-func (s *judgeService) logEvaluationResult(evaluationResult *types.EvaluationResult, languageID int, problem *model.LeetCode, evaluationMode string) {
+func (s *judgeService) logEvaluationResult(evaluationResult *types.EvaluationResult, languageID int, problem *model.Problem, evaluationMode string) {
 	passedTestCount := s.countPassedTests(evaluationResult.TestResults)
 	compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB := s.deriveLimits(problem)
 
@@ -129,13 +129,19 @@ func (s *judgeService) ensureFunctionNameMatches(code string, language string, e
 }
 
 // tryBatchEvaluate attempts batch harness path; returns (result, usedBatch, error)
-func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *model.LeetCode) (*types.EvaluationResult, bool, error) {
+func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *model.Problem) (*types.EvaluationResult, bool, error) {
 	// build inputs
 	testCaseInputs := make([][]interface{}, 0, len(problem.TestCases))
 	expectedOutputs := make([]interface{}, 0, len(problem.TestCases))
 	for _, testCase := range problem.TestCases {
-		testCaseInputs = append(testCaseInputs, testCase.Input)
-		expectedOutputs = append(expectedOutputs, testCase.Output)
+		// Parse input JSON string to []interface{}
+		var input []interface{}
+		if err := json.Unmarshal([]byte(testCase.Input), &input); err != nil {
+			s.logger.Error().Err(err).Str("input", testCase.Input).Msg("Failed to parse test case input")
+			continue
+		}
+		testCaseInputs = append(testCaseInputs, input)
+		expectedOutputs = append(expectedOutputs, testCase.ExpectedOutput)
 	}
 	inputsJSON, _ := json.Marshal(testCaseInputs)
 
@@ -162,7 +168,7 @@ func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *mo
 	return evaluationResult, true, nil
 }
 
-func (s *judgeService) submitToJudge(ctx context.Context, wrappedCode string, languageID int, expectedOutputsJSON string, problem *model.LeetCode) (*types.Judge0Response, error) {
+func (s *judgeService) submitToJudge(ctx context.Context, wrappedCode string, languageID int, expectedOutputsJSON string, problem *model.Problem) (*types.Judge0Response, error) {
 	compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB := s.deriveLimits(problem)
 	judgeRequest := types.Judge0Request{
 		SourceCode:       wrappedCode,
@@ -192,7 +198,7 @@ func (s *judgeService) submitToJudge(ctx context.Context, wrappedCode string, la
 }
 
 // deriveLimits converts model constraints to Judge0 limits
-func (s *judgeService) deriveLimits(problem *model.LeetCode) (compileTimeout int, runTimeout int, memoryLimit int) {
+func (s *judgeService) deriveLimits(problem *model.Problem) (compileTimeout int, runTimeout int, memoryLimit int) {
 	// Assume model.TimeLimit is in milliseconds and MemoryLimit in MB
 	// Compile timeout: 2x runTimeout cap, runTimeout from TimeLimit
 	runTimeoutSeconds := problem.TimeLimit / judgeMillisecondsToSeconds
@@ -308,7 +314,7 @@ func (s *judgeService) checkAllTestsPassed(testResults []types.TestCaseResult) b
 	return true
 }
 
-func (s *judgeService) aggregatePerTest(code string, languageID int, problem *model.LeetCode) (*types.EvaluationResult, error) {
+func (s *judgeService) aggregatePerTest(code string, languageID int, problem *model.Problem) (*types.EvaluationResult, error) {
 	var testCaseResults []types.TestCaseResult
 	var totalExecutionTime float64
 	var totalMemoryUsage float64
@@ -336,7 +342,7 @@ func (s *judgeService) aggregatePerTest(code string, languageID int, problem *mo
 	}, nil
 }
 
-func (s *judgeService) WrapCodeWithTestCase(code string, languageID int, testCase string, problem *model.LeetCode) (string, error) {
+func (s *judgeService) WrapCodeWithTestCase(code string, languageID int, testCase string, problem *model.Problem) (string, error) {
 	return s.codeWrapper.WrapCode(code, languageID, testCase, problem)
 }
 
@@ -366,7 +372,7 @@ func (s *judgeService) evaluateTestCase(
 	code string,
 	languageID int,
 	testCase model.TestCase,
-	problem *model.LeetCode,
+	problem *model.Problem,
 	index int,
 ) *types.TestCaseResult {
 	s.logger.Debug().
@@ -389,27 +395,17 @@ func (s *judgeService) evaluateTestCase(
 	return s.evaluateSingleResponse(response, testCase, expectedStr, index)
 }
 
-func (s *judgeService) buildSingleWrappedCode(code string, languageID int, testCase model.TestCase, problem *model.LeetCode, index int) (string, string, *types.TestCaseResult) {
-	testCaseJSON, err := json.Marshal(testCase.Input)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to marshal test case input")
-		return "", "", &types.TestCaseResult{TestCaseIndex: index, Passed: false, ErrorMessage: fmt.Sprintf("Failed to marshal test case: %v", err)}
-	}
-	expectedJSON, err := json.Marshal(testCase.Output)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to marshal expected output")
-		return "", "", &types.TestCaseResult{TestCaseIndex: index, Passed: false, ErrorMessage: fmt.Sprintf("Failed to marshal expected output: %v", err)}
-	}
-	wrappedCode, err := s.codeWrapper.WrapCode(code, languageID, string(testCaseJSON), problem)
+func (s *judgeService) buildSingleWrappedCode(code string, languageID int, testCase model.TestCase, problem *model.Problem, index int) (string, string, *types.TestCaseResult) {
+	wrappedCode, err := s.codeWrapper.WrapCode(code, languageID, testCase.Input, problem)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to wrap code")
 		return "", "", &types.TestCaseResult{TestCaseIndex: index, Passed: false, ErrorMessage: fmt.Sprintf("Failed to wrap code: %v", err)}
 	}
 	s.logger.Debug().Int("testCaseIndex", index).Str("wrappedCode", wrappedCode).Msg("Code wrapped successfully")
-	return wrappedCode, string(expectedJSON), nil
+	return wrappedCode, testCase.ExpectedOutput, nil
 }
 
-func (s *judgeService) submitSingle(ctx context.Context, wrappedCode string, languageID int, expectedJSON string, index int, problem *model.LeetCode) (*types.Judge0Response, *types.TestCaseResult) {
+func (s *judgeService) submitSingle(ctx context.Context, wrappedCode string, languageID int, expectedJSON string, index int, problem *model.Problem) (*types.Judge0Response, *types.TestCaseResult) {
 	compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
 	request := types.Judge0Request{
 		SourceCode:       wrappedCode,
@@ -585,7 +581,7 @@ func mustJSON(v interface{}) []byte {
 }
 
 // EvaluateCodeWithRealtime Code evaluation with real-time notifications (hybrid: batch first, fallback to per-test)
-func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
+func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, problem *model.Problem, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
 	// 1. Submission start notification (including total test cases)
 	s.notifySubmissionStarted(matchID, userID, len(problem.TestCases))
 
@@ -658,7 +654,7 @@ func (s *judgeService) notifyTestCaseCompleted(matchID uuid.UUID, userID uuid.UU
 			UserID:        userID.String(),
 			TestCaseIndex: testCaseIndex,
 			Input:         testCase.Input,
-			Expected:      testCase.Output,
+			Expected:      testCase.ExpectedOutput,
 			Actual:        actualOutput,
 			Passed:        result.Passed,
 			ExecutionTime: result.ExecutionTime,
@@ -694,7 +690,7 @@ func (s *judgeService) notifySubmissionFailed(matchID uuid.UUID, userID uuid.UUI
 }
 
 // aggregatePerTestWithRealtime Individual evaluation with real-time notifications
-func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
+func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int, problem *model.Problem, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
 	var testCaseResults []types.TestCaseResult
 	var totalExecutionTime float64
 	var totalMemoryUsage float64
@@ -764,13 +760,19 @@ func (s *judgeService) sendJudge0QuotaError() {
 }
 
 // tryBatchEvaluateWithRealtime attempts batch evaluation with real-time notifications
-func (s *judgeService) tryBatchEvaluateWithRealtime(code string, languageID int, problem *model.LeetCode, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, bool, error) {
+func (s *judgeService) tryBatchEvaluateWithRealtime(code string, languageID int, problem *model.Problem, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, bool, error) {
 	// Build inputs for batch evaluation
 	testCaseInputs := make([][]interface{}, 0, len(problem.TestCases))
 	expectedOutputs := make([]interface{}, 0, len(problem.TestCases))
 	for _, testCase := range problem.TestCases {
-		testCaseInputs = append(testCaseInputs, testCase.Input)
-		expectedOutputs = append(expectedOutputs, testCase.Output)
+		// Parse input JSON string to []interface{}
+		var input []interface{}
+		if err := json.Unmarshal([]byte(testCase.Input), &input); err != nil {
+			s.logger.Error().Err(err).Str("input", testCase.Input).Msg("Failed to parse test case input")
+			continue
+		}
+		testCaseInputs = append(testCaseInputs, input)
+		expectedOutputs = append(expectedOutputs, testCase.ExpectedOutput)
 	}
 	inputsJSON, _ := json.Marshal(testCaseInputs)
 
@@ -802,7 +804,7 @@ func (s *judgeService) tryBatchEvaluateWithRealtime(code string, languageID int,
 }
 
 // notifyBatchResultsAsIndividual converts batch results to individual test case notifications
-func (s *judgeService) notifyBatchResultsAsIndividual(matchID uuid.UUID, userID uuid.UUID, result *types.EvaluationResult, problem *model.LeetCode) {
+func (s *judgeService) notifyBatchResultsAsIndividual(matchID uuid.UUID, userID uuid.UUID, result *types.EvaluationResult, problem *model.Problem) {
 	totalTestCases := len(result.TestResults)
 
 	// Simulate individual test case execution with small delays for UI feedback

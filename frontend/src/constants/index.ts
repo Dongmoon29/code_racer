@@ -115,7 +115,7 @@ export const HTTP_STATUS = {
 
 // Default values
 export const DEFAULT_VALUES = {
-  // LeetCode form
+  // Problem form
   TIME_LIMIT: 1000,
   MEMORY_LIMIT: 128,
 

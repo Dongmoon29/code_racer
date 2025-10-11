@@ -1,14 +1,15 @@
 package languages
 
 import (
-	"github.com/Dongmoon29/code_racer/internal/model"
 	"strings"
 	"testing"
+
+	"github.com/Dongmoon29/code_racer/internal/model"
 )
 
 func TestPyWrapper_WrapBatch(t *testing.T) {
 	w := NewPyWrapper()
-	prob := &model.LeetCode{FunctionName: "solution"}
+	prob := &model.Problem{FunctionName: "solution"}
 	code := "def solution(a,b):\n    return a+b"
 	cases := "[[1,2],[3,4]]"
 	out, err := w.WrapBatch(code, cases, prob)
@@ -24,7 +25,7 @@ func TestPyWrapper_WrapBatch(t *testing.T) {
 
 func TestPyWrapper_WrapSingle(t *testing.T) {
 	w := NewPyWrapper()
-	prob := &model.LeetCode{FunctionName: "solution"}
+	prob := &model.Problem{FunctionName: "solution"}
 	code := "def solution(a):\n    return a"
 	tc := "[1,2,3]"
 	out := w.WrapSingle(code, tc, prob)

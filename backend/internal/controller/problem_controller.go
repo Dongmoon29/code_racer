@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,29 +13,29 @@ import (
 	"github.com/google/uuid"
 )
 
-type LeetCodeController struct {
-	leetCodeService service.LeetCodeService
-	logger          logger.Logger
+type ProblemController struct {
+	problemService service.ProblemService
+	logger         logger.Logger
 }
 
-func NewLeetCodeController(leetCodeService service.LeetCodeService, logger logger.Logger) *LeetCodeController {
-	return &LeetCodeController{
-		leetCodeService: leetCodeService,
-		logger:          logger,
+func NewProblemController(problemService service.ProblemService, logger logger.Logger) *ProblemController {
+	return &ProblemController{
+		problemService: problemService,
+		logger:         logger,
 	}
 }
 
-// GetAllProblems godoc
-// @Summary      Get all LeetCode problems
-// @Description  Retrieve all LeetCode problems registered in the system
-// @Tags         leetcode
-// @Produce      json
-// @Security     Bearer
-// @Success      200 {object} map[string]interface{} "List of problems"
-// @Failure      500 {object} map[string]interface{} "Server error"
-// @Router       /api/leetcode [get]
-func (c *LeetCodeController) GetAllProblems(ctx *gin.Context) {
-	problems, err := c.leetCodeService.GetAllProblems()
+// logJSON logs any struct as JSON for debugging
+func (c *ProblemController) logJSON(data interface{}, msg string) {
+	if jsonData, err := json.MarshalIndent(data, "", "  "); err != nil {
+		c.logger.Error().Err(err).Msg("Failed to marshal data to JSON")
+	} else {
+		c.logger.Debug().RawJSON("data", jsonData).Msg(msg)
+	}
+}
+
+func (c *ProblemController) GetAllProblems(ctx *gin.Context) {
+	problems, err := c.problemService.GetAllProblems()
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to get all problems")
 		InternalError(ctx, "Failed to fetch problems")
@@ -44,37 +45,36 @@ func (c *LeetCodeController) GetAllProblems(ctx *gin.Context) {
 	OK(ctx, problems)
 }
 
-// GetProblemByID godoc
-// @Summary      Get specific LeetCode problem
-// @Description  Retrieve detailed information about a specific LeetCode problem by ID
-// @Tags         leetcode
-// @Produce      json
-// @Security     Bearer
-// @Param        id path string true "Problem ID"
-// @Success      200 {object} map[string]interface{} "Problem details"
-// @Failure      400 {object} map[string]interface{} "Bad request"
-// @Failure      404 {object} map[string]interface{} "Problem not found"
-// @Router       /api/leetcode/{id} [get]
-func (c *LeetCodeController) GetProblemByID(ctx *gin.Context) {
+func (c *ProblemController) GetProblemByID(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
+		c.logger.Error().Err(err).Str("idStr", idStr).Msg("Failed to parse problem ID")
 		BadRequest(ctx, "Invalid problem ID")
 		return
 	}
 
-	problem, err := c.leetCodeService.GetProblemByID(id)
+	c.logger.Debug().Str("problemID", id.String()).Msg("Getting problem by ID")
+
+	problem, err := c.problemService.GetProblemByID(id)
 	if err != nil {
 		c.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to get problem by ID")
 		NotFound(ctx, "Problem not found")
 		return
 	}
 
+	// Log problem data as JSON for easy debugging
+	if problem != nil {
+		c.logJSON(problem, "Problem data loaded successfully")
+	} else {
+		c.logger.Warn().Str("problemID", id.String()).Msg("Problem is nil")
+	}
+
 	OK(ctx, problem)
 }
 
-func (c *LeetCodeController) CreateProblem(ctx *gin.Context) {
-	var req model.CreateLeetCodeRequest
+func (c *ProblemController) CreateProblem(ctx *gin.Context) {
+	var req model.CreateProblemRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		BadRequest(ctx, "Invalid request data: "+err.Error())
 		return
@@ -85,7 +85,7 @@ func (c *LeetCodeController) CreateProblem(ctx *gin.Context) {
 		return
 	}
 
-	problem, err := c.leetCodeService.CreateProblem(&req)
+	problem, err := c.problemService.CreateProblem(&req)
 	if err != nil {
 		c.logger.Error().Err(err).Str("title", req.Title).Msg("Failed to create problem")
 		InternalError(ctx, err.Error())
@@ -99,7 +99,7 @@ func (c *LeetCodeController) CreateProblem(ctx *gin.Context) {
 	})
 }
 
-func (c *LeetCodeController) UpdateProblem(ctx *gin.Context) {
+func (c *ProblemController) UpdateProblem(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -110,7 +110,7 @@ func (c *LeetCodeController) UpdateProblem(ctx *gin.Context) {
 		return
 	}
 
-	var req model.UpdateLeetCodeRequest
+	var req model.UpdateProblemRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		BadRequest(ctx, "Invalid request data: "+err.Error())
 		return
@@ -121,7 +121,7 @@ func (c *LeetCodeController) UpdateProblem(ctx *gin.Context) {
 		return
 	}
 
-	problem, err := c.leetCodeService.UpdateProblem(id, &req)
+	problem, err := c.problemService.UpdateProblem(id, &req)
 	if err != nil {
 		c.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to update problem")
 		if strings.Contains(err.Error(), "not found") {
@@ -139,7 +139,7 @@ func (c *LeetCodeController) UpdateProblem(ctx *gin.Context) {
 	})
 }
 
-func (c *LeetCodeController) DeleteProblem(ctx *gin.Context) {
+func (c *ProblemController) DeleteProblem(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -147,7 +147,7 @@ func (c *LeetCodeController) DeleteProblem(ctx *gin.Context) {
 		return
 	}
 
-	err = c.leetCodeService.DeleteProblem(id)
+	err = c.problemService.DeleteProblem(id)
 	if err != nil {
 		c.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to delete problem")
 		if strings.Contains(err.Error(), "not found") {
@@ -161,7 +161,7 @@ func (c *LeetCodeController) DeleteProblem(ctx *gin.Context) {
 	JSONMessage(ctx, http.StatusOK, "Problem deleted successfully")
 }
 
-func (c *LeetCodeController) GetProblemsByDifficulty(ctx *gin.Context) {
+func (c *ProblemController) GetProblemsByDifficulty(ctx *gin.Context) {
 	difficulty := ctx.Query("difficulty")
 	if difficulty == "" {
 		BadRequest(ctx, "Difficulty parameter is required")
@@ -173,7 +173,7 @@ func (c *LeetCodeController) GetProblemsByDifficulty(ctx *gin.Context) {
 		return
 	}
 
-	problems, err := c.leetCodeService.GetProblemsByDifficulty(difficulty)
+	problems, err := c.problemService.GetProblemsByDifficulty(difficulty)
 	if err != nil {
 		c.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to get problems by difficulty")
 		InternalError(ctx, "Failed to fetch problems")
@@ -183,7 +183,7 @@ func (c *LeetCodeController) GetProblemsByDifficulty(ctx *gin.Context) {
 	OK(ctx, problems)
 }
 
-func (c *LeetCodeController) SearchProblems(ctx *gin.Context) {
+func (c *ProblemController) SearchProblems(ctx *gin.Context) {
 	query := ctx.Query("q")
 	if query == "" {
 		BadRequest(ctx, "Search query parameter 'q' is required")
@@ -195,7 +195,7 @@ func (c *LeetCodeController) SearchProblems(ctx *gin.Context) {
 		return
 	}
 
-	problems, err := c.leetCodeService.SearchProblems(query)
+	problems, err := c.problemService.SearchProblems(query)
 	if err != nil {
 		c.logger.Error().Err(err).Str("query", query).Msg("Failed to search problems")
 		InternalError(ctx, "Failed to search problems")
@@ -205,7 +205,7 @@ func (c *LeetCodeController) SearchProblems(ctx *gin.Context) {
 	OK(ctx, problems)
 }
 
-func (c *LeetCodeController) GetProblemsWithPagination(ctx *gin.Context) {
+func (c *ProblemController) GetProblemsWithPagination(ctx *gin.Context) {
 	pageStr := ctx.DefaultQuery("page", "1")
 	limitStr := ctx.DefaultQuery("limit", "10")
 
@@ -222,14 +222,14 @@ func (c *LeetCodeController) GetProblemsWithPagination(ctx *gin.Context) {
 	// Note: Currently using in-memory pagination for simplicity
 	// In production, pagination should be implemented at the database level
 	// for better performance with large datasets
-	problems, err := c.leetCodeService.GetAllProblems()
+	problems, err := c.problemService.GetAllProblems()
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to get problems with pagination")
 		InternalError(ctx, "Failed to fetch problems")
 		return
 	}
 
-	// 간단한 페이지네이션 (실제로는 데이터베이스 레벨에서 처리해야 함)
+	// Simple pagination (should be handled at database level in practice)
 	total := len(problems)
 	start := (page - 1) * limit
 	end := start + limit
@@ -266,7 +266,7 @@ func (c *LeetCodeController) GetProblemsWithPagination(ctx *gin.Context) {
 	})
 }
 
-// isValidDifficulty 난이도 값이 유효한지 확인
+// isValidDifficulty checks if the difficulty value is valid
 func isValidDifficulty(difficulty string) bool {
 	validDifficulties := []string{"Easy", "Medium", "Hard"}
 	for _, valid := range validDifficulties {

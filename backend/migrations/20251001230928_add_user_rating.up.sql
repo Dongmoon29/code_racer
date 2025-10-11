@@ -1,7 +1,0 @@
--- add_user_rating.up.sql
-BEGIN;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS rating INTEGER;
-UPDATE users SET rating = 1000 WHERE rating IS NULL;
-ALTER TABLE users ALTER COLUMN rating SET DEFAULT 1000;
-ALTER TABLE users ALTER COLUMN rating SET NOT NULL;
-COMMIT;

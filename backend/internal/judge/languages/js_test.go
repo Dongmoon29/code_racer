@@ -9,7 +9,7 @@ import (
 
 func TestJSWrapper_WrapBatch(t *testing.T) {
 	w := NewJSWrapper()
-	prob := &model.LeetCode{FunctionName: "solution"}
+	prob := &model.Problem{FunctionName: "solution"}
 	code := "function solution(a,b){ return a+b }"
 	cases := "[[1,2],[3,4]]"
 	out, err := w.WrapBatch(code, cases, prob)
@@ -25,7 +25,7 @@ func TestJSWrapper_WrapBatch(t *testing.T) {
 
 func TestJSWrapper_WrapSingle(t *testing.T) {
 	w := NewJSWrapper()
-	prob := &model.LeetCode{FunctionName: "solution"}
+	prob := &model.Problem{FunctionName: "solution"}
 	code := "function solution(a){ return a }"
 	tc := "[1,2,3]"
 	out := w.WrapSingle(code, tc, prob)

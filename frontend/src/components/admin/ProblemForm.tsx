@@ -1,35 +1,28 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { LeetCodeFormData, TestCase } from '@/types';
-import {
-  createLeetCodeProblem,
-  updateLeetCodeProblem,
-} from '../../lib/leetcode-api';
+import { ProblemFormData, TestCase } from '@/types';
+import { createProblem, updateProblem } from '../../lib/problem-api';
 
-interface LeetCodeFormProps {
-  initialData?: LeetCodeFormData;
+interface ProblemFormProps {
+  initialData?: ProblemFormData;
   mode: 'create' | 'edit';
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-const defaultFormData: LeetCodeFormData = {
+const defaultFormData: ProblemFormData = {
   title: '',
   description: '',
-  examples: '',
+  examples: [],
   constraints: '',
-  test_cases: [{ input: [], output: '' }],
-  expected_outputs: '',
+  test_cases: [{ input: '', expected_output: '' }],
+  expected_outputs: [],
   difficulty: 'Easy',
   input_format: '',
   output_format: '',
   function_name: '',
-  javascript_template: '',
-  python_template: '',
-  go_template: '',
-  java_template: '',
-  cpp_template: '',
+  io_templates: [],
   time_limit: 1000,
   memory_limit: 128,
   io_schema: { param_types: [], return_type: '' },
@@ -37,13 +30,13 @@ const defaultFormData: LeetCodeFormData = {
 
 const difficultyOptions = ['Easy', 'Medium', 'Hard'];
 
-export default function LeetCodeForm({
+export default function ProblemForm({
   initialData,
   mode,
   onSuccess,
   onCancel,
-}: LeetCodeFormProps) {
-  const [formData, setFormData] = useState<LeetCodeFormData>(
+}: ProblemFormProps) {
+  const [formData, setFormData] = useState<ProblemFormData>(
     initialData || defaultFormData
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,7 +49,7 @@ export default function LeetCodeForm({
   }, [initialData]);
 
   const handleInputChange = (
-    field: keyof LeetCodeFormData,
+    field: keyof ProblemFormData,
     value: string | number
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -65,18 +58,18 @@ export default function LeetCodeForm({
   const handleTestCaseChange = (
     index: number,
     field: keyof TestCase,
-    value: (string | number | boolean)[] | (string | number | boolean)
+    value: string
   ) => {
     const newTestCases = [...formData.test_cases];
     if (field === 'input') {
       newTestCases[index] = {
         ...newTestCases[index],
-        input: value as (string | number | boolean)[],
+        input: value,
       };
     } else {
       newTestCases[index] = {
         ...newTestCases[index],
-        output: value as string | number | boolean,
+        expected_output: value,
       };
     }
     setFormData((prev) => ({ ...prev, test_cases: newTestCases }));
@@ -85,7 +78,7 @@ export default function LeetCodeForm({
   const addTestCase = () => {
     setFormData((prev) => ({
       ...prev,
-      test_cases: [...prev.test_cases, { input: [], output: '' }],
+      test_cases: [...prev.test_cases, { input: '', expected_output: '' }],
     }));
   };
 
@@ -105,9 +98,9 @@ export default function LeetCodeForm({
 
     try {
       if (mode === 'create') {
-        await createLeetCodeProblem(formData);
+        await createProblem(formData);
       } else if (initialData && initialData.id) {
-        await updateLeetCodeProblem(initialData.id, {
+        await updateProblem(initialData.id, {
           ...formData,
           id: initialData.id,
         });
@@ -124,9 +117,7 @@ export default function LeetCodeForm({
   return (
     <div className="max-w-4xl mx-auto p-6 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-6 ">
-        {mode === 'create'
-          ? 'Add New LeetCode Problem'
-          : 'Edit LeetCode Problem'}
+        {mode === 'create' ? 'Add New Problem' : 'Edit Problem'}
       </h2>
       {error && (
         <div className="mb-4 p-4 border border-red-200 rounded-md">
@@ -184,8 +175,15 @@ export default function LeetCodeForm({
         <div>
           <label className="block text-sm font-medium  mb-2">Examples *</label>
           <textarea
-            value={formData.examples}
-            onChange={(e) => handleInputChange('examples', e.target.value)}
+            value={JSON.stringify(formData.examples, null, 2)}
+            onChange={(e) => {
+              try {
+                const parsed = JSON.parse(e.target.value);
+                handleInputChange('examples', parsed);
+              } catch {
+                // Invalid JSON, ignore
+              }
+            }}
             rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Example 1: Input: nums = [2,7,11,15], target = 9 Output: [0,1]"
@@ -328,13 +326,9 @@ export default function LeetCodeForm({
                   <label className="block text-xs  mb-1">Input</label>
                   <input
                     type="text"
-                    value={testCase.input.join(', ')}
+                    value={testCase.input}
                     onChange={(e) =>
-                      handleTestCaseChange(
-                        index,
-                        'input',
-                        e.target.value.split(',').map((s) => s.trim())
-                      )
+                      handleTestCaseChange(index, 'input', e.target.value)
                     }
                     className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="1, 2, 3"
@@ -342,12 +336,16 @@ export default function LeetCodeForm({
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs  mb-1">Output</label>
+                  <label className="block text-xs  mb-1">Expected Output</label>
                   <input
                     type="text"
-                    value={String(testCase.output)}
+                    value={String(testCase.expected_output)}
                     onChange={(e) =>
-                      handleTestCaseChange(index, 'output', e.target.value)
+                      handleTestCaseChange(
+                        index,
+                        'expected_output',
+                        e.target.value
+                      )
                     }
                     className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="6"
@@ -397,12 +395,12 @@ export default function LeetCodeForm({
               <textarea
                 value={
                   formData[
-                    `${lang}_template` as keyof LeetCodeFormData
+                    `${lang}_template` as keyof ProblemFormData
                   ] as string
                 }
                 onChange={(e) =>
                   handleInputChange(
-                    `${lang}_template` as keyof LeetCodeFormData,
+                    `${lang}_template` as keyof ProblemFormData,
                     e.target.value
                   )
                 }
