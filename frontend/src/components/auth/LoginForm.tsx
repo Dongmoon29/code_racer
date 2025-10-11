@@ -177,7 +177,14 @@ const LoginForm: FC = () => {
             window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
           }}
         >
-          <Image src="/google-logo.svg" alt="Google" width={30} height={30} />
+          <Image
+            src="/google-logo.svg"
+            alt="Google"
+            width={30}
+            height={30}
+            sizes="30px"
+            priority
+          />
         </Button>
 
         {/* GitHub Login Button */}
@@ -189,7 +196,14 @@ const LoginForm: FC = () => {
             window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/github`;
           }}
         >
-          <Image src="/github-logo.svg" alt="GitHub" width={30} height={30} />
+          <Image
+            src="/github-logo.svg"
+            alt="GitHub"
+            width={30}
+            height={30}
+            sizes="30px"
+            priority
+          />
         </Button>
       </div>
       {/* Google Login Button  */}

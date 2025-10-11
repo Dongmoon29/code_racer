@@ -29,6 +29,11 @@ export default class MyDocument extends Document {
           <link rel="icon" href="/favicon.ico" />
           <link rel="apple-touch-icon" href="/logo.png" />
 
+          {/* Preload critical images */}
+          <link rel="preload" as="image" href="/code_racer_hero.webp" />
+          <link rel="preload" as="image" href="/logo.png" />
+          <link rel="preload" as="image" href="/track.webp" />
+
           {/* Open Graph */}
           <meta property="og:title" content="Code Racer" />
           <meta property="og:description" content="실시간 코딩 경쟁 플랫폼" />
