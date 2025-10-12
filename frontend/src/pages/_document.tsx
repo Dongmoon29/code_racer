@@ -3,9 +3,9 @@ import Document, { Html, Head, Main, NextScript } from 'next/document';
 export default class MyDocument extends Document {
   render() {
     return (
-      <Html lang="ko">
+      <Html lang="en">
         <Head>
-          {/* 폰트 및 기타 head 요소들 */}
+          {/* Fonts and other head elements */}
           <link
             href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
             rel="stylesheet"
@@ -14,10 +14,10 @@ export default class MyDocument extends Document {
             href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap"
             rel="stylesheet"
           />
-          {/* 메타 태그들 */}
+          {/* Meta tags */}
           <meta
             name="description"
-            content="Code Racer - 실시간 코딩 경쟁 플랫폼"
+            content="Code Racer - Real-time Coding Competition Platform"
           />
           <meta
             name="keywords"
@@ -36,14 +36,20 @@ export default class MyDocument extends Document {
 
           {/* Open Graph */}
           <meta property="og:title" content="Code Racer" />
-          <meta property="og:description" content="실시간 코딩 경쟁 플랫폼" />
+          <meta
+            property="og:description"
+            content="Real-time Coding Competition Platform"
+          />
           <meta property="og:image" content="/code_racer_hero.png" />
           <meta property="og:type" content="website" />
 
           {/* Twitter Card */}
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content="Code Racer" />
-          <meta name="twitter:description" content="실시간 코딩 경쟁 플랫폼" />
+          <meta
+            name="twitter:description"
+            content="Real-time Coding Competition Platform"
+          />
           <meta name="twitter:image" content="/code_racer_hero.webp" />
         </Head>
         <body>

@@ -37,7 +37,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return false;
   });
 
-  // 인증 체크 및 리다이렉션
+  // Authentication check and redirection
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
       router.push('/login');
@@ -52,7 +52,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   };
 
-  // 로딩 중이거나 로그인되지 않은 경우 로딩 화면 표시
+  // Show loading screen while loading or not logged in
   if (isLoading || !isLoggedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

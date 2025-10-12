@@ -1,6 +1,6 @@
 import * as yup from 'yup';
 
-// 로그인 폼 유효성 검사 스키마
+// Login form validation schema
 export const loginSchema = yup.object({
   email: yup
     .string()
@@ -12,7 +12,7 @@ export const loginSchema = yup.object({
     .required('Password is required'),
 });
 
-// 회원가입 폼 유효성 검사 스키마
+// Registration form validation schema
 export const registerSchema = yup.object({
   name: yup
     .string()

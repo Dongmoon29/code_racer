@@ -20,24 +20,24 @@ export default function AdminLayout({ children }: Props) {
   const router = useRouter();
   const { user, isLoggedIn, isLoading } = useAuthStore();
 
-  // 인증 체크 및 admin 역할 검증
+  // Authentication check and admin role verification
   useEffect(() => {
     if (!isLoading) {
       if (!isLoggedIn) {
-        // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
+        // Redirect to login page if not logged in
         router.push('/login');
         return;
       }
-      
+
       if (user?.role !== 'admin') {
-        // admin 역할이 아닌 경우 홈페이지로 리다이렉트
+        // Redirect to home page if not admin role
         router.push('/');
         return;
       }
     }
   }, [isLoggedIn, isLoading, user, router]);
 
-  // 로딩 중이거나 로그인되지 않은 경우 로딩 화면 표시
+  // Show loading screen while loading or not logged in
   if (isLoading || !isLoggedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -49,7 +49,7 @@ export default function AdminLayout({ children }: Props) {
     );
   }
 
-  // admin 역할이 아닌 경우 접근 거부 화면 표시
+  // Show access denied screen for non-admin users
   if (user?.role !== 'admin') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -59,7 +59,7 @@ export default function AdminLayout({ children }: Props) {
             Access Denied
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            You don't have permission to access the admin panel.
+            You don&apos;t have permission to access the admin panel.
           </p>
           <Link
             href="/"

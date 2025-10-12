@@ -13,6 +13,10 @@ const nextConfig = {
       },
     },
   }),
+  // SEO and Performance optimizations
+  poweredByHeader: false,
+  generateEtags: false,
+  compress: true,
   images: {
     remotePatterns: [
       {
@@ -28,6 +32,10 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60,
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   async rewrites() {
     return [

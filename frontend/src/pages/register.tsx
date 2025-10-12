@@ -11,7 +11,7 @@ const RegisterPage: React.FC = () => {
   const { isLoggedIn } = useAuthStore();
 
   useEffect(() => {
-    // 이미 로그인된 사용자가 회원가입 페이지에 접근하면 dashboard로 리다이렉트
+    // Redirect logged-in users to dashboard when accessing registration page
     if (isLoggedIn) {
       router.replace('/dashboard');
     }
