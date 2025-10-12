@@ -1,8 +1,9 @@
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useState, useEffect } from 'react';
 import { Car, Trophy, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import Header from './Header';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useAuthStore } from '@/stores/authStore';
 
 type DashboardLayoutProps = {
   children: ReactNode;
@@ -28,12 +29,20 @@ const navigationItems = [
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
+  const { isLoggedIn, isLoading } = useAuthStore();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('dashboard-sidebar-collapsed') === 'true';
     }
     return false;
   });
+
+  // 인증 체크 및 리다이렉션
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      router.push('/login');
+    }
+  }, [isLoggedIn, isLoading, router]);
 
   const toggleSidebar = () => {
     const newState = !isCollapsed;
@@ -42,6 +51,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       localStorage.setItem('dashboard-sidebar-collapsed', newState.toString());
     }
   };
+
+  // 로딩 중이거나 로그인되지 않은 경우 로딩 화면 표시
+  if (isLoading || !isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
