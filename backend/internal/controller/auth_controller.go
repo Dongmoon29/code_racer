@@ -6,9 +6,11 @@ import (
 	"os"
 
 	"github.com/Dongmoon29/code_racer/internal/config"
+	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
@@ -114,7 +116,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 	}
 
 	// Set httpOnly cookie for security (when same-origin)
-	ctx.SetCookie("auth_token", response.AccessToken, 3600*24*7, "/", "", true, true) // 7 days, httpOnly, secure
+	ctx.SetCookie("auth_token", response.AccessToken, constants.CookieExpirySeconds, "/", "", true, true) // 7 days, httpOnly, secure
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -179,7 +181,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	c.logger.Info().Str("code", code[:10]+"...").Msg("Google OAuth callback: Authorization code received")
+	c.logger.Info().Str("code", util.MaskCode(code)).Msg("Google OAuth callback: Authorization code received")
 
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
@@ -244,7 +246,7 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 		return
 	}
 
-	c.logger.Info().Str("code", req.Code[:10]+"...").Str("provider", req.Provider).Msg("ExchangeToken: Processing token exchange")
+	c.logger.Info().Str("code", util.MaskCode(req.Code)).Str("provider", req.Provider).Msg("ExchangeToken: Processing token exchange")
 
 	if !c.validateState(req.State) {
 		c.logger.Error().Msg("ExchangeToken: Invalid state parameter")
@@ -279,7 +281,7 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 	c.logger.Info().Msg("ExchangeToken: Token exchange successful")
 
 	// Set httpOnly cookie for security (when same-origin)
-	ctx.SetCookie("auth_token", response.AccessToken, 3600*24*7, "/", "", true, true) // 7 days, httpOnly, secure
+	ctx.SetCookie("auth_token", response.AccessToken, constants.CookieExpirySeconds, "/", "", true, true) // 7 days, httpOnly, secure
 
 	OK(ctx, gin.H{"user": response.User, "token": response.AccessToken})
 }

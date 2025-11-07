@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/util"
 )
 
@@ -57,6 +58,9 @@ func LoadConfig() (*Config, error) {
 	}
 
 	dbPort := util.GetEnv("DB_PORT", "5432")
+	if err := util.ValidatePort(dbPort); err != nil {
+		return nil, fmt.Errorf("DB_PORT: %w", err)
+	}
 	config.DBPort = dbPort
 
 	if dbName, err := util.GetenvRequired("DB_NAME"); err != nil {
@@ -73,6 +77,9 @@ func LoadConfig() (*Config, error) {
 	}
 
 	config.RedisPort = util.GetEnv("REDIS_PORT", "6379")
+	if err := util.ValidatePort(config.RedisPort); err != nil {
+		return nil, fmt.Errorf("REDIS_PORT: %w", err)
+	}
 
 	config.RedisUsername = util.GetEnv("REDIS_USERNAME", "default")
 
@@ -84,13 +91,16 @@ func LoadConfig() (*Config, error) {
 		missingVars = append(missingVars, "JWT_SECRET")
 	} else {
 		// Validate JWT secret length and complexity
-		if len(jwtSecret) < 32 {
-			return nil, fmt.Errorf("JWT_SECRET must be at least 32 characters long for security")
+		if len(jwtSecret) < constants.MinJWTSecretLength {
+			return nil, fmt.Errorf("JWT_SECRET must be at least %d characters long for security", constants.MinJWTSecretLength)
 		}
 		config.JWTSecret = jwtSecret
 	}
 
 	config.ServerPort = util.GetEnv("PORT", "8080")
+	if err := util.ValidatePort(config.ServerPort); err != nil {
+		return nil, fmt.Errorf("PORT: %w", err)
+	}
 
 	// Judge0 API 설정
 	if judge0APIKey, err := util.GetenvRequired("JUDGE0_API_KEY"); err != nil {
@@ -100,6 +110,9 @@ func LoadConfig() (*Config, error) {
 	}
 
 	config.Judge0APIEndpoint = util.GetEnv("JUDGE0_API_ENDPOINT", "https://judge0-ce.p.rapidapi.com")
+	if err := util.ValidateURL(config.Judge0APIEndpoint); err != nil {
+		return nil, fmt.Errorf("JUDGE0_API_ENDPOINT: %w", err)
+	}
 
 	// 누락된 환경변수가 있는지 확인
 	if len(missingVars) > 0 {

@@ -17,24 +17,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// WebSocket constants
-const (
-	// Message size limit
-	maxMessageSize = 1024 * 1024 // 1MB
-
-	// Ping/pong timeout
-	pongWait = 60 * time.Second
-
-	// Channel buffer sizes
-	clientSendBufferSize = 256
-
-	// Ping interval
-	pingIntervalSeconds = 54
-
-	// Write deadline
-	writeDeadlineSeconds = 10
-)
-
 // Hub manages WebSocket connections
 type Hub struct {
 	// Map of registered clients
@@ -73,6 +55,9 @@ type Hub struct {
 
 	// Mutex lock
 	mu sync.RWMutex
+	
+	// Shutdown channel for graceful shutdown
+	shutdown chan struct{}
 }
 
 // Client represents a WebSocket client
@@ -384,6 +369,7 @@ func (s *webSocketService) InitHub() *Hub {
 		matchmakingService: s.matchmakingService,
 		userRepository:     s.userRepository,
 		logger:             s.logger,
+		shutdown:           make(chan struct{}),
 	}
 	return s.hub
 }
@@ -876,8 +862,25 @@ func (h *Hub) Run() {
 
 		case cancelReq := <-h.cancelMatching:
 			h.handleCancelMatching(cancelReq)
+			
+		case <-h.shutdown:
+			h.logger.Info().Msg("WebSocket hub shutting down")
+			// Close all client connections
+			h.mu.Lock()
+			for client := range h.clients {
+				close(client.send)
+				client.conn.Close()
+			}
+			h.mu.Unlock()
+			return
 		}
 	}
+}
+
+// Shutdown gracefully shuts down the hub
+func (h *Hub) Shutdown() {
+	h.logger.Info().Msg("Initiating WebSocket hub shutdown")
+	close(h.shutdown)
 }
 
 // HandleConnection handles a new WebSocket connection
@@ -894,7 +897,7 @@ func (s *webSocketService) createWebSocketClient(conn *websocket.Conn, userID uu
 	return &Client{
 		hub:     s.hub,
 		conn:    conn,
-		send:    make(chan []byte, clientSendBufferSize),
+		send:    make(chan []byte, constants.ClientSendBufferSize),
 		userID:  userID,
 		matchID: matchID,
 	}
@@ -1073,10 +1076,10 @@ func (c *Client) readPump(wsService *webSocketService) {
 		wsService.cleanupUserData(c.userID, c.matchID)
 	}()
 
-	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.conn.SetReadLimit(constants.MaxMessageSize)
+	c.conn.SetReadDeadline(time.Now().Add(constants.PongWait))
 	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		c.conn.SetReadDeadline(time.Now().Add(constants.PongWait))
 		return nil
 	})
 
@@ -1235,7 +1238,7 @@ func (c *Client) broadcastCodeUpdate(code string, wsService *webSocketService) {
 
 // writePump writes messages to the client
 func (c *Client) writePump() {
-	ticker := time.NewTicker(pingIntervalSeconds * time.Second)
+	ticker := time.NewTicker(constants.PingIntervalSeconds * time.Second)
 	defer func() {
 		if r := recover(); r != nil {
 			// Log panic but don't crash the service
@@ -1248,7 +1251,7 @@ func (c *Client) writePump() {
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(writeDeadlineSeconds * time.Second))
+			c.conn.SetWriteDeadline(time.Now().Add(constants.WriteDeadlineSeconds * time.Second))
 			if !ok {
 				// Channel is closed
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
@@ -1272,7 +1275,7 @@ func (c *Client) writePump() {
 				return
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(writeDeadlineSeconds * time.Second))
+			c.conn.SetWriteDeadline(time.Now().Add(constants.WriteDeadlineSeconds * time.Second))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}

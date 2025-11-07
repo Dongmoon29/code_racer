@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/config"
+	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -18,12 +19,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
-)
-
-// Auth service constants
-const (
-	// Token expiration
-	tokenExpiryDays = 7
 )
 
 var _ interfaces.AuthService = (*authService)(nil)
@@ -41,7 +36,7 @@ func NewAuthService(userRepo interfaces.UserRepository, jwtSecret string, logger
 	return &authService{
 		userRepo:    userRepo,
 		jwtSecret:   jwtSecret,
-		tokenExpiry: tokenExpiryDays * 24 * time.Hour,
+		tokenExpiry: constants.TokenExpiryDays * 24 * time.Hour,
 		logger:      logger,
 		oauthConfig: config.LoadOAuthConfig(),
 	}
