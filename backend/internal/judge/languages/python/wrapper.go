@@ -33,7 +33,8 @@ import sys
 # ===== 실행 래퍼 (자동 생성) =====
 if __name__ == "__main__":
     try:
-        test_cases = json.loads(sys.argv[1] if len(sys.argv) > 1 else '[]')
+        test_cases_json = %q
+        test_cases = json.loads(test_cases_json)
         results = []
         for inputs in test_cases:
             if isinstance(inputs, list):
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)`
-	return fmt.Sprintf(template, userCode, problem.FunctionName, problem.FunctionName), nil
+	return fmt.Sprintf(template, userCode, testCasesJSON, problem.FunctionName, problem.FunctionName), nil
 }
 
 func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {

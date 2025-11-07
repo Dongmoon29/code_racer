@@ -110,7 +110,8 @@ func toIntSliceSlice(v interface{}) [][]int {
 // ===== 실행 래퍼 =====
 func main() {
     var testCase []interface{}
-    if err := json.Unmarshal([]byte('[3,1,4,1,5]'), &testCase); err != nil {
+    testCaseJSON := "[3,1,4,1,5]"
+    if err := json.Unmarshal([]byte(testCaseJSON), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %v\n", err)
         os.Exit(1)
     }
@@ -140,7 +141,6 @@ func solution(nums []int) []int {
 import (
     "encoding/json"
     "fmt"
-    "os"
 )
 
 // ===== 사용자 코드 (그대로 유지) =====
@@ -217,7 +217,8 @@ func toIntSliceSlice(v interface{}) [][]int {
 // ===== 실행 래퍼 =====
 func main() {
     var testCase []interface{}
-    if err := json.Unmarshal([]byte('[3,1,4,1,5]'), &testCase); err != nil {
+    testCaseJSON := "[3,1,4,1,5]"
+    if err := json.Unmarshal([]byte(testCaseJSON), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %v\n", err)
         os.Exit(1)
     }
@@ -249,7 +250,6 @@ func main() {
 import (
     "encoding/json"
     "fmt"
-    "os"
 )
 
 // ===== 사용자 코드 (그대로 유지) =====
@@ -328,7 +328,8 @@ func toIntSliceSlice(v interface{}) [][]int {
 // ===== 실행 래퍼 =====
 func main() {
     var testCase []interface{}
-    if err := json.Unmarshal([]byte('[3,1,4,1,5]'), &testCase); err != nil {
+    testCaseJSON := "[3,1,4,1,5]"
+    if err := json.Unmarshal([]byte(testCaseJSON), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %v\n", err)
         os.Exit(1)
     }
@@ -454,7 +455,8 @@ func toIntSliceSlice(v interface{}) [][]int {
 // ===== 실행 래퍼 =====
 func main() {
     var testCases [][]interface{}
-    if err := json.Unmarshal([]byte(os.Args[1]), &testCases); err != nil {
+    testCasesJSON := "[[3,1,4,1,5], [1,2,3]]"
+    if err := json.Unmarshal([]byte(testCasesJSON), &testCases); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test cases: %v\n", err)
         os.Exit(1)
     }

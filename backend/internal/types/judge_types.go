@@ -4,7 +4,8 @@ package types
 type Judge0Request struct {
 	SourceCode       string `json:"source_code"`
 	LanguageID       int    `json:"language_id"`
-	ExpectedOutput   string `json:"expected_output"`
+	ExpectedOutput   string `json:"expected_output,omitempty"`
+	Stdin            string `json:"stdin,omitempty"`
 	CompileTimeout   int    `json:"compile_timeout"`
 	RunTimeout       int    `json:"run_timeout"`
 	MemoryLimit      int    `json:"memory_limit"`

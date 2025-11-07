@@ -28,7 +28,7 @@ func TestWrapCodeBatch_Javascript(t *testing.T) {
 	}
 
 	mustContain := []string{
-		"process.argv[2]",
+		"const testCases =",
 		"twoSum(...inputs)",
 		"function twoSum",
 	}
@@ -79,7 +79,7 @@ func TestWrapCodeBatch_Go(t *testing.T) {
 
 	mustContain := []string{
 		"package main",
-		"os.Args[1]",
+		"testCasesJSON := ",
 		"twoSum(",
 		"toIntSlice",
 	}

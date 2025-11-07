@@ -196,7 +196,7 @@ function solution(nums) {
 // ===== 실행 래퍼 (자동 생성) =====
 (function() {
     try {
-        const testCases = JSON.parse(process.argv[2] || '[]');
+        const testCases = [[3,1,4,1,5], [1,2,3]];
         const results = testCases.map(inputs => {
             if (Array.isArray(inputs)) {
                 return solution(...inputs);

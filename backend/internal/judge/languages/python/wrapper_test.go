@@ -163,7 +163,8 @@ def solution(nums):
 # ===== 실행 래퍼 (자동 생성) =====
 if __name__ == "__main__":
     try:
-        test_cases = json.loads(sys.argv[1] if len(sys.argv) > 1 else '[]')
+        test_cases_json = "[[3,1,4,1,5], [1,2,3]]"
+        test_cases = json.loads(test_cases_json)
         results = []
         for inputs in test_cases:
             if isinstance(inputs, list):

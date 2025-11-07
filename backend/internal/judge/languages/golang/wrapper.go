@@ -150,7 +150,8 @@ func toIntSliceSlice(v interface{}) [][]int {
 // ===== 실행 래퍼 =====
 func main() {
     var testCases [][]interface{}
-    if err := json.Unmarshal([]byte(os.Args[1]), &testCases); err != nil {
+    testCasesJSON := %q
+    if err := json.Unmarshal([]byte(testCasesJSON), &testCases); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test cases: %%v\n", err)
         os.Exit(1)
     }
@@ -167,7 +168,7 @@ func main() {
 }`
 
 	argDecl, callArgs := goArgLines("inputs", paramTypes)
-	return fmt.Sprintf(template, userCode, argDecl, problem.FunctionName, callArgs), nil
+	return fmt.Sprintf(template, userCode, testCasesJSON, argDecl, problem.FunctionName, callArgs), nil
 }
 
 func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
@@ -306,7 +307,8 @@ func toIntSliceSlice(v interface{}) [][]int {
 // ===== 실행 래퍼 =====
 func main() {
     var testCase []interface{}
-    if err := json.Unmarshal([]byte('%s'), &testCase); err != nil {
+    testCaseJSON := %q
+    if err := json.Unmarshal([]byte(testCaseJSON), &testCase); err != nil {
         fmt.Fprintf(os.Stderr, "Error parsing test case: %%v\n", err)
         os.Exit(1)
     }

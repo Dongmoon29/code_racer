@@ -157,7 +157,17 @@ func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *mo
 			continue
 		}
 		testCaseInputs = append(testCaseInputs, input)
-		expectedOutputs = append(expectedOutputs, testCase.ExpectedOutput)
+
+		// Parse ExpectedOutput as JSON to handle type differences (string vs boolean/number)
+		// DB stores ExpectedOutput as string, but actual result might be boolean/number
+		var expectedValue interface{}
+		if err := json.Unmarshal([]byte(testCase.ExpectedOutput), &expectedValue); err != nil {
+			// If parsing fails, use as string
+			s.logger.Warn().Err(err).Str("expectedOutput", testCase.ExpectedOutput).Msg("Failed to parse expected output as JSON, using as string")
+			expectedOutputs = append(expectedOutputs, testCase.ExpectedOutput)
+		} else {
+			expectedOutputs = append(expectedOutputs, expectedValue)
+		}
 	}
 	inputsJSON, _ := json.Marshal(testCaseInputs)
 
@@ -219,6 +229,37 @@ func (s *judgeService) submitToJudge(ctx context.Context, wrappedCode string, la
 	return judgeResponse, nil
 }
 
+// submitToJudgeWithStdin submits code to Judge0 with stdin for test cases (for JavaScript batch evaluation)
+func (s *judgeService) submitToJudgeWithStdin(ctx context.Context, wrappedCode string, languageID int, stdin string, expectedOutputsJSON string, problem *model.Problem) (*types.Judge0Response, error) {
+	compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB := s.deriveLimits(problem)
+	judgeRequest := types.Judge0Request{
+		SourceCode:       wrappedCode,
+		LanguageID:       languageID,
+		ExpectedOutput:   expectedOutputsJSON,
+		Stdin:            stdin,
+		CompileTimeout:   compileTimeoutSeconds,
+		RunTimeout:       runTimeoutSeconds,
+		MemoryLimit:      memoryLimitKB,
+		EnableNetworking: false,
+	}
+	judgeResponse, err := s.judge0Client.SubmitCode(ctx, judgeRequest)
+	if err != nil {
+		// Log quota exceeded identification
+		errorMessage := fmt.Errorf("Judge0 API error: %w", err)
+		if strings.Contains(errorMessage.Error(), "exceeded the DAILY quota") {
+			s.logger.Error().
+				Str("error_type", "judge0_quota_exceeded").
+				Int("languageID", languageID).
+				Msg("Judge0 quota exceeded")
+			s.sendJudge0QuotaError()
+		} else if strings.Contains(errorMessage.Error(), "context deadline exceeded") || strings.Contains(errorMessage.Error(), "timeout") {
+			s.sendJudge0TimeoutError()
+		}
+		return nil, errorMessage
+	}
+	return judgeResponse, nil
+}
+
 // deriveLimits converts model constraints to Judge0 limits
 func (s *judgeService) deriveLimits(problem *model.Problem) (compileTimeout int, runTimeout int, memoryLimit int) {
 	// Assume model.TimeLimit is in milliseconds and MemoryLimit in MB
@@ -236,6 +277,13 @@ func (s *judgeService) deriveLimits(problem *model.Problem) (compileTimeout int,
 }
 
 func (s *judgeService) evaluateBatchResponse(response *types.Judge0Response, expected []interface{}, inputs [][]interface{}) (*types.EvaluationResult, error) {
+	// Log response details for debugging
+	s.logger.Debug().
+		Str("stdout", response.Stdout).
+		Str("stderr", response.Stderr).
+		Str("compile_error", response.CompileError).
+		Msg("Judge0 response details")
+
 	if s.hasCompilationError(response) {
 		return s.createCompilationErrorResult(response), nil
 	}
@@ -249,7 +297,36 @@ func (s *judgeService) evaluateBatchResponse(response *types.Judge0Response, exp
 		return nil, err
 	}
 
+	// Check if actual results are empty but we expected results
+	// This can happen when code runs but doesn't produce output
+	if len(actualResults) == 0 && len(expected) > 0 {
+		s.logger.Warn().
+			Int("expected_count", len(expected)).
+			Str("stderr", response.Stderr).
+			Str("compile_error", response.CompileError).
+			Msg("No results returned from code execution, but test cases were expected")
+		return &types.EvaluationResult{
+			Passed:       false,
+			ErrorMessage: "Code executed but produced no output. Please check your solution.",
+			TestResults:  []types.TestCaseResult{},
+		}, nil
+	}
+
 	testResults := s.buildTestResults(expected, inputs, actualResults, response)
+
+	// If test results are empty but we expected results, it's an error
+	if len(testResults) == 0 && len(expected) > 0 {
+		s.logger.Warn().
+			Int("expected_count", len(expected)).
+			Int("actual_count", len(actualResults)).
+			Msg("No test results generated despite expected results")
+		return &types.EvaluationResult{
+			Passed:       false,
+			ErrorMessage: "Failed to evaluate test cases. Please check your solution.",
+			TestResults:  []types.TestCaseResult{},
+		}, nil
+	}
+
 	return s.createEvaluationResult(testResults, response), nil
 }
 
@@ -278,7 +355,8 @@ func (s *judgeService) createRuntimeErrorResult(response *types.Judge0Response) 
 	return &types.EvaluationResult{
 		Passed:       false,
 		ErrorType:    types.ErrorTypeRuntime,
-		ErrorMessage: response.Stderr, // Return raw stderr without prefix
+		ErrorMessage: response.Stderr,          // Return raw stderr without prefix
+		TestResults:  []types.TestCaseResult{}, // Empty test results - tests failed due to runtime error
 	}
 }
 
@@ -349,12 +427,15 @@ func (s *judgeService) createTestCaseResult(index int, expected interface{}, inp
 	expBytes, _ := json.Marshal(expected)
 	actBytes, _ := json.Marshal(actual)
 
+	expectedStr := strings.TrimSpace(string(expBytes))
+	actualStr := strings.TrimSpace(string(actBytes))
+
 	return types.TestCaseResult{
 		TestCaseIndex: index,
 		Input:         string(mustJSON(input)),
-		Expected:      string(expBytes),
-		Actual:        strings.TrimSpace(string(actBytes)),
-		Passed:        strings.TrimSpace(string(actBytes)) == strings.TrimSpace(string(expBytes)),
+		Expected:      expectedStr,
+		Actual:        actualStr,
+		Passed:        s.compareResults(actualStr, expectedStr), // Use compareResults for proper JSON comparison
 		ExecutionTime: getFloat64Time(response.Time),
 		MemoryUsage:   response.Memory,
 	}
@@ -373,6 +454,10 @@ func (s *judgeService) createEvaluationResult(testResults []types.TestCaseResult
 
 // checkAllTestsPassed checks if all test cases passed
 func (s *judgeService) checkAllTestsPassed(testResults []types.TestCaseResult) bool {
+	// Empty test results means no tests were run, which should be considered as failure
+	if len(testResults) == 0 {
+		return false
+	}
 	for _, result := range testResults {
 		if !result.Passed {
 			return false
@@ -782,6 +867,39 @@ func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int,
 		// Short-circuit on first failure to save Judge0 cost
 		if !testCaseResult.Passed {
 			allTestsPassed = false
+
+			// If compilation error occurred (check ErrorMessage for compile error indicators)
+			// Judge0 returns compile errors in ErrorMessage when CompileError field is set
+			if testCaseResult.ErrorMessage != "" {
+				// Check if it's a compilation error by looking at the error message
+				// Judge0 compile errors typically contain compilation-related keywords
+				errorLower := strings.ToLower(testCaseResult.ErrorMessage)
+				isCompilationError := strings.Contains(errorLower, "compilation") ||
+					strings.Contains(errorLower, "syntax error") ||
+					strings.Contains(errorLower, "compile") ||
+					strings.Contains(errorLower, "cannot find") ||
+					strings.Contains(errorLower, "undefined") ||
+					strings.Contains(errorLower, "expected") ||
+					strings.Contains(errorLower, "unexpected")
+
+				if isCompilationError {
+					s.logger.Debug().Msg("Compilation error detected, stopping evaluation")
+					s.notifySubmissionFailed(matchID, userID, testCaseResult.ErrorMessage)
+					processed := float64(len(testCaseResults))
+					if processed == 0 {
+						processed = 1
+					}
+					return &types.EvaluationResult{
+						Passed:        false,
+						ErrorType:     types.ErrorTypeCompilation,
+						ErrorMessage:  testCaseResult.ErrorMessage,
+						TestResults:   testCaseResults,
+						ExecutionTime: totalExecutionTime / processed,
+						MemoryUsage:   totalMemoryUsage / processed,
+					}, nil
+				}
+			}
+
 			s.logger.Debug().Str("Test case failed", fmt.Sprintf("Test case %d failed", testCaseIndex)).Msg("Test case failed")
 			s.notifySubmissionFailed(matchID, userID, fmt.Sprintf("Test case %d failed", testCaseIndex))
 			processed := float64(len(testCaseResults))
@@ -853,7 +971,17 @@ func (s *judgeService) tryBatchEvaluateWithRealtime(code string, languageID int,
 			continue
 		}
 		testCaseInputs = append(testCaseInputs, input)
-		expectedOutputs = append(expectedOutputs, testCase.ExpectedOutput)
+
+		// Parse ExpectedOutput as JSON to handle type differences (string vs boolean/number)
+		// DB stores ExpectedOutput as string, but actual result might be boolean/number
+		var expectedValue interface{}
+		if err := json.Unmarshal([]byte(testCase.ExpectedOutput), &expectedValue); err != nil {
+			// If parsing fails, use as string
+			s.logger.Warn().Err(err).Str("expectedOutput", testCase.ExpectedOutput).Msg("Failed to parse expected output as JSON, using as string")
+			expectedOutputs = append(expectedOutputs, testCase.ExpectedOutput)
+		} else {
+			expectedOutputs = append(expectedOutputs, expectedValue)
+		}
 	}
 	inputsJSON, _ := json.Marshal(testCaseInputs)
 
