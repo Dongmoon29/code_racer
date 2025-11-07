@@ -267,7 +267,9 @@ func (s *judgeService) hasRuntimeError(response *types.Judge0Response) bool {
 func (s *judgeService) createCompilationErrorResult(response *types.Judge0Response) *types.EvaluationResult {
 	return &types.EvaluationResult{
 		Passed:       false,
-		ErrorMessage: fmt.Sprintf("Compilation error: %s", response.CompileError),
+		ErrorType:    types.ErrorTypeCompilation,
+		ErrorMessage: response.CompileError,    // Return raw compile error without prefix
+		TestResults:  []types.TestCaseResult{}, // Empty test results - no tests were run
 	}
 }
 
@@ -275,7 +277,8 @@ func (s *judgeService) createCompilationErrorResult(response *types.Judge0Respon
 func (s *judgeService) createRuntimeErrorResult(response *types.Judge0Response) *types.EvaluationResult {
 	return &types.EvaluationResult{
 		Passed:       false,
-		ErrorMessage: fmt.Sprintf("Runtime error: %s", response.Stderr),
+		ErrorType:    types.ErrorTypeRuntime,
+		ErrorMessage: response.Stderr, // Return raw stderr without prefix
 	}
 }
 
@@ -507,13 +510,13 @@ func (s *judgeService) evaluateSingleResponse(response *types.Judge0Response, te
 	if response.CompileError != "" {
 		s.logger.Error().Str("compileError", response.CompileError).Msg("Compilation error occurred")
 		result.Passed = false
-		result.ErrorMessage = fmt.Sprintf("Compilation error: %s", response.CompileError)
+		result.ErrorMessage = response.CompileError // Return raw compile error
 		return result
 	}
 	if response.Stderr != "" {
 		s.logger.Error().Str("stderr", response.Stderr).Msg("Runtime error occurred")
 		result.Passed = false
-		result.ErrorMessage = fmt.Sprintf("Runtime error: %s", response.Stderr)
+		result.ErrorMessage = response.Stderr // Return raw stderr
 		return result
 	}
 	result.Actual = strings.TrimSpace(response.Stdout)

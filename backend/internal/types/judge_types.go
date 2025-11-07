@@ -20,9 +20,21 @@ type Judge0Response struct {
 	Memory       float64     `json:"memory"`
 }
 
+// ErrorType represents the type of error that occurred during code evaluation
+type ErrorType string
+
+const (
+	ErrorTypeNone        ErrorType = ""
+	ErrorTypeCompilation ErrorType = "compilation_error"
+	ErrorTypeRuntime     ErrorType = "runtime_error"
+	ErrorTypeTimeout     ErrorType = "timeout_error"
+	ErrorTypeMemoryLimit ErrorType = "memory_limit_exceeded"
+)
+
 // EvaluationResult represents the final result of code evaluation
 type EvaluationResult struct {
 	Passed        bool             `json:"passed"`
+	ErrorType     ErrorType        `json:"error_type,omitempty"`
 	ErrorMessage  string           `json:"error_message,omitempty"`
 	TestResults   []TestCaseResult `json:"test_results,omitempty"`
 	ExecutionTime float64          `json:"execution_time,omitempty"`
