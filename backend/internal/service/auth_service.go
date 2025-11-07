@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -18,8 +18,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/github"
-	"golang.org/x/oauth2/google"
 )
 
 // Auth service constants
@@ -35,6 +33,7 @@ type authService struct {
 	jwtSecret   string
 	tokenExpiry time.Duration
 	logger      logger.Logger
+	oauthConfig *config.OAuthConfig
 }
 
 // NewAuthService creates a new AuthService instance with the provided dependencies
@@ -44,6 +43,7 @@ func NewAuthService(userRepo interfaces.UserRepository, jwtSecret string, logger
 		jwtSecret:   jwtSecret,
 		tokenExpiry: tokenExpiryDays * 24 * time.Hour,
 		logger:      logger,
+		oauthConfig: config.LoadOAuthConfig(),
 	}
 }
 
@@ -193,18 +193,7 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 }
 
 func (s *authService) exchangeGoogleCode(code string) (*oauth2.Token, error) {
-	config := &oauth2.Config{
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/userinfo.profile",
-		},
-		Endpoint: google.Endpoint,
-	}
-
-	return config.Exchange(context.Background(), code)
+	return s.oauthConfig.Google.Exchange(context.Background(), code)
 }
 
 func (s *authService) getGoogleUserInfo(accessToken string) (*model.GoogleUser, error) {
@@ -273,18 +262,7 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 }
 
 func (s *authService) exchangeGitHubCode(code string) (*oauth2.Token, error) {
-	config := &oauth2.Config{
-		ClientID:     os.Getenv("GH_CLIENT_ID"),
-		ClientSecret: os.Getenv("GH_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("GH_REDIRECT_URL"),
-		Scopes: []string{
-			"user:email",
-			"read:user",
-		},
-		Endpoint: github.Endpoint,
-	}
-
-	return config.Exchange(context.Background(), code)
+	return s.oauthConfig.GitHub.Exchange(context.Background(), code)
 }
 
 func (s *authService) getGitHubUserInfo(accessToken string) (*model.GitHubUser, error) {

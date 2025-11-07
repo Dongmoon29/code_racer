@@ -83,6 +83,10 @@ func LoadConfig() (*Config, error) {
 	if jwtSecret, err := util.GetenvRequired("JWT_SECRET"); err != nil {
 		missingVars = append(missingVars, "JWT_SECRET")
 	} else {
+		// Validate JWT secret length and complexity
+		if len(jwtSecret) < 32 {
+			return nil, fmt.Errorf("JWT_SECRET must be at least 32 characters long for security")
+		}
 		config.JWTSecret = jwtSecret
 	}
 

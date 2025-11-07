@@ -20,7 +20,7 @@ func setupTestEnv(t *testing.T) func() {
 		"REDIS_PORT":          "6379",
 		"REDIS_USERNAME":      "default",
 		"REDIS_PASSWORD":      "redis-pass",
-		"JWT_SECRET":          "test-secret",
+		"JWT_SECRET":          "test-secret-key-for-testing-purposes-only-32chars",
 		"PORT":                "8080",
 		"JUDGE0_API_KEY":      "test-api-key",
 		"JUDGE0_API_ENDPOINT": "https://test-judge0-api.com",
@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "redis-pass", cfg.RedisPassword)
 
 	// JWT 설정 검증
-	assert.Equal(t, "test-secret", cfg.JWTSecret)
+	assert.Equal(t, "test-secret-key-for-testing-purposes-only-32chars", cfg.JWTSecret)
 
 	// 서버 설정 검증
 	assert.Equal(t, "8080", cfg.ServerPort)
@@ -122,7 +122,7 @@ func TestLoadConfigOptionalDefaults(t *testing.T) {
 		"DB_PASSWORD":    "test-password",
 		"DB_NAME":        "test-db",
 		"REDIS_HOST":     "redis-host",
-		"JWT_SECRET":     "test-secret",
+		"JWT_SECRET":     "test-secret-key-for-testing-purposes-only-32chars",
 		"JUDGE0_API_KEY": "test-api-key",
 	}
 

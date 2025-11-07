@@ -44,12 +44,17 @@ func Setup(
 	allowedMethods := []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions}
 	allowedHeaders := []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	exposeHeaders := []string{"Content-Length"}
+	
+	// Allow credentials when using cookies for authentication
+	// In production, ensure CORS origins are properly configured
+	allowCredentials := !util.IsProduction() || len(allowedOrigins) > 0
+	
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     allowedOrigins,
 		AllowMethods:     allowedMethods,
 		AllowHeaders:     allowedHeaders,
 		ExposeHeaders:    exposeHeaders,
-		AllowCredentials: false,
+		AllowCredentials: allowCredentials,
 		MaxAge:           12 * time.Hour,
 	}))
 

@@ -98,17 +98,18 @@ func (r *userRepository) ListUsers(offset int, limit int, orderByField string, o
 	return users, total, nil
 }
 
-// TODO: Optimize this query
+// GetLeaderboardUsers gets users who have played ranked matches, ordered by rating
+// Optimized query using UNION instead of EXISTS subqueries for better performance
 func (r *userRepository) GetLeaderboardUsers(limit int) ([]*model.User, error) {
 	var users []*model.User
 
+	// Use UNION to get distinct user IDs who have played ranked matches
+	// This is more efficient than EXISTS subqueries
 	err := r.db.
-		Where(`EXISTS (
-			SELECT 1 FROM matches m1 
-			WHERE m1.player_a_id = users.id AND m1.mode = 'ranked_pvp'
-		) OR EXISTS (
-			SELECT 1 FROM matches m2 
-			WHERE m2.player_b_id = users.id AND m2.mode = 'ranked_pvp' AND m2.player_b_id IS NOT NULL
+		Where(`id IN (
+			SELECT DISTINCT player_a_id FROM matches WHERE mode = 'ranked_pvp'
+			UNION
+			SELECT DISTINCT player_b_id FROM matches WHERE mode = 'ranked_pvp' AND player_b_id IS NOT NULL
 		)`).
 		Order("rating DESC").
 		Order("id DESC").

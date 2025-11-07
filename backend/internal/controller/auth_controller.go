@@ -5,14 +5,13 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/github"
-	"golang.org/x/oauth2/google"
 )
 
 // OAuthConfigProvider provides OAuth configuration
@@ -41,40 +40,26 @@ func sendErrorResponse(ctx *gin.Context, statusCode int, message string) {
 	JSONError(ctx, statusCode, message, "")
 }
 
-// OAuthConfigProviderImpl implements OAuthConfigProvider using environment variables
-type OAuthConfigProviderImpl struct{}
+// OAuthConfigProviderImpl implements OAuthConfigProvider using centralized config
+type OAuthConfigProviderImpl struct {
+	oauthConfig *config.OAuthConfig
+}
 
 // NewOAuthConfigProvider creates a new OAuthConfigProvider instance
 func NewOAuthConfigProvider() OAuthConfigProvider {
-	return &OAuthConfigProviderImpl{}
+	return &OAuthConfigProviderImpl{
+		oauthConfig: config.LoadOAuthConfig(),
+	}
 }
 
 // GetGoogleConfig returns Google OAuth configuration
 func (p *OAuthConfigProviderImpl) GetGoogleConfig() *oauth2.Config {
-	return &oauth2.Config{
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/userinfo.profile",
-		},
-		Endpoint: google.Endpoint,
-	}
+	return p.oauthConfig.Google
 }
 
 // GetGitHubConfig returns GitHub OAuth configuration
 func (p *OAuthConfigProviderImpl) GetGitHubConfig() *oauth2.Config {
-	return &oauth2.Config{
-		ClientID:     os.Getenv("GH_CLIENT_ID"),
-		ClientSecret: os.Getenv("GH_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("GH_REDIRECT_URL"),
-		Scopes: []string{
-			"user:email",
-			"read:user",
-		},
-		Endpoint: github.Endpoint,
-	}
+	return p.oauthConfig.GitHub
 }
 
 // Register godoc
@@ -300,7 +285,20 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 }
 
 func (c *AuthController) validateState(state string) bool {
-	return len(state) > 0 && len(state) < 100
+	// Basic validation: check length and format
+	// For production, consider implementing CSRF token validation with Redis/session storage
+	if len(state) == 0 || len(state) > 100 {
+		return false
+	}
+	// Basic format check: should contain alphanumeric characters, hyphens, or underscores
+	// This prevents basic injection attempts
+	for _, char := range state {
+		if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || 
+			(char >= '0' && char <= '9') || char == '-' || char == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 func (c *AuthController) Logout(ctx *gin.Context) {
