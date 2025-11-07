@@ -5,7 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -60,10 +62,13 @@ func TestStartServer(t *testing.T) {
 
 	// 테스트용 포트
 	testPort := "8082"
+	
+	// 테스트용 logger 생성
+	testLogger := logger.NewZerologLogger(zerolog.Nop())
 
 	// 서버 시작을 고루틴으로 실행
 	go func() {
-		startServer(router, testPort)
+		startServer(router, testPort, nil, nil, nil, testLogger)
 	}()
 
 	// 서버가 시작될 때까지 잠시 대기

@@ -93,10 +93,12 @@ func main() {
 		deps.wsController,
 		deps.authMiddleware,
 		cfg,
+		db,
+		rdb,
 	)
 
 	// start server
-	startServer(r, cfg.ServerPort)
+	startServer(r, cfg.ServerPort, deps.wsHub, db, rdb, logger)
 }
 
 type dependencies struct {
@@ -106,11 +108,12 @@ type dependencies struct {
 	problemController *controller.ProblemController
 	wsController      *controller.WebSocketController
 	authMiddleware    *middleware.AuthMiddleware
+	wsHub             *service.Hub
 }
 
 func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *dependencies {
 	repositories := initializeRepositories(db, appLogger)
-	services := initializeServices(repositories, rdb, cfg, appLogger)
+	services, wsHub := initializeServices(repositories, rdb, cfg, appLogger)
 	controllers := initializeControllers(services, appLogger)
 	middleware := initializeMiddleware(services, repositories, appLogger)
 
@@ -121,6 +124,7 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 		problemController: controllers.problemController,
 		wsController:      controllers.wsController,
 		authMiddleware:    middleware.authMiddleware,
+		wsHub:             wsHub,
 	}
 }
 
@@ -134,7 +138,7 @@ func initializeRepositories(db *gorm.DB, appLogger logger.Logger) *repositories 
 }
 
 // initializeServices creates all service instances
-func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *services {
+func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) (*services, *service.Hub) {
 	authService := service.NewAuthService(repos.userRepository, cfg.JWTSecret, appLogger)
 	userService := service.NewUserService(repos.userRepository, repos.matchRepository, appLogger)
 
@@ -165,7 +169,7 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 		matchmakingService: matchmakingService,
 		wsService:          wsService,
 		problemService:     problemService,
-	}
+	}, wsHub
 }
 
 // initializeControllers creates all controller instances
@@ -263,7 +267,7 @@ type middlewareInstances struct {
 	authMiddleware *middleware.AuthMiddleware
 }
 
-func startServer(router *gin.Engine, port string) {
+func startServer(router *gin.Engine, port string, wsHub *service.Hub, db *gorm.DB, rdb *redis.Client, appLogger logger.Logger) {
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: router,
@@ -281,11 +285,38 @@ func startServer(router *gin.Engine, port string) {
 	<-quit
 	log.Info().Msg("Shutting down server...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Shutdown WebSocket hub
+	if wsHub != nil {
+		wsHub.Shutdown()
+		// Give some time for WebSocket connections to close
+		time.Sleep(1 * time.Second)
+	}
+
+	// Shutdown HTTP server with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal().Err(err).Msg("Server forced to shutdown")
+		log.Error().Err(err).Msg("Server forced to shutdown")
+	} else {
+		log.Info().Msg("Server exited gracefully")
 	}
-	log.Info().Msg("Server exited gracefully")
+
+	// Close database connection
+	if sqlDB, err := db.DB(); err == nil {
+		if err := sqlDB.Close(); err != nil {
+			appLogger.Error().Err(err).Msg("Failed to close database connection")
+		} else {
+			appLogger.Info().Msg("Database connection closed")
+		}
+	}
+
+	// Close Redis connection
+	if rdb != nil {
+		if err := rdb.Close(); err != nil {
+			appLogger.Error().Err(err).Msg("Failed to close Redis connection")
+		} else {
+			appLogger.Info().Msg("Redis connection closed")
+		}
+	}
 }

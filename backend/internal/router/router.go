@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -10,8 +11,10 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gorm.io/gorm"
 )
 
 // Setup initializes and returns the router with all routes configured
@@ -23,15 +26,42 @@ func Setup(
 	wsController *controller.WebSocketController,
 	authMiddleware *middleware.AuthMiddleware,
 	cfg *config.Config,
+	db *gorm.DB,
+	rdb *redis.Client,
 ) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
 
-	// health check endpoint
+	// health check endpoint with DB and Redis status
 	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
+		status := gin.H{
 			"status": "ok",
-		})
+		}
+		
+		// Check database connection
+		if db != nil {
+			sqlDB, err := db.DB()
+			if err == nil {
+				if err := sqlDB.Ping(); err == nil {
+					status["database"] = "connected"
+				} else {
+					status["database"] = "disconnected"
+				}
+			}
+		}
+		
+		// Check Redis connection
+		if rdb != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			if err := rdb.Ping(ctx).Err(); err == nil {
+				status["redis"] = "connected"
+			} else {
+				status["redis"] = "disconnected"
+			}
+		}
+		
+		c.JSON(200, status)
 	})
 
 	// Swagger documentation - 개발 환경에서만 활성화
