@@ -1,6 +1,6 @@
 import React, { FC } from 'react';
-import Image from 'next/image';
 import { Button } from '../ui/Button';
+import { GoogleIcon, GitHubIcon } from '../ui/icons';
 
 interface OAuthButtonsProps {
   disabled?: boolean;
@@ -31,32 +31,20 @@ export const OAuthButtons: FC<OAuthButtonsProps> = ({ disabled = false }) => {
           className="h-12 w-12 flex items-center justify-center gap-3 bg-gray-300 mb-4 rounded-full"
           onClick={() => handleOAuthLogin('google')}
           disabled={disabled}
+          aria-label="Continue with Google"
         >
-          <Image
-            src="/google-logo.svg"
-            alt="Google"
-            width={30}
-            height={30}
-            sizes="30px"
-            priority
-          />
+          <GoogleIcon aria-hidden="true" />
         </Button>
 
         <Button
           type="button"
           variant="outline"
-          className="h-12 w-12 flex items-center justify-center gap-3 bg-gray-300 mb-4 rounded-full"
+          className="h-12 w-12 flex items-center justify-center gap-3 bg-gray-300 mb-4 rounded-full text-gray-800 dark:text-white"
           onClick={() => handleOAuthLogin('github')}
           disabled={disabled}
+          aria-label="Continue with GitHub"
         >
-          <Image
-            src="/github-logo.svg"
-            alt="GitHub"
-            width={30}
-            height={30}
-            sizes="30px"
-            priority
-          />
+          <GitHubIcon aria-hidden="true" />
         </Button>
       </div>
     </>

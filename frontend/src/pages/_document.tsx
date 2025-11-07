@@ -5,7 +5,15 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
-          {/* Fonts and other head elements */}
+          {/* Preconnect to external domains for faster loading */}
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link
+            rel="preconnect"
+            href="https://fonts.gstatic.com"
+            crossOrigin="anonymous"
+          />
+
+          {/* Fonts with optimized loading */}
           <link
             href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
             rel="stylesheet"
@@ -29,10 +37,27 @@ export default class MyDocument extends Document {
           <link rel="icon" href="/favicon.ico" />
           <link rel="apple-touch-icon" href="/logo.png" />
 
-          {/* Preload critical images */}
-          <link rel="preload" as="image" href="/code_racer_hero.webp" />
-          <link rel="preload" as="image" href="/logo.png" />
-          <link rel="preload" as="image" href="/track.webp" />
+          {/* Preload critical images with proper attributes */}
+          <link
+            rel="preload"
+            as="image"
+            href="/logo.png"
+            type="image/png"
+            fetchPriority="high"
+          />
+          <link
+            rel="preload"
+            as="image"
+            href="/code_racer_hero.webp"
+            type="image/webp"
+            fetchPriority="high"
+          />
+          <link
+            rel="preload"
+            as="image"
+            href="/track.webp"
+            type="image/webp"
+          />
 
           {/* Open Graph */}
           <meta property="og:title" content="Code Racer" />
