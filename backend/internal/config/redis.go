@@ -3,8 +3,8 @@ package config
 import (
 	"context"
 	"crypto/tls"
-	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/zerolog/log"
@@ -12,7 +12,11 @@ import (
 
 func InitRedis(cfg *Config) *redis.Client {
 	options := &redis.Options{
-		Addr: cfg.RedisHost + ":" + cfg.RedisPort,
+		Addr:         cfg.RedisHost + ":" + cfg.RedisPort,
+		PoolSize:     constants.DefaultRedisPoolSize,
+		MinIdleConns: constants.DefaultRedisMinIdleConns,
+		MaxRetries:   constants.DefaultRedisMaxRetries,
+		DialTimeout:  constants.DefaultRedisDialTimeout,
 	}
 
 	if util.IsProduction() {
@@ -25,7 +29,7 @@ func InitRedis(cfg *Config) *redis.Client {
 
 	rdb := redis.NewClient(options)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultRedisDialTimeout)
 	defer cancel()
 
 	_, err := rdb.Ping(ctx).Result()

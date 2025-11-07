@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/seed"
@@ -89,6 +90,17 @@ func InitDatabase(cfg *Config, appLogger logger.Logger) (*gorm.DB, error) {
 		appLogger.Error().Err(err).Msg("Failed to connect to database")
 		return nil, err
 	}
+
+	// Configure connection pool
+	sqlDB, err := db.DB()
+	if err != nil {
+		appLogger.Error().Err(err).Msg("Failed to get database instance")
+		return nil, err
+	}
+
+	sqlDB.SetMaxOpenConns(constants.DefaultDBMaxOpenConns)
+	sqlDB.SetMaxIdleConns(constants.DefaultDBMaxIdleConns)
+	sqlDB.SetConnMaxLifetime(constants.DefaultDBConnMaxLifetime)
 
 	appLogger.Info().Msg("Successfully connected to database")
 	return db, nil
