@@ -42,7 +42,7 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 		log.Info().Msg("Global log level set to DEBUG (development mode)")
 	} else {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 		log.Info().Msg("Global log level set to INFO (production mode)")
 	}
 

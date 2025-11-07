@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
@@ -424,8 +426,14 @@ func (s *matchService) GetRandomProblemByDifficulty(difficulty string) (*model.P
 		return nil, fmt.Errorf("no problems found for difficulty %s", difficulty)
 	}
 
-	// Select a random problem
-	randomIndex := time.Now().UnixNano() % int64(len(problems))
+	// Select a random problem using crypto/rand for better distribution
+	randomIndexBig, err := rand.Int(rand.Reader, big.NewInt(int64(len(problems))))
+	if err != nil {
+		// Fallback to time-based random if crypto/rand fails
+		s.logger.Warn().Err(err).Msg("Failed to generate cryptographically secure random number, using time-based fallback")
+		randomIndexBig = big.NewInt(time.Now().UnixNano() % int64(len(problems)))
+	}
+	randomIndex := randomIndexBig.Int64()
 	selectedProblem := &problems[randomIndex]
 
 	s.logger.Debug().
