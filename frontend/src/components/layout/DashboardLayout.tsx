@@ -1,9 +1,10 @@
-import React, { ReactNode, useState, useEffect } from 'react';
+import React, { ReactNode, useState } from 'react';
 import { Car, Trophy, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import Header from './Header';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { LoadingScreen } from '@/components/ui/LoadingScreen';
 
 type DashboardLayoutProps = {
   children: ReactNode;
@@ -29,20 +30,13 @@ const navigationItems = [
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
-  const { isLoggedIn, isLoading } = useAuthStore();
+  const { isLoggedIn, isLoading } = useAuthGuard({ requireAuth: true });
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('dashboard-sidebar-collapsed') === 'true';
     }
     return false;
   });
-
-  // Authentication check and redirection
-  useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
-      router.push('/login');
-    }
-  }, [isLoggedIn, isLoading, router]);
 
   const toggleSidebar = () => {
     const newState = !isCollapsed;
@@ -54,14 +48,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   // Show loading screen while loading or not logged in
   if (isLoading || !isLoggedIn) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (

@@ -5,9 +5,13 @@ import MatchmakingWebSocketClient, {
   type MatchFoundMessage,
 } from '@/lib/matchmaking-websocket';
 import { useAuthStore } from '@/stores/authStore';
-import { MATCHING_STATE, MatchingState } from '@/lib/constants';
+import {
+  MATCHING_STATE,
+  MatchingState,
+  TIMER_CONSTANTS,
+  WEBSOCKET_CONSTANTS,
+} from '@/constants';
 import type { Difficulty } from '@/components/game/DifficultySelector';
-import { TIMER_CONSTANTS, WEBSOCKET_CONSTANTS } from '@/constants';
 import { useRouterHelper } from '@/lib/router';
 import { createErrorHandler } from '@/lib/error-tracking';
 import { createSinglePlayerMatch } from '@/api/game';

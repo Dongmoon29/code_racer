@@ -6,12 +6,12 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { authApi } from '@/lib/api';
 import { Spinner } from '../ui';
-import axios, { AxiosError } from 'axios';
-import { ApiErrorResponse } from '@/types';
 import { Alert } from '../ui/alert';
 import { Button } from '../ui/Button';
-import Image from 'next/image';
 import { registerSchema, RegisterFormData } from '@/lib/validations/auth';
+import { OAuthButtons } from './OAuthButtons';
+import { FormField } from './FormField';
+import { extractErrorMessage } from '@/lib/error-utils';
 
 const RegisterForm: FC = () => {
   const router = useRouter();
@@ -37,13 +37,8 @@ const RegisterForm: FC = () => {
 
       router.push('/login?registered=true');
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        const axiosError = err as AxiosError<ApiErrorResponse>;
-        setError(axiosError.response?.data?.message || 'Registration failed');
-      } else {
-        setError('An unexpected error occurred during registration');
-      }
       console.error('Registration failed:', err);
+      setError(extractErrorMessage(err, 'Registration failed'));
     } finally {
       setLoading(false);
     }
@@ -58,77 +53,40 @@ const RegisterForm: FC = () => {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="space-y-1">
-          <label
-            htmlFor="name"
-            className="text-sm font-medium text-[hsl(var(--foreground))]"
-          >
-            Name
-          </label>
-          <div className="relative">
-            <input
-              id="name"
-              type="text"
-              {...register('name')}
-              placeholder="John Doe"
-              disabled={loading}
-              className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${
-                errors.name ? 'border-red-500' : 'border-input'
-              }`}
-            />
-            <User className="absolute right-3 top-3.5 h-5 w-5 text-[hsl(var(--muted-foreground))]" />
-          </div>
-          {errors.name && (
-            <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>
-          )}
-        </div>
+        <FormField
+          id="name"
+          label="Name"
+          type="text"
+          placeholder="John Doe"
+          registration={register('name')}
+          error={errors.name?.message}
+          disabled={loading}
+          icon={<User className="h-5 w-5" />}
+        />
 
-        <div className="space-y-1">
-          <label
-            htmlFor="email"
-            className="text-sm font-medium text-[hsl(var(--foreground))]"
-          >
-            Email
-          </label>
-          <div className="relative">
-            <input
-              id="email"
-              type="email"
-              {...register('email')}
-              placeholder="you@example.com"
-              disabled={loading}
-              className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${
-                errors.email ? 'border-red-500' : 'border-input'
-              }`}
-            />
-            <Mail className="absolute right-3 top-3.5 h-5 w-5 text-[hsl(var(--muted-foreground))]" />
-          </div>
-          {errors.email && (
-            <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
-          )}
-        </div>
+        <FormField
+          id="email"
+          label="Email"
+          type="email"
+          placeholder="you@example.com"
+          registration={register('email')}
+          error={errors.email?.message}
+          disabled={loading}
+          icon={<Mail className="h-5 w-5" />}
+        />
 
-        <div className="space-y-1">
-          <label
-            htmlFor="password"
-            className="text-sm font-medium text-[hsl(var(--foreground))]"
-          >
-            Password
-          </label>
-          <div className="relative">
-            <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              {...register('password')}
-              disabled={loading}
-              className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${
-                errors.password ? 'border-red-500' : 'border-input'
-              }`}
-            />
+        <FormField
+          id="password"
+          label="Password"
+          type={showPassword ? 'text' : 'password'}
+          registration={register('password')}
+          error={errors.password?.message}
+          disabled={loading}
+          rightElement={
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-3.5 text-[hsl(var(--muted-foreground))]"
+              className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
             >
               {showPassword ? (
                 <EyeOff className="h-5 w-5" />
@@ -136,94 +94,24 @@ const RegisterForm: FC = () => {
                 <Eye className="h-5 w-5" />
               )}
             </button>
-          </div>
-          {errors.password && (
-            <p className="text-sm text-red-500 mt-1">
-              {errors.password.message}
-            </p>
-          )}
-        </div>
+          }
+        />
 
-        <div className="space-y-1">
-          <label
-            htmlFor="confirmPassword"
-            className="text-sm font-medium text-[hsl(var(--foreground))]"
-          >
-            Confirm Password
-          </label>
-          <div className="relative">
-            <input
-              id="confirmPassword"
-              type="password"
-              {...register('confirmPassword')}
-              disabled={loading}
-              className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${
-                errors.confirmPassword ? 'border-red-500' : 'border-input'
-              }`}
-            />
-          </div>
-          {errors.confirmPassword && (
-            <p className="text-sm text-red-500 mt-1">
-              {errors.confirmPassword.message}
-            </p>
-          )}
-        </div>
+        <FormField
+          id="confirmPassword"
+          label="Confirm Password"
+          type="password"
+          registration={register('confirmPassword')}
+          error={errors.confirmPassword?.message}
+          disabled={loading}
+        />
 
         <Button type="submit" className="w-full h-12" disabled={loading}>
           {loading ? <Spinner size="sm" /> : 'Register'}
         </Button>
       </form>
 
-      {/* Divider */}
-      <div className="relative my-8">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-[hsl(var(--border))]"></div>
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] rounded-2xl">
-            Or continue with
-          </span>
-        </div>
-      </div>
-
-      <div className="flex gap-4 justify-center">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-12 w-12 flex items-center justify-center gap-3 bg-gray-300 mb-4 rounded-full"
-          onClick={() => {
-            window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
-          }}
-        >
-          <Image
-            src="/google-logo.svg"
-            alt="Google"
-            width={30}
-            height={30}
-            sizes="30px"
-            priority
-          />
-        </Button>
-
-        {/* GitHub Login Button */}
-        <Button
-          type="button"
-          variant="outline"
-          className="h-12 w-12 flex items-center justify-center gap-3 bg-gray-300 mb-4 rounded-full"
-          onClick={() => {
-            window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/github`;
-          }}
-        >
-          <Image
-            src="/github-logo.svg"
-            alt="GitHub"
-            width={30}
-            height={30}
-            sizes="30px"
-            priority
-          />
-        </Button>
-      </div>
+      <OAuthButtons disabled={loading} />
 
       <div className="mt-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
         <p>

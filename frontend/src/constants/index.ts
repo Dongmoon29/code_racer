@@ -128,3 +128,15 @@ export const DEFAULT_VALUES = {
   MIN_DESCRIPTION_LENGTH: 1,
   MIN_FUNCTION_NAME_LENGTH: 1,
 } as const;
+
+// Matchmaking state constants
+export const MATCHING_STATE = {
+  IDLE: 'idle',
+  CONNECTING: 'connecting',
+  SEARCHING: 'searching',
+  FOUND: 'found',
+  ERROR: 'error',
+} as const;
+
+export type MatchingState =
+  (typeof MATCHING_STATE)[keyof typeof MATCHING_STATE];

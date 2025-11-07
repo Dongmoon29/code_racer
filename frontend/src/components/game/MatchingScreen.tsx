@@ -2,7 +2,7 @@ import React, { memo, useState } from 'react';
 import { useRouter } from 'next/router';
 import MatchingLoader from './MatchingLoader';
 import { ConnectingCard, ErrorCard, FoundCard } from './MatchingCards';
-import { MATCHING_STATE } from '@/lib/constants';
+import { MATCHING_STATE } from '@/constants';
 import { useMatchmaking } from '@/hooks/useMatchmaking';
 import DifficultySelector, { type Difficulty } from './DifficultySelector';
 import { getRingClasses } from '@/lib/selector-utils';

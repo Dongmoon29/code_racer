@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Shield } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { LoadingScreen } from '@/components/ui/LoadingScreen';
 
 type Props = {
   children: React.ReactNode;
@@ -18,39 +19,18 @@ const items = [
 
 export default function AdminLayout({ children }: Props) {
   const router = useRouter();
-  const { user, isLoggedIn, isLoading } = useAuthStore();
-
-  // Authentication check and admin role verification
-  useEffect(() => {
-    if (!isLoading) {
-      if (!isLoggedIn) {
-        // Redirect to login page if not logged in
-        router.push('/login');
-        return;
-      }
-
-      if (user?.role !== 'admin') {
-        // Redirect to home page if not admin role
-        router.push('/');
-        return;
-      }
-    }
-  }, [isLoggedIn, isLoading, user, router]);
+  const { isLoggedIn, isLoading, isAdmin } = useAuthGuard({
+    requireAuth: true,
+    requireAdmin: true,
+  });
 
   // Show loading screen while loading or not logged in
   if (isLoading || !isLoggedIn) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen spinnerColor="border-red-500" />;
   }
 
   // Show access denied screen for non-admin users
-  if (user?.role !== 'admin') {
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
