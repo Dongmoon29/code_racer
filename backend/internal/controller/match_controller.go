@@ -34,6 +34,10 @@ func (c *MatchController) GetMatch(ctx *gin.Context) {
 	// Service 호출
 	res, err := c.matchService.GetMatch(matchID)
 	if err != nil {
+		c.logger.Error().
+			Err(err).
+			Str("matchID", matchID.String()).
+			Msg("Failed to get match")
 		NotFound(ctx, "Match not found")
 		return
 	}
@@ -63,13 +67,19 @@ func (c *MatchController) SubmitSolution(ctx *gin.Context) {
 	// Code submission and evaluation
 	result, err := c.matchService.SubmitSolution(matchID, userID.(uuid.UUID), &req)
 	if err != nil {
-		// TODO log got changed so I need to fix this code
+		c.logger.Error().
+			Err(err).
+			Str("matchID", matchID.String()).
+			Str("userID", userID.(uuid.UUID).String()).
+			Msg("Failed to submit solution")
+		
 		if strings.Contains(err.Error(), "exceeded the DAILY quota") {
 			JSONError(ctx, http.StatusTooManyRequests, "Code evaluation service is currently unavailable due to daily quota exceeded. Please try again later.", "judge0_quota_exceeded")
 			return
 		}
 
-		InternalError(ctx, err.Error())
+		// Don't expose internal error details to users
+		InternalError(ctx, "Failed to submit solution")
 		return
 	}
 
