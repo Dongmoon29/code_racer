@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// trigger
+
 func setupTestEnv(t *testing.T) func() {
 	// 테스트에 필요한 모든 환경 변수 설정
 	envVars := map[string]string{
