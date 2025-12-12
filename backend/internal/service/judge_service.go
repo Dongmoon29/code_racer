@@ -178,7 +178,8 @@ func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *mo
 		Msg("Prepared test case data for Judge0")
 
 	// wrap batch (may fail for unsupported languages)
-	wrappedCode, err := s.codeWrapper.WrapCodeBatch(code, languageID, string(inputsJSON), problem)
+	// Pass empty string for inputsJSON as we'll pass it via stdin
+	wrappedCode, err := s.codeWrapper.WrapCodeBatch(code, languageID, "", problem)
 	if err != nil {
 		return nil, false, nil
 	}
@@ -187,7 +188,8 @@ func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *mo
 	expectedOutputsJSON, _ := json.Marshal(expectedOutputs)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	judgeResponse, err := s.submitToJudge(ctx, wrappedCode, languageID, string(expectedOutputsJSON), problem)
+	// Use submitToJudgeWithStdin to pass inputs via stdin
+	judgeResponse, err := s.submitToJudgeWithStdin(ctx, wrappedCode, languageID, string(inputsJSON), string(expectedOutputsJSON), problem)
 	if err != nil {
 		return nil, false, err
 	}
@@ -986,7 +988,8 @@ func (s *judgeService) tryBatchEvaluateWithRealtime(code string, languageID int,
 	inputsJSON, _ := json.Marshal(testCaseInputs)
 
 	// Wrap batch (may fail for unsupported languages)
-	wrappedCode, err := s.codeWrapper.WrapCodeBatch(code, languageID, string(inputsJSON), problem)
+	// Pass empty string for inputsJSON as we'll pass it via stdin
+	wrappedCode, err := s.codeWrapper.WrapCodeBatch(code, languageID, "", problem)
 	if err != nil {
 		return nil, false, nil
 	}
@@ -995,7 +998,8 @@ func (s *judgeService) tryBatchEvaluateWithRealtime(code string, languageID int,
 	expectedOutputsJSON, _ := json.Marshal(expectedOutputs)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	judgeResponse, err := s.submitToJudge(ctx, wrappedCode, languageID, string(expectedOutputsJSON), problem)
+	// Use submitToJudgeWithStdin to pass inputs via stdin
+	judgeResponse, err := s.submitToJudgeWithStdin(ctx, wrappedCode, languageID, string(inputsJSON), string(expectedOutputsJSON), problem)
 	if err != nil {
 		return nil, false, err
 	}

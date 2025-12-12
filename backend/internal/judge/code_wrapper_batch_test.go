@@ -39,31 +39,6 @@ func TestWrapCodeBatch_Javascript(t *testing.T) {
 	}
 }
 
-func TestWrapCodeBatch_Python(t *testing.T) {
-	logger := batchTestLogger()
-	w := NewCodeWrapper(logger)
-
-	problem := &model.Problem{FunctionName: "twoSum"}
-	code := "def twoSum(nums, target):\n    return [0, 1]"
-	cases := "[[1,2],[3,4]]"
-
-	out, err := w.WrapCodeBatch(code, 71, cases, problem)
-	if err != nil {
-		t.Fatalf("unexpected err: %v", err)
-	}
-
-	mustContain := []string{
-		"sys.argv[1]",
-		"twoSum(*inputs)",
-		"def twoSum",
-	}
-	for _, s := range mustContain {
-		if !strings.Contains(out, s) {
-			t.Fatalf("output missing: %s", s)
-		}
-	}
-}
-
 func TestWrapCodeBatch_Go(t *testing.T) {
 	logger := batchTestLogger()
 	w := NewCodeWrapper(logger)

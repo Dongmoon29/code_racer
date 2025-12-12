@@ -22,28 +22,33 @@ func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Pr
 	userCode = strings.ReplaceAll(userCode, "runTest();", "")
 	userCode = strings.TrimSpace(userCode)
 
-	template := `// ===== 사용자 코드 (그대로 유지) =====
+	template := `const fs = require('fs');
+
+// ===== 사용자 코드 (그대로 유지) =====
 %s
 // ====================================
 
 // ===== 실행 래퍼 (자동 생성) =====
 (function() {
     try {
-        const testCases = %s;
-        const results = testCases.map(inputs => {
-            if (Array.isArray(inputs)) {
-                return %s(...inputs);
-            } else {
-                return %s(inputs);
-            }
-        });
-        console.log(JSON.stringify(results));
+        const input = fs.readFileSync(0, 'utf-8');
+        if (input) {
+            const testCases = JSON.parse(input);
+            const results = testCases.map(inputs => {
+                if (Array.isArray(inputs)) {
+                    return %s(...inputs);
+                } else {
+                    return %s(inputs);
+                }
+            });
+            console.log(JSON.stringify(results));
+        }
     } catch (error) {
         console.error(String(error));
         process.exit(1);
     }
 })();`
-	return fmt.Sprintf(template, userCode, testCasesJSON, problem.FunctionName, problem.FunctionName), nil
+	return fmt.Sprintf(template, userCode, problem.FunctionName, problem.FunctionName), nil
 }
 
 func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {

@@ -72,7 +72,7 @@ func (c *MatchController) SubmitSolution(ctx *gin.Context) {
 			Str("matchID", matchID.String()).
 			Str("userID", userID.(uuid.UUID).String()).
 			Msg("Failed to submit solution")
-		
+
 		if strings.Contains(err.Error(), "exceeded the DAILY quota") {
 			JSONError(ctx, http.StatusTooManyRequests, "Code evaluation service is currently unavailable due to daily quota exceeded. Please try again later.", "judge0_quota_exceeded")
 			return

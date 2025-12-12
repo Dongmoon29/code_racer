@@ -79,6 +79,7 @@ func (g *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Pr
 	template := `package main
 
 import (
+    "bufio"
     "encoding/json"
     "fmt"
     "os"
@@ -149,26 +150,34 @@ func toIntSliceSlice(v interface{}) [][]int {
 
 // ===== 실행 래퍼 =====
 func main() {
-    var testCases [][]interface{}
-    testCasesJSON := %q
-    if err := json.Unmarshal([]byte(testCasesJSON), &testCases); err != nil {
-        fmt.Fprintf(os.Stderr, "Error parsing test cases: %%v\n", err)
-        os.Exit(1)
-    }
-    
-    results := []interface{}{}
-    for _, inputs := range testCases {
+    scanner := bufio.NewScanner(os.Stdin)
+    // Increase buffer size for large inputs
+    buf := make([]byte, 0, 64*1024)
+    scanner.Buffer(buf, 1024*1024) // 1MB
+
+    if scanner.Scan() {
+        testCasesJSON := scanner.Text()
+        
+        var testCases [][]interface{}
+        if err := json.Unmarshal([]byte(testCasesJSON), &testCases); err != nil {
+            fmt.Fprintf(os.Stderr, "Error parsing test cases: %%v\n", err)
+            os.Exit(1)
+        }
+        
+        results := []interface{}{}
+        for _, inputs := range testCases {
 %s
-        result := %s(%s)
-        results = append(results, result)
+            result := %s(%s)
+            results = append(results, result)
+        }
+        
+        output, _ := json.Marshal(results)
+        fmt.Println(string(output))
     }
-    
-    output, _ := json.Marshal(results)
-    fmt.Println(string(output))
 }`
 
 	argDecl, callArgs := goArgLines("inputs", paramTypes)
-	return fmt.Sprintf(template, userCode, testCasesJSON, argDecl, problem.FunctionName, callArgs), nil
+	return fmt.Sprintf(template, userCode, argDecl, problem.FunctionName, callArgs), nil
 }
 
 func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
