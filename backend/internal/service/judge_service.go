@@ -71,7 +71,7 @@ func (s *judgeService) validateProblemIOSchema(problem *model.Problem) error {
 func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger, eventBus events.EventBus) interfaces.JudgeService {
 	return &judgeService{
 		codeWrapper:       factory.NewCodeWrapper(logger),
-		judge0Client:      factory.NewJudge0Client(apiKey, apiEndpoint),
+		judge0Client:      factory.NewJudge0Client(apiKey, apiEndpoint, logger),
 		logger:            logger,
 		functionExtractor: judge.NewFunctionExtractor(logger),
 		eventBus:          eventBus,

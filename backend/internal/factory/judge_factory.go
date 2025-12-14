@@ -10,7 +10,7 @@ func NewCodeWrapper(logger logger.Logger) interfaces.CodeWrapper {
 	return judge.NewCodeWrapper(logger)
 }
 
-func NewJudge0Client(apiKey, apiEndpoint string) interfaces.Judge0Client {
-	config := judge.DefaultJudge0Config(apiKey, apiEndpoint)
+func NewJudge0Client(apiKey, apiEndpoint string, log logger.Logger) interfaces.Judge0Client {
+	config := judge.DefaultJudge0Config(apiKey, apiEndpoint, log)
 	return judge.NewJudge0Client(config)
 }

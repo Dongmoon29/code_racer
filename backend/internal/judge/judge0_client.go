@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/types"
 )
 
@@ -20,6 +21,7 @@ type Judge0Client struct {
 	apiEndpoint string
 	httpClient  *http.Client
 	rateLimiter *RateLimiter
+	logger      logger.Logger
 	mutex       sync.RWMutex
 }
 
@@ -68,6 +70,7 @@ func (rl *RateLimiter) Close() {
 type Judge0Config struct {
 	APIKey      string
 	APIEndpoint string
+	Logger      logger.Logger
 	Timeout     time.Duration
 	RateLimit   int           // requests per window
 	Window      time.Duration // rate limit window
@@ -76,10 +79,11 @@ type Judge0Config struct {
 }
 
 // DefaultJudge0Config returns default configuration
-func DefaultJudge0Config(apiKey, apiEndpoint string) *Judge0Config {
+func DefaultJudge0Config(apiKey, apiEndpoint string, log logger.Logger) *Judge0Config {
 	return &Judge0Config{
 		APIKey:      apiKey,
 		APIEndpoint: apiEndpoint,
+		Logger:      log,
 		Timeout:     30 * time.Second,
 		RateLimit:   100, // 100 requests per minute
 		Window:      time.Minute,
@@ -93,11 +97,22 @@ func NewJudge0Client(config *Judge0Config) *Judge0Client {
 	return &Judge0Client{
 		apiKey:      config.APIKey,
 		apiEndpoint: config.APIEndpoint,
+		logger:      config.Logger,
 		httpClient: &http.Client{
 			Timeout: config.Timeout,
 		},
 		rateLimiter: NewRateLimiter(config.RateLimit, config.Window),
 	}
+}
+
+func truncateForLog(s string, max int) (string, bool) {
+	if max <= 0 {
+		return "", len(s) > 0
+	}
+	if len(s) <= max {
+		return s, false
+	}
+	return s[:max] + "...(truncated)", true
 }
 
 // SubmitCode submits code to Judge0 API and returns results (improved version)
@@ -196,6 +211,18 @@ func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Reque
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Log raw Judge0 response JSON (debug only, truncated)
+	if c.logger != nil {
+		bodyStr := string(body)
+		bodyTrunc, truncated := truncateForLog(bodyStr, 16_000)
+		c.logger.Debug().
+			Int("statusCode", resp.StatusCode).
+			Int("responseBytes", len(body)).
+			Bool("truncated", truncated).
+			Str("judge0ResponseRaw", bodyTrunc).
+			Msg("Judge0 raw response received")
 	}
 
 	// Check response status code
