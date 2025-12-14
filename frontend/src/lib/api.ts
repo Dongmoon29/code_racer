@@ -168,6 +168,9 @@ export const matchApi = {
             created_at: payload.winner.created_at,
           }
         : undefined,
+      winner_execution_time_seconds:
+        payload.winner_execution_time_seconds ?? undefined,
+      winner_memory_usage_kb: payload.winner_memory_usage_kb ?? undefined,
       problem: payload.problem,
       status: payload.status,
       mode: payload.mode || 'casual_pvp', // Add mode field mapping

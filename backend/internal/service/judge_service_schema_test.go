@@ -54,4 +54,3 @@ func TestJudgeService_validateProblemIOSchema_MissingReturnType(t *testing.T) {
 	})
 	assert.Error(t, err)
 }
-

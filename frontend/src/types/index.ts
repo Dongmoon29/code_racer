@@ -199,6 +199,9 @@ export interface Game {
     name: string;
     created_at: string;
   };
+  // Winner metrics captured at match completion (if available)
+  winner_execution_time_seconds?: number;
+  winner_memory_usage_kb?: number;
   problem: ProblemDetail;
   status: 'waiting' | 'playing' | 'finished' | 'closed';
   mode: 'ranked_pvp' | 'casual_pvp' | 'single';

@@ -43,6 +43,20 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
     const router = useRouter();
     const routerHelper = useRouterHelper(router);
 
+    const me =
+      game.playerA?.id === currentUser.id
+        ? { id: game.playerA.id, name: game.playerA.name }
+        : game.playerB?.id === currentUser.id
+          ? { id: game.playerB.id, name: game.playerB.name }
+          : undefined;
+
+    const opponent =
+      game.playerA?.id === currentUser.id && game.playerB
+        ? { id: game.playerB.id, name: game.playerB.name }
+        : game.playerB?.id === currentUser.id && game.playerA
+          ? { id: game.playerA.id, name: game.playerA.name }
+          : undefined;
+
     const getOpponentName = (): string => {
       if (game.playerA?.id === currentUser.id) {
         return game.playerB?.name ?? '';
@@ -63,6 +77,8 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
         return (
           <FinishedGame
             game={game}
+            me={me}
+            opponent={opponent}
             myCode={myCode}
             opponentCode={opponentCode}
             selectedLanguage={selectedLanguage}
