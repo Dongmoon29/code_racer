@@ -202,6 +202,8 @@ export interface Game {
   // Winner metrics captured at match completion (if available)
   winner_execution_time_seconds?: number;
   winner_memory_usage_kb?: number;
+  winner_rating_delta?: number;
+  loser_rating_delta?: number;
   problem: ProblemDetail;
   status: 'waiting' | 'playing' | 'finished' | 'closed';
   mode: 'ranked_pvp' | 'casual_pvp' | 'single';

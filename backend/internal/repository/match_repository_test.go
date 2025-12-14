@@ -71,4 +71,3 @@ func TestMatchRepository_SetWinner_StoresWinnerMetrics(t *testing.T) {
 	assert.InDelta(t, execTime, got.WinnerExecutionTimeSeconds, 1e-9)
 	assert.Equal(t, 4567.0, got.WinnerMemoryUsageKB)
 }
-

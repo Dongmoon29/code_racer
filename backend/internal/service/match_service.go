@@ -169,7 +169,9 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 			winner, err1 := s.userRepo.FindByID(winnerID)
 			loser, err2 := s.userRepo.FindByID(loserID)
 			if err1 == nil && err2 == nil && winner != nil && loser != nil {
-				newWinner, newLoser := applyElo(winner.Rating, loser.Rating, true)
+				winnerOld := winner.Rating
+				loserOld := loser.Rating
+				newWinner, newLoser := applyElo(winnerOld, loserOld, true)
 				winner.Rating = newWinner
 				loser.Rating = newLoser
 				if err := s.userRepo.Update(winner); err != nil {
@@ -177,6 +179,13 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 				}
 				if err := s.userRepo.Update(loser); err != nil {
 					s.logger.Error().Err(err).Msg("Failed to update loser rating")
+				}
+
+				// Persist rating deltas on match for result screen display
+				updatedMatch.WinnerRatingDelta = newWinner - winnerOld
+				updatedMatch.LoserRatingDelta = newLoser - loserOld
+				if err := s.matchRepo.Update(updatedMatch); err != nil {
+					s.logger.Error().Err(err).Msg("Failed to update match rating deltas")
 				}
 			} else {
 				s.logger.Warn().Msg("Failed to load users for ELO update")
