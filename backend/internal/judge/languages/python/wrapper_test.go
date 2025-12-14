@@ -14,6 +14,10 @@ func TestWrapper_WrapSingle_WithImports(t *testing.T) {
 		FunctionName: "solution",
 		InputFormat:  "array",
 		OutputFormat: "array",
+		IOSchema: model.IOSchema{
+			ParamTypes: `["int[]"]`,
+			ReturnType: "int[]",
+		},
 	}
 
 	tests := []struct {
@@ -44,12 +48,10 @@ def solution(nums):
 # ===== 실행 래퍼 (자동 생성) =====
 if __name__ == "__main__":
     try:
-        test_case = json.loads('[3,1,4,1,5]')
-        if isinstance(test_case, list):
-            result = solution(*test_case)
-        else:
-            result = solution(test_case)
-        print(json.dumps(result))
+        raw = sys.stdin.read().strip()
+        value = json.loads(raw)
+        result = solution(value)
+        sys.stdout.write(json.dumps(result))
     except Exception as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)`,
@@ -80,12 +82,10 @@ def solution(nums):
 # ===== 실행 래퍼 (자동 생성) =====
 if __name__ == "__main__":
     try:
-        test_case = json.loads('[3,1,4,1,5]')
-        if isinstance(test_case, list):
-            result = solution(*test_case)
-        else:
-            result = solution(test_case)
-        print(json.dumps(result))
+        raw = sys.stdin.read().strip()
+        value = json.loads(raw)
+        result = solution(value)
+        sys.stdout.write(json.dumps(result))
     except Exception as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)`,
@@ -106,12 +106,10 @@ def solution(nums):
 # ===== 실행 래퍼 (자동 생성) =====
 if __name__ == "__main__":
     try:
-        test_case = json.loads('[3,1,4,1,5]')
-        if isinstance(test_case, list):
-            result = solution(*test_case)
-        else:
-            result = solution(test_case)
-        print(json.dumps(result))
+        raw = sys.stdin.read().strip()
+        value = json.loads(raw)
+        result = solution(value)
+        sys.stdout.write(json.dumps(result))
     except Exception as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)`,
@@ -133,6 +131,10 @@ func TestWrapper_WrapBatch_WithImports(t *testing.T) {
 		FunctionName: "solution",
 		InputFormat:  "array",
 		OutputFormat: "array",
+		IOSchema: model.IOSchema{
+			ParamTypes: `["int[]"]`,
+			ReturnType: "int[]",
+		},
 	}
 
 	tests := []struct {
@@ -163,16 +165,14 @@ def solution(nums):
 # ===== 실행 래퍼 (자동 생성) =====
 if __name__ == "__main__":
     try:
-        test_cases_json = "[[3,1,4,1,5], [1,2,3]]"
-        test_cases = json.loads(test_cases_json)
+        raw = sys.stdin.read().strip()
+        if not raw:
+            sys.exit(0)
+        test_cases = json.loads(raw)
         results = []
-        for inputs in test_cases:
-            if isinstance(inputs, list):
-                result = solution(*inputs)
-            else:
-                result = solution(inputs)
-            results.append(result)
-        print(json.dumps(results))
+        for value in test_cases:
+            results.append(solution(value))
+        sys.stdout.write(json.dumps(results))
     except Exception as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)`,

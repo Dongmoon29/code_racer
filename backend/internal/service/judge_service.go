@@ -67,18 +67,7 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 		return nil, fmt.Errorf("failed to get language ID: %w", err)
 	}
 
-	// Try batch evaluation first
-	batchEvaluationResult, batchEvaluationSuccess, batchEvaluationError := s.tryBatchEvaluate(code, languageID, problem)
-	if batchEvaluationError != nil {
-		return nil, batchEvaluationError
-	}
-
-	if batchEvaluationSuccess {
-		s.logEvaluationResult(batchEvaluationResult, languageID, problem, "batch")
-		return batchEvaluationResult, nil
-	}
-
-	// Fallback to per-test evaluation
+	// LeetCode-style: always per-test evaluation.
 	perTestEvaluationResult, perTestEvaluationError := s.aggregatePerTest(code, languageID, problem)
 	if perTestEvaluationError == nil && perTestEvaluationResult != nil {
 		s.logEvaluationResult(perTestEvaluationResult, languageID, problem, "per_test")
@@ -541,7 +530,7 @@ func (s *judgeService) evaluateTestCase(
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	response, early := s.submitSingle(ctx, wrapped, languageID, expectedStr, index, problem)
+	response, early := s.submitSingle(ctx, wrapped, languageID, testCase.Input, expectedStr, index, problem)
 	if early != nil {
 		return early
 	}
@@ -559,12 +548,13 @@ func (s *judgeService) buildSingleWrappedCode(code string, languageID int, testC
 	return wrappedCode, testCase.ExpectedOutput, nil
 }
 
-func (s *judgeService) submitSingle(ctx context.Context, wrappedCode string, languageID int, expectedJSON string, index int, problem *model.Problem) (*types.Judge0Response, *types.TestCaseResult) {
+func (s *judgeService) submitSingle(ctx context.Context, wrappedCode string, languageID int, stdin string, expectedJSON string, index int, problem *model.Problem) (*types.Judge0Response, *types.TestCaseResult) {
 	compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
 	request := types.Judge0Request{
 		SourceCode:       wrappedCode,
 		LanguageID:       languageID,
 		ExpectedOutput:   expectedJSON,
+		Stdin:            stdin,
 		CompileTimeout:   compileTimeout,
 		RunTimeout:       runTimeout,
 		MemoryLimit:      memoryLimit,
@@ -594,10 +584,14 @@ func (s *judgeService) evaluateSingleResponse(response *types.Judge0Response, te
 		ExecutionTime: getFloat64Time(response.Time),
 		MemoryUsage:   response.Memory,
 	}
-	if response.CompileError != "" {
-		s.logger.Error().Str("compileError", response.CompileError).Msg("Compilation error occurred")
+	if response.CompileError != "" || response.CompileOutput != "" {
+		compileMsg := response.CompileError
+		if compileMsg == "" {
+			compileMsg = response.CompileOutput
+		}
+		s.logger.Error().Str("compileError", compileMsg).Msg("Compilation error occurred")
 		result.Passed = false
-		result.ErrorMessage = response.CompileError // Return raw compile error
+		result.ErrorMessage = compileMsg // Return raw compile error/output
 		return result
 	}
 	if response.Stderr != "" {
@@ -750,20 +744,7 @@ func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, pr
 		return nil, fmt.Errorf("failed to get language ID: %w", err)
 	}
 
-	// 2. Try batch evaluation first with real-time notifications
-	batchResult, batchSuccess, batchError := s.tryBatchEvaluateWithRealtime(code, languageID, problem, matchID, userID)
-	if batchError != nil {
-		s.notifySubmissionFailed(matchID, userID, fmt.Sprintf("batch evaluation failed: %v", batchError))
-		return nil, batchError
-	}
-
-	if batchSuccess {
-		s.logEvaluationResult(batchResult, languageID, problem, "batch_realtime")
-		return batchResult, nil
-	}
-
-	// 3. Fallback to per-test evaluation with real-time notifications
-	s.logger.Info().Msg("Batch evaluation not supported, falling back to per-test evaluation")
+	// LeetCode-style: always per-test evaluation with real-time notifications.
 	perTestEvaluationResult, perTestEvaluationError := s.aggregatePerTestWithRealtime(code, languageID, problem, matchID, userID)
 	if perTestEvaluationError == nil && perTestEvaluationResult != nil {
 		s.logEvaluationResult(perTestEvaluationResult, languageID, problem, "per_test")

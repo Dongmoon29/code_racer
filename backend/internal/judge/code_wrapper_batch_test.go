@@ -18,7 +18,13 @@ func TestWrapCodeBatch_Javascript(t *testing.T) {
 	logger := batchTestLogger()
 	w := NewCodeWrapper(logger)
 
-	problem := &model.Problem{FunctionName: "twoSum"}
+	problem := &model.Problem{
+		FunctionName: "twoSum",
+		IOSchema: model.IOSchema{
+			ParamTypes: `["int[]","int"]`,
+			ReturnType: "int[]",
+		},
+	}
 	code := "function twoSum(nums, target) { return [0, 1]; }"
 	cases := "[[1,2],[3,4]]"
 
@@ -28,8 +34,9 @@ func TestWrapCodeBatch_Javascript(t *testing.T) {
 	}
 
 	mustContain := []string{
-		"const testCases =",
-		"twoSum(...inputs)",
+		"readFileSync(0, 'utf-8')",
+		"const testCases = JSON.parse(raw)",
+		"twoSum(...args)",
 		"function twoSum",
 	}
 	for _, s := range mustContain {
@@ -43,24 +50,18 @@ func TestWrapCodeBatch_Go(t *testing.T) {
 	logger := batchTestLogger()
 	w := NewCodeWrapper(logger)
 
-	problem := &model.Problem{FunctionName: "twoSum"}
+	problem := &model.Problem{
+		FunctionName: "twoSum",
+		IOSchema: model.IOSchema{
+			ParamTypes: `["int[]","int"]`,
+			ReturnType: "int[]",
+		},
+	}
 	code := "func twoSum(nums []int, target int) []int { return []int{0, 1} }"
 	cases := "[[1,2],[3,4]]"
 
-	out, err := w.WrapCodeBatch(code, 60, cases, problem)
-	if err != nil {
-		t.Fatalf("unexpected err: %v", err)
-	}
-
-	mustContain := []string{
-		"package main",
-		"testCasesJSON := ",
-		"twoSum(",
-		"toIntSlice",
-	}
-	for _, s := range mustContain {
-		if !strings.Contains(out, s) {
-			t.Fatalf("output missing: %s", s)
-		}
+	_, err := w.WrapCodeBatch(code, 60, cases, problem)
+	if err == nil {
+		t.Fatalf("expected err, got nil")
 	}
 }

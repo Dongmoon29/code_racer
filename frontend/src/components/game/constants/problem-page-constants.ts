@@ -5,21 +5,20 @@ export const PROBLEM_PAGE_CONSTANTS = {
     LANGUAGE: 'javascript' as const,
     THEME: 'dark' as const,
   },
-  
+
   // Language options
   LANGUAGE_OPTIONS: [
     { value: 'javascript', label: 'JavaScript' },
     { value: 'python', label: 'Python' },
     { value: 'go', label: 'Go' },
-    { value: 'java', label: 'Java' },
-    { value: 'cpp', label: 'C++' },
   ] as const,
-  
+
   // Messages
   MESSAGES: {
-    LANGUAGE_CHANGE_CONFIRMATION: 'Changing language will reset your code to template. Continue?',
+    LANGUAGE_CHANGE_CONFIRMATION:
+      'Changing language will reset your code to template. Continue?',
   },
-  
+
   // Layout
   LAYOUT: {
     CONTAINER_CLASS: 'flex h-full',

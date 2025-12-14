@@ -3,6 +3,7 @@ package golang
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/judge/parser"
@@ -15,322 +16,196 @@ type Wrapper struct{}
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
 func (g *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
-	// Clean user code - remove only package declaration and main function, keep imports and user functions
-	userCode := strings.TrimSpace(code)
-
-	// Remove only package declaration and main function, keep imports and user functions
-	lines := strings.Split(userCode, "\n")
-	var cleanedLines []string
-	inMain := false
-	braceCount := 0
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		// Skip package declaration
-		if strings.HasPrefix(trimmed, "package ") {
-			continue
-		}
-
-		// Track main function and skip it
-		if strings.HasPrefix(trimmed, "func main()") {
-			inMain = true
-			braceCount = 0
-			continue
-		}
-
-		if inMain {
-			// Count braces to know when main function ends
-			for _, char := range trimmed {
-				if char == '{' {
-					braceCount++
-				} else if char == '}' {
-					braceCount--
-					if braceCount == 0 {
-						inMain = false
-						continue
-					}
-				}
-			}
-			continue
-		}
-
-		// Keep everything else (imports, user functions, etc.)
-		cleanedLines = append(cleanedLines, line)
-	}
-
-	userCode = strings.Join(cleanedLines, "\n")
-	userCode = strings.TrimSpace(userCode)
-
-	// Infer parameter types from function signature
-	sigParser := parser.NewGoSignatureParser()
-	paramTypes := sigParser.InferParamTypesFromSignature(userCode, problem.FunctionName)
-
-	// Fallback to common patterns if inference fails
-	if len(paramTypes) == 0 {
-		if problem.IOSchema.ParamTypes != "" {
-			json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes)
-		}
-		if len(paramTypes) == 0 {
-			paramTypes = []string{"array", "int"} // Common pattern: array + int
-		}
-	}
-
-	template := `package main
-
-import (
-    "bufio"
-    "encoding/json"
-    "fmt"
-    "os"
-)
-
-// ===== 사용자 코드 (그대로 유지) =====
-%s
-// ====================================
-
-// ===== 타입 변환 헬퍼 =====
-func toInt(v interface{}) int {
-    if f, ok := v.(float64); ok {
-        return int(f)
-    }
-    if i, ok := v.(int); ok {
-        return i
-    }
-    return 0
-}
-
-func toFloat(v interface{}) float64 {
-    if f, ok := v.(float64); ok {
-        return f
-    }
-    if i, ok := v.(int); ok {
-        return float64(i)
-    }
-    return 0
-}
-
-func toBool(v interface{}) bool {
-    if b, ok := v.(bool); ok {
-        return b
-    }
-    return false
-}
-
-func toString(v interface{}) string {
-    if s, ok := v.(string); ok {
-        return s
-    }
-    return ""
-}
-
-func toIntSlice(v interface{}) []int {
-    arr, ok := v.([]interface{})
-    if !ok {
-        return nil
-    }
-    result := make([]int, len(arr))
-    for i, val := range arr {
-        result[i] = toInt(val)
-    }
-    return result
-}
-
-func toIntSliceSlice(v interface{}) [][]int {
-    arr, ok := v.([]interface{})
-    if !ok {
-        return nil
-    }
-    result := make([][]int, len(arr))
-    for i, val := range arr {
-        result[i] = toIntSlice(val)
-    }
-    return result
-}
-
-// ===== 실행 래퍼 =====
-func main() {
-    scanner := bufio.NewScanner(os.Stdin)
-    // Increase buffer size for large inputs
-    buf := make([]byte, 0, 64*1024)
-    scanner.Buffer(buf, 1024*1024) // 1MB
-
-    if scanner.Scan() {
-        testCasesJSON := scanner.Text()
-        
-        var testCases [][]interface{}
-        if err := json.Unmarshal([]byte(testCasesJSON), &testCases); err != nil {
-            fmt.Fprintf(os.Stderr, "Error parsing test cases: %%v\n", err)
-            os.Exit(1)
-        }
-        
-        results := []interface{}{}
-        for _, inputs := range testCases {
-%s
-            result := %s(%s)
-            results = append(results, result)
-        }
-        
-        output, _ := json.Marshal(results)
-        fmt.Println(string(output))
-    }
-}`
-
-	argDecl, callArgs := goArgLines("inputs", paramTypes)
-	return fmt.Sprintf(template, userCode, argDecl, problem.FunctionName, callArgs), nil
+	// LeetCode-style MVP: prefer per-test execution; batch harness is optional.
+	// Keeping this unimplemented avoids maintaining two runners.
+	return "", fmt.Errorf("batch wrapper not supported for Go in LeetCode mode")
 }
 
 func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
-	// Clean user code - remove only package declaration and main function, keep imports and user functions
+	// LeetCode-style single runner: user submits a function; runner reads stdin JSON and calls it.
+
 	userCode := strings.TrimSpace(code)
 
-	// Remove only package declaration and main function, keep imports and user functions
-	lines := strings.Split(userCode, "\n")
-	var cleanedLines []string
-	inMain := false
-	braceCount := 0
+	// Extract imports and code, and remove package/main from user code.
+	ip := parser.NewImportParser()
+	info := ip.ParseImports(userCode, 60)
+	cleanedCode := stripGoPackageLine(info.Code)
 
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		// Skip package declaration
-		if strings.HasPrefix(trimmed, "package ") {
-			continue
+	// Determine param types from IOSchema; fall back to signature parser for count.
+	paramTypes := []string{}
+	if problem != nil && strings.TrimSpace(problem.IOSchema.ParamTypes) != "" {
+		_ = json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes)
+	}
+	if len(paramTypes) == 0 {
+		sigParser := parser.NewGoSignatureParser()
+		sig := sigParser.ParseFunctionSignature("package main\n\n"+cleanedCode, problem.FunctionName)
+		if sig != nil {
+			// Store Go types directly; mapping handles both schema and Go types.
+			paramTypes = sig.ParamTypes
 		}
-
-		// Track main function and skip it
-		if strings.HasPrefix(trimmed, "func main()") {
-			inMain = true
-			braceCount = 0
-			continue
-		}
-
-		if inMain {
-			// Count braces to know when main function ends
-			for _, char := range trimmed {
-				if char == '{' {
-					braceCount++
-				} else if char == '}' {
-					braceCount--
-					if braceCount == 0 {
-						inMain = false
-						continue
-					}
-				}
-			}
-			continue
-		}
-
-		// Keep everything else (imports, user functions, etc.)
-		cleanedLines = append(cleanedLines, line)
+	}
+	if len(paramTypes) == 0 {
+		// Default: one string param (common for initial problems)
+		paramTypes = []string{"string"}
 	}
 
-	userCode = strings.Join(cleanedLines, "\n")
-	userCode = strings.TrimSpace(userCode)
-
-	// Infer parameter types from function signature
-	sigParser := parser.NewGoSignatureParser()
-	paramTypes := sigParser.InferParamTypesFromSignature(userCode, problem.FunctionName)
-
-	// Fallback to common patterns if inference fails
-	if len(paramTypes) == 0 {
-		if problem.IOSchema.ParamTypes != "" {
-			json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes)
-		}
-		if len(paramTypes) == 0 {
-			paramTypes = []string{"array", "int"} // Common pattern: array + int
-		}
+	importBlock := buildGoImportBlock(info.Imports)
+	unmarshalDecl, callArgs, ok := buildGoArgUnmarshal(paramTypes)
+	if !ok {
+		return ""
 	}
 
 	template := `package main
 
 import (
-    "encoding/json"
-    "fmt"
-    "os"
+%s
 )
 
 // ===== 사용자 코드 (그대로 유지) =====
 %s
 // ====================================
 
-// ===== 타입 변환 헬퍼 =====
-func toInt(v interface{}) int {
-    if f, ok := v.(float64); ok {
-        return int(f)
-    }
-    if i, ok := v.(int); ok {
-        return i
-    }
-    return 0
-}
-
-func toFloat(v interface{}) float64 {
-    if f, ok := v.(float64); ok {
-        return f
-    }
-    if i, ok := v.(int); ok {
-        return float64(i)
-    }
-    return 0
-}
-
-func toBool(v interface{}) bool {
-    if b, ok := v.(bool); ok {
-        return b
-    }
-    return false
-}
-
-func toString(v interface{}) string {
-    if s, ok := v.(string); ok {
-        return s
-    }
-    return ""
-}
-
-func toIntSlice(v interface{}) []int {
-    arr, ok := v.([]interface{})
-    if !ok {
-        return nil
-    }
-    result := make([]int, len(arr))
-    for i, val := range arr {
-        result[i] = toInt(val)
-    }
-    return result
-}
-
-func toIntSliceSlice(v interface{}) [][]int {
-    arr, ok := v.([]interface{})
-    if !ok {
-        return nil
-    }
-    result := make([][]int, len(arr))
-    for i, val := range arr {
-        result[i] = toIntSlice(val)
-    }
-    return result
-}
-
-// ===== 실행 래퍼 =====
 func main() {
-    var testCase []interface{}
-    testCaseJSON := %q
-    if err := json.Unmarshal([]byte(testCaseJSON), &testCase); err != nil {
-        fmt.Fprintf(os.Stderr, "Error parsing test case: %%v\n", err)
-        os.Exit(1)
-    }
-    
-%s
-    result := %s(%s)
-    
-    output, _ := json.Marshal(result)
-    fmt.Println(string(output))
-}`
+	data, _ := ioutil.ReadAll(os.Stdin)
+	raw := strings.TrimSpace(string(data))
+	if raw == "" {
+		return
+	}
 
-	argDecl, callArgs := goArgLines("testCase", paramTypes)
-	return fmt.Sprintf(template, userCode, testCase, argDecl, problem.FunctionName, callArgs)
+%s
+	result := %s(%s)
+	out, _ := json.Marshal(result)
+	fmt.Print(string(out))
+}`
+	return fmt.Sprintf(template, importBlock, cleanedCode, unmarshalDecl, problem.FunctionName, callArgs)
+}
+
+func stripGoPackageLine(code string) string {
+	lines := strings.Split(code, "\n")
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "package ") {
+			continue
+		}
+		out = append(out, line)
+	}
+	return strings.TrimSpace(strings.Join(out, "\n"))
+}
+
+func normalizeGoImport(s string) string {
+	trimmed := strings.TrimSpace(s)
+	if strings.HasPrefix(trimmed, "import ") {
+		trimmed = strings.TrimSpace(strings.TrimPrefix(trimmed, "import "))
+	}
+	trimmed = strings.Trim(trimmed, "()")
+	trimmed = strings.TrimSpace(trimmed)
+	if trimmed == "" {
+		return ""
+	}
+	// Ensure quoted form for import block
+	if strings.HasPrefix(trimmed, `"`) {
+		return trimmed
+	}
+	// Handle alias imports like: foo "bar"
+	parts := strings.Fields(trimmed)
+	if len(parts) == 2 && strings.HasPrefix(parts[1], `"`) {
+		return parts[0] + " " + parts[1]
+	}
+	return `"` + strings.Trim(trimmed, `"`) + `"`
+}
+
+func buildGoImportBlock(userImports []string) string {
+	// Required for runner
+	required := []string{`"encoding/json"`, `"fmt"`, `"io/ioutil"`, `"os"`, `"strings"`}
+	set := map[string]struct{}{}
+	for _, r := range required {
+		set[r] = struct{}{}
+	}
+	for _, imp := range userImports {
+		n := normalizeGoImport(imp)
+		if n == "" {
+			continue
+		}
+		set[n] = struct{}{}
+	}
+	all := make([]string, 0, len(set))
+	for k := range set {
+		all = append(all, k)
+	}
+	sort.Strings(all)
+	lines := make([]string, 0, len(all))
+	for _, imp := range all {
+		lines = append(lines, "\t"+imp)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func goTypeFromSchema(t string) (string, bool) {
+	switch t {
+	case "int", "number":
+		return "int", true
+	case "float", "float64":
+		return "float64", true
+	case "bool", "boolean":
+		return "bool", true
+	case "string":
+		return "string", true
+	case "int[]", "[]int", "array":
+		return "[]int", true
+	case "int[][]", "[][]int":
+		return "[][]int", true
+	case "string[]", "[]string":
+		return "[]string", true
+	default:
+		return "", false
+	}
+}
+
+func buildGoArgUnmarshal(paramTypes []string) (decl string, call string, ok bool) {
+	// Single param: stdin is a JSON value
+	if len(paramTypes) == 1 {
+		goType, ok2 := goTypeFromSchema(paramTypes[0])
+		if !ok2 {
+			return "", "", false
+		}
+		decl += fmt.Sprintf("\tvar arg0 %s\n", goType)
+		decl += "\tif err := json.Unmarshal([]byte(raw), &arg0); err != nil {\n"
+		decl += "\t\tfmt.Fprint(os.Stderr, \"invalid input\")\n"
+		decl += "\t\tos.Exit(1)\n"
+		decl += "\t}\n"
+		return decl, "arg0", true
+	}
+
+	decl += "\tvar args []json.RawMessage\n"
+	decl += "\tif err := json.Unmarshal([]byte(raw), &args); err != nil {\n"
+	decl += "\t\tfmt.Fprint(os.Stderr, \"invalid input\")\n"
+	decl += "\t\tos.Exit(1)\n"
+	decl += "\t}\n"
+	decl += fmt.Sprintf("\tif len(args) != %d {\n", len(paramTypes))
+	decl += "\t\tfmt.Fprint(os.Stderr, \"invalid input\")\n"
+	decl += "\t\tos.Exit(1)\n"
+	decl += "\t}\n\n"
+
+	for i, pt := range paramTypes {
+		goType, ok2 := goTypeFromSchema(pt)
+		if !ok2 {
+			return "", "", false
+		}
+		decl += fmt.Sprintf("\tvar arg%d %s\n", i, goType)
+		decl += fmt.Sprintf("\tif err := json.Unmarshal(args[%d], &arg%d); err != nil {\n", i, i)
+		decl += "\t\tfmt.Fprint(os.Stderr, \"invalid input\")\n"
+		decl += "\t\tos.Exit(1)\n"
+		decl += "\t}\n"
+		if i < len(paramTypes)-1 {
+			decl += "\n"
+		}
+		if i > 0 {
+			call += ", "
+		}
+		call += fmt.Sprintf("arg%d", i)
+	}
+	return decl, call, true
 }
 
 func goArgLines(varName string, paramTypes []string) (string, string) {
