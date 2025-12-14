@@ -97,14 +97,7 @@ func (s *userService) GetProfile(userID uuid.UUID) (*model.User, error) {
 		return nil, fmt.Errorf("failed to find user: %w", err)
 	}
 
-	return &model.User{
-		Homepage:    user.Homepage,
-		LinkedIn:    user.LinkedIn,
-		GitHub:      user.GitHub,
-		Company:     user.Company,
-		JobTitle:    user.JobTitle,
-		FavLanguage: user.FavLanguage,
-	}, nil
+	return user, nil
 }
 
 func (s *userService) UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRequest) (*model.User, error) {

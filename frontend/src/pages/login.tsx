@@ -17,7 +17,10 @@ const LoginPage: React.FC = () => {
     // Only redirect if we're sure the user is logged in
     // and we're not still loading
     if (!isLoading && isLoggedIn) {
-      router.replace('/dashboard');
+      // Check if there's a redirect URL
+      const redirectUrl = router.query.redirect as string;
+      const destination = redirectUrl || '/dashboard';
+      router.replace(destination);
       return;
     }
 

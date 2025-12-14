@@ -58,11 +58,25 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 		return
 	}
 
-	profile, err := c.userService.GetProfile(userID)
+	user, err := c.userService.GetProfile(userID)
 	if err != nil {
 		InternalError(ctx, err.Error())
 		return
 	}
+
+	// Get recent games for the user
+	recent := []model.RecentGameSummary{}
+	if svc, ok := c.userService.(interface {
+		GetRecentGames(uuid.UUID, int) ([]model.RecentGameSummary, error)
+	}); ok {
+		if r, err := svc.GetRecentGames(userID, 5); err == nil {
+			recent = r
+		}
+	}
+
+	// Convert to UserResponse and embed recent_games
+	profile := user.ToResponse()
+	profile.RecentGames = recent
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,

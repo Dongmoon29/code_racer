@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { ProfileSidebar, Overview, GameHistory } from '@/components/profile';
+import { Overview, GameHistory, ProfileSidebar, PublicProfileSidebar } from '@/components/profile';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
-import { ROUTES } from '@/lib/router';
+import { useAuthStore } from '@/stores/authStore';
 
 interface UserInfo {
   id: string;
@@ -37,31 +37,39 @@ interface RecentGameSummary {
   created_at: string;
 }
 
-interface CurrentUserResponse extends UserInfo {
+interface UserProfileResponse extends UserInfo {
   recent_games: RecentGameSummary[];
 }
 
-const DashboardIndex = () => {
+const UserProfilePage = () => {
   const router = useRouter();
+  const { userId } = router.query;
+  const { user: currentUser } = useAuthStore();
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['currentUser'],
+    queryKey: ['userProfile', userId],
     queryFn: async () => {
-      const response = await api.get('/users/me');
+      const response = await api.get(`/users/${userId}/profile`);
       return response.data as {
         success: boolean;
-        data: CurrentUserResponse;
+        profile: UserProfileResponse;
       };
     },
+    enabled: !!userId && router.isReady,
   });
 
-  const user = data?.data as CurrentUserResponse | undefined;
-
-  // Redirect to user profile page when user data is loaded
-  useEffect(() => {
-    if (user?.id) {
-      router.replace(ROUTES.USER_PROFILE(user.id));
-    }
-  }, [user?.id, router]);
+  // Wait for router to be ready
+  if (!router.isReady || !userId) {
+    return (
+      <DashboardLayout>
+        <div className="py-8">
+          <div className="flex items-center justify-center">
+            <CodeRacerLoader />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -81,7 +89,7 @@ const DashboardIndex = () => {
         <div className="py-8">
           <div className="flex items-center justify-center">
             <div className="text-lg text-red-600">
-              Failed to load user information
+              Failed to load user profile
             </div>
           </div>
         </div>
@@ -89,15 +97,17 @@ const DashboardIndex = () => {
     );
   }
 
+  const user = data?.profile;
   const recentGames = user?.recent_games;
+  const isOwnProfile = currentUser?.id === userId;
 
   return (
     <DashboardLayout>
       <Head>
-        <title>My Profile - CodeRacer</title>
+        <title>{user?.name}&apos;s Profile - CodeRacer</title>
         <meta
           name="description"
-          content="Manage your profile and account settings"
+          content={`View ${user?.name}'s profile on CodeRacer`}
         />
       </Head>
 
@@ -105,7 +115,11 @@ const DashboardIndex = () => {
         <div className="max-w-7xl">
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="lg:w-80 flex-shrink-0">
-              <ProfileSidebar user={user!} />
+              {isOwnProfile ? (
+                <ProfileSidebar user={user!} />
+              ) : (
+                <PublicProfileSidebar user={user!} />
+              )}
             </div>
 
             <div className="flex-1 min-w-0">
@@ -121,4 +135,4 @@ const DashboardIndex = () => {
   );
 };
 
-export default DashboardIndex;
+export default UserProfilePage;

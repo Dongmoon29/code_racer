@@ -28,7 +28,10 @@ export const useAuthGuard = (options: UseAuthGuardOptions = {}) => {
 
     // Check authentication requirement
     if (requireAuth && !isLoggedIn) {
-      router.push(redirectTo);
+      // Save the current page to redirect back after login
+      const currentPath = router.asPath;
+      const loginUrl = `${redirectTo}?redirect=${encodeURIComponent(currentPath)}`;
+      router.push(loginUrl);
       return;
     }
 

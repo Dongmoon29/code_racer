@@ -243,6 +243,11 @@ export const userApi = {
     return response.data;
   },
 
+  getUserProfile: async (userId: string) => {
+    const response = await api.get(`/users/${userId}/profile`);
+    return response.data;
+  },
+
   getLeaderboard: async () => {
     const response = await api.get('/users/leaderboard');
     return response.data as {

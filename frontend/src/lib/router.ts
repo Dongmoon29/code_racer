@@ -10,8 +10,10 @@ export const ROUTES = {
 
   // Main app routes
   DASHBOARD: '/dashboard',
-  DASHBOARD_RACE: '/dashboard/race',
+  LEADERBOARD: '/leaderboard',
+  RACE: '/race',
   PROFILE: '/profile',
+  USER_PROFILE: (userId: string) => `/users/${userId}`,
 
   // Game routes
   GAME_ROOM: (gameId: string) => `/game/${gameId}`,
@@ -91,12 +93,20 @@ export class RouterHelper {
     return this.push(ROUTES.DASHBOARD);
   }
 
-  goToDashboardRace() {
-    return this.push(ROUTES.DASHBOARD_RACE);
+  goToLeaderboard() {
+    return this.push(ROUTES.LEADERBOARD);
+  }
+
+  goToRace() {
+    return this.push(ROUTES.RACE);
   }
 
   goToProfile() {
     return this.push(ROUTES.PROFILE);
+  }
+
+  goToUserProfile(userId: string) {
+    return this.push(ROUTES.USER_PROFILE(userId));
   }
 
   goToGameRoom(gameId: string) {
@@ -130,6 +140,10 @@ export class RouterHelper {
 
   replaceToGameRoom(gameId: string) {
     return this.replace(ROUTES.GAME_ROOM(gameId));
+  }
+
+  replaceToUserProfile(userId: string) {
+    return this.replace(ROUTES.USER_PROFILE(userId));
   }
 
   // Utility methods

@@ -32,7 +32,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoggedIn: false,
-  isLoading: false, // Changed initial value to false
+  isLoading: true, // Start as true to prevent premature redirects
   login: (user: User) => {
     set({ user, isLoggedIn: true });
   },
@@ -60,11 +60,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
   initializeAuth: async () => {
-    // Skip if already loading
-    if (get().isLoading) {
-      return;
-    }
-
     try {
       set({ isLoading: true });
 

@@ -17,7 +17,8 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     initializeAuth();
-  }, [initializeAuth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // SSR-safe route check to avoid hydration mismatch
   const isAdminRoute = router.pathname.startsWith('/admin');

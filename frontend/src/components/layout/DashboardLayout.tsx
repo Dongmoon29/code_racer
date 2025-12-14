@@ -1,36 +1,38 @@
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useState, useMemo } from 'react';
 import { Car, Trophy, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import Header from './Header';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
+import { ROUTES } from '@/lib/router';
 
 type DashboardLayoutProps = {
   children: ReactNode;
 };
 
-const navigationItems = [
-  {
-    href: '/dashboard',
-    label: 'Profile',
-    icon: <User className="w-5 h-5 shrink-0" />,
-  },
-  {
-    href: '/dashboard/leaderboard',
-    label: 'Leaderboard',
-    icon: <Trophy className="w-5 h-5 shrink-0" />,
-  },
-  {
-    href: '/dashboard/race',
-    label: 'Race',
-    icon: <Car className="w-5 h-5 shrink-0" />,
-  },
-];
-
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
-  const { isLoggedIn, isLoading } = useAuthGuard({ requireAuth: true });
+  const { isLoggedIn, isLoading, user } = useAuthGuard({ requireAuth: true });
+
+  const navigationItems = useMemo(() => [
+    {
+      href: user?.id ? ROUTES.USER_PROFILE(user.id) : '/dashboard',
+      label: 'Profile',
+      icon: <User className="w-5 h-5 shrink-0" />,
+      pattern: '/users',
+    },
+    {
+      href: '/leaderboard',
+      label: 'Leaderboard',
+      icon: <Trophy className="w-5 h-5 shrink-0" />,
+    },
+    {
+      href: '/race',
+      label: 'Race',
+      icon: <Car className="w-5 h-5 shrink-0" />,
+    },
+  ], [user?.id]);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('dashboard-sidebar-collapsed') === 'true';
@@ -79,7 +81,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Navigation */}
             <nav className="space-y-2 w-full">
               {navigationItems.map((item) => {
-                const isActive = router.pathname === item.href;
+                const isActive = item.pattern
+                  ? router.pathname.startsWith(item.pattern)
+                  : router.pathname === item.href;
 
                 return (
                   <div
