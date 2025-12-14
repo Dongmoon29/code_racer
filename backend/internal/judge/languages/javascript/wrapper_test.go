@@ -14,6 +14,10 @@ func TestWrapper_WrapSingle_WithImports(t *testing.T) {
 		FunctionName: "solution",
 		InputFormat:  "array",
 		OutputFormat: "array",
+		IOSchema: model.IOSchema{
+			ParamTypes: `["int[]"]`,
+			ReturnType: "int[]",
+		},
 	}
 
 	tests := []struct {
@@ -41,14 +45,11 @@ function solution(nums) {
 // ===== 실행 래퍼 (자동 생성) =====
 (function() {
     try {
-        const testCase = JSON.parse('[3,1,4,1,5]');
-        let result;
-        if (Array.isArray(testCase)) {
-            result = solution(...testCase);
-        } else {
-            result = solution(testCase);
-        }
-        console.log(JSON.stringify(result));
+        const raw = require('fs').readFileSync(0, 'utf-8').trim();
+        if (!raw) return;
+        const value = JSON.parse(raw);
+        const result = solution(value);
+        process.stdout.write(JSON.stringify(result));
     } catch (error) {
         console.error(String(error));
         process.exit(1);
@@ -74,14 +75,11 @@ function solution(nums) {
 // ===== 실행 래퍼 (자동 생성) =====
 (function() {
     try {
-        const testCase = JSON.parse('[3,1,4,1,5]');
-        let result;
-        if (Array.isArray(testCase)) {
-            result = solution(...testCase);
-        } else {
-            result = solution(testCase);
-        }
-        console.log(JSON.stringify(result));
+        const raw = require('fs').readFileSync(0, 'utf-8').trim();
+        if (!raw) return;
+        const value = JSON.parse(raw);
+        const result = solution(value);
+        process.stdout.write(JSON.stringify(result));
     } catch (error) {
         console.error(String(error));
         process.exit(1);
@@ -109,14 +107,11 @@ function solution(nums) {
 // ===== 실행 래퍼 (자동 생성) =====
 (function() {
     try {
-        const testCase = JSON.parse('[3,1,4,1,5]');
-        let result;
-        if (Array.isArray(testCase)) {
-            result = solution(...testCase);
-        } else {
-            result = solution(testCase);
-        }
-        console.log(JSON.stringify(result));
+        const raw = require('fs').readFileSync(0, 'utf-8').trim();
+        if (!raw) return;
+        const value = JSON.parse(raw);
+        const result = solution(value);
+        process.stdout.write(JSON.stringify(result));
     } catch (error) {
         console.error(String(error));
         process.exit(1);
@@ -138,14 +133,11 @@ function solution(nums) {
 // ===== 실행 래퍼 (자동 생성) =====
 (function() {
     try {
-        const testCase = JSON.parse('[3,1,4,1,5]');
-        let result;
-        if (Array.isArray(testCase)) {
-            result = solution(...testCase);
-        } else {
-            result = solution(testCase);
-        }
-        console.log(JSON.stringify(result));
+        const raw = require('fs').readFileSync(0, 'utf-8').trim();
+        if (!raw) return;
+        const value = JSON.parse(raw);
+        const result = solution(value);
+        process.stdout.write(JSON.stringify(result));
     } catch (error) {
         console.error(String(error));
         process.exit(1);

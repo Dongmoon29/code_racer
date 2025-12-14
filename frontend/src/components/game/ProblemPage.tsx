@@ -45,8 +45,6 @@ const ProblemPage: FC<ProblemPageProps> = memo(({ problem }) => {
           <option value="javascript">JavaScript</option>
           <option value="python">Python</option>
           <option value="go">Go</option>
-          <option value="java">Java</option>
-          <option value="cpp">C++</option>
         </select>
 
         <CodeEditor

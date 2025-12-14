@@ -1,6 +1,7 @@
 package python
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -10,6 +11,20 @@ import (
 type Wrapper struct{}
 
 func NewWrapper() *Wrapper { return &Wrapper{} }
+
+func schemaParamCount(problem *model.Problem) int {
+	if problem == nil {
+		return 1
+	}
+	if strings.TrimSpace(problem.IOSchema.ParamTypes) == "" {
+		return 1
+	}
+	var pts []string
+	if err := json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &pts); err != nil || len(pts) == 0 {
+		return 1
+	}
+	return len(pts)
+}
 
 func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
 	// Clean user code - remove any existing wrapper functions
@@ -23,6 +38,36 @@ func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Pr
 	userCode = strings.ReplaceAll(userCode, "    run_test()", "")
 	userCode = strings.TrimSpace(userCode)
 
+	paramCount := schemaParamCount(problem)
+
+	// stdin is expected to be JSON array of test cases
+	// - paramCount == 1: each element is the single argument value (may itself be list/dict)
+	// - paramCount > 1: each element is a list of arguments
+	if paramCount == 1 {
+		template := `import json
+import sys
+
+# ===== 사용자 코드 (그대로 유지) =====
+%s
+# ====================================
+
+# ===== 실행 래퍼 (자동 생성) =====
+if __name__ == "__main__":
+    try:
+        raw = sys.stdin.read().strip()
+        if not raw:
+            sys.exit(0)
+        test_cases = json.loads(raw)
+        results = []
+        for value in test_cases:
+            results.append(%s(value))
+        sys.stdout.write(json.dumps(results))
+    except Exception as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)`
+		return fmt.Sprintf(template, userCode, problem.FunctionName), nil
+	}
+
 	template := `import json
 import sys
 
@@ -33,23 +78,23 @@ import sys
 # ===== 실행 래퍼 (자동 생성) =====
 if __name__ == "__main__":
     try:
-        test_cases_json = %q
-        test_cases = json.loads(test_cases_json)
+        raw = sys.stdin.read().strip()
+        if not raw:
+            sys.exit(0)
+        test_cases = json.loads(raw)
         results = []
-        for inputs in test_cases:
-            if isinstance(inputs, list):
-                result = %s(*inputs)
-            else:
-                result = %s(inputs)
-            results.append(result)
-        print(json.dumps(results))
+        for args in test_cases:
+            results.append(%s(*args))
+        sys.stdout.write(json.dumps(results))
     except Exception as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)`
-	return fmt.Sprintf(template, userCode, testCasesJSON, problem.FunctionName, problem.FunctionName), nil
+	return fmt.Sprintf(template, userCode, problem.FunctionName), nil
 }
 
 func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
+	paramCount := schemaParamCount(problem)
+
 	// Clean user code - remove any existing wrapper functions
 	userCode := strings.TrimSpace(code)
 
@@ -61,6 +106,27 @@ func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Proble
 	userCode = strings.ReplaceAll(userCode, "    run_test()", "")
 	userCode = strings.TrimSpace(userCode)
 
+	if paramCount == 1 {
+		template := `import json
+import sys
+
+# ===== 사용자 코드 (그대로 유지) =====
+%s
+# ====================================
+
+# ===== 실행 래퍼 (자동 생성) =====
+if __name__ == "__main__":
+    try:
+        raw = sys.stdin.read().strip()
+        value = json.loads(raw)
+        result = %s(value)
+        sys.stdout.write(json.dumps(result))
+    except Exception as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)`
+		return fmt.Sprintf(template, userCode, problem.FunctionName)
+	}
+
 	template := `import json
 import sys
 
@@ -71,14 +137,12 @@ import sys
 # ===== 실행 래퍼 (자동 생성) =====
 if __name__ == "__main__":
     try:
-        test_case = json.loads('%s')
-        if isinstance(test_case, list):
-            result = %s(*test_case)
-        else:
-            result = %s(test_case)
-        print(json.dumps(result))
+        raw = sys.stdin.read().strip()
+        args = json.loads(raw)
+        result = %s(*args)
+        sys.stdout.write(json.dumps(result))
     except Exception as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)`
-	return fmt.Sprintf(template, userCode, testCase, problem.FunctionName, problem.FunctionName)
+	return fmt.Sprintf(template, userCode, problem.FunctionName)
 }

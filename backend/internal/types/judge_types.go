@@ -14,11 +14,12 @@ type Judge0Request struct {
 
 // Judge0Response represents the response structure from Judge0 API
 type Judge0Response struct {
-	Stdout       string      `json:"stdout"`
-	Stderr       string      `json:"stderr"`
-	CompileError string      `json:"compile_error"`
-	Time         interface{} `json:"time"`
-	Memory       float64     `json:"memory"`
+	Stdout        string      `json:"stdout"`
+	Stderr        string      `json:"stderr"`
+	CompileError  string      `json:"compile_error"`
+	CompileOutput string      `json:"compile_output"`
+	Time          interface{} `json:"time"`
+	Memory        float64     `json:"memory"`
 }
 
 // ErrorType represents the type of error that occurred during code evaluation
