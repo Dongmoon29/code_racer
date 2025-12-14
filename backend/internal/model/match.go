@@ -64,21 +64,21 @@ func (m *Match) BeforeCreate(tx *gorm.DB) error {
 }
 
 type MatchResponse struct {
-	ID        uuid.UUID      `json:"id"`
-	Mode      MatchMode      `gorm:"type:varchar(20);not null;default:'casual_pvp'" json:"mode"`
-	PlayerA   *UserResponse  `json:"player_a"`
-	PlayerB   *UserResponse  `json:"player_b,omitempty"`
-	Problem   *ProblemDetail `json:"problem"`
-	Status    MatchStatus    `json:"status"`
-	Winner    *UserResponse  `json:"winner,omitempty"`
+	ID      uuid.UUID      `json:"id"`
+	Mode    MatchMode      `gorm:"type:varchar(20);not null;default:'casual_pvp'" json:"mode"`
+	PlayerA *UserResponse  `json:"player_a"`
+	PlayerB *UserResponse  `json:"player_b,omitempty"`
+	Problem *ProblemDetail `json:"problem"`
+	Status  MatchStatus    `json:"status"`
+	Winner  *UserResponse  `json:"winner,omitempty"`
 	// Winner metrics captured at match completion (if available)
-	WinnerExecutionTimeSeconds float64 `json:"winner_execution_time_seconds,omitempty"`
-	WinnerMemoryUsageKB        float64 `json:"winner_memory_usage_kb,omitempty"`
-	WinnerRatingDelta          int     `json:"winner_rating_delta,omitempty"`
-	LoserRatingDelta           int     `json:"loser_rating_delta,omitempty"`
-	StartedAt *time.Time     `json:"started_at,omitempty"`
-	EndedAt   *time.Time     `json:"ended_at,omitempty"`
-	CreatedAt time.Time      `json:"created_at"`
+	WinnerExecutionTimeSeconds float64    `json:"winner_execution_time_seconds,omitempty"`
+	WinnerMemoryUsageKB        float64    `json:"winner_memory_usage_kb,omitempty"`
+	WinnerRatingDelta          int        `json:"winner_rating_delta,omitempty"`
+	LoserRatingDelta           int        `json:"loser_rating_delta,omitempty"`
+	StartedAt                  *time.Time `json:"started_at,omitempty"`
+	EndedAt                    *time.Time `json:"ended_at,omitempty"`
+	CreatedAt                  time.Time  `json:"created_at"`
 }
 
 func (m *Match) ToResponse() *MatchResponse {
@@ -100,19 +100,20 @@ func (m *Match) ToResponse() *MatchResponse {
 	problemResp := m.Problem.ToDetailResponse()
 
 	return &MatchResponse{
-		ID:        m.ID,
-		PlayerA:   playerAResp,
-		PlayerB:   playerBResp,
-		Problem:   problemResp,
-		Status:    m.Status,
-		Winner:    winnerResp,
+		ID:                         m.ID,
+		Mode:                       m.Mode,
+		PlayerA:                    playerAResp,
+		PlayerB:                    playerBResp,
+		Problem:                    problemResp,
+		Status:                     m.Status,
+		Winner:                     winnerResp,
 		WinnerExecutionTimeSeconds: m.WinnerExecutionTimeSeconds,
 		WinnerMemoryUsageKB:        m.WinnerMemoryUsageKB,
 		WinnerRatingDelta:          m.WinnerRatingDelta,
 		LoserRatingDelta:           m.LoserRatingDelta,
-		StartedAt: m.StartedAt,
-		EndedAt:   m.EndedAt,
-		CreatedAt: m.CreatedAt,
+		StartedAt:                  m.StartedAt,
+		EndedAt:                    m.EndedAt,
+		CreatedAt:                  m.CreatedAt,
 	}
 }
 

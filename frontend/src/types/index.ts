@@ -186,18 +186,21 @@ export interface Game {
     email: string;
     name: string;
     created_at: string;
+    rating?: number;
   };
   playerB?: {
     id: string;
     email: string;
     name: string;
     created_at: string;
+    rating?: number;
   };
   winner?: {
     id: string;
     email: string;
     name: string;
     created_at: string;
+    rating?: number;
   };
   // Winner metrics captured at match completion (if available)
   winner_execution_time_seconds?: number;
@@ -208,6 +211,7 @@ export interface Game {
   status: 'waiting' | 'playing' | 'finished' | 'closed';
   mode: 'ranked_pvp' | 'casual_pvp' | 'single';
   started_at?: string;
+  ended_at?: string;
   created_at: string;
   player_count: number;
   is_full: boolean;

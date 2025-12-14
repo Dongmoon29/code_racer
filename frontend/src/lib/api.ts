@@ -149,6 +149,7 @@ export const matchApi = {
             email: payload.player_a.email,
             name: payload.player_a.name,
             created_at: payload.player_a.created_at,
+            rating: payload.player_a.rating,
           }
         : undefined,
       playerB: payload.player_b
@@ -157,6 +158,7 @@ export const matchApi = {
             email: payload.player_b.email,
             name: payload.player_b.name,
             created_at: payload.player_b.created_at,
+            rating: payload.player_b.rating,
           }
         : undefined,
 
@@ -166,6 +168,7 @@ export const matchApi = {
             email: payload.winner.email,
             name: payload.winner.name,
             created_at: payload.winner.created_at,
+            rating: payload.winner.rating,
           }
         : undefined,
       winner_execution_time_seconds:
@@ -177,6 +180,7 @@ export const matchApi = {
       status: payload.status,
       mode: payload.mode || 'casual_pvp', // Add mode field mapping
       started_at: payload.started_at,
+      ended_at: payload.ended_at,
       created_at: payload.created_at,
       player_count: payload.player_b ? 2 : 1,
       is_full: !!payload.player_b,

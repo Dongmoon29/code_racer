@@ -5,6 +5,37 @@ import { Game } from '@/types';
 import { Button } from '../../ui/Button';
 import { Alert } from '@/components/ui/alert';
 
+function formatMode(mode: Game['mode']): string {
+  switch (mode) {
+    case 'ranked_pvp':
+      return 'Ranked';
+    case 'casual_pvp':
+      return 'Casual';
+    case 'single':
+      return 'Single';
+    default:
+      return String(mode);
+  }
+}
+
+function formatDurationMs(startISO?: string, endISO?: string): string | null {
+  if (!startISO || !endISO) return null;
+  const start = new Date(startISO).getTime();
+  const end = new Date(endISO).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+  const ms = end - start;
+  const sec = Math.floor(ms / 1000);
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function formatRatingDelta(delta?: number): string | null {
+  if (typeof delta !== 'number') return null;
+  return `${delta >= 0 ? '+' : ''}${delta}`;
+}
+
 interface Props {
   game: Game;
   me?: { id: string; name: string };
@@ -15,11 +46,15 @@ interface Props {
 }
 
 export const FinishedGame: React.FC<Props> = memo(
-  ({ game, me, opponent, myCode, opponentCode, selectedLanguage }) => {
+  ({ game, me, myCode, opponentCode, selectedLanguage }) => {
     const router = useRouter();
     // perspective is provided by parent
 
-    const winnerIsMe = !!(game.winner?.id && me?.id && game.winner.id === me.id);
+    const winnerIsMe = !!(
+      game.winner?.id &&
+      me?.id &&
+      game.winner.id === me.id
+    );
     const winnerCode = winnerIsMe ? myCode : opponentCode || myCode;
 
     const execSeconds = game.winner_execution_time_seconds;
@@ -37,54 +72,152 @@ export const FinishedGame: React.FC<Props> = memo(
           : `${Math.round(memKB)}KB`
         : null;
 
-    const ratingDelta =
-      typeof game.winner_rating_delta === 'number'
-        ? game.winner_rating_delta
-        : null;
+    const ratingDeltaLabel = formatRatingDelta(game.winner_rating_delta);
+    const durationLabel = formatDurationMs(game.started_at, game.ended_at);
 
-    const ratingDeltaLabel =
-      ratingDelta === null ? null : `${ratingDelta >= 0 ? '+' : ''}${ratingDelta}`;
+    const isRanked = game.mode === 'ranked_pvp';
+    const winnerName = game.winner?.name ?? 'Unknown';
+
+    const winnerId = game.winner?.id;
+    const playerAIsWinner = !!(winnerId && game.playerA?.id === winnerId);
+    const playerBIsWinner = !!(winnerId && game.playerB?.id === winnerId);
+
+    const playerALabel = game.playerA
+      ? {
+          name: game.playerA.name,
+          rating: game.playerA.rating,
+          delta: playerAIsWinner ? game.winner_rating_delta : game.loser_rating_delta,
+          isWinner: playerAIsWinner,
+        }
+      : null;
+    const playerBLabel = game.playerB
+      ? {
+          name: game.playerB.name,
+          rating: game.playerB.rating,
+          delta: playerBIsWinner ? game.winner_rating_delta : game.loser_rating_delta,
+          isWinner: playerBIsWinner,
+        }
+      : null;
+
+    const winnerBadge = winnerIsMe ? 'Victory' : 'Defeat';
 
     return (
-      <div className="p-6 max-w-4xl mx-auto rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold mb-4">{game.problem.title}</h1>
+      <div className="p-6 max-w-5xl mx-auto rounded-lg shadow-md">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">{game.problem.title}</h1>
+            <div className="mt-1 text-sm text-gray-500">
+              Mode: {formatMode(game.mode)}
+              {game.problem?.difficulty ? ` · Difficulty: ${game.problem.difficulty}` : ''}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-semibold border ${
+                winnerIsMe
+                  ? 'bg-green-900/30 text-green-200 border-green-700/50'
+                  : 'bg-yellow-900/30 text-yellow-200 border-yellow-700/50'
+              }`}
+            >
+              {winnerBadge}
+            </span>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
           {/* Left: match result details */}
           <div>
             <Alert variant={winnerIsMe ? 'success' : 'warning'}>
               <h3>Game Finished</h3>
               <p>
-                Winner: <strong>{game.winner?.name}</strong>
+                Winner: <strong>{winnerName}</strong>
               </p>
-              {(execLabel || memLabel || ratingDeltaLabel) && (
-                <div className="mt-2 text-sm opacity-90 space-y-1">
-                  {ratingDeltaLabel && (
-                    <p>
-                      Rating: <strong>{ratingDeltaLabel}</strong>
-                    </p>
-                  )}
-                  {execLabel && (
-                    <p>
-                      Time: <strong>{execLabel}</strong>
-                    </p>
-                  )}
-                  {memLabel && (
-                    <p>
-                      Memory: <strong>{memLabel}</strong>
-                    </p>
-                  )}
-                </div>
-              )}
             </Alert>
 
-            <div className="mt-4 text-sm text-gray-500">
-              {opponent?.name ? `Opponent: ${opponent.name}` : null}
+            {/* Stats grid */}
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-gray-700/60 bg-black/20 p-3">
+                <div className="text-xs text-gray-400">Execution time</div>
+                <div className="mt-1 font-semibold">{execLabel ?? '-'}</div>
+              </div>
+              <div className="rounded-lg border border-gray-700/60 bg-black/20 p-3">
+                <div className="text-xs text-gray-400">Memory</div>
+                <div className="mt-1 font-semibold">{memLabel ?? '-'}</div>
+              </div>
+              <div className="rounded-lg border border-gray-700/60 bg-black/20 p-3">
+                <div className="text-xs text-gray-400">Match duration</div>
+                <div className="mt-1 font-semibold">{durationLabel ?? '-'}</div>
+              </div>
+              <div className="rounded-lg border border-gray-700/60 bg-black/20 p-3">
+                <div className="text-xs text-gray-400">Winner rating delta</div>
+                <div className="mt-1 font-semibold">
+                  {isRanked ? ratingDeltaLabel ?? '-' : '-'}
+                </div>
+              </div>
+            </div>
+
+            {/* Player comparison */}
+            <div className="mt-4 rounded-lg border border-gray-700/60 bg-black/20 p-3">
+              <div className="text-xs text-gray-400 mb-2">Players</div>
+              <div className="space-y-2">
+                {playerALabel && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        {playerALabel.name}
+                        {playerALabel.isWinner ? ' (W)' : ''}
+                        {me?.name && playerALabel.name === me.name ? ' · You' : ''}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-300">
+                      {typeof playerALabel.rating === 'number' ? `Rating: ${playerALabel.rating}` : 'Rating: -'}
+                      {isRanked && typeof playerALabel.delta === 'number'
+                        ? ` (${formatRatingDelta(playerALabel.delta)})`
+                        : ''}
+                    </div>
+                  </div>
+                )}
+                {playerBLabel && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        {playerBLabel.name}
+                        {playerBLabel.isWinner ? ' (W)' : ''}
+                        {me?.name && playerBLabel.name === me.name ? ' · You' : ''}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-300">
+                      {typeof playerBLabel.rating === 'number' ? `Rating: ${playerBLabel.rating}` : 'Rating: -'}
+                      {isRanked && typeof playerBLabel.delta === 'number'
+                        ? ` (${formatRatingDelta(playerBLabel.delta)})`
+                        : ''}
+                    </div>
+                  </div>
+                )}
+                {!playerALabel && !playerBLabel ? (
+                  <div className="text-sm text-gray-400">No player data</div>
+                ) : null}
+              </div>
             </div>
 
             <div className="mt-6">
-              <Button onClick={() => router.push('/dashboard')}>
-                Back to Dashboard
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => router.push('/dashboard')}>
+                  Back to Dashboard
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(winnerCode);
+                    } catch {
+                      // ignore
+                    }
+                  }}
+                >
+                  Copy Winner Code
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -100,7 +233,6 @@ export const FinishedGame: React.FC<Props> = memo(
             </div>
           </div>
         </div>
-
       </div>
     );
   }
