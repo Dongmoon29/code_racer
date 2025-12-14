@@ -19,4 +19,3 @@ func TestGetFloat64Time_ParsesStringAndNumber(t *testing.T) {
 		t.Fatalf("expected 0 for invalid number, got=%v", got)
 	}
 }
-

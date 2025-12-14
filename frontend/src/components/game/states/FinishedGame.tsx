@@ -18,20 +18,6 @@ function formatMode(mode: Game['mode']): string {
   }
 }
 
-function formatDurationMs(startISO?: string, endISO?: string): string | null {
-  if (!startISO || !endISO) return null;
-  const start = new Date(startISO).getTime();
-  const end = new Date(endISO).getTime();
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start)
-    return null;
-  const ms = end - start;
-  const sec = Math.floor(ms / 1000);
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
-}
-
 function formatRatingDelta(delta?: number): string | null {
   if (typeof delta !== 'number') return null;
   return `${delta >= 0 ? '+' : ''}${delta}`;
@@ -72,9 +58,6 @@ export const FinishedGame: React.FC<Props> = memo(
           ? `${(memKB / 1024).toFixed(2)}MB (${Math.round(memKB)}KB)`
           : `${Math.round(memKB)}KB`
         : null;
-
-    const ratingDeltaLabel = formatRatingDelta(game.winner_rating_delta);
-    const durationLabel = formatDurationMs(game.started_at, game.ended_at);
 
     const isRanked = game.mode === 'ranked_pvp';
     const winnerName = game.winner?.name ?? 'Unknown';
@@ -150,16 +133,6 @@ export const FinishedGame: React.FC<Props> = memo(
               <div className="rounded-lg border border-gray-700/60 bg-black/20 p-3">
                 <div className="text-xs text-gray-400">Memory</div>
                 <div className="mt-1 font-semibold">{memLabel ?? '-'}</div>
-              </div>
-              <div className="rounded-lg border border-gray-700/60 bg-black/20 p-3">
-                <div className="text-xs text-gray-400">Match duration</div>
-                <div className="mt-1 font-semibold">{durationLabel ?? '-'}</div>
-              </div>
-              <div className="rounded-lg border border-gray-700/60 bg-black/20 p-3">
-                <div className="text-xs text-gray-400">Winner rating delta</div>
-                <div className="mt-1 font-semibold">
-                  {isRanked ? ratingDeltaLabel ?? '-' : '-'}
-                </div>
               </div>
             </div>
 
