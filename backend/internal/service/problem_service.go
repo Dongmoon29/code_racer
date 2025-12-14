@@ -266,14 +266,24 @@ func (s *problemService) ValidateTestCases(testCases []model.CreateTestCaseReque
 	}
 
 	for i, testCase := range testCases {
-		// Parse input as JSON to check parameter count
-		var input []interface{}
-		if err := json.Unmarshal([]byte(testCase.Input), &input); err != nil {
-			return fmt.Errorf("test case %d: invalid input JSON format", i+1)
-		}
-
-		if len(input) != len(schema.ParamTypes) {
-			return fmt.Errorf("test case %d: input length %d does not match schema length %d", i+1, len(input), len(schema.ParamTypes))
+		// Validate input JSON format.
+		//
+		// Contract:
+		// - single param problems: input is a raw JSON value (e.g. 121, "()", [1,2,3])
+		// - multi param problems: input is a JSON array of args (e.g. [[1,2,3], 9])
+		if len(schema.ParamTypes) == 1 {
+			var v interface{}
+			if err := json.Unmarshal([]byte(testCase.Input), &v); err != nil {
+				return fmt.Errorf("test case %d: invalid input JSON format", i+1)
+			}
+		} else {
+			var args []interface{}
+			if err := json.Unmarshal([]byte(testCase.Input), &args); err != nil {
+				return fmt.Errorf("test case %d: invalid input JSON format", i+1)
+			}
+			if len(args) != len(schema.ParamTypes) {
+				return fmt.Errorf("test case %d: input length %d does not match schema length %d", i+1, len(args), len(schema.ParamTypes))
+			}
 		}
 		if testCase.ExpectedOutput == "" {
 			return fmt.Errorf("test case %d: expected output cannot be empty", i+1)

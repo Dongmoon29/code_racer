@@ -39,11 +39,33 @@ type judgeService struct {
 	logger            logger.Logger
 	functionExtractor *judge.FunctionExtractor
 	eventBus          events.EventBus
-	codeAnalyzer      *CodeAnalyzer
 }
 
 // Interface implementation check
 var _ interfaces.JudgeService = (*judgeService)(nil)
+
+func (s *judgeService) validateProblemIOSchema(problem *model.Problem) error {
+	if problem == nil {
+		return fmt.Errorf("problem is nil")
+	}
+	raw := strings.TrimSpace(problem.IOSchema.ParamTypes)
+	if raw == "" {
+		return fmt.Errorf("problem io_schema.param_types is missing")
+	}
+	var pts []string
+	if err := json.Unmarshal([]byte(raw), &pts); err != nil || len(pts) == 0 {
+		return fmt.Errorf("problem io_schema.param_types is invalid")
+	}
+	for i, pt := range pts {
+		if strings.TrimSpace(pt) == "" {
+			return fmt.Errorf("problem io_schema.param_types[%d] is empty", i)
+		}
+	}
+	if strings.TrimSpace(problem.IOSchema.ReturnType) == "" {
+		return fmt.Errorf("problem io_schema.return_type is missing")
+	}
+	return nil
+}
 
 // NewJudgeService creates a new JudgeService instance with the provided configuration
 func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger, eventBus events.EventBus) interfaces.JudgeService {
@@ -53,11 +75,13 @@ func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger, ev
 		logger:            logger,
 		functionExtractor: judge.NewFunctionExtractor(logger),
 		eventBus:          eventBus,
-		codeAnalyzer:      NewCodeAnalyzer(),
 	}
 }
 
 func (s *judgeService) EvaluateCode(code string, language string, problem *model.Problem) (*types.EvaluationResult, error) {
+	if err := s.validateProblemIOSchema(problem); err != nil {
+		return nil, err
+	}
 	if err := s.ensureFunctionNameMatches(code, language, problem.FunctionName); err != nil {
 		return nil, err
 	}
@@ -119,138 +143,6 @@ func (s *judgeService) ensureFunctionNameMatches(code string, language string, e
 	return nil
 }
 
-// tryBatchEvaluate attempts batch harness path; returns (result, usedBatch, error)
-func (s *judgeService) tryBatchEvaluate(code string, languageID int, problem *model.Problem) (*types.EvaluationResult, bool, error) {
-	language := s.getLanguageName(languageID)
-	// build inputs
-	testCaseInputs := make([][]interface{}, 0, len(problem.TestCases))
-	expectedOutputs := make([]interface{}, 0, len(problem.TestCases))
-
-	// Extract function signature to infer parameter types
-	signature := s.codeAnalyzer.ExtractFunctionSignature(code, language)
-	var paramTypes []string
-	if signature != nil {
-		paramTypes = s.codeAnalyzer.InferParameterTypes(code, signature)
-		s.logger.Debug().
-			Str("functionName", signature.Name).
-			Strs("parameters", signature.Parameters).
-			Strs("inferredTypes", paramTypes).
-			Msg("Function signature extracted")
-	}
-
-	for _, testCase := range problem.TestCases {
-		// Use simple parser for better test case parsing
-		input, err := s.codeAnalyzer.ParseTestCaseInput(testCase.Input, paramTypes)
-		if err != nil {
-			s.logger.Error().Err(err).Str("input", testCase.Input).Msg("Failed to parse test case input")
-			continue
-		}
-		testCaseInputs = append(testCaseInputs, input)
-
-		// Parse ExpectedOutput as JSON to handle type differences (string vs boolean/number)
-		// DB stores ExpectedOutput as string, but actual result might be boolean/number
-		var expectedValue interface{}
-		if err := json.Unmarshal([]byte(testCase.ExpectedOutput), &expectedValue); err != nil {
-			// If parsing fails, use as string
-			s.logger.Warn().Err(err).Str("expectedOutput", testCase.ExpectedOutput).Msg("Failed to parse expected output as JSON, using as string")
-			expectedOutputs = append(expectedOutputs, testCase.ExpectedOutput)
-		} else {
-			expectedOutputs = append(expectedOutputs, expectedValue)
-		}
-	}
-	inputsJSON, _ := json.Marshal(testCaseInputs)
-
-	s.logger.Debug().
-		Int("testCaseInputsCount", len(testCaseInputs)).
-		Int("expectedOutputsCount", len(expectedOutputs)).
-		Str("inputsJSON", string(inputsJSON)).
-		Msg("Prepared test case data for Judge0")
-
-	// wrap batch (may fail for unsupported languages)
-	// Pass empty string for inputsJSON as we'll pass it via stdin
-	wrappedCode, err := s.codeWrapper.WrapCodeBatch(code, languageID, "", problem)
-	if err != nil {
-		return nil, false, nil
-	}
-
-	// submit
-	expectedOutputsJSON, _ := json.Marshal(expectedOutputs)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	// Use submitToJudgeWithStdin to pass inputs via stdin
-	judgeResponse, err := s.submitToJudgeWithStdin(ctx, wrappedCode, languageID, string(inputsJSON), string(expectedOutputsJSON), problem)
-	if err != nil {
-		return nil, false, err
-	}
-
-	// evaluate response
-	evaluationResult, err := s.evaluateBatchResponse(judgeResponse, expectedOutputs, testCaseInputs)
-	if err != nil {
-		return nil, false, nil // fall back on parse errors
-	}
-	return evaluationResult, true, nil
-}
-
-func (s *judgeService) submitToJudge(ctx context.Context, wrappedCode string, languageID int, expectedOutputsJSON string, problem *model.Problem) (*types.Judge0Response, error) {
-	compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB := s.deriveLimits(problem)
-	judgeRequest := types.Judge0Request{
-		SourceCode:       wrappedCode,
-		LanguageID:       languageID,
-		ExpectedOutput:   expectedOutputsJSON,
-		CompileTimeout:   compileTimeoutSeconds,
-		RunTimeout:       runTimeoutSeconds,
-		MemoryLimit:      memoryLimitKB,
-		EnableNetworking: false,
-	}
-	judgeResponse, err := s.judge0Client.SubmitCode(ctx, judgeRequest)
-	if err != nil {
-		// Log quota exceeded identification
-		errorMessage := fmt.Errorf("Judge0 API error: %w", err)
-		if strings.Contains(errorMessage.Error(), "exceeded the DAILY quota") {
-			s.logger.Error().
-				Str("error_type", "judge0_quota_exceeded").
-				Int("languageID", languageID).
-				Msg("Judge0 quota exceeded")
-			s.sendJudge0QuotaError()
-		} else if strings.Contains(errorMessage.Error(), "context deadline exceeded") || strings.Contains(errorMessage.Error(), "timeout") {
-			s.sendJudge0TimeoutError()
-		}
-		return nil, errorMessage
-	}
-	return judgeResponse, nil
-}
-
-// submitToJudgeWithStdin submits code to Judge0 with stdin for test cases (for JavaScript batch evaluation)
-func (s *judgeService) submitToJudgeWithStdin(ctx context.Context, wrappedCode string, languageID int, stdin string, expectedOutputsJSON string, problem *model.Problem) (*types.Judge0Response, error) {
-	compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB := s.deriveLimits(problem)
-	judgeRequest := types.Judge0Request{
-		SourceCode:       wrappedCode,
-		LanguageID:       languageID,
-		ExpectedOutput:   expectedOutputsJSON,
-		Stdin:            stdin,
-		CompileTimeout:   compileTimeoutSeconds,
-		RunTimeout:       runTimeoutSeconds,
-		MemoryLimit:      memoryLimitKB,
-		EnableNetworking: false,
-	}
-	judgeResponse, err := s.judge0Client.SubmitCode(ctx, judgeRequest)
-	if err != nil {
-		// Log quota exceeded identification
-		errorMessage := fmt.Errorf("Judge0 API error: %w", err)
-		if strings.Contains(errorMessage.Error(), "exceeded the DAILY quota") {
-			s.logger.Error().
-				Str("error_type", "judge0_quota_exceeded").
-				Int("languageID", languageID).
-				Msg("Judge0 quota exceeded")
-			s.sendJudge0QuotaError()
-		} else if strings.Contains(errorMessage.Error(), "context deadline exceeded") || strings.Contains(errorMessage.Error(), "timeout") {
-			s.sendJudge0TimeoutError()
-		}
-		return nil, errorMessage
-	}
-	return judgeResponse, nil
-}
-
 // deriveLimits converts model constraints to Judge0 limits
 func (s *judgeService) deriveLimits(problem *model.Problem) (compileTimeout int, runTimeout int, memoryLimit int) {
 	// Assume model.TimeLimit is in milliseconds and MemoryLimit in MB
@@ -265,196 +157,6 @@ func (s *judgeService) deriveLimits(problem *model.Problem) (compileTimeout int,
 		memoryLimitKB = judgeDefaultMemoryLimitKB
 	}
 	return compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB
-}
-
-func (s *judgeService) evaluateBatchResponse(response *types.Judge0Response, expected []interface{}, inputs [][]interface{}) (*types.EvaluationResult, error) {
-	// Log response details for debugging
-	s.logger.Debug().
-		Str("stdout", response.Stdout).
-		Str("stderr", response.Stderr).
-		Str("compile_error", response.CompileError).
-		Msg("Judge0 response details")
-
-	if s.hasCompilationError(response) {
-		return s.createCompilationErrorResult(response), nil
-	}
-
-	if s.hasRuntimeError(response) {
-		return s.createRuntimeErrorResult(response), nil
-	}
-
-	actualResults, err := s.parseActualResults(response.Stdout)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if actual results are empty but we expected results
-	// This can happen when code runs but doesn't produce output
-	if len(actualResults) == 0 && len(expected) > 0 {
-		s.logger.Warn().
-			Int("expected_count", len(expected)).
-			Str("stderr", response.Stderr).
-			Str("compile_error", response.CompileError).
-			Msg("No results returned from code execution, but test cases were expected")
-		return &types.EvaluationResult{
-			Passed:       false,
-			ErrorMessage: "Code executed but produced no output. Please check your solution.",
-			TestResults:  []types.TestCaseResult{},
-		}, nil
-	}
-
-	testResults := s.buildTestResults(expected, inputs, actualResults, response)
-
-	// If test results are empty but we expected results, it's an error
-	if len(testResults) == 0 && len(expected) > 0 {
-		s.logger.Warn().
-			Int("expected_count", len(expected)).
-			Int("actual_count", len(actualResults)).
-			Msg("No test results generated despite expected results")
-		return &types.EvaluationResult{
-			Passed:       false,
-			ErrorMessage: "Failed to evaluate test cases. Please check your solution.",
-			TestResults:  []types.TestCaseResult{},
-		}, nil
-	}
-
-	return s.createEvaluationResult(testResults, response), nil
-}
-
-// hasCompilationError checks if the response has compilation errors
-func (s *judgeService) hasCompilationError(response *types.Judge0Response) bool {
-	return response.CompileError != ""
-}
-
-// hasRuntimeError checks if the response has runtime errors
-func (s *judgeService) hasRuntimeError(response *types.Judge0Response) bool {
-	return response.Stderr != ""
-}
-
-// createCompilationErrorResult creates an error result for compilation failures
-func (s *judgeService) createCompilationErrorResult(response *types.Judge0Response) *types.EvaluationResult {
-	return &types.EvaluationResult{
-		Passed:       false,
-		ErrorType:    types.ErrorTypeCompilation,
-		ErrorMessage: response.CompileError,    // Return raw compile error without prefix
-		TestResults:  []types.TestCaseResult{}, // Empty test results - no tests were run
-	}
-}
-
-// createRuntimeErrorResult creates an error result for runtime failures
-func (s *judgeService) createRuntimeErrorResult(response *types.Judge0Response) *types.EvaluationResult {
-	return &types.EvaluationResult{
-		Passed:       false,
-		ErrorType:    types.ErrorTypeRuntime,
-		ErrorMessage: response.Stderr,          // Return raw stderr without prefix
-		TestResults:  []types.TestCaseResult{}, // Empty test results - tests failed due to runtime error
-	}
-}
-
-// parseActualResults parses the actual results from stdout
-func (s *judgeService) parseActualResults(stdout string) ([]interface{}, error) {
-	actualTrimmed := strings.TrimSpace(stdout)
-
-	s.logger.Debug().
-		Str("raw_stdout", stdout).
-		Str("trimmed_stdout", actualTrimmed).
-		Int("stdout_length", len(actualTrimmed)).
-		Msg("Parsing Judge0 stdout")
-
-	// Handle empty stdout
-	if actualTrimmed == "" {
-		s.logger.Warn().Msg("Empty stdout received from Judge0")
-		return []interface{}{}, nil
-	}
-
-	var actual []interface{}
-	if err := json.Unmarshal([]byte(actualTrimmed), &actual); err != nil {
-		s.logger.Error().
-			Err(err).
-			Str("stdout", actualTrimmed).
-			Msg("Failed to parse actual results from stdout")
-		return nil, fmt.Errorf("invalid runner output: %v", err)
-	}
-
-	s.logger.Debug().
-		Int("result_count", len(actual)).
-		Interface("parsed_results", actual).
-		Msg("Successfully parsed actual results")
-
-	return actual, nil
-}
-
-// buildTestResults builds test results from expected, inputs, and actual results
-func (s *judgeService) buildTestResults(expected []interface{}, inputs [][]interface{}, actual []interface{}, response *types.Judge0Response) []types.TestCaseResult {
-	var results []types.TestCaseResult
-
-	// Find the minimum length to avoid index out of range
-	minLength := len(expected)
-	if len(inputs) < minLength {
-		minLength = len(inputs)
-	}
-	if len(actual) < minLength {
-		minLength = len(actual)
-	}
-
-	// Log warning if arrays have different lengths
-	if len(expected) != len(inputs) || len(expected) != len(actual) {
-		s.logger.Warn().
-			Int("expected_len", len(expected)).
-			Int("inputs_len", len(inputs)).
-			Int("actual_len", len(actual)).
-			Msg("Array lengths mismatch in buildTestResults")
-	}
-
-	for i := 0; i < minLength; i++ {
-		testResult := s.createTestCaseResult(i, expected[i], inputs[i], actual[i], response)
-		results = append(results, testResult)
-	}
-	return results
-}
-
-// createTestCaseResult creates a single test case result
-func (s *judgeService) createTestCaseResult(index int, expected interface{}, input []interface{}, actual interface{}, response *types.Judge0Response) types.TestCaseResult {
-	expBytes, _ := json.Marshal(expected)
-	actBytes, _ := json.Marshal(actual)
-
-	expectedStr := strings.TrimSpace(string(expBytes))
-	actualStr := strings.TrimSpace(string(actBytes))
-
-	return types.TestCaseResult{
-		TestCaseIndex: index,
-		Input:         string(mustJSON(input)),
-		Expected:      expectedStr,
-		Actual:        actualStr,
-		Passed:        s.compareResults(actualStr, expectedStr), // Use compareResults for proper JSON comparison
-		ExecutionTime: getFloat64Time(response.Time),
-		MemoryUsage:   response.Memory,
-	}
-}
-
-// createEvaluationResult creates the final evaluation result
-func (s *judgeService) createEvaluationResult(testResults []types.TestCaseResult, response *types.Judge0Response) *types.EvaluationResult {
-	allPassed := s.checkAllTestsPassed(testResults)
-	return &types.EvaluationResult{
-		Passed:        allPassed,
-		TestResults:   testResults,
-		ExecutionTime: getFloat64Time(response.Time),
-		MemoryUsage:   response.Memory,
-	}
-}
-
-// checkAllTestsPassed checks if all test cases passed
-func (s *judgeService) checkAllTestsPassed(testResults []types.TestCaseResult) bool {
-	// Empty test results means no tests were run, which should be considered as failure
-	if len(testResults) == 0 {
-		return false
-	}
-	for _, result := range testResults {
-		if !result.Passed {
-			return false
-		}
-	}
-	return true
 }
 
 func (s *judgeService) aggregatePerTest(code string, languageID int, problem *model.Problem) (*types.EvaluationResult, error) {
@@ -565,6 +267,9 @@ func (s *judgeService) submitSingle(ctx context.Context, wrappedCode string, lan
 		s.logger.Error().Err(err).Msg("Judge0 API request failed")
 
 		// Check if it's a timeout error and send WebSocket notification
+		if strings.Contains(err.Error(), "exceeded the DAILY quota") {
+			s.sendJudge0QuotaError()
+		}
 		if strings.Contains(err.Error(), "context deadline exceeded") || strings.Contains(err.Error(), "timeout") {
 			s.sendJudge0TimeoutError()
 		}
@@ -584,15 +289,26 @@ func (s *judgeService) evaluateSingleResponse(response *types.Judge0Response, te
 		ExecutionTime: getFloat64Time(response.Time),
 		MemoryUsage:   response.Memory,
 	}
-	if response.CompileError != "" || response.CompileOutput != "" {
-		compileMsg := response.CompileError
-		if compileMsg == "" {
-			compileMsg = response.CompileOutput
-		}
-		s.logger.Error().Str("compileError", compileMsg).Msg("Compilation error occurred")
+	if response.CompileError != "" {
+		s.logger.Error().Str("compileError", response.CompileError).Msg("Compilation error occurred")
 		result.Passed = false
-		result.ErrorMessage = compileMsg // Return raw compile error/output
+		result.ErrorMessage = response.CompileError // Return raw compile error
 		return result
+	}
+	// NOTE: Judge0 may populate compile_output on compilation failures even when compile_error is empty.
+	// However, compile_output can also include non-fatal messages depending on language/toolchain.
+	// We only treat it as fatal when the run did not produce output and did not execute.
+	if response.CompileOutput != "" {
+		noStdout := strings.TrimSpace(response.Stdout) == ""
+		noStderr := strings.TrimSpace(response.Stderr) == ""
+		noExec := response.Time == nil || getFloat64Time(response.Time) == 0
+		if noStdout && noStderr && noExec {
+			s.logger.Error().Str("compileError", response.CompileOutput).Msg("Compilation error occurred")
+			result.Passed = false
+			result.ErrorMessage = response.CompileOutput
+			return result
+		}
+		s.logger.Debug().Str("compileOutput", response.CompileOutput).Msg("Non-fatal compile output received")
 	}
 	if response.Stderr != "" {
 		s.logger.Error().Str("stderr", response.Stderr).Msg("Runtime error occurred")
@@ -733,6 +449,10 @@ func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, pr
 	// 1. Submission start notification (including total test cases)
 	s.notifySubmissionStarted(matchID, userID, len(problem.TestCases))
 
+	if err := s.validateProblemIOSchema(problem); err != nil {
+		s.notifySubmissionFailed(matchID, userID, err.Error())
+		return nil, err
+	}
 	if err := s.ensureFunctionNameMatches(code, language, problem.FunctionName); err != nil {
 		s.notifySubmissionFailed(matchID, userID, err.Error())
 		return nil, err
@@ -748,6 +468,7 @@ func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, pr
 	perTestEvaluationResult, perTestEvaluationError := s.aggregatePerTestWithRealtime(code, languageID, problem, matchID, userID)
 	if perTestEvaluationError == nil && perTestEvaluationResult != nil {
 		s.logEvaluationResult(perTestEvaluationResult, languageID, problem, "per_test")
+		s.notifySubmissionCompleted(matchID, userID, perTestEvaluationResult)
 	}
 
 	return perTestEvaluationResult, perTestEvaluationError
@@ -924,118 +645,5 @@ func (s *judgeService) sendJudge0TimeoutError() {
 func (s *judgeService) sendJudge0QuotaError() {
 	if s.eventBus != nil {
 		s.eventBus.Publish(events.TopicJudge0Quota, &events.Judge0QuotaEvent{})
-	}
-}
-
-// tryBatchEvaluateWithRealtime attempts batch evaluation with real-time notifications
-func (s *judgeService) tryBatchEvaluateWithRealtime(code string, languageID int, problem *model.Problem, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, bool, error) {
-	language := s.getLanguageName(languageID)
-	// Build inputs for batch evaluation
-	testCaseInputs := make([][]interface{}, 0, len(problem.TestCases))
-	expectedOutputs := make([]interface{}, 0, len(problem.TestCases))
-
-	// Extract function signature to infer parameter types
-	signature := s.codeAnalyzer.ExtractFunctionSignature(code, language)
-	var paramTypes []string
-	if signature != nil {
-		paramTypes = s.codeAnalyzer.InferParameterTypes(code, signature)
-		s.logger.Debug().
-			Str("functionName", signature.Name).
-			Strs("parameters", signature.Parameters).
-			Strs("inferredTypes", paramTypes).
-			Msg("Function signature extracted")
-	}
-
-	for _, testCase := range problem.TestCases {
-		// Use simple parser for better test case parsing
-		input, err := s.codeAnalyzer.ParseTestCaseInput(testCase.Input, paramTypes)
-		if err != nil {
-			s.logger.Error().Err(err).Str("input", testCase.Input).Msg("Failed to parse test case input")
-			continue
-		}
-		testCaseInputs = append(testCaseInputs, input)
-
-		// Parse ExpectedOutput as JSON to handle type differences (string vs boolean/number)
-		// DB stores ExpectedOutput as string, but actual result might be boolean/number
-		var expectedValue interface{}
-		if err := json.Unmarshal([]byte(testCase.ExpectedOutput), &expectedValue); err != nil {
-			// If parsing fails, use as string
-			s.logger.Warn().Err(err).Str("expectedOutput", testCase.ExpectedOutput).Msg("Failed to parse expected output as JSON, using as string")
-			expectedOutputs = append(expectedOutputs, testCase.ExpectedOutput)
-		} else {
-			expectedOutputs = append(expectedOutputs, expectedValue)
-		}
-	}
-	inputsJSON, _ := json.Marshal(testCaseInputs)
-
-	// Wrap batch (may fail for unsupported languages)
-	// Pass empty string for inputsJSON as we'll pass it via stdin
-	wrappedCode, err := s.codeWrapper.WrapCodeBatch(code, languageID, "", problem)
-	if err != nil {
-		return nil, false, nil
-	}
-
-	// Submit to Judge0
-	expectedOutputsJSON, _ := json.Marshal(expectedOutputs)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	// Use submitToJudgeWithStdin to pass inputs via stdin
-	judgeResponse, err := s.submitToJudgeWithStdin(ctx, wrappedCode, languageID, string(inputsJSON), string(expectedOutputsJSON), problem)
-	if err != nil {
-		return nil, false, err
-	}
-
-	// Evaluate response
-	evaluationResult, err := s.evaluateBatchResponse(judgeResponse, expectedOutputs, testCaseInputs)
-	if err != nil {
-		return nil, false, nil // fall back on parse errors
-	}
-
-	// Send real-time notifications for batch results
-	s.notifyBatchResultsAsIndividual(matchID, userID, evaluationResult, problem)
-
-	return evaluationResult, true, nil
-}
-
-// notifyBatchResultsAsIndividual converts batch results to individual test case notifications
-func (s *judgeService) notifyBatchResultsAsIndividual(matchID uuid.UUID, userID uuid.UUID, result *types.EvaluationResult, problem *model.Problem) {
-	totalTestCases := len(result.TestResults)
-
-	// Simulate individual test case execution with small delays for UI feedback
-	for i, testResult := range result.TestResults {
-		// Get corresponding test case from problem
-		var testCase model.TestCase
-		if i < len(problem.TestCases) {
-			testCase = problem.TestCases[i]
-		}
-
-		// Send test case running notification
-		s.notifyTestCaseRunning(matchID, userID, testCase, i, totalTestCases)
-
-		// Small delay to allow UI to show running state
-		time.Sleep(50 * time.Millisecond)
-
-		// Send test case completed notification
-		s.notifyTestCaseCompleted(matchID, userID, testCase, i, &testResult)
-
-		// Small delay between test cases for better UX
-		time.Sleep(50 * time.Millisecond)
-	}
-
-	// Send final submission completed notification
-	s.notifySubmissionCompleted(matchID, userID, result)
-}
-
-// getLanguageName converts Judge0 language ID to language string
-func (s *judgeService) getLanguageName(languageID int) string {
-	switch languageID {
-	case 63:
-		return "javascript"
-	case 71:
-		return "python"
-	case 60:
-		return "go"
-	default:
-		return "unknown"
 	}
 }

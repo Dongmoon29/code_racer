@@ -31,22 +31,14 @@ func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.Proble
 	info := ip.ParseImports(userCode, 60)
 	cleanedCode := stripGoPackageLine(info.Code)
 
-	// Determine param types from IOSchema; fall back to signature parser for count.
+	// Determine param types from IOSchema (required).
 	paramTypes := []string{}
 	if problem != nil && strings.TrimSpace(problem.IOSchema.ParamTypes) != "" {
 		_ = json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes)
 	}
 	if len(paramTypes) == 0 {
-		sigParser := parser.NewGoSignatureParser()
-		sig := sigParser.ParseFunctionSignature("package main\n\n"+cleanedCode, problem.FunctionName)
-		if sig != nil {
-			// Store Go types directly; mapping handles both schema and Go types.
-			paramTypes = sig.ParamTypes
-		}
-	}
-	if len(paramTypes) == 0 {
-		// Default: one string param (common for initial problems)
-		paramTypes = []string{"string"}
+		// IOSchema is required; judge service should reject missing schema before wrapping.
+		return ""
 	}
 
 	importBlock := buildGoImportBlock(info.Imports)
@@ -142,6 +134,7 @@ func buildGoImportBlock(userImports []string) string {
 }
 
 func goTypeFromSchema(t string) (string, bool) {
+	t = strings.TrimSpace(t)
 	switch t {
 	case "int", "number":
 		return "int", true
