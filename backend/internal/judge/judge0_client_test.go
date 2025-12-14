@@ -21,4 +21,3 @@ func TestTruncateForLog(t *testing.T) {
 		t.Fatalf("expected empty+truncated for max=0, got=%q truncated=%v", got, truncated)
 	}
 }
-

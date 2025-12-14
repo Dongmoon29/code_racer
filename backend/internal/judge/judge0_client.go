@@ -37,12 +37,12 @@ func NewRateLimiter(rate int, window time.Duration) *RateLimiter {
 		tokens: make(chan struct{}, rate),
 		ticker: time.NewTicker(window),
 	}
-	
+
 	// Fill initial tokens
 	for i := 0; i < rate; i++ {
 		rl.tokens <- struct{}{}
 	}
-	
+
 	// Refill tokens periodically
 	go func() {
 		for range rl.ticker.C {
@@ -52,7 +52,7 @@ func NewRateLimiter(rate int, window time.Duration) *RateLimiter {
 			}
 		}
 	}()
-	
+
 	return rl
 }
 
@@ -119,15 +119,15 @@ func truncateForLog(s string, max int) (string, bool) {
 func (c *Judge0Client) SubmitCode(ctx context.Context, req types.Judge0Request) (*types.Judge0Response, error) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
-	
+
 	// Rate limiting
 	c.rateLimiter.Acquire()
-	
+
 	// Request validation
 	if err := c.validateRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid request: %w", err)
 	}
-	
+
 	// Retry logic
 	var lastErr error
 	for attempt := 0; attempt < 3; attempt++ {
@@ -138,20 +138,20 @@ func (c *Judge0Client) SubmitCode(ctx context.Context, req types.Judge0Request) 
 			case <-time.After(time.Second * time.Duration(attempt)):
 			}
 		}
-		
+
 		resp, err := c.executeRequest(ctx, req)
 		if err == nil {
 			return resp, nil
 		}
-		
+
 		lastErr = err
-		
+
 		// Don't retry on certain errors
 		if c.isNonRetryableError(err) {
 			break
 		}
 	}
-	
+
 	return nil, fmt.Errorf("judge0 API failed after retries: %w", lastErr)
 }
 

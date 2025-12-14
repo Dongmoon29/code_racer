@@ -430,6 +430,16 @@ func getFloat64Time(timeValue interface{}) float64 {
 		return float64(v)
 	case int64:
 		return float64(v)
+	case json.Number:
+		if f, err := v.Float64(); err == nil {
+			return f
+		}
+		return 0
+	case string:
+		if f, err := strconv.ParseFloat(strings.TrimSpace(v), 64); err == nil {
+			return f
+		}
+		return 0
 	default:
 		return 0
 	}
