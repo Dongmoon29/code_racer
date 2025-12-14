@@ -22,7 +22,8 @@ function formatDurationMs(startISO?: string, endISO?: string): string | null {
   if (!startISO || !endISO) return null;
   const start = new Date(startISO).getTime();
   const end = new Date(endISO).getTime();
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start)
+    return null;
   const ms = end - start;
   const sec = Math.floor(ms / 1000);
   const m = Math.floor(sec / 60);
@@ -86,7 +87,9 @@ export const FinishedGame: React.FC<Props> = memo(
       ? {
           name: game.playerA.name,
           rating: game.playerA.rating,
-          delta: playerAIsWinner ? game.winner_rating_delta : game.loser_rating_delta,
+          delta: playerAIsWinner
+            ? game.winner_rating_delta
+            : game.loser_rating_delta,
           isWinner: playerAIsWinner,
         }
       : null;
@@ -94,7 +97,9 @@ export const FinishedGame: React.FC<Props> = memo(
       ? {
           name: game.playerB.name,
           rating: game.playerB.rating,
-          delta: playerBIsWinner ? game.winner_rating_delta : game.loser_rating_delta,
+          delta: playerBIsWinner
+            ? game.winner_rating_delta
+            : game.loser_rating_delta,
           isWinner: playerBIsWinner,
         }
       : null;
@@ -108,7 +113,9 @@ export const FinishedGame: React.FC<Props> = memo(
             <h1 className="text-2xl font-bold">{game.problem.title}</h1>
             <div className="mt-1 text-sm text-gray-500">
               Mode: {formatMode(game.mode)}
-              {game.problem?.difficulty ? ` · Difficulty: ${game.problem.difficulty}` : ''}
+              {game.problem?.difficulty
+                ? ` · Difficulty: ${game.problem.difficulty}`
+                : ''}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -166,11 +173,15 @@ export const FinishedGame: React.FC<Props> = memo(
                       <span className="font-medium">
                         {playerALabel.name}
                         {playerALabel.isWinner ? ' (W)' : ''}
-                        {me?.name && playerALabel.name === me.name ? ' · You' : ''}
+                        {me?.name && playerALabel.name === me.name
+                          ? ' · You'
+                          : ''}
                       </span>
                     </div>
                     <div className="text-sm text-gray-300">
-                      {typeof playerALabel.rating === 'number' ? `Rating: ${playerALabel.rating}` : 'Rating: -'}
+                      {typeof playerALabel.rating === 'number'
+                        ? `Rating: ${playerALabel.rating}`
+                        : 'Rating: -'}
                       {isRanked && typeof playerALabel.delta === 'number'
                         ? ` (${formatRatingDelta(playerALabel.delta)})`
                         : ''}
@@ -183,11 +194,15 @@ export const FinishedGame: React.FC<Props> = memo(
                       <span className="font-medium">
                         {playerBLabel.name}
                         {playerBLabel.isWinner ? ' (W)' : ''}
-                        {me?.name && playerBLabel.name === me.name ? ' · You' : ''}
+                        {me?.name && playerBLabel.name === me.name
+                          ? ' · You'
+                          : ''}
                       </span>
                     </div>
                     <div className="text-sm text-gray-300">
-                      {typeof playerBLabel.rating === 'number' ? `Rating: ${playerBLabel.rating}` : 'Rating: -'}
+                      {typeof playerBLabel.rating === 'number'
+                        ? `Rating: ${playerBLabel.rating}`
+                        : 'Rating: -'}
                       {isRanked && typeof playerBLabel.delta === 'number'
                         ? ` (${formatRatingDelta(playerBLabel.delta)})`
                         : ''}

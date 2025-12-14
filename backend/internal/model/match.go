@@ -42,8 +42,8 @@ type Match struct {
 	// Winner metrics captured at match completion (Judge0 execution)
 	// - ExecutionTimeSeconds: average seconds across test cases (as reported by Judge0)
 	// - MemoryUsageKB: average memory in KB across test cases (as reported by Judge0)
-	WinnerExecutionTimeSeconds float64 `gorm:"type:double precision" json:"winner_execution_time_seconds,omitempty"`
-	WinnerMemoryUsageKB        float64 `gorm:"type:double precision" json:"winner_memory_usage_kb,omitempty"`
+	WinnerExecutionTimeSeconds float64 `gorm:"type:double precision" json:"winner_execution_time_seconds"`
+	WinnerMemoryUsageKB        float64 `gorm:"type:double precision" json:"winner_memory_usage_kb"`
 	WinnerRatingDelta          int     `gorm:"type:integer" json:"winner_rating_delta,omitempty"`
 	LoserRatingDelta           int     `gorm:"type:integer" json:"loser_rating_delta,omitempty"`
 
@@ -72,8 +72,8 @@ type MatchResponse struct {
 	Status  MatchStatus    `json:"status"`
 	Winner  *UserResponse  `json:"winner,omitempty"`
 	// Winner metrics captured at match completion (if available)
-	WinnerExecutionTimeSeconds float64    `json:"winner_execution_time_seconds,omitempty"`
-	WinnerMemoryUsageKB        float64    `json:"winner_memory_usage_kb,omitempty"`
+	WinnerExecutionTimeSeconds float64    `json:"winner_execution_time_seconds"`
+	WinnerMemoryUsageKB        float64    `json:"winner_memory_usage_kb"`
 	WinnerRatingDelta          int        `json:"winner_rating_delta,omitempty"`
 	LoserRatingDelta           int        `json:"loser_rating_delta,omitempty"`
 	StartedAt                  *time.Time `json:"started_at,omitempty"`
