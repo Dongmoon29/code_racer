@@ -20,7 +20,11 @@ import {
   vscodeLightTheme,
 } from '../../lib/editor-theme';
 import { getLanguageSupport } from '@/lib/language-support';
-import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
+import {
+  autocompletion,
+  completionKeymap,
+  closeBrackets,
+} from '@codemirror/autocomplete';
 import { vim } from '@replit/codemirror-vim';
 
 interface CodeEditorProps {
@@ -60,6 +64,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         highlightActiveLineGutter(),
         highlightActiveLine(),
         bracketMatching(),
+        closeBrackets(),
         indentOnInput(),
         ...themeStyle,
         languageSupport,

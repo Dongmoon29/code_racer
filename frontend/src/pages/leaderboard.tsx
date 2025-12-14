@@ -1,8 +1,10 @@
 import React from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { userApi } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
+import { ROUTES } from '@/lib/router';
 
 interface LeaderboardUser {
   id: string;
@@ -83,9 +85,16 @@ const LeaderboardPage = () => {
             </thead>
             <tbody className="divide-y">
               {finalRankedUsers.map((user) => (
-                <tr key={user.id}>
+                <tr key={user.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3 text-sm w-24">{user.rank}</td>
-                  <td className="px-4 py-3 text-sm">{user.name}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <Link
+                      href={ROUTES.USER_PROFILE(user.id)}
+                      className="text-orange-500 hover:text-orange-400 hover:underline transition-colors"
+                    >
+                      {user.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-sm">{user.rating ?? '-'}</td>
                 </tr>
               ))}

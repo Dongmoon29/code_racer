@@ -1,4 +1,5 @@
 import React, { FC } from 'react';
+import Link from 'next/link';
 import {
   Trophy,
   Clock,
@@ -14,6 +15,7 @@ import {
 } from '@/lib/mappers/recentGames';
 import { DifficultyBadge } from '@/components/ui/DifficultyBadge';
 import { formatTimeAgo } from '@/lib/utils';
+import { ROUTES } from '@/lib/router';
 
 interface GameHistoryProps {
   games?: unknown[];
@@ -36,13 +38,25 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
     }
   };
 
-  const getOpponentName = (game: GameHistoryItem): string => {
+  const getOpponent = (
+    game: GameHistoryItem
+  ): { name: string; id?: string } => {
     if (!currentUserId) {
-      return game.playerB?.name || game.playerA?.name || 'Unknown';
+      return {
+        name: game.playerB?.name || game.playerA?.name || 'Unknown',
+        id: game.playerB?.id || game.playerA?.id,
+      };
     }
     return game.playerA?.id === currentUserId
-      ? game.playerB?.name || 'Unknown'
-      : game.playerA?.name || 'Unknown';
+      ? { name: game.playerB?.name || 'Unknown', id: game.playerB?.id }
+      : { name: game.playerA?.name || 'Unknown', id: game.playerA?.id };
+  };
+
+  const getWinner = (game: GameHistoryItem): { name: string; id?: string } => {
+    return {
+      name: game.winner?.name || 'Unknown',
+      id: game.winner?.id,
+    };
   };
 
   const formatEndedAgo = (endedAt?: string, fallback?: string) =>
@@ -83,22 +97,45 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
               <h4 className="font-medium text-sm">{game.problem.title}</h4>
             </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <span className="text-muted-foreground">vs</span>
-                  <span>{getOpponentName(game)}</span>
+            {game.mode !== 'single' && (
+              <>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-muted-foreground">vs</span>
+                      {getOpponent(game).id ? (
+                        <Link
+                          href={ROUTES.USER_PROFILE(getOpponent(game).id!)}
+                          className="text-orange-500 hover:text-orange-400 hover:underline transition-colors"
+                        >
+                          {getOpponent(game).name}
+                        </Link>
+                      ) : (
+                        <span>{getOpponent(game).name}</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {game.winner && (
-              <div className="mt-2 flex items-center space-x-2">
-                <Medal className="w-4 h-4 text-yellow-600" />
-                <span className="text-sm font-medium">
-                  Winner: {game.winner.name}
-                </span>
-              </div>
+                {game.winner && (
+                  <div className="mt-2 flex items-center space-x-2">
+                    <Medal className="w-4 h-4 text-yellow-600" />
+                    <span className="text-sm font-medium">
+                      Winner:{' '}
+                      {getWinner(game).id ? (
+                        <Link
+                          href={ROUTES.USER_PROFILE(getWinner(game).id!)}
+                          className="text-orange-500 hover:text-orange-400 hover:underline transition-colors"
+                        >
+                          {getWinner(game).name}
+                        </Link>
+                      ) : (
+                        getWinner(game).name
+                      )}
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ))}
