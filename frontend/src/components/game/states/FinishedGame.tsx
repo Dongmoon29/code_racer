@@ -91,7 +91,7 @@ export const FinishedGame: React.FC<Props> = memo(
 
     return (
       <div className="p-6 max-w-5xl mx-auto rounded-lg shadow-md">
-        <div className="flex items-start justify-between gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div>
             <h1 className="text-2xl font-bold">{game.problem.title}</h1>
             <div className="mt-1 text-sm text-gray-500">
@@ -101,7 +101,11 @@ export const FinishedGame: React.FC<Props> = memo(
                 : ''}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-start justify-between md:justify-end gap-3">
+            <h2 className="text-2xl font-bold md:text-right">
+              Winner&apos;s Code
+            </h2>
             <span
               className={`px-3 py-1 rounded-full text-sm font-semibold border ${
                 winnerIsMe
@@ -211,7 +215,6 @@ export const FinishedGame: React.FC<Props> = memo(
 
           {/* Right: winner code */}
           <div>
-            <h2 className="text-xl font-semibold mb-2">Winner&apos;s Code</h2>
             <div className="h-[520px] border border-gray-200 rounded overflow-hidden">
               <CodeEditor
                 value={winnerCode}
