@@ -58,7 +58,7 @@ func TestMatchRepository_SetWinner_StoresWinnerMetrics(t *testing.T) {
 	repo := NewMatchRepository(db, appLogger.NewZerologLogger(zl))
 
 	execTime := 0.123
-	memKB := 4567.0
+	memKB := 4567.333333333333
 
 	assert.NoError(t, repo.SetWinner(m.ID, u.ID, execTime, memKB))
 
@@ -69,6 +69,6 @@ func TestMatchRepository_SetWinner_StoresWinnerMetrics(t *testing.T) {
 	assert.Equal(t, model.MatchStatusFinished, got.Status)
 	assert.NotNil(t, got.EndedAt)
 	assert.InDelta(t, execTime, got.WinnerExecutionTimeSeconds, 1e-9)
-	assert.InDelta(t, memKB, got.WinnerMemoryUsageKB, 1e-9)
+	assert.Equal(t, 4567.0, got.WinnerMemoryUsageKB)
 }
 

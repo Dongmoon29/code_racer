@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"math"
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
@@ -143,7 +144,8 @@ func (r *matchRepository) SetWinner(matchID uuid.UUID, userID uuid.UUID, executi
 	match.Status = model.MatchStatusFinished
 	match.EndedAt = &now
 	match.WinnerExecutionTimeSeconds = executionTimeSeconds
-	match.WinnerMemoryUsageKB = memoryUsageKB
+	// Store as whole KB to avoid fractional values from averages
+	match.WinnerMemoryUsageKB = math.Round(memoryUsageKB)
 
 	if err := tx.Save(&match).Error; err != nil {
 		tx.Rollback()
