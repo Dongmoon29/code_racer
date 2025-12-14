@@ -142,7 +142,7 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 		}()
 
 		// Persist winner in DB
-		if err := s.matchRepo.SetWinner(matchID, userID); err != nil {
+		if err := s.matchRepo.SetWinner(matchID, userID, result.ExecutionTime, result.MemoryUsage); err != nil {
 			s.logger.Error().Err(err).Msg("Failed to set winner")
 			return nil, err
 		}

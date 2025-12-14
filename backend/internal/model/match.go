@@ -39,6 +39,12 @@ type Match struct {
 	WinnerID *uuid.UUID `gorm:"type:uuid;index" json:"winner_id,omitempty"`
 	Winner   *User      `gorm:"foreignKey:WinnerID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"winner,omitempty"`
 
+	// Winner metrics captured at match completion (Judge0 execution)
+	// - ExecutionTimeSeconds: average seconds across test cases (as reported by Judge0)
+	// - MemoryUsageKB: average memory in KB across test cases (as reported by Judge0)
+	WinnerExecutionTimeSeconds float64 `gorm:"type:double precision" json:"winner_execution_time_seconds,omitempty"`
+	WinnerMemoryUsageKB        float64 `gorm:"type:double precision" json:"winner_memory_usage_kb,omitempty"`
+
 	Mode   MatchMode   `gorm:"type:varchar(20);not null;default:'casual_pvp'" json:"mode"`
 	Status MatchStatus `gorm:"type:varchar(20);not null;default:'waiting';index" json:"status"`
 
@@ -63,6 +69,9 @@ type MatchResponse struct {
 	Problem   *ProblemDetail `json:"problem"`
 	Status    MatchStatus    `json:"status"`
 	Winner    *UserResponse  `json:"winner,omitempty"`
+	// Winner metrics captured at match completion (if available)
+	WinnerExecutionTimeSeconds float64 `json:"winner_execution_time_seconds,omitempty"`
+	WinnerMemoryUsageKB        float64 `json:"winner_memory_usage_kb,omitempty"`
 	StartedAt *time.Time     `json:"started_at,omitempty"`
 	EndedAt   *time.Time     `json:"ended_at,omitempty"`
 	CreatedAt time.Time      `json:"created_at"`
@@ -93,6 +102,8 @@ func (m *Match) ToResponse() *MatchResponse {
 		Problem:   problemResp,
 		Status:    m.Status,
 		Winner:    winnerResp,
+		WinnerExecutionTimeSeconds: m.WinnerExecutionTimeSeconds,
+		WinnerMemoryUsageKB:        m.WinnerMemoryUsageKB,
 		StartedAt: m.StartedAt,
 		EndedAt:   m.EndedAt,
 		CreatedAt: m.CreatedAt,

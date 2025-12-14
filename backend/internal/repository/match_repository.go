@@ -15,7 +15,7 @@ type MatchRepository interface {
 	FindByID(id uuid.UUID) (*model.Match, error)
 	FindPlayingMatchByID(id uuid.UUID) (*model.Match, error)
 	Update(match *model.Match) error
-	SetWinner(matchID uuid.UUID, userID uuid.UUID) error
+	SetWinner(matchID uuid.UUID, userID uuid.UUID, executionTimeSeconds float64, memoryUsageKB float64) error
 	FindByUserID(userID uuid.UUID) ([]model.Match, error)
 	FindRecentByUserID(userID uuid.UUID, limit int) ([]model.Match, error)
 	CloseMatch(matchID uuid.UUID, userID uuid.UUID) error
@@ -116,7 +116,7 @@ func (r *matchRepository) FindRecentByUserID(userID uuid.UUID, limit int) ([]mod
 
 func (r *matchRepository) Update(match *model.Match) error { return r.db.Save(match).Error }
 
-func (r *matchRepository) SetWinner(matchID uuid.UUID, userID uuid.UUID) error {
+func (r *matchRepository) SetWinner(matchID uuid.UUID, userID uuid.UUID, executionTimeSeconds float64, memoryUsageKB float64) error {
 	var match model.Match
 	err := r.db.Where("id = ?", matchID).First(&match).Error
 	if err != nil {
@@ -142,6 +142,8 @@ func (r *matchRepository) SetWinner(matchID uuid.UUID, userID uuid.UUID) error {
 	match.WinnerID = &userID
 	match.Status = model.MatchStatusFinished
 	match.EndedAt = &now
+	match.WinnerExecutionTimeSeconds = executionTimeSeconds
+	match.WinnerMemoryUsageKB = memoryUsageKB
 
 	if err := tx.Save(&match).Error; err != nil {
 		tx.Rollback()
