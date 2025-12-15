@@ -67,6 +67,13 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to load configuration")
 	}
 
+	// load OAuth config (optional)
+	oauthCfg, err := config.LoadOAuthConfig()
+	if err != nil {
+		logger.Warn().Err(err).Msg("Failed to load OAuth configuration")
+		oauthCfg = &config.OAuthConfig{}
+	}
+
 	// init database
 	db, err := config.InitDatabase(cfg, logger)
 	if err != nil {
@@ -82,7 +89,7 @@ func main() {
 	}
 
 	// initialize dependencies
-	deps := initializeDependencies(db, rdb, cfg, logger)
+	deps := initializeDependencies(db, rdb, cfg, oauthCfg, logger)
 
 	// setup router
 	r := router.Setup(
@@ -111,10 +118,10 @@ type dependencies struct {
 	wsHub             *service.Hub
 }
 
-func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) *dependencies {
+func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, oauthCfg *config.OAuthConfig, appLogger logger.Logger) *dependencies {
 	repositories := initializeRepositories(db, appLogger)
-	services, wsHub := initializeServices(repositories, rdb, cfg, appLogger)
-	controllers := initializeControllers(services, appLogger)
+	services, wsHub := initializeServices(repositories, rdb, cfg, oauthCfg, appLogger)
+	controllers := initializeControllers(services, oauthCfg, appLogger)
 	middleware := initializeMiddleware(services, repositories, appLogger)
 
 	return &dependencies{
@@ -138,8 +145,8 @@ func initializeRepositories(db *gorm.DB, appLogger logger.Logger) *repositories 
 }
 
 // initializeServices creates all service instances
-func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Config, appLogger logger.Logger) (*services, *service.Hub) {
-	authService := service.NewAuthService(repos.userRepository, cfg.JWTSecret, appLogger)
+func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Config, oauthCfg *config.OAuthConfig, appLogger logger.Logger) (*services, *service.Hub) {
+	authService := service.NewAuthService(repos.userRepository, cfg.JWTSecret, oauthCfg, appLogger)
 	userService := service.NewUserService(repos.userRepository, repos.matchRepository, appLogger)
 
 	// Initialize EventBus
@@ -173,13 +180,13 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 }
 
 // initializeControllers creates all controller instances
-func initializeControllers(services *services, appLogger logger.Logger) *controllers {
+func initializeControllers(services *services, oauthCfg *config.OAuthConfig, appLogger logger.Logger) *controllers {
 	// Get allowed origins from environment
 	allowedOrigins := getAllowedOrigins()
 	environment := getEnvironment()
 
 	// Create OAuth config provider
-	oauthConfigProvider := controller.NewOAuthConfigProvider()
+	oauthConfigProvider := controller.NewOAuthConfigProvider(oauthCfg)
 
 	return &controllers{
 		authController:    controller.NewAuthController(services.authService, appLogger, oauthConfigProvider),

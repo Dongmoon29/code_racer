@@ -39,7 +39,18 @@ func NewAuthController(authService interfaces.AuthService, logger logger.Logger,
 }
 
 func sendErrorResponse(ctx *gin.Context, statusCode int, message string) {
-	JSONError(ctx, statusCode, message, "")
+	code := "internal_error"
+	switch statusCode {
+	case http.StatusBadRequest:
+		code = "bad_request"
+	case http.StatusUnauthorized:
+		code = "unauthorized"
+	case http.StatusForbidden:
+		code = "forbidden"
+	case http.StatusNotFound:
+		code = "not_found"
+	}
+	JSONError(ctx, statusCode, message, code)
 }
 
 // OAuthConfigProviderImpl implements OAuthConfigProvider using centralized config
@@ -48,19 +59,25 @@ type OAuthConfigProviderImpl struct {
 }
 
 // NewOAuthConfigProvider creates a new OAuthConfigProvider instance
-func NewOAuthConfigProvider() OAuthConfigProvider {
+func NewOAuthConfigProvider(oauthConfig *config.OAuthConfig) OAuthConfigProvider {
 	return &OAuthConfigProviderImpl{
-		oauthConfig: config.LoadOAuthConfig(),
+		oauthConfig: oauthConfig,
 	}
 }
 
 // GetGoogleConfig returns Google OAuth configuration
 func (p *OAuthConfigProviderImpl) GetGoogleConfig() *oauth2.Config {
+	if p == nil || p.oauthConfig == nil {
+		return nil
+	}
 	return p.oauthConfig.Google
 }
 
 // GetGitHubConfig returns GitHub OAuth configuration
 func (p *OAuthConfigProviderImpl) GetGitHubConfig() *oauth2.Config {
+	if p == nil || p.oauthConfig == nil {
+		return nil
+	}
 	return p.oauthConfig.GitHub
 }
 
@@ -84,7 +101,7 @@ func (c *AuthController) Register(ctx *gin.Context) {
 
 	user, err := c.authService.Register(&req)
 	if err != nil {
-		sendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		WriteError(ctx, err)
 		return
 	}
 
@@ -111,7 +128,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 
 	response, err := c.authService.Login(&req)
 	if err != nil {
-		sendErrorResponse(ctx, http.StatusUnauthorized, err.Error())
+		WriteError(ctx, err)
 		return
 	}
 
@@ -146,7 +163,7 @@ func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 
 	user, err := c.authService.GetUserByID(userID.(uuid.UUID))
 	if err != nil {
-		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get user information")
+		WriteError(ctx, err)
 		return
 	}
 
@@ -274,7 +291,7 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 
 	if err != nil {
 		c.logger.Error().Err(err).Msg("ExchangeToken: OAuth login failed")
-		sendErrorResponse(ctx, http.StatusUnauthorized, err.Error())
+		WriteError(ctx, err)
 		return
 	}
 
@@ -295,7 +312,7 @@ func (c *AuthController) validateState(state string) bool {
 	// Basic format check: should contain alphanumeric characters, hyphens, or underscores
 	// This prevents basic injection attempts
 	for _, char := range state {
-		if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || 
+		if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') ||
 			(char >= '0' && char <= '9') || char == '-' || char == '_') {
 			return false
 		}

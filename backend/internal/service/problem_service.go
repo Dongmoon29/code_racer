@@ -2,12 +2,15 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
+	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // ProblemService represents the new normalized problem service interface
@@ -43,7 +46,7 @@ func (s *problemService) GetAllProblems() ([]*model.ProblemSummary, error) {
 	problems, err := s.problemRepo.FindAll()
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to fetch all problems")
-		return nil, fmt.Errorf("failed to fetch problems: %w", err)
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to fetch problems")
 	}
 
 	var summaries []*model.ProblemSummary
@@ -59,7 +62,10 @@ func (s *problemService) GetProblemByID(id uuid.UUID) (*model.ProblemDetail, err
 	s.logger.Debug().Str("problemID", id.String()).Msg("problem")
 	if err != nil {
 		s.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to fetch problem by ID")
-		return nil, fmt.Errorf("problem not found: %w", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeNotFound, "Problem not found")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to fetch problem")
 	}
 
 	return problem.ToDetailResponse(), nil
@@ -68,7 +74,7 @@ func (s *problemService) GetProblemByID(id uuid.UUID) (*model.ProblemDetail, err
 func (s *problemService) CreateProblem(req *model.CreateProblemRequest) (*model.ProblemDetail, error) {
 	// Validate test cases
 	if err := s.ValidateTestCases(req.TestCases, req.IOSchema); err != nil {
-		return nil, fmt.Errorf("invalid test cases: %w", err)
+		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid test cases")
 	}
 
 	// Convert Examples
@@ -102,7 +108,7 @@ func (s *problemService) CreateProblem(req *model.CreateProblemRequest) (*model.
 	// Convert IOSchema
 	paramTypesJSON, err := json.Marshal(req.IOSchema.ParamTypes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal param types: %w", err)
+		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid IO schema")
 	}
 
 	problem := &model.Problem{
@@ -126,7 +132,7 @@ func (s *problemService) CreateProblem(req *model.CreateProblemRequest) (*model.
 
 	if err := s.problemRepo.Create(problem); err != nil {
 		s.logger.Error().Err(err).Str("title", req.Title).Msg("Failed to create problem")
-		return nil, fmt.Errorf("failed to create problem: %w", err)
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to create problem")
 	}
 
 	s.logger.Info().Str("problemID", problem.ID.String()).Str("title", req.Title).Msg("Problem created successfully")
@@ -138,12 +144,15 @@ func (s *problemService) UpdateProblem(id uuid.UUID, req *model.UpdateProblemReq
 	existingProblem, err := s.problemRepo.FindWithRelations(id)
 	if err != nil {
 		s.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to fetch existing problem for update")
-		return nil, fmt.Errorf("problem not found: %w", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeNotFound, "Problem not found")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load problem")
 	}
 
 	// Validate test cases
 	if err := s.ValidateTestCases(req.TestCases, req.IOSchema); err != nil {
-		return nil, fmt.Errorf("invalid test cases: %w", err)
+		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid test cases")
 	}
 
 	// Convert Examples
@@ -177,7 +186,7 @@ func (s *problemService) UpdateProblem(id uuid.UUID, req *model.UpdateProblemReq
 	// Convert IOSchema
 	paramTypesJSON, err := json.Marshal(req.IOSchema.ParamTypes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal param types: %w", err)
+		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid IO schema")
 	}
 
 	// Update fields
@@ -200,7 +209,7 @@ func (s *problemService) UpdateProblem(id uuid.UUID, req *model.UpdateProblemReq
 
 	if err := s.problemRepo.Update(existingProblem); err != nil {
 		s.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to update problem")
-		return nil, fmt.Errorf("failed to update problem: %w", err)
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to update problem")
 	}
 
 	s.logger.Info().Str("problemID", id.String()).Str("title", req.Title).Msg("Problem updated successfully")
@@ -212,12 +221,15 @@ func (s *problemService) DeleteProblem(id uuid.UUID) error {
 	_, err := s.problemRepo.FindByID(id)
 	if err != nil {
 		s.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to fetch problem for deletion")
-		return fmt.Errorf("problem not found: %w", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return apperr.Wrap(err, apperr.CodeNotFound, "Problem not found")
+		}
+		return apperr.Wrap(err, apperr.CodeInternal, "Failed to load problem")
 	}
 
 	if err := s.problemRepo.Delete(id); err != nil {
 		s.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to delete problem")
-		return fmt.Errorf("failed to delete problem: %w", err)
+		return apperr.Wrap(err, apperr.CodeInternal, "Failed to delete problem")
 	}
 
 	s.logger.Info().Str("problemID", id.String()).Msg("Problem deleted successfully")
@@ -228,7 +240,7 @@ func (s *problemService) GetProblemsByDifficulty(difficulty string) ([]*model.Pr
 	problems, err := s.problemRepo.FindByDifficulty(difficulty)
 	if err != nil {
 		s.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to fetch problems by difficulty")
-		return nil, fmt.Errorf("failed to fetch problems: %w", err)
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to fetch problems")
 	}
 
 	var summaries []*model.ProblemSummary
@@ -243,7 +255,7 @@ func (s *problemService) SearchProblems(query string) ([]*model.ProblemSummary, 
 	problems, err := s.problemRepo.Search(query)
 	if err != nil {
 		s.logger.Error().Err(err).Str("query", query).Msg("Failed to search problems")
-		return nil, fmt.Errorf("failed to search problems: %w", err)
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to search problems")
 	}
 
 	var summaries []*model.ProblemSummary

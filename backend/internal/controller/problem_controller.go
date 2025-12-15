@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -59,7 +58,7 @@ func (c *ProblemController) GetProblemByID(ctx *gin.Context) {
 	problem, err := c.problemService.GetProblemByID(id)
 	if err != nil {
 		c.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to get problem by ID")
-		NotFound(ctx, "Problem not found")
+		WriteError(ctx, err)
 		return
 	}
 
@@ -88,7 +87,7 @@ func (c *ProblemController) CreateProblem(ctx *gin.Context) {
 	problem, err := c.problemService.CreateProblem(&req)
 	if err != nil {
 		c.logger.Error().Err(err).Str("title", req.Title).Msg("Failed to create problem")
-		InternalError(ctx, err.Error())
+		WriteError(ctx, err)
 		return
 	}
 
@@ -124,11 +123,7 @@ func (c *ProblemController) UpdateProblem(ctx *gin.Context) {
 	problem, err := c.problemService.UpdateProblem(id, &req)
 	if err != nil {
 		c.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to update problem")
-		if strings.Contains(err.Error(), "not found") {
-			NotFound(ctx, "Problem not found")
-		} else {
-			InternalError(ctx, err.Error())
-		}
+		WriteError(ctx, err)
 		return
 	}
 
@@ -150,11 +145,7 @@ func (c *ProblemController) DeleteProblem(ctx *gin.Context) {
 	err = c.problemService.DeleteProblem(id)
 	if err != nil {
 		c.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to delete problem")
-		if strings.Contains(err.Error(), "not found") {
-			NotFound(ctx, "Problem not found")
-		} else {
-			InternalError(ctx, err.Error())
-		}
+		WriteError(ctx, err)
 		return
 	}
 

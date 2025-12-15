@@ -15,6 +15,11 @@ func GetenvRequired(key string) (string, error) {
 	return value, nil
 }
 
+// GetEnvRequired is a backwards-compatible alias for GetenvRequired.
+func GetEnvRequired(key string) (string, error) {
+	return GetenvRequired(key)
+}
+
 // GetEnv retrieves an environment variable or returns a default value
 func GetEnv(key, defaultValue string) string {
 	value := os.Getenv(key)

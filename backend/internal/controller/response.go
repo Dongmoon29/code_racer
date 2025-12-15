@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 
+	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,6 +24,40 @@ func JSONMessage(ctx *gin.Context, status int, message string) {
 
 func JSONError(ctx *gin.Context, status int, message string, code string) {
 	ctx.JSON(status, APIResponse{Success: false, Message: message, ErrorCode: code})
+}
+
+// WriteError standardizes error -> HTTP response mapping across controllers.
+// It supports typed application errors (apperr.Error) and falls back to 500.
+func WriteError(ctx *gin.Context, err error) {
+	if err == nil {
+		InternalError(ctx, "Internal server error")
+		return
+	}
+
+	if ae, ok := apperr.As(err); ok {
+		switch ae.Code {
+		case apperr.CodeBadRequest:
+			JSONError(ctx, http.StatusBadRequest, ae.PublicMessage, string(ae.Code))
+		case apperr.CodeUnauthorized:
+			JSONError(ctx, http.StatusUnauthorized, ae.PublicMessage, string(ae.Code))
+		case apperr.CodeForbidden:
+			JSONError(ctx, http.StatusForbidden, ae.PublicMessage, string(ae.Code))
+		case apperr.CodeNotFound:
+			JSONError(ctx, http.StatusNotFound, ae.PublicMessage, string(ae.Code))
+		case apperr.CodeConflict:
+			JSONError(ctx, http.StatusConflict, ae.PublicMessage, string(ae.Code))
+		case apperr.CodeQuotaExceeded:
+			JSONError(ctx, http.StatusTooManyRequests, ae.PublicMessage, string(ae.Code))
+		case apperr.CodeUpstreamUnavailable:
+			JSONError(ctx, http.StatusServiceUnavailable, ae.PublicMessage, string(ae.Code))
+		default:
+			// Do not leak internal details by default.
+			JSONError(ctx, http.StatusInternalServerError, "Internal server error", string(apperr.CodeInternal))
+		}
+		return
+	}
+
+	JSONError(ctx, http.StatusInternalServerError, "Internal server error", string(apperr.CodeInternal))
 }
 
 // Shorthands

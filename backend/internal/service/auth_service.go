@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
@@ -19,6 +20,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
+	"gorm.io/gorm"
 )
 
 var _ interfaces.AuthService = (*authService)(nil)
@@ -32,20 +34,20 @@ type authService struct {
 }
 
 // NewAuthService creates a new AuthService instance with the provided dependencies
-func NewAuthService(userRepo interfaces.UserRepository, jwtSecret string, logger logger.Logger) interfaces.AuthService {
+func NewAuthService(userRepo interfaces.UserRepository, jwtSecret string, oauthConfig *config.OAuthConfig, logger logger.Logger) interfaces.AuthService {
 	return &authService{
 		userRepo:    userRepo,
 		jwtSecret:   jwtSecret,
 		tokenExpiry: constants.TokenExpiryDays * 24 * time.Hour,
 		logger:      logger,
-		oauthConfig: config.LoadOAuthConfig(),
+		oauthConfig: oauthConfig,
 	}
 }
 
 func (s *authService) Register(req *model.RegisterRequest) (*model.UserResponse, error) {
 	hashedPassword, err := util.HashPassword(req.Password)
 	if err != nil {
-		return nil, err
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to process password")
 	}
 
 	user := &model.User{
@@ -57,7 +59,11 @@ func (s *authService) Register(req *model.RegisterRequest) (*model.UserResponse,
 
 	// Save user
 	if err := s.userRepo.Create(user); err != nil {
-		return nil, err
+		// Repository returns a sentinel string error for existing email.
+		if err.Error() == "email already exists" {
+			return nil, apperr.Wrap(err, apperr.CodeConflict, "Email already exists")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to create user")
 	}
 
 	return user.ToResponse(), nil
@@ -75,18 +81,21 @@ func (s *authService) Login(req *model.LoginRequest) (*model.LoginResponse, erro
 			Str("email", req.Email).
 			Err(err).
 			Msg("Login failed")
-		return nil, errors.New("invalid email or password")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.New(apperr.CodeUnauthorized, "Invalid email or password")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to login")
 	}
 
 	// Password verification
 	if !util.CheckPasswordHash(req.Password, user.Password) {
-		return nil, errors.New("invalid email or password")
+		return nil, apperr.New(apperr.CodeUnauthorized, "Invalid email or password")
 	}
 
 	// JWT token generation
 	token, err := s.generateToken(user.ID, user.Email, string(user.Role))
 	if err != nil {
-		return nil, err
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to generate access token")
 	}
 
 	return &model.LoginResponse{
@@ -103,20 +112,23 @@ func (s *authService) ValidateToken(tokenString string) (*types.JWTClaims, error
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, apperr.Wrap(err, apperr.CodeUnauthorized, "Invalid token")
 	}
 
 	if claims, ok := token.Claims.(*types.JWTClaims); ok && token.Valid {
 		return claims, nil
 	}
 
-	return nil, errors.New("invalid token")
+	return nil, apperr.New(apperr.CodeUnauthorized, "Invalid token")
 }
 
 func (s *authService) GetUserByID(id uuid.UUID) (*model.UserResponse, error) {
 	user, err := s.userRepo.FindByID(id)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeNotFound, "User not found")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user")
 	}
 
 	return user.ToResponse(), nil
@@ -144,18 +156,24 @@ func (s *authService) generateToken(userID uuid.UUID, email string, role string)
 }
 
 func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error) {
+	if s.oauthConfig == nil || s.oauthConfig.Google == nil {
+		return nil, apperr.New(apperr.CodeInternal, "Google OAuth is not configured")
+	}
 	token, err := s.exchangeGoogleCode(code)
 	if err != nil {
-		return nil, err
+		return nil, apperr.Wrap(err, apperr.CodeUpstreamUnavailable, "Google OAuth token exchange failed")
 	}
 
 	googleUser, err := s.getGoogleUserInfo(token.AccessToken)
 	if err != nil {
-		return nil, err
+		return nil, apperr.Wrap(err, apperr.CodeUpstreamUnavailable, "Failed to fetch Google user info")
 	}
 
 	user, err := s.userRepo.FindByEmail(googleUser.Email)
 	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user")
+		}
 		user = &model.User{
 			Email:         googleUser.Email,
 			Name:          googleUser.Name,
@@ -165,20 +183,20 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 			OAuthID:       googleUser.ID,
 		}
 		if err := s.userRepo.Create(user); err != nil {
-			return nil, err
+			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to create user")
 		}
 	} else {
 		if user.OAuthProvider == "google" {
 			user.ProfileImage = googleUser.Picture
 			if err := s.userRepo.Update(user); err != nil {
-				return nil, err
+				return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to update user")
 			}
 		}
 	}
 
 	jwtToken, err := s.generateToken(user.ID, user.Email, string(user.Role))
 	if err != nil {
-		return nil, err
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to generate access token")
 	}
 
 	return &model.LoginResponse{
@@ -207,20 +225,26 @@ func (s *authService) getGoogleUserInfo(accessToken string) (*model.GoogleUser, 
 }
 
 func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error) {
+	if s.oauthConfig == nil || s.oauthConfig.GitHub == nil {
+		return nil, apperr.New(apperr.CodeInternal, "GitHub OAuth is not configured")
+	}
 	token, err := s.exchangeGitHubCode(code)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to exchange GitHub code")
-		return nil, err
+		return nil, apperr.Wrap(err, apperr.CodeUpstreamUnavailable, "GitHub OAuth token exchange failed")
 	}
 
 	githubUser, err := s.getGitHubUserInfo(token.AccessToken)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to get GitHub user info")
-		return nil, err
+		return nil, apperr.Wrap(err, apperr.CodeUpstreamUnavailable, "Failed to fetch GitHub user info")
 	}
 
 	user, err := s.userRepo.FindByEmail(githubUser.Email)
 	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user")
+		}
 		user = &model.User{
 			ID:            uuid.New(),
 			Email:         githubUser.Email,
@@ -232,14 +256,14 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 		}
 		if err := s.userRepo.Create(user); err != nil {
 			s.logger.Error().Err(err).Msg("Failed to create new user")
-			return nil, err
+			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to create user")
 		}
 	} else {
 		if user.OAuthProvider == "github" {
 			user.ProfileImage = githubUser.AvatarURL
 			if err := s.userRepo.Update(user); err != nil {
 				s.logger.Error().Err(err).Msg("Failed to update user profile image")
-				return nil, err
+				return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to update user")
 			}
 		}
 	}
@@ -247,7 +271,7 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 	jwtToken, err := s.generateToken(user.ID, user.Email, string(user.Role))
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to generate JWT token")
-		return nil, err
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to generate access token")
 	}
 
 	return &model.LoginResponse{

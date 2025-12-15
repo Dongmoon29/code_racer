@@ -3,7 +3,6 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,6 +11,7 @@ import (
 
 	"fmt"
 
+	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/types"
@@ -236,7 +236,7 @@ func TestLogin(t *testing.T) {
 			Password: "wrongpassword",
 		}
 
-		mockService.On("Login", loginReq).Return(nil, errors.New("invalid credentials")).Once()
+		mockService.On("Login", loginReq).Return(nil, apperr.New(apperr.CodeUnauthorized, "Invalid email or password")).Once()
 
 		body, _ := json.Marshal(loginReq)
 		req := httptest.NewRequest("POST", "/api/auth/login", bytes.NewBuffer(body))

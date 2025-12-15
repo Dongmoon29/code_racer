@@ -33,7 +33,7 @@ func (c *UserController) GetCurrentUser(ctx *gin.Context) {
 	uid := userID.(uuid.UUID)
 	user, err := c.userService.GetUserByID(uid)
 	if err != nil {
-		InternalError(ctx, err.Error())
+		WriteError(ctx, err)
 		return
 	}
 	recent := []model.RecentGameSummary{}
@@ -60,7 +60,7 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 
 	user, err := c.userService.GetProfile(userID)
 	if err != nil {
-		InternalError(ctx, err.Error())
+		WriteError(ctx, err)
 		return
 	}
 
@@ -99,7 +99,7 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 
 	profile, err := c.userService.UpdateProfile(userID.(uuid.UUID), &req)
 	if err != nil {
-		InternalError(ctx, err.Error())
+		WriteError(ctx, err)
 		return
 	}
 
@@ -136,10 +136,7 @@ func (c *UserController) AdminListUsers(ctx *gin.Context) {
 
 	users, total, err := c.userService.ListUsers(page, limit, orderBy, dir)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		WriteError(ctx, err)
 		return
 	}
 
@@ -157,10 +154,7 @@ func (c *UserController) AdminListUsers(ctx *gin.Context) {
 func (c *UserController) GetLeaderboard(ctx *gin.Context) {
 	users, err := c.userService.GetLeaderboard(20)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		WriteError(ctx, err)
 		return
 	}
 

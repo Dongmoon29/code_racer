@@ -2,21 +2,20 @@ package controller
 
 import (
 	"net/http"
-	"strings"
 
+	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
-	"github.com/Dongmoon29/code_racer/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type MatchController struct {
-	matchService service.MatchService
+	matchService interfaces.MatchService
 	logger       logger.Logger
 }
 
-func NewMatchController(matchService service.MatchService, logger logger.Logger) *MatchController {
+func NewMatchController(matchService interfaces.MatchService, logger logger.Logger) *MatchController {
 	return &MatchController{
 		matchService: matchService,
 		logger:       logger,
@@ -38,7 +37,7 @@ func (c *MatchController) GetMatch(ctx *gin.Context) {
 			Err(err).
 			Str("matchID", matchID.String()).
 			Msg("Failed to get match")
-		NotFound(ctx, "Match not found")
+		WriteError(ctx, err)
 		return
 	}
 
@@ -72,14 +71,7 @@ func (c *MatchController) SubmitSolution(ctx *gin.Context) {
 			Str("matchID", matchID.String()).
 			Str("userID", userID.(uuid.UUID).String()).
 			Msg("Failed to submit solution")
-
-		if strings.Contains(err.Error(), "exceeded the DAILY quota") {
-			JSONError(ctx, http.StatusTooManyRequests, "Code evaluation service is currently unavailable due to daily quota exceeded. Please try again later.", "judge0_quota_exceeded")
-			return
-		}
-
-		// Don't expose internal error details to users
-		InternalError(ctx, "Failed to submit solution")
+		WriteError(ctx, err)
 		return
 	}
 

@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"strings"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/events"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
@@ -18,6 +20,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type MatchService interface {
@@ -86,7 +89,10 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 	match, err := s.matchRepo.FindPlayingMatchByID(matchID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to find playing match")
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeNotFound, "Match not found")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load match")
 	}
 
 	s.logger.Debug().
@@ -98,7 +104,10 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 	result, err := s.judgeService.EvaluateCodeWithRealtime(req.Code, req.Language, &match.Problem, matchID, userID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Code evaluation failed")
-		return nil, err
+		if strings.Contains(err.Error(), "exceeded the DAILY quota") {
+			return nil, apperr.New(apperr.CodeQuotaExceeded, "Code evaluation service quota exceeded. Please try again later.")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeUpstreamUnavailable, "Code evaluation failed")
 	}
 
 	s.logger.Debug().
@@ -307,7 +316,10 @@ func (s *matchService) GetMatch(matchID uuid.UUID) (*model.Match, error) {
 	match, err := s.matchRepo.FindByID(matchID)
 	if err != nil {
 		s.logger.Error().Err(err).Str("matchID", matchID.String()).Msg("Failed to get match by ID")
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeNotFound, "Match not found")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load match")
 	}
 
 	// Log match data as JSON for easy debugging

@@ -1,13 +1,16 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type UserService interface {
@@ -38,7 +41,10 @@ func NewUserService(userRepo interfaces.UserRepository, matchRepo repository.Mat
 func (s *userService) GetUserByID(userID uuid.UUID) (*model.UserResponse, error) {
 	user, err := s.userRepo.FindByID(userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find user: %w", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeNotFound, "User not found")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user")
 	}
 	return user.ToResponse(), nil
 }
@@ -94,7 +100,10 @@ func (s *userService) GetRecentGames(userID uuid.UUID, limit int) ([]model.Recen
 func (s *userService) GetProfile(userID uuid.UUID) (*model.User, error) {
 	user, err := s.userRepo.FindByID(userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find user: %w", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeNotFound, "User not found")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user profile")
 	}
 
 	return user, nil
@@ -103,7 +112,10 @@ func (s *userService) GetProfile(userID uuid.UUID) (*model.User, error) {
 func (s *userService) UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRequest) (*model.User, error) {
 	user, err := s.userRepo.FindByID(userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find user: %w", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeNotFound, "User not found")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user profile")
 	}
 
 	// 프로필 정보 업데이트
@@ -118,7 +130,7 @@ func (s *userService) UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRe
 	user.FavLanguage = req.FavLanguage
 
 	if err := s.userRepo.Update(user); err != nil {
-		return nil, fmt.Errorf("failed to update user: %w", err)
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to update user profile")
 	}
 
 	return &model.User{
@@ -148,7 +160,7 @@ func (s *userService) ListUsers(page int, limit int, orderBy string, dir string)
 	}
 	users, total, err := s.userRepo.ListUsers(offset, limit, orderBy, dir)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to list users: %w", err)
+		return nil, 0, apperr.Wrap(err, apperr.CodeInternal, "Failed to list users")
 	}
 	return users, total, nil
 }
@@ -156,7 +168,7 @@ func (s *userService) ListUsers(page int, limit int, orderBy string, dir string)
 func (s *userService) GetLeaderboard(limit int) ([]*model.LeaderboardUser, error) {
 	users, err := s.userRepo.GetLeaderboardUsers(limit)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get leaderboard: %w", err)
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load leaderboard")
 	}
 
 	leaderboardUsers := make([]*model.LeaderboardUser, len(users))
