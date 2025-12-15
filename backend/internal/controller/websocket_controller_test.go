@@ -162,6 +162,9 @@ func TestHandleWebSocket(t *testing.T) {
 		r.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
+		// unified error format
+		assert.Contains(t, w.Body.String(), `"success":false`)
+		assert.Contains(t, w.Body.String(), `"error_code":"bad_request"`)
 	})
 
 	t.Run("successful_connection", func(t *testing.T) {

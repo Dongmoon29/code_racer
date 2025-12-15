@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/service"
 	"github.com/gin-gonic/gin"
@@ -92,10 +93,7 @@ func (c *WebSocketController) HandleWebSocket(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
 		c.logger.Error().Msg("WebSocket authentication failed: userID not found in context")
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": "User not authenticated",
-		})
+		WriteError(ctx, apperr.New(apperr.CodeUnauthorized, "User not authenticated"))
 		return
 	}
 
@@ -103,10 +101,7 @@ func (c *WebSocketController) HandleWebSocket(ctx *gin.Context) {
 	matchID, err := uuid.Parse(ctx.Param("matchId"))
 	if err != nil {
 		c.logger.Error().Err(err).Str("matchId", ctx.Param("matchId")).Msg("Invalid match ID format")
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "Invalid match ID",
-		})
+		WriteError(ctx, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid match ID"))
 		return
 	}
 
@@ -132,10 +127,7 @@ func (c *WebSocketController) HandleMatchmaking(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
 		c.logger.Error().Msg("WebSocket authentication failed: userID not found in context")
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"success": false,
-			"message": "User not authenticated",
-		})
+		WriteError(ctx, apperr.New(apperr.CodeUnauthorized, "User not authenticated"))
 		return
 	}
 
