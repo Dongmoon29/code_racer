@@ -1,18 +1,51 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useProblems, useDeleteProblem } from '@/hooks/useProblem';
+import {
+  useProblems,
+  useDeleteProblem,
+  useCreateProblem,
+} from '@/hooks/useProblem';
 import Link from 'next/link';
-import { ProblemSummary } from '@/types';
+import { CreateProblemRequest, ProblemSummary } from '@/types';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
+import CodeEditor from '@/components/game/CodeEditor';
+
+const DEFAULT_PROBLEM_JSON = `{
+  "title": "INSERT_TITLE_HERE",
+  "description": "INSERT_DESCRIPTION_HERE",
+  "constraints": "INSERT_CONSTRAINTS_HERE",
+  "difficulty": "INSERT_DIFFICULTY_HERE",
+  "input_format": "INSERT_INPUT_FORMAT_HERE",
+  "output_format": "INSERT_OUTPUT_FORMAT_HERE",
+  "function_name": "INSERT_FUNCTION_NAME_HERE",
+  "time_limit": 0,
+  "memory_limit": 0,
+  "examples": [
+    { "input": "INSERT_INPUT_HERE", "output": "INSERT_OUTPUT_HERE", "explanation": "INSERT_EXPLANATION_HERE" }
+  ],
+  "test_cases": [
+    { "input": "INSERT_INPUT_HERE", "expected_output": "INSERT_EXPECTED_OUTPUT_HERE" }
+  ],
+  "io_schema": { "param_types": ["INSERT_PARAM_TYPES_HERE"], "return_type": "INSERT_RETURN_TYPE_HERE" },
+  "io_templates": [
+    { "language": "javascript", "code": "INSERT_JAVASCRIPT_TEMPLATE_HERE" },
+    { "language": "python", "code": "INSERT_PYTHON_TEMPLATE_HERE" },
+    { "language": "go", "code": "INSERT_GO_TEMPLATE_HERE" }
+  ]
+}`;
 
 export default function ProblemList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
+  const [jsonText, setJsonText] = useState(DEFAULT_PROBLEM_JSON);
+  const [jsonError, setJsonError] = useState<string>('');
 
   // Use React Query hooks
   const { data: problems = [], isLoading, error } = useProblems();
   const deleteProblemMutation = useDeleteProblem();
+  const createProblemMutation = useCreateProblem();
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Are you sure you want to delete "${title}" problem?`)) {
@@ -24,6 +57,38 @@ export default function ProblemList() {
     } catch (err) {
       console.error('Failed to delete problem:', err);
       // Error is already handled by the mutation
+    }
+  };
+
+  const handleCreateWithJSON = async () => {
+    setJsonError('');
+    let payload: unknown;
+    try {
+      payload = JSON.parse(jsonText);
+    } catch (e) {
+      setJsonError(
+        e instanceof Error ? `Invalid JSON: ${e.message}` : 'Invalid JSON'
+      );
+      return;
+    }
+
+    try {
+      await createProblemMutation.mutateAsync(payload as CreateProblemRequest);
+      setIsJsonModalOpen(false);
+    } catch (e) {
+      setJsonError(e instanceof Error ? e.message : 'Failed to create problem');
+    }
+  };
+
+  const handleFormatJSON = () => {
+    setJsonError('');
+    try {
+      const parsed = JSON.parse(jsonText);
+      setJsonText(JSON.stringify(parsed, null, 2));
+    } catch (e) {
+      setJsonError(
+        e instanceof Error ? `Invalid JSON: ${e.message}` : 'Invalid JSON'
+      );
     }
   };
 
@@ -79,12 +144,108 @@ export default function ProblemList() {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
+      {isJsonModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsJsonModalOpen(false)}
+          />
+          <div className="relative w-[min(1200px,calc(100vw-2rem))] max-h-[min(92vh,1100px)] overflow-auto rounded-lg border bg-[hsl(var(--card))] p-6 shadow-lg">
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <h2 className="text-xl font-semibold">
+                Add New Problem with JSON
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsJsonModalOpen(false)}
+                className="px-3 py-1 rounded-md border"
+              >
+                Close
+              </button>
+            </div>
+
+            <p className="text-sm mb-3">
+              Paste a JSON payload for the problem creation request. This will
+              be sent to <code>/api/problems</code>.
+            </p>
+
+            {jsonError && (
+              <div className="mb-3 p-3 rounded-md border border-red-300 text-red-700">
+                {jsonError}
+              </div>
+            )}
+
+            <div className="w-full h-[620px] border rounded-md overflow-hidden">
+              <CodeEditor
+                value={jsonText}
+                onChange={setJsonText}
+                language="javascript"
+                theme="dark"
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setJsonText(DEFAULT_PROBLEM_JSON);
+                    setJsonError('');
+                  }}
+                  className="px-4 py-2 rounded-md border"
+                >
+                  Load Example
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFormatJSON}
+                  className="px-4 py-2 rounded-md border"
+                >
+                  Format JSON
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsJsonModalOpen(false)}
+                  className="px-4 py-2 rounded-md border"
+                  disabled={createProblemMutation.isPending}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateWithJSON}
+                  className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-50"
+                  disabled={createProblemMutation.isPending}
+                >
+                  {createProblemMutation.isPending ? 'Creating...' : 'Create'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Problem Management</h1>
-        <Link href="/admin/problems/create" className="px-6 py-2 rounded-md">
-          + Add New Problem
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setJsonError('');
+              setIsJsonModalOpen(true);
+            }}
+            className="px-6 py-2 rounded-md border"
+          >
+            + Add New Problem with JSON
+          </button>
+          <Link href="/admin/problems/create" className="px-6 py-2 rounded-md">
+            + Add New Problem
+          </Link>
+        </div>
       </div>
 
       {/* Filter and Search */}
