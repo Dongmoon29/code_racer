@@ -13,16 +13,17 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = localStorage.getItem('authToken'); // Changed from accessToken to authToken
-
-  console.log('Problem API Request:', {
-    endpoint: `${API_BASE_URL}${endpoint}`,
-    token: token ? 'exists' : 'missing',
-    tokenLength: token?.length || 0,
-  });
+  // NOTE: Auth token is stored in sessionStorage (see LoginForm/auth flow).
+  // Fallback to localStorage for backward compatibility.
+  const token =
+    typeof window !== 'undefined'
+      ? sessionStorage.getItem('authToken') || localStorage.getItem('authToken')
+      : null;
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
+    // Allow cookie-based auth when same-origin, and keep behavior consistent with axios client.
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
