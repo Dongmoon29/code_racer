@@ -310,11 +310,13 @@ func startServer(router *gin.Engine, port string, wsHub *service.Hub, db *gorm.D
 	}
 
 	// Close database connection
-	if sqlDB, err := db.DB(); err == nil {
-		if err := sqlDB.Close(); err != nil {
-			appLogger.Error().Err(err).Msg("Failed to close database connection")
-		} else {
-			appLogger.Info().Msg("Database connection closed")
+	if db != nil {
+		if sqlDB, err := db.DB(); err == nil {
+			if err := sqlDB.Close(); err != nil {
+				appLogger.Error().Err(err).Msg("Failed to close database connection")
+			} else {
+				appLogger.Info().Msg("Database connection closed")
+			}
 		}
 	}
 
