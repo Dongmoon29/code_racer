@@ -74,6 +74,9 @@ export default function ProblemList() {
 
     try {
       await createProblemMutation.mutateAsync(payload as CreateProblemRequest);
+      // Reset editor to template after successful creation
+      setJsonText(DEFAULT_PROBLEM_JSON);
+      setJsonError('');
       setIsJsonModalOpen(false);
     } catch (e) {
       setJsonError(e instanceof Error ? e.message : 'Failed to create problem');
@@ -148,7 +151,10 @@ export default function ProblemList() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/50"
-            onClick={() => setIsJsonModalOpen(false)}
+            onClick={() => {
+              if (createProblemMutation.isPending) return;
+              setIsJsonModalOpen(false);
+            }}
           />
           <div className="relative w-[min(1200px,calc(100vw-2rem))] max-h-[min(92vh,1100px)] overflow-auto rounded-lg border bg-[hsl(var(--card))] p-6 shadow-lg">
             <div className="flex items-center justify-between gap-4 mb-4">
@@ -157,8 +163,12 @@ export default function ProblemList() {
               </h2>
               <button
                 type="button"
-                onClick={() => setIsJsonModalOpen(false)}
+                onClick={() => {
+                  if (createProblemMutation.isPending) return;
+                  setIsJsonModalOpen(false);
+                }}
                 className="px-3 py-1 rounded-md border"
+                disabled={createProblemMutation.isPending}
               >
                 Close
               </button>
@@ -208,7 +218,10 @@ export default function ProblemList() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsJsonModalOpen(false)}
+                  onClick={() => {
+                    if (createProblemMutation.isPending) return;
+                    setIsJsonModalOpen(false);
+                  }}
                   className="px-4 py-2 rounded-md border"
                   disabled={createProblemMutation.isPending}
                 >
