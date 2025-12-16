@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const STORAGE_KEY = 'dashboard-sidebar-collapsed';
 
-export function useSidebarState() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+// 초기 상태를 localStorage에서 읽어오는 함수
+function getInitialState(): boolean {
+  if (typeof window === 'undefined') {
+    return false; // SSR에서는 기본값 false
+  }
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored === 'true';
+}
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === 'true') {
-        setIsCollapsed(true);
-      }
-    }
-  }, []);
+export function useSidebarState() {
+  const [isCollapsed, setIsCollapsed] = useState(getInitialState);
 
   const toggleSidebar = () => {
     setIsCollapsed((prev) => {
