@@ -6,7 +6,6 @@ import { ProblemDetailsPane } from './ProblemDetailsPane';
 import { FullscreenOverlay } from './FullscreenOverlay';
 import { ProblemEditorSplit } from './CodeEditorSplitProps';
 import { useFullscreen } from '@/contexts/FullscreenContext';
-import TestCaseDisplay from '../TestCaseDisplay';
 
 interface PlayingGameProps {
   game: Game;
@@ -86,10 +85,10 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
             {/* Problem Description Pane */}
             <div
               className={`transition-all duration-300 ${
-                isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'
+                isDescriptionExpanded ? 'w-[25%]' : 'w-[40px]'
               } h-full flex flex-col`}
             >
-              <div className="flex-1 min-h-0 overflow-auto">
+              <div className="flex-1 min-h-0 overflow-hidden">
                 <ProblemDetailsPane
                   isExpanded={isDescriptionExpanded}
                   title={game.problem.title}
@@ -98,20 +97,10 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                   constraints={game.problem.constraints}
                   testCases={game.problem.test_cases}
                   ioSchema={game.problem.io_schema}
+                  submissionProgress={submissionProgress}
                   onToggle={handleToggleDescription}
                 />
               </div>
-
-              {isDescriptionExpanded && (
-                <div className="mt-3">
-                  <TestCaseDisplay
-                    submissionProgress={submissionProgress}
-                    testCases={game.problem.test_cases}
-                    ioSchema={game.problem.io_schema}
-                    compact
-                  />
-                </div>
-              )}
             </div>
 
             {/* Editor Panes */}

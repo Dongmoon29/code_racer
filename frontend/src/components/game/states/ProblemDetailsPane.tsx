@@ -1,107 +1,13 @@
-import React, { FC, memo } from 'react';
-import { FileText, Minimize2 } from 'lucide-react';
+import React, { FC, memo, useState } from 'react';
+import { FileText, Minimize2, CheckCircle2 } from 'lucide-react';
+import { ProblemDetailsTabs } from './ProblemDetailsTabs';
+import TestCaseDisplay from '../TestCaseDisplay';
+import { SubmissionProgress } from '@/types/websocket';
 
 interface IOSchema {
   param_types: string | string[]; // Can come as JSON string from backend
   return_type: string;
 }
-
-// Type-based value formatting function
-const formatTestCaseValue = (
-  value: string,
-  type: string
-): { formatted: string; isQuoted: boolean } => {
-  try {
-    // Try JSON parsing
-    const parsed = JSON.parse(value);
-
-    // Handle by type
-    switch (type.toLowerCase()) {
-      case 'number':
-      case 'int':
-      case 'integer':
-      case 'float':
-      case 'double':
-        return { formatted: String(parsed), isQuoted: false };
-
-      case 'boolean':
-      case 'bool':
-        return { formatted: String(parsed), isQuoted: false };
-
-      case 'string':
-      case 'str':
-        return { formatted: String(parsed), isQuoted: true };
-
-      case 'array':
-      case 'list':
-      case 'int[]':
-      case 'number[]':
-      case 'string[]':
-      case 'boolean[]':
-        return { formatted: JSON.stringify(parsed), isQuoted: false };
-
-      case 'object':
-      case 'dict':
-        return { formatted: JSON.stringify(parsed), isQuoted: false };
-
-      default:
-        // Return original value when type is not specified
-        return { formatted: value, isQuoted: true };
-    }
-  } catch {
-    // Return original value when JSON parsing fails
-    return { formatted: value, isQuoted: true };
-  }
-};
-
-// Helper function to convert IOSchema param_types to array
-const parseParamTypes = (paramTypes: string | string[]): string[] => {
-  if (Array.isArray(paramTypes)) {
-    return paramTypes;
-  }
-
-  try {
-    const parsed = JSON.parse(paramTypes);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
-
-const parseTestCaseInput = (
-  input: string,
-  paramTypes: string[]
-): { formatted: string; isQuoted: boolean } => {
-  try {
-    const parsed = JSON.parse(input);
-
-    if (paramTypes.length <= 1) {
-      const type = paramTypes[0] || 'unknown';
-      return formatTestCaseValue(input, type);
-    }
-
-    if (Array.isArray(parsed)) {
-      const formattedParams = parsed.map((param, index) => {
-        const type = paramTypes[index] || 'unknown';
-        const formatted = formatTestCaseValue(JSON.stringify(param), type);
-        return formatted.isQuoted
-          ? `"${formatted.formatted}"`
-          : formatted.formatted;
-      });
-
-      return {
-        formatted: formattedParams.join(', '),
-        isQuoted: false,
-      };
-    }
-
-    // Non-array case - process as original
-    return formatTestCaseValue(input, paramTypes[0] || 'unknown');
-  } catch {
-    // Return original value when parsing fails
-    return { formatted: input, isQuoted: true };
-  }
-};
 
 interface ProblemDetailsPaneProps {
   isExpanded: boolean;
@@ -120,6 +26,7 @@ interface ProblemDetailsPaneProps {
     expected_output: string;
   }>;
   ioSchema?: IOSchema;
+  submissionProgress?: SubmissionProgress;
   onToggle: () => void;
 }
 
@@ -132,8 +39,13 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
     constraints,
     testCases,
     ioSchema,
+    submissionProgress,
     onToggle,
   }) => {
+    const [activeTab, setActiveTab] = useState<'description' | 'test-results'>(
+      'description'
+    );
+
     if (!isExpanded) {
       return (
         <button
@@ -146,9 +58,23 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
       );
     }
 
+    const tabs = [
+      {
+        id: 'description',
+        label: 'Description',
+        icon: FileText,
+      },
+      {
+        id: 'test-results',
+        label: 'Test Results',
+        icon: CheckCircle2,
+      },
+    ];
+
     return (
       <div className="border rounded-lg min-w-0 h-full flex flex-col">
-        <div className="bg-[hsl(var(--muted))] px-4 py-2 flex items-center justify-between">
+        {/* Header with title and minimize button */}
+        <div className="bg-[hsl(var(--muted))] px-4 py-2 flex items-center justify-between border-b border-border">
           <span className="font-medium truncate">{title}</span>
           <div className="flex items-center space-x-2">
             <button
@@ -161,109 +87,83 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
           </div>
         </div>
 
-        <div className="h-[calc(100%-40px)] overflow-auto p-4">
-          <div className={`space-y-4 `}>
-            <div>
-              <h2 className="text-xl font-medium mb-2">Problem Description</h2>
-              <p className="whitespace-pre-line text-xs">{description}</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium mb-2">Examples</h3>
-              {examples && examples.length > 0 ? (
-                <div className="space-y-3">
-                  {examples.map((example, index) => (
-                    <div
-                      key={example.id || index}
-                      className="p-3 rounded text-xs"
-                    >
-                      <div className="font-medium mb-1">
-                        Example {index + 1}:
-                      </div>
-                      <div className="mb-1">
-                        <span className="font-medium">Input:</span>{' '}
-                        {example.input}
-                      </div>
-                      <div className="mb-1">
-                        <span className="font-medium">Output:</span>{' '}
-                        {example.output}
-                      </div>
-                      {example.explanation && (
-                        <div>
-                          <span className="font-medium">Explanation:</span>{' '}
-                          {example.explanation}
+        {/* Tabs */}
+        <ProblemDetailsTabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={(tabId) =>
+            setActiveTab(tabId as 'description' | 'test-results')
+          }
+        >
+          {activeTab === 'description' ? (
+            <div className="p-4 space-y-4">
+              <div>
+                <h2 className="text-xl font-medium mb-2">
+                  Problem Description
+                </h2>
+                <p className="whitespace-pre-line text-sm font-light">
+                  {description}
+                </p>
+              </div>
+              <div>
+                <h3 className="text-lg font-medium mb-2">Examples</h3>
+                {examples && examples.length > 0 ? (
+                  <div className="space-y-3">
+                    {examples.map((example, index) => (
+                      <div
+                        key={example.id || index}
+                        className="p-3 rounded text-sm"
+                      >
+                        <div className="font-medium mb-1">
+                          Example {index + 1}:
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-3 rounded text-xs">No examples available</div>
-              )}
-            </div>
-            <div>
-              <h3 className="text-lg font-medium mb-2">Constraints</h3>
-              <pre className="p-3 rounded whitespace-pre-wrap text-xs font-medium">
-                {constraints}
-              </pre>
-            </div>
-          </div>
-
-          {/* Test Cases Section */}
-          {testCases && testCases.length > 0 && (
-            <div>
-              <h3 className="text-lg font-medium mb-2">Test Cases</h3>
-              <div className="space-y-3">
-                {testCases.map((testCase, index) => {
-                  const paramTypes = ioSchema
-                    ? parseParamTypes(ioSchema.param_types)
-                    : [];
-                  const outputType = ioSchema?.return_type || 'unknown';
-
-                  // Format values
-                  const inputFormatted = parseTestCaseInput(
-                    testCase.input,
-                    paramTypes
-                  );
-                  const outputFormatted = formatTestCaseValue(
-                    testCase.expected_output,
-                    outputType
-                  );
-
-                  return (
-                    <div
-                      key={index}
-                      className="p-3 rounded bg-[hsl(var(--muted))]"
-                    >
-                      <div className="mb-2">
-                        <span className="font-medium text-sm text-[hsl(var(--muted-foreground))]">
-                          Test Case {index + 1}:
-                        </span>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <span className="font-medium">Input: </span>
-                          <code className="ml-2 px-2 py-1 rounded bg-[hsl(var(--background))] text-[hsl(var(--foreground))] whitespace-pre-wrap">
-                            {inputFormatted.isQuoted
-                              ? `"${inputFormatted.formatted}"`
-                              : inputFormatted.formatted}
-                          </code>
+                        <div className="mb-1 font-light">
+                          <span className="font-medium">Input:</span>{' '}
+                          {example.input}
                         </div>
-                        <div>
-                          <span className="font-medium">Expected Output: </span>
-                          <code className="ml-2 px-2 py-1 rounded bg-[hsl(var(--background))] text-[hsl(var(--foreground))] whitespace-pre-wrap">
-                            {outputFormatted.isQuoted
-                              ? `"${outputFormatted.formatted}"`
-                              : outputFormatted.formatted}
-                          </code>
+                        <div className="mb-1 font-light">
+                          <span className="font-medium">Output:</span>{' '}
+                          {example.output}
                         </div>
+                        {example.explanation && (
+                          <div className="font-light">
+                            <span className="font-medium">Explanation:</span>{' '}
+                            {example.explanation}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  );
-                })}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 rounded text-sm font-light">
+                    No examples available
+                  </div>
+                )}
+              </div>
+              <div>
+                <h3 className="text-lg font-medium mb-2">Constraints</h3>
+                <pre className="p-3 rounded whitespace-pre-wrap text-sm font-light">
+                  {constraints}
+                </pre>
               </div>
             </div>
+          ) : (
+            <div className="p-4">
+              {submissionProgress && testCases ? (
+                <TestCaseDisplay
+                  submissionProgress={submissionProgress}
+                  testCases={testCases}
+                  ioSchema={ioSchema}
+                  compact={false}
+                />
+              ) : (
+                <div className="text-sm text-[hsl(var(--muted-foreground))] text-center py-8">
+                  No test results yet. Run your solution to see results.
+                </div>
+              )}
+            </div>
           )}
-        </div>
+        </ProblemDetailsTabs>
       </div>
     );
   }

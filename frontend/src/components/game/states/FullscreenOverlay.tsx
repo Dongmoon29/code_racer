@@ -1,7 +1,6 @@
 import React, { FC, memo, useState } from 'react';
 import { ProblemDetailsPane } from './ProblemDetailsPane';
 import { ProblemEditorSplit } from './CodeEditorSplitProps';
-import TestCaseDisplay from '../TestCaseDisplay';
 import { SubmissionProgress } from '@/types/websocket';
 
 interface IOSchema {
@@ -90,10 +89,10 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
         <div className="flex-1 flex min-h-0">
           <div
             className={`transition-all duration-300 ${
-              isDescriptionExpanded ? 'w-[33.333%]' : 'w-[40px]'
+              isDescriptionExpanded ? 'w-[25%]' : 'w-[40px]'
             } h-full flex flex-col`}
           >
-            <div className="flex-1 min-h-0 overflow-auto p-2">
+            <div className="flex-1 min-h-0 overflow-hidden p-2">
               <ProblemDetailsPane
                 isExpanded={isDescriptionExpanded}
                 title={problemTitle}
@@ -102,20 +101,10 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
                 constraints={problemConstraints}
                 testCases={problemTestCases}
                 ioSchema={problemIOSchema}
+                submissionProgress={submissionProgress}
                 onToggle={onToggleDescription}
               />
             </div>
-
-            {isDescriptionExpanded && (
-              <div className="mt-3 p-4">
-                <TestCaseDisplay
-                  submissionProgress={submissionProgress}
-                  testCases={problemTestCases || []}
-                  ioSchema={problemIOSchema}
-                  compact
-                />
-              </div>
-            )}
           </div>
 
           <div className="flex-1 p-2 min-h-0 overflow-hidden">
