@@ -18,6 +18,7 @@ func InitRedis(cfg *Config) *redis.Client {
 		MaxRetries:   constants.DefaultRedisMaxRetries,
 		DialTimeout:  constants.DefaultRedisDialTimeout,
 	}
+	// TRIGGER CI/CD
 
 	if util.IsProduction() {
 		options.Username = cfg.RedisUsername
