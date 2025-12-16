@@ -11,6 +11,8 @@ import { defaultKeymap, indentWithTab } from '@codemirror/commands';
 import {
   bracketMatching,
   indentOnInput,
+  foldGutter,
+  foldKeymap,
   syntaxHighlighting,
 } from '@codemirror/language';
 import {
@@ -63,6 +65,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         lineNumbers(),
         highlightActiveLineGutter(),
         highlightActiveLine(),
+        foldGutter(),
         bracketMatching(),
         closeBrackets(),
         indentOnInput(),
@@ -93,11 +96,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       if (!readOnly) {
         // Add default keymaps only when Vim mode is disabled
         if (!vimMode) {
-          extensions.push(keymap.of([indentWithTab, ...defaultKeymap]));
+          extensions.push(
+            keymap.of([indentWithTab, ...defaultKeymap]),
+            keymap.of(foldKeymap)
+          );
         } else {
           // In Vim mode, only add Tab key (Vim handles other keymaps)
           extensions.push(keymap.of([indentWithTab]));
         }
+      } else if (!vimMode) {
+        // Allow folding shortcuts even in read-only viewers (non-vim).
+        extensions.push(keymap.of(foldKeymap));
       }
 
       if (onChange && !readOnly) {
