@@ -1,5 +1,10 @@
 // Problem Form related constants
-import { ProblemFormData, TestCase, IOTemplate, Example } from '@/types';
+import {
+  ProblemFormData,
+  TestCase,
+  IOTemplateRequest,
+  ExampleRequest,
+} from '@/types';
 import { DEFAULT_VALUES } from '@/constants';
 
 export const PROBLEM_FORM_CONSTANTS = {
@@ -7,14 +12,14 @@ export const PROBLEM_FORM_CONSTANTS = {
   DEFAULTS: {
     TITLE: '',
     DESCRIPTION: '',
-    EXAMPLES: [] as Example[],
+    EXAMPLES: [] as ExampleRequest[],
     CONSTRAINTS: '',
     EXPECTED_OUTPUTS: [] as string[],
     DIFFICULTY: 'Easy' as const,
     INPUT_FORMAT: '',
     OUTPUT_FORMAT: '',
     FUNCTION_NAME: '',
-    IO_TEMPLATES: [] as IOTemplate[],
+    IO_TEMPLATES: [] as IOTemplateRequest[],
     TIME_LIMIT: DEFAULT_VALUES.TIME_LIMIT,
     MEMORY_LIMIT: DEFAULT_VALUES.MEMORY_LIMIT,
     IO_SCHEMA: { param_types: [] as string[], return_type: '' },

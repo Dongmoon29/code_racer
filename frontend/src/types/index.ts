@@ -38,6 +38,13 @@ export interface Example {
   explanation: string;
 }
 
+// Create/Update payload shape (no DB identifiers)
+export interface ExampleRequest {
+  input: string;
+  output: string;
+  explanation: string;
+}
+
 export interface TestCase {
   input: string;
   expected_output: string;
@@ -55,10 +62,16 @@ export interface IOTemplate {
   code: string;
 }
 
+// Create/Update payload shape (no DB identifiers)
+export interface IOTemplateRequest {
+  language: string;
+  code: string;
+}
+
 export interface CreateProblemRequest {
   title: string;
   description: string;
-  examples: Example[];
+  examples: ExampleRequest[];
   constraints: string;
   test_cases: TestCase[];
   expected_outputs: string[];
@@ -67,7 +80,7 @@ export interface CreateProblemRequest {
   output_format: string;
   function_name: string;
   io_schema: IOSchema;
-  io_templates: IOTemplate[];
+  io_templates: IOTemplateRequest[];
   time_limit?: number;
   memory_limit?: number;
 }
@@ -103,7 +116,7 @@ export interface ProblemFormData {
   id?: string;
   title: string;
   description: string;
-  examples: Example[];
+  examples: ExampleRequest[];
   constraints: string;
   test_cases: TestCase[];
   expected_outputs: string[];
@@ -112,7 +125,7 @@ export interface ProblemFormData {
   output_format: string;
   function_name: string;
   io_schema: IOSchema;
-  io_templates: IOTemplate[];
+  io_templates: IOTemplateRequest[];
   time_limit: number;
   memory_limit: number;
   created_at?: string;

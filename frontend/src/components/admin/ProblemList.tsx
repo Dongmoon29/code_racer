@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   useProblems,
+  useProblem,
   useDeleteProblem,
   useCreateProblem,
+  useUpdateProblem,
 } from '@/hooks/useProblem';
 import Link from 'next/link';
-import { CreateProblemRequest, ProblemSummary } from '@/types';
+import { CreateProblemRequest, ProblemDetail, ProblemSummary } from '@/types';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 import CodeEditor from '@/components/game/CodeEditor';
 
@@ -42,10 +44,25 @@ export default function ProblemList() {
   const [jsonText, setJsonText] = useState(DEFAULT_PROBLEM_JSON);
   const [jsonError, setJsonError] = useState<string>('');
 
+  const [isViewJsonModalOpen, setIsViewJsonModalOpen] = useState(false);
+  const [viewProblemId, setViewProblemId] = useState<string | null>(null);
+  const [viewJsonNotice, setViewJsonNotice] = useState<string>('');
+  const [viewJsonError, setViewJsonError] = useState<string>('');
+  const [isViewJsonEditing, setIsViewJsonEditing] = useState(false);
+  const [viewJsonText, setViewJsonText] = useState<string>('');
+  const [viewJsonBaselineText, setViewJsonBaselineText] = useState<string>('');
+
   // Use React Query hooks
   const { data: problems = [], isLoading, error } = useProblems();
   const deleteProblemMutation = useDeleteProblem();
   const createProblemMutation = useCreateProblem();
+  const updateProblemMutation = useUpdateProblem();
+  const {
+    data: selectedProblem,
+    isLoading: isProblemLoading,
+    isError: isProblemError,
+    error: problemError,
+  } = useProblem(viewProblemId || '');
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Are you sure you want to delete "${title}" problem?`)) {
@@ -119,6 +136,81 @@ export default function ProblemList() {
     });
   }, [problems, searchTerm, difficultyFilter]);
 
+  const selectedProblemCreatePayload =
+    useMemo((): CreateProblemRequest | null => {
+      if (!selectedProblem) return null;
+
+      const normalizeParamTypes = (value: unknown): string[] => {
+        if (Array.isArray(value)) return value.map(String);
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) return parsed.map(String);
+          } catch {
+            // ignore
+          }
+        }
+        return [];
+      };
+
+      const p = selectedProblem as ProblemDetail;
+      return {
+        title: p.title,
+        description: p.description,
+        constraints: p.constraints,
+        expected_outputs:
+          Array.isArray(p.expected_outputs) && p.expected_outputs.length > 0
+            ? p.expected_outputs.map(String)
+            : (p.test_cases || []).map((tc) =>
+                String(tc.expected_output ?? '')
+              ),
+        difficulty: p.difficulty,
+        input_format: p.input_format,
+        output_format: p.output_format,
+        function_name: p.function_name,
+        time_limit: p.time_limit,
+        memory_limit: p.memory_limit,
+        examples: (p.examples || []).map((ex) => ({
+          input: ex.input ?? '',
+          output: ex.output ?? '',
+          explanation: ex.explanation ?? '',
+        })),
+        test_cases: (p.test_cases || []).map((tc) => ({
+          input: tc.input ?? '',
+          expected_output: tc.expected_output ?? '',
+        })),
+        io_schema: {
+          param_types: normalizeParamTypes(p.io_schema.param_types),
+          return_type: p.io_schema.return_type ?? '',
+        },
+        io_templates: (p.io_templates || []).map((t) => ({
+          language: t.language ?? '',
+          code: t.code ?? '',
+        })),
+      };
+    }, [selectedProblem]);
+
+  const selectedProblemCreatePayloadJSON = useMemo(() => {
+    if (!selectedProblemCreatePayload) return '';
+    return JSON.stringify(selectedProblemCreatePayload, null, 2);
+  }, [selectedProblemCreatePayload]);
+
+  useEffect(() => {
+    if (!isViewJsonModalOpen) return;
+    if (isProblemLoading) return;
+    if (!selectedProblemCreatePayloadJSON) return;
+    // When opening (or switching problem), initialize editor content unless user is actively editing.
+    if (!isViewJsonEditing) {
+      setViewJsonText(selectedProblemCreatePayloadJSON);
+      setViewJsonBaselineText(selectedProblemCreatePayloadJSON);
+    }
+  }, [
+    isViewJsonModalOpen,
+    isProblemLoading,
+    selectedProblemCreatePayloadJSON,
+    isViewJsonEditing,
+  ]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -147,6 +239,301 @@ export default function ProblemList() {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
+      {isViewJsonModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => {
+              if (updateProblemMutation.isPending) return;
+              setIsViewJsonModalOpen(false);
+              setViewProblemId(null);
+              setViewJsonNotice('');
+              setViewJsonError('');
+              setIsViewJsonEditing(false);
+              setViewJsonText('');
+              setViewJsonBaselineText('');
+            }}
+          />
+          <div className="relative w-[min(1200px,calc(100vw-2rem))] max-h-[min(92vh,1100px)] overflow-auto rounded-lg border bg-[hsl(var(--card))] p-6 shadow-lg">
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <h2 className="text-xl font-semibold">Problem JSON</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="px-3 py-1 rounded-md border"
+                  disabled={isProblemLoading || updateProblemMutation.isPending}
+                  onClick={() => {
+                    if (isProblemLoading) return;
+                    if (updateProblemMutation.isPending) return;
+                    setViewJsonError('');
+                    setViewJsonNotice('');
+                    setIsViewJsonEditing((prev) => !prev);
+                    // Ensure editor has latest JSON when entering edit mode.
+                    if (
+                      !isViewJsonEditing &&
+                      selectedProblemCreatePayloadJSON
+                    ) {
+                      setViewJsonBaselineText(selectedProblemCreatePayloadJSON);
+                      setViewJsonText(selectedProblemCreatePayloadJSON);
+                    }
+                  }}
+                >
+                  {isViewJsonEditing ? 'View' : 'Edit'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (updateProblemMutation.isPending) return;
+                    setIsViewJsonModalOpen(false);
+                    setViewProblemId(null);
+                    setViewJsonNotice('');
+                    setViewJsonError('');
+                    setIsViewJsonEditing(false);
+                    setViewJsonText('');
+                    setViewJsonBaselineText('');
+                  }}
+                  className="px-3 py-1 rounded-md border"
+                  disabled={updateProblemMutation.isPending}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            <p className="text-sm mb-3">
+              This JSON is formatted as a create payload so you can copy/paste
+              it into <b>Add New Problem with JSON</b>.
+            </p>
+
+            {viewJsonNotice && (
+              <div className="mb-3 p-3 rounded-md border border-green-300 text-green-700">
+                {viewJsonNotice}
+              </div>
+            )}
+
+            {viewJsonError && (
+              <div className="mb-3 p-3 rounded-md border border-red-300 text-red-700">
+                {viewJsonError}
+              </div>
+            )}
+
+            {isProblemError && (
+              <div className="mb-3 p-3 rounded-md border border-red-300 text-red-700">
+                {problemError instanceof Error
+                  ? problemError.message
+                  : 'Failed to load problem'}
+              </div>
+            )}
+
+            {isProblemLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <CodeRacerLoader />
+              </div>
+            ) : (
+              <div className="w-full h-[620px] border rounded-md overflow-hidden">
+                <CodeEditor
+                  value={viewJsonText || selectedProblemCreatePayloadJSON}
+                  onChange={isViewJsonEditing ? setViewJsonText : undefined}
+                  language="javascript"
+                  theme="dark"
+                  readOnly={!isViewJsonEditing}
+                />
+              </div>
+            )}
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                {isViewJsonEditing && (
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded-md border"
+                    disabled={updateProblemMutation.isPending}
+                    onClick={() => {
+                      setViewJsonError('');
+                      try {
+                        const parsed = JSON.parse(viewJsonText);
+                        setViewJsonText(JSON.stringify(parsed, null, 2));
+                      } catch (e) {
+                        setViewJsonError(
+                          e instanceof Error
+                            ? `Invalid JSON: ${e.message}`
+                            : 'Invalid JSON'
+                        );
+                      }
+                    }}
+                  >
+                    Format JSON
+                  </button>
+                )}
+                {isViewJsonEditing && (
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded-md border"
+                    disabled={
+                      updateProblemMutation.isPending || !viewJsonBaselineText
+                    }
+                    onClick={() => {
+                      setViewJsonError('');
+                      setViewJsonNotice('');
+                      setViewJsonText(viewJsonBaselineText);
+                    }}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {isViewJsonEditing && (
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded-md border"
+                    disabled={
+                      updateProblemMutation.isPending ||
+                      !viewProblemId ||
+                      !viewJsonText
+                    }
+                    onClick={async () => {
+                      if (!viewProblemId) return;
+                      setViewJsonError('');
+                      setViewJsonNotice('');
+
+                      let payload: unknown;
+                      try {
+                        payload = JSON.parse(viewJsonText);
+                      } catch (e) {
+                        setViewJsonError(
+                          e instanceof Error
+                            ? `Invalid JSON: ${e.message}`
+                            : 'Invalid JSON'
+                        );
+                        return;
+                      }
+
+                      if (typeof payload !== 'object' || payload === null) {
+                        setViewJsonError('JSON payload must be an object');
+                        return;
+                      }
+
+                      try {
+                        const updated = await updateProblemMutation.mutateAsync(
+                          {
+                            id: viewProblemId,
+                            data: { ...(payload as object), id: viewProblemId },
+                          }
+                        );
+                        setViewJsonNotice('Saved');
+                        setIsViewJsonEditing(false);
+                        // Refresh editor with normalized JSON from server response (and update reset-baseline)
+                        const normalized = JSON.stringify(
+                          {
+                            title: updated.title,
+                            description: updated.description,
+                            constraints: updated.constraints,
+                            expected_outputs:
+                              Array.isArray(updated.expected_outputs) &&
+                              updated.expected_outputs.length > 0
+                                ? updated.expected_outputs.map(String)
+                                : (updated.test_cases || []).map(
+                                    (tc: { expected_output: string }) =>
+                                      String(tc.expected_output ?? '')
+                                  ),
+                            difficulty: updated.difficulty,
+                            input_format: updated.input_format,
+                            output_format: updated.output_format,
+                            function_name: updated.function_name,
+                            time_limit: updated.time_limit,
+                            memory_limit: updated.memory_limit,
+                            examples: (updated.examples || []).map(
+                              (ex: {
+                                input: string;
+                                output: string;
+                                explanation: string;
+                              }) => ({
+                                input: ex.input ?? '',
+                                output: ex.output ?? '',
+                                explanation: ex.explanation ?? '',
+                              })
+                            ),
+                            test_cases: (updated.test_cases || []).map(
+                              (tc: {
+                                input: string;
+                                expected_output: string;
+                              }) => ({
+                                input: tc.input ?? '',
+                                expected_output: tc.expected_output ?? '',
+                              })
+                            ),
+                            io_schema: {
+                              param_types: Array.isArray(
+                                updated.io_schema?.param_types
+                              )
+                                ? updated.io_schema.param_types.map(String)
+                                : typeof updated.io_schema?.param_types ===
+                                  'string'
+                                ? (() => {
+                                    try {
+                                      const parsed = JSON.parse(
+                                        updated.io_schema.param_types
+                                      );
+                                      return Array.isArray(parsed)
+                                        ? parsed.map(String)
+                                        : [];
+                                    } catch {
+                                      return [];
+                                    }
+                                  })()
+                                : [],
+                              return_type: updated.io_schema?.return_type ?? '',
+                            },
+                            io_templates: (updated.io_templates || []).map(
+                              (t: { language: string; code: string }) => ({
+                                language: t.language ?? '',
+                                code: t.code ?? '',
+                              })
+                            ),
+                          },
+                          null,
+                          2
+                        );
+                        setViewJsonText(normalized);
+                        setViewJsonBaselineText(normalized);
+                        setTimeout(() => setViewJsonNotice(''), 1500);
+                      } catch (e) {
+                        setViewJsonError(
+                          e instanceof Error ? e.message : 'Save failed'
+                        );
+                      }
+                    }}
+                  >
+                    {updateProblemMutation.isPending ? 'Saving...' : 'Save'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="px-4 py-2 rounded-md border"
+                  disabled={!(viewJsonText || selectedProblemCreatePayloadJSON)}
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(
+                        viewJsonText || selectedProblemCreatePayloadJSON
+                      );
+                      setViewJsonNotice('Copied to clipboard');
+                      setTimeout(() => setViewJsonNotice(''), 1500);
+                    } catch {
+                      setViewJsonNotice('Copy failed');
+                      setTimeout(() => setViewJsonNotice(''), 1500);
+                    }
+                  }}
+                >
+                  Copy JSON
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isJsonModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
@@ -322,7 +709,17 @@ export default function ProblemList() {
                 filteredProblems.map((problem: ProblemSummary) => (
                   <tr key={problem.id} className="">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium">{problem.title}</div>
+                      <button
+                        type="button"
+                        className="text-sm font-medium underline underline-offset-2 hover:opacity-80 text-left"
+                        onClick={() => {
+                          setViewProblemId(problem.id);
+                          setIsViewJsonModalOpen(true);
+                          setViewJsonNotice('');
+                        }}
+                      >
+                        {problem.title}
+                      </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
