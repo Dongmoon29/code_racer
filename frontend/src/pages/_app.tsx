@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { AppProps } from 'next/app';
 import { ThemeProvider as NextThemeProvider } from 'next-themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { Analytics } from '@vercel/analytics/react';
-import AdminLayout from '../components/admin/AdminLayout';
+import AdminLayout from '../components/layout/AdminLayout';
 import '../styles/globals.css';
 import { useAuthStore } from '../stores/authStore';
 import { FullscreenProvider } from '../contexts/FullscreenContext';

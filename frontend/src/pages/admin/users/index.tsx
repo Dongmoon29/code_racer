@@ -1,30 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { useAuth } from '../../../hooks/useAuth';
 import { userApi } from '@/lib/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function AdminUsersPage() {
-  const { user, isLoading } = useAuth();
-  const router = useRouter();
   const PAGE_SIZE = 20;
-
   const [page, setPage] = useState<number>(1);
   const [sort, setSort] = useState<string>('created_at:desc');
   const queryClient = useQueryClient();
 
-  // Simple client-side guard (SSR layout handles sidebar)
-  useEffect(() => {
-    if (!isLoading && (!user || user.role !== 'admin')) {
-      router.replace('/');
-    }
-  }, [user, isLoading, router]);
-
   const { data, isFetching, isError, error } = useQuery({
     queryKey: ['admin-users', { page, limit: PAGE_SIZE, sort }],
     queryFn: () => userApi.adminList(page, PAGE_SIZE, sort),
-    enabled: !!user && user.role === 'admin',
     keepPreviousData: true,
   });
 
@@ -68,15 +55,13 @@ export default function AdminUsersPage() {
     return range;
   }, [data, page]);
 
-  if (isLoading || !user || user.role !== 'admin') return null;
-
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold ">User Management</h1>
+        <h1 className="text-2xl font-bold">User Management</h1>
       </div>
 
-      <div className="overflow-hidden rounded-lg shadow ">
+      <div className="overflow-hidden rounded-lg shadow">
         {isError && (
           <div className="px-4 py-2 text-sm text-red-600 border-b border-red-200 bg-red-50">
             {error instanceof Error ? error.message : 'Failed to load users'}
@@ -85,21 +70,21 @@ export default function AdminUsersPage() {
         <table className="min-w-full divide-y">
           <thead>
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 ID
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 Name
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 Email
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 Role
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 <button
-                  className="inline-flex items-center gap-1 "
+                  className="inline-flex items-center gap-1"
                   onClick={() => {
                     setPage(1);
                     const [, dir = 'desc'] = sort.startsWith('created_at')
@@ -119,13 +104,13 @@ export default function AdminUsersPage() {
                   </span>
                 </button>
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 Updated
               </th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
-          <tbody className=" divide-y ">
+          <tbody className="divide-y">
             {(data?.items || []).map(
               (u: {
                 id: string;
@@ -147,9 +132,7 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="px-4 py-3 text-sm">{u.email}</td>
                   <td className="px-4 py-3 text-sm">
-                    <span
-                      className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold`}
-                    >
+                    <span className="inline-flex px-2 py-1 rounded-full text-xs font-semibold">
                       {u.role}
                     </span>
                   </td>
@@ -165,7 +148,7 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="px-4 py-3 text-right text-sm">
                     <div className="flex items-center gap-2">
-                      <button className="mr-2 ">Edit</button>
+                      <button className="mr-2">Edit</button>
                       <button>Delete</button>
                     </div>
                   </td>
@@ -175,9 +158,9 @@ export default function AdminUsersPage() {
           </tbody>
         </table>
       </div>
-      {/* Pagination - pill style */}
+
       <div className="mt-6 flex items-center justify-center">
-        <div className="flex items-center gap-4 rounded-full  px-5 py-3">
+        <div className="flex items-center gap-4 rounded-full px-5 py-3">
           <button
             className="inline-flex items-center gap-2"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -223,6 +206,6 @@ export default function AdminUsersPage() {
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
