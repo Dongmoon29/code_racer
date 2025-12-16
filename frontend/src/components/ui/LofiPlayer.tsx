@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, VolumeX, X } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, X, Music2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AudioVisualizer } from './AudioVisualizer';
 
 interface LofiPlayerProps {
   isCollapsed?: boolean;
@@ -331,85 +332,162 @@ export function LofiPlayer({
           </button>
         </div>
       ) : (
-        <div className="border-t border-border/60 bg-card/40">
+        <div className="border-t border-border/60 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm shadow-lg overflow-hidden">
           {/* Header */}
-          <div className="w-full px-3 py-2 flex items-center justify-between gap-2">
+          <div className="w-full px-4 py-3 flex items-center justify-between gap-2 border-b border-border/50">
             <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  'w-2 h-2 rounded-full',
-                  isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+              <div className="relative">
+                <Music2
+                  className={cn(
+                    'w-4 h-4 transition-colors',
+                    isPlaying
+                      ? 'text-primary animate-pulse'
+                      : 'text-muted-foreground'
+                  )}
+                />
+                {isPlaying && (
+                  <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
                 )}
-              />
-              <span className="text-xs font-medium text-muted-foreground">
+              </div>
+              <span className="text-sm font-semibold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                 Lofi Radio
               </span>
             </div>
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-1 hover:bg-accent/40 rounded transition-colors"
+                className="p-1.5 hover:bg-accent/40 rounded-md transition-colors group"
                 title="Close"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 group-hover:rotate-90 transition-transform" />
               </button>
             )}
           </div>
 
+          {/* Audio Visualizer */}
+          <div className="px-4 py-3 bg-gradient-to-r from-primary/5 via-transparent to-primary/5">
+            <AudioVisualizer isPlaying={isPlaying} barCount={24} />
+          </div>
+
           {/* Controls */}
-          <div className="px-3 pb-3 space-y-3">
+          <div className="px-4 pb-4 space-y-4">
             {/* Stream Selection */}
-            <div className="space-y-1">
+            <div className="space-y-1.5">
+              <div className="text-xs font-medium text-muted-foreground mb-2 px-1">
+                Stations
+              </div>
               {LOFI_STREAMS.map((stream, index) => (
                 <button
                   key={stream.id}
                   onClick={() => changeStream(index)}
                   className={cn(
-                    'w-full text-left px-2 py-1.5 rounded text-xs transition-colors',
+                    'w-full text-left px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer',
+                    'border',
                     currentStreamIndex === index
-                      ? 'bg-primary/10 text-primary'
-                      : 'hover:bg-accent/40 text-muted-foreground'
+                      ? 'bg-gradient-to-r from-primary/20 to-primary/10 border-primary/30 text-primary shadow-sm'
+                      : 'border-border/30 hover:bg-accent/30 hover:border-accent text-muted-foreground'
                   )}
                 >
-                  {stream.title}
+                  <div className="flex items-center gap-2">
+                    {currentStreamIndex === index && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    )}
+                    <span className="truncate">{stream.title}</span>
+                  </div>
                 </button>
               ))}
             </div>
 
             {/* Playback Controls */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={togglePlay}
-                className="p-2 rounded-md hover:bg-accent/40 transition-colors"
-                title={isPlaying ? 'Pause' : 'Play'}
-              >
-                {isPlaying ? (
-                  <Pause className="w-5 h-5 text-primary" />
-                ) : (
-                  <Play className="w-5 h-5 text-muted-foreground" />
-                )}
-              </button>
+            <div className="space-y-3">
+              {/* Play/Pause Button */}
+              <div className="flex items-center justify-center">
+                <button
+                  onClick={togglePlay}
+                  className={cn(
+                    'p-3 rounded-full transition-all duration-200',
+                    'bg-gradient-to-br from-primary/20 to-primary/10',
+                    'hover:from-primary/30 hover:to-primary/20',
+                    'border border-primary/20',
+                    'shadow-lg hover:shadow-xl',
+                    isPlaying && 'animate-pulse'
+                  )}
+                  title={isPlaying ? 'Pause' : 'Play'}
+                >
+                  {isPlaying ? (
+                    <Pause className="w-6 h-6 text-primary" />
+                  ) : (
+                    <Play className="w-6 h-6 text-primary ml-0.5" />
+                  )}
+                </button>
+              </div>
 
-              <button
-                onClick={toggleMute}
-                className="p-2 rounded-md hover:bg-accent/40 transition-colors"
-                title={isMuted ? 'Unmute' : 'Mute'}
-              >
-                {isMuted || volume === 0 ? (
-                  <VolumeX className="w-4 h-4 text-muted-foreground" />
-                ) : (
-                  <Volume2 className="w-4 h-4 text-muted-foreground" />
-                )}
-              </button>
+              {/* Volume Control */}
+              <div className="space-y-2 min-w-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <button
+                    onClick={toggleMute}
+                    className={cn(
+                      'p-2 rounded-lg transition-all duration-200 cursor-pointer',
+                      'hover:bg-accent/40',
+                      isMuted || volume === 0
+                        ? 'text-muted-foreground'
+                        : 'text-primary'
+                    )}
+                    title={isMuted ? 'Unmute' : 'Mute'}
+                  >
+                    {isMuted || volume === 0 ? (
+                      <VolumeX className="w-4 h-4" />
+                    ) : (
+                      <Volume2 className="w-4 h-4" />
+                    )}
+                  </button>
 
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={volume}
-                onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                className="flex-1 h-1 bg-accent rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
-              />
+                  <div className="flex-1 relative min-w-0">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={volume}
+                      onChange={(e) =>
+                        handleVolumeChange(Number(e.target.value))
+                      }
+                      className="w-full h-2 bg-gradient-to-r from-accent via-accent/80 to-accent rounded-full appearance-none cursor-pointer
+                        [&::-webkit-slider-thumb]:appearance-none 
+                        [&::-webkit-slider-thumb]:w-4 
+                        [&::-webkit-slider-thumb]:h-4 
+                        [&::-webkit-slider-thumb]:rounded-full 
+                        [&::-webkit-slider-thumb]:bg-gradient-to-br 
+                        [&::-webkit-slider-thumb]:from-primary 
+                        [&::-webkit-slider-thumb]:to-primary/80
+                        [&::-webkit-slider-thumb]:shadow-md
+                        [&::-webkit-slider-thumb]:border-2
+                        [&::-webkit-slider-thumb]:border-background
+                        [&::-webkit-slider-thumb]:transition-all
+                        [&::-webkit-slider-thumb]:hover:scale-110
+                        [&::-moz-range-thumb]:w-4
+                        [&::-moz-range-thumb]:h-4
+                        [&::-moz-range-thumb]:rounded-full
+                        [&::-moz-range-thumb]:bg-gradient-to-br
+                        [&::-moz-range-thumb]:from-primary
+                        [&::-moz-range-thumb]:to-primary/80
+                        [&::-moz-range-thumb]:border-2
+                        [&::-moz-range-thumb]:border-background
+                        [&::-moz-range-thumb]:cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${volume}%, hsl(var(--accent)) ${volume}%, hsl(var(--accent)) 100%)`,
+                      }}
+                    />
+                    <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+                      <span>0</span>
+                      <span className="font-medium text-primary">
+                        {volume}%
+                      </span>
+                      <span>100</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

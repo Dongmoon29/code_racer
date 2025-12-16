@@ -4,7 +4,7 @@ import { TestCase, IOSchema } from '@/types';
 import { Spinner } from '@/components/ui/Spinner';
 import { Alert } from '@/components/ui/alert';
 import { Card } from '@/components/ui/Card';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface TestCaseDisplayProps {
   submissionProgress: SubmissionProgress;
@@ -24,7 +24,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
   const { isSubmitting, totalTestCases, completedTestCases, testCaseResults } =
     submissionProgress;
 
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [activeTestCaseIndex, setActiveTestCaseIndex] = useState(0);
 
   // Helper function to convert IOSchema param_types to array
   const parseParamTypes = (paramTypes: string | string[]): string[] => {
@@ -88,55 +88,13 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
     }
   };
 
-  // Function to separate test case input by parameters
-  const parseTestCaseInput = (
-    input: string,
-    paramTypes: string[]
-  ): { formatted: string; isQuoted: boolean } => {
-    try {
-      const parsed = JSON.parse(input);
-
-      // Single parameter case
-      if (paramTypes.length <= 1) {
-        const type = paramTypes[0] || 'unknown';
-        return formatTestCaseValue(input, type);
-      }
-
-      // Multiple parameters case - separate and display each
-      if (Array.isArray(parsed)) {
-        const formattedParams = parsed.map((param, index) => {
-          const type = paramTypes[index] || 'unknown';
-          const formatted = formatTestCaseValue(JSON.stringify(param), type);
-          return formatted.isQuoted
-            ? `"${formatted.formatted}"`
-            : formatted.formatted;
-        });
-
-        return {
-          formatted: formattedParams.join(', '),
-          isQuoted: false,
-        };
-      }
-
-      // Non-array case - process as original
-      return formatTestCaseValue(input, paramTypes[0] || 'unknown');
-    } catch {
-      // Return original value when parsing fails
-      return { formatted: input, isQuoted: true };
-    }
-  };
-
   // Computed class names and values
   const containerClass = `space-y-3 ${className} ${
     compact ? 'max-h-80 overflow-auto' : ''
   }`;
-  const cardPadding = compact ? 'p-2' : 'p-4';
+  const cardPadding = compact ? 'p-3' : 'p-4';
   const statusTextSize = compact ? 'text-sm' : '';
   const counterTextSize = compact ? 'text-xs' : 'text-sm';
-  const progressBarMargin = compact ? 'mt-2' : 'mt-3';
-  const progressBarHeight = compact ? 'h-1.5' : 'h-2';
-  const progressBarBgHeight = compact ? 'h-1.5' : 'h-2';
-  const testCaseSpacing = compact ? 'space-y-2' : 'space-y-3';
 
   // Computed status text
   const getStatusText = () => {
@@ -145,11 +103,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
     return 'Ready to Evaluate';
   };
 
-  // Computed progress percentage
-  const progressPercentage =
-    totalTestCases > 0 ? (completedTestCases / totalTestCases) * 100 : 0;
-
-  const renderTestCaseResult = (
+  const renderTestCaseTabContent = (
     result: TestCaseResult | undefined,
     testCase: TestCase,
     index: number
@@ -163,64 +117,59 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
     };
     const testResult = result || defaultResult;
 
-    // Computed class names for test case result
-    const testCaseClass = compact ? 'p-2 rounded-md' : 'p-4 rounded-lg';
-    const headerMargin = compact ? 'mb-1' : 'mb-2';
-    const testCaseTextSize = compact ? 'text-sm' : '';
-    const metricsTextSize = compact ? 'text-xs' : 'text-sm';
-    const inputOutputPadding = compact ? 'p-2' : 'p-3';
-    const inputOutputTextSize = compact ? 'text-xs' : 'text-sm';
+    const paramTypes = ioSchema ? parseParamTypes(ioSchema.param_types) : [];
 
-    // Background color based on test result and theme compatibility
-    const getBackgroundClass = () => {
-      if (testResult.status === 'completed' && !testResult.passed) {
-        // Failed test case - red background for both light and dark themes
-        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
+    // Parse input into individual parameters
+    const parseInputParams = () => {
+      if (!ioSchema || paramTypes.length === 0) {
+        return [{ name: 'input', value: testCase.input }];
       }
-      // Default background for other states
-      return 'bg-card border-border';
-    };
-    const getStatusIcon = () => {
-      switch (testResult.status) {
-        case 'running':
-          return <Spinner size="sm" className="text-blue-500" />;
-        case 'completed':
-          return testResult.passed ? (
-            <span className="text-green-500 font-bold">✓</span>
-          ) : (
-            <span className="text-red-500 font-bold">✗</span>
-          );
-        case 'pending':
-        default:
-          return <span className="text-gray-400">○</span>;
+
+      try {
+        const parsed = JSON.parse(testCase.input);
+        if (Array.isArray(parsed) && paramTypes.length > 1) {
+          return parsed.map((param, idx) => {
+            const type = paramTypes[idx] || 'unknown';
+            const formatted = formatTestCaseValue(JSON.stringify(param), type);
+            return {
+              name: `param${idx + 1}`,
+              value: formatted.isQuoted
+                ? `"${formatted.formatted}"`
+                : formatted.formatted,
+            };
+          });
+        } else {
+          const type = paramTypes[0] || 'unknown';
+          const formatted = formatTestCaseValue(testCase.input, type);
+          return [
+            {
+              name: 'input',
+              value: formatted.isQuoted
+                ? `"${formatted.formatted}"`
+                : formatted.formatted,
+            },
+          ];
+        }
+      } catch {
+        return [{ name: 'input', value: testCase.input }];
       }
     };
 
-    const formatValue = (value: unknown, isInput: boolean = false): string => {
+    const inputParams = parseInputParams();
+    const outputType = ioSchema?.return_type || 'unknown';
+    const outputFormatted = formatTestCaseValue(
+      testCase.expected_output,
+      outputType
+    );
+    const expectedOutput = outputFormatted.isQuoted
+      ? `"${outputFormatted.formatted}"`
+      : outputFormatted.formatted;
+
+    const formatValue = (value: unknown): string => {
       if (value === null) return 'null';
       if (value === undefined) return 'undefined';
-
-      // Apply parameter separation for input values when IOSchema is available
-      if (isInput && ioSchema) {
-        const paramTypes = parseParamTypes(ioSchema.param_types);
-        const inputFormatted = parseTestCaseInput(String(value), paramTypes);
-        return inputFormatted.isQuoted
-          ? `"${inputFormatted.formatted}"`
-          : inputFormatted.formatted;
-      }
-
-      // Apply type-based formatting for output values
-      if (!isInput && ioSchema) {
-        const outputType = ioSchema.return_type || 'unknown';
-        const outputFormatted = formatTestCaseValue(String(value), outputType);
-        return outputFormatted.isQuoted
-          ? `"${outputFormatted.formatted}"`
-          : outputFormatted.formatted;
-      }
-
-      // Default formatting
       if (Array.isArray(value)) {
-        return `[${value.map((v) => formatValue(v, false)).join(', ')}]`;
+        return `[${value.map((v) => formatValue(v)).join(', ')}]`;
       }
       if (typeof value === 'object') {
         return JSON.stringify(value);
@@ -229,19 +178,62 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
     };
 
     return (
-      <div
-        key={testResult.index}
-        className={`${testCaseClass} ${getBackgroundClass()} transition-all duration-300`}
-      >
-        <div className={`flex items-center justify-between ${headerMargin}`}>
-          <div className="flex items-center gap-2">
-            {getStatusIcon()}
-            <span className={`${testCaseTextSize} font-medium`}>
-              Test Case {testResult.index + 1}
-            </span>
+      <div className="space-y-4">
+        {/* Input Parameters */}
+        <div className="space-y-3">
+          {inputParams.map((param, idx) => (
+            <div key={idx}>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                {param.name} =
+              </label>
+              <div className="px-3 py-2 rounded-md bg-[hsl(var(--muted))] border border-border/30 font-mono text-sm text-white">
+                {param.value}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Expected Output */}
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+            Expected Output =
+          </label>
+          <div className="px-3 py-2 rounded-md bg-[hsl(var(--muted))] border border-border/30 font-mono text-sm text-white">
+            {expectedOutput}
           </div>
-          {testResult.status === 'completed' && (
-            <div className={metricsTextSize}>
+        </div>
+
+        {/* Actual Output (if available) */}
+        {testResult.status === 'completed' &&
+          testResult.actualOutput !== undefined && (
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                Actual Output =
+              </label>
+              <div
+                className={cn(
+                  'px-3 py-2 rounded-md border font-mono text-sm',
+                  testResult.passed
+                    ? 'bg-green-900/20 border-green-800 text-green-400'
+                    : 'bg-red-900/20 border-red-800 text-red-400'
+                )}
+              >
+                {formatValue(testResult.actualOutput)}
+              </div>
+            </div>
+          )}
+
+        {/* Status and Metrics */}
+        {testResult.status === 'completed' && (
+          <div className="flex items-center justify-between pt-2 border-t border-border/30">
+            <div className="flex items-center gap-2">
+              {testResult.passed ? (
+                <span className="text-green-500 font-bold">✓ Passed</span>
+              ) : (
+                <span className="text-red-500 font-bold">✗ Failed</span>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground">
               {testResult.executionTime && (
                 <span>{(testResult.executionTime * 1000).toFixed(2)}ms</span>
               )}
@@ -251,42 +243,15 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
                 </span>
               )}
             </div>
-          )}
-        </div>
-
-        <div className={`space-y-2 ${inputOutputTextSize}`}>
-          {/* Input and Expected Output always use static data */}
-          <div>
-            <span className="font-medium">Input:</span>
-            <div
-              className={`mt-1 ${inputOutputPadding} rounded border font-mono`}
-            >
-              {formatValue(testCase.input, true)}
-            </div>
           </div>
+        )}
 
-          <div>
-            <span className="font-medium">Expected Output:</span>
-            <div
-              className={`mt-1 ${inputOutputPadding} rounded border font-mono`}
-            >
-              {formatValue(testCase.expected_output, false)}
-            </div>
+        {testResult.status === 'running' && (
+          <div className="flex items-center gap-2 pt-2 border-t border-border/30">
+            <Spinner size="sm" className="text-blue-500" />
+            <span className="text-xs text-muted-foreground">Running...</span>
           </div>
-
-          {/* Actual Output only uses execution results from WebSocket */}
-          {testResult.status === 'completed' &&
-            testResult.actualOutput !== undefined && (
-              <div>
-                <span className="font-medium">Actual Output:</span>
-                <div
-                  className={`mt-1 ${inputOutputPadding} rounded border font-mono`}
-                >
-                  {formatValue(testResult.actualOutput, false)}
-                </div>
-              </div>
-            )}
-        </div>
+        )}
       </div>
     );
   };
@@ -294,7 +259,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
   return (
     <div className={containerClass}>
       {/* Submission status header */}
-      <Card className={cardPadding}>
+      <Card variant="ghost" className={compact ? 'px-2 py-1.5' : 'px-4 py-2'}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {isSubmitting ? (
@@ -306,86 +271,115 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
               {getStatusText()}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className={counterTextSize}>
-              {completedTestCases} / {totalTestCases} test cases
-            </div>
-            <button
-              onClick={() => setIsMinimized(!isMinimized)}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
-              title={isMinimized ? 'Expand' : 'Minimize'}
-            >
-              {isMinimized ? (
-                <ChevronRight className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        <div className={progressBarMargin}>
-          <div className={`w-full rounded-full ${progressBarHeight}`}>
-            <div
-              className={`bg-blue-500 ${progressBarBgHeight} rounded-full transition-all duration-300`}
-              style={{
-                width: `${progressPercentage}%`,
-              }}
-            />
+          <div className={counterTextSize}>
+            {completedTestCases} / {totalTestCases} test cases
           </div>
         </div>
       </Card>
 
-      {/* Content - only show when not minimized */}
-      {!isMinimized && (
-        <>
-          {/* Initial guidance */}
-          {!isSubmitting && completedTestCases === 0 && (
-            <Alert variant="info" className={cardPadding}>
-              <div className="text-sm">
-                Ready. Press Run to evaluate your solution.
-              </div>
-            </Alert>
-          )}
-
-          {/* Submission in progress */}
-          {isSubmitting && (
-            <Alert variant="info" className={cardPadding}>
-              <div className="text-sm">
-                Evaluating your solution... Please wait.
-              </div>
-            </Alert>
-          )}
-
-          {!isSubmitting && completedTestCases > 0 && (
-            <Alert
-              variant={submissionProgress.overallPassed ? 'success' : 'error'}
-              className={`${compact ? 'p-2' : 'p-4'}`}
-            >
-              <div className="flex items-center justify-between">
-                <span className={`${compact ? 'text-sm' : ''} font-medium`}>
-                  {submissionProgress.statusMessage ||
-                    (submissionProgress.overallPassed
-                      ? 'All test cases passed!'
-                      : 'test cases failed.')}
-                </span>
-              </div>
-            </Alert>
-          )}
-
-          {/* Test case results - render based on test cases */}
-          {testCases.length > 0 && (
-            <div className={testCaseSpacing}>
-              {testCases.map((testCase, index) => {
-                // Check if execution result exists for this index
-                const result = testCaseResults.find((r) => r.index === index);
-                return renderTestCaseResult(result, testCase, index);
-              })}
+      {/* Content */}
+      <>
+        {/* Submission in progress */}
+        {isSubmitting && (
+          <Alert variant="info" className={cardPadding}>
+            <div className="text-sm">
+              Evaluating your solution... Please wait.
             </div>
-          )}
-        </>
-      )}
+          </Alert>
+        )}
+
+        {!isSubmitting && completedTestCases > 0 && (
+          <Alert
+            variant={submissionProgress.overallPassed ? 'success' : 'error'}
+            className={`${compact ? 'p-2' : 'p-4'}`}
+          >
+            <div className="flex items-center justify-between">
+              <span className={`${compact ? 'text-sm' : ''} font-medium`}>
+                {submissionProgress.statusMessage ||
+                  (submissionProgress.overallPassed
+                    ? 'All test cases passed!'
+                    : 'test cases failed.')}
+              </span>
+            </div>
+          </Alert>
+        )}
+
+        {/* Test case results - render based on test cases */}
+        {testCases.length > 0 && (
+          <Card variant="ghost" className={cardPadding}>
+            {/* Test Case Tabs */}
+            <div className="mb-4 border-b border-border/50 pb-2">
+              <div className="flex flex-wrap items-center justify-center gap-1">
+                {testCases.map((testCase, index) => {
+                  const result = testCaseResults.find((r) => r.index === index);
+                  const isActive = activeTestCaseIndex === index;
+                  const isPassed =
+                    result?.status === 'completed' && result?.passed;
+                  const isFailed =
+                    result?.status === 'completed' && !result?.passed;
+                  const isRunning = result?.status === 'running';
+
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setActiveTestCaseIndex(index)}
+                      className={cn(
+                        'px-2.5 py-1.5 text-xs font-medium transition-colors relative cursor-pointer whitespace-nowrap shrink-0',
+                        'border-b-2 border-transparent',
+                        isActive
+                          ? 'text-white border-blue-400'
+                          : 'text-[hsl(var(--muted-foreground))] hover:text-white'
+                      )}
+                    >
+                      <div className="flex items-center gap-1">
+                        {isRunning && (
+                          <Spinner
+                            size="sm"
+                            className="w-3 h-3 text-blue-500 shrink-0"
+                          />
+                        )}
+                        {isPassed && (
+                          <span className="text-green-500 text-xs shrink-0">
+                            ✓
+                          </span>
+                        )}
+                        {isFailed && (
+                          <span className="text-red-500 text-xs shrink-0">
+                            ✗
+                          </span>
+                        )}
+                        {!isRunning && !isPassed && !isFailed && (
+                          <span className="text-gray-400 text-xs shrink-0">
+                            ○
+                          </span>
+                        )}
+                        <span>Case {index + 1}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Active Test Case Content */}
+            {testCases[activeTestCaseIndex] && (
+              <div>
+                {(() => {
+                  const testCase = testCases[activeTestCaseIndex];
+                  const result = testCaseResults.find(
+                    (r) => r.index === activeTestCaseIndex
+                  );
+                  return renderTestCaseTabContent(
+                    result,
+                    testCase,
+                    activeTestCaseIndex
+                  );
+                })()}
+              </div>
+            )}
+          </Card>
+        )}
+      </>
     </div>
   );
 };

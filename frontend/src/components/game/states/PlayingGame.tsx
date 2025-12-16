@@ -174,7 +174,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
           />
         )}
         <div
-          className={`fixed top-16 right-4 z-50 bg-[hsl(var(--card))] border rounded-lg shadow-lg w-64 transition-opacity ${
+          className={`fixed top-16 right-4 z-50 bg-[hsl(var(--card))] border rounded-lg shadow-lg w-64 transition-opacity overflow-hidden ${
             showMusicPlayer ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
           onClick={(e) => e.stopPropagation()}

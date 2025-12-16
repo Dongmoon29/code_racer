@@ -20,7 +20,7 @@ export const ProblemDetailsTabs: FC<ProblemDetailsTabsProps> = memo(
     return (
       <div className="flex flex-col h-full">
         {/* Tab Header */}
-        <div className="flex border-b border-border bg-[hsl(var(--muted))] rounded-t-lg">
+        <div className="flex border-b border-border bg-[hsl(var(--muted))]">
           {tabs.map((tab, index) => {
             const isActive = activeTab === tab.id;
             const Icon = tab.icon;
