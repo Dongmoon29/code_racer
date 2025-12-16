@@ -30,7 +30,7 @@
     "cookie": "^1.0.2",
     "framer-motion": "^12.23.22",
     "lucide-react": "^0.486.0",
-    "next": "^16.0.8",
+    "next": "^16.0.9",
     "next-themes": "^0.4.6",
     "nookies": "^2.5.2",
     "react": "^19.0.0",
