@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Head from 'next/head';
-import { Footer } from './Footer';
 import Header from './Header';
 import { Contributor } from './Contributors';
 import { useFullscreen } from '@/contexts/FullscreenContext';
@@ -14,12 +13,7 @@ interface LayoutProps {
   contributors?: Contributor[];
 }
 
-const Layout: React.FC<LayoutProps> = ({
-  children,
-  title,
-  description,
-  contributors,
-}) => {
+const Layout: React.FC<LayoutProps> = ({ children, title, description }) => {
   const { isFullscreen } = useFullscreen();
 
   return (
@@ -35,7 +29,6 @@ const Layout: React.FC<LayoutProps> = ({
       <div className="min-h-screen flex flex-col">
         {!isFullscreen && <Header />}
         <main className="flex-grow">{children}</main>
-        {!isFullscreen && <Footer contributors={contributors ?? []} />}
       </div>
     </>
   );
