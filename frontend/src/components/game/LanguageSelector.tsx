@@ -18,9 +18,6 @@ const LanguageSelector: FC<LanguageSelectorProps> = memo(
   ({ selectedLanguage, onChange, disabled = false }) => {
     return (
       <div className="flex items-center">
-        <label htmlFor="language-select" className="mr-2 text-sm font-medium">
-          Language:
-        </label>
         <select
           id="language-select"
           value={selectedLanguage}

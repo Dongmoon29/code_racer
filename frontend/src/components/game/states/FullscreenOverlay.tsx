@@ -33,6 +33,7 @@ interface FullscreenOverlayProps {
   }>;
   problemIOSchema?: IOSchema;
   onCodeChange: (code: string) => void;
+  onLanguageChange?: (language: 'python' | 'javascript' | 'go') => void;
   onMaximizeToggle: (editor: 'my' | 'opponent') => void;
   onToggleDescription: () => void;
   onClose: () => void;
@@ -58,6 +59,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
     problemTestCases,
     problemIOSchema,
     onCodeChange,
+    onLanguageChange,
     onMaximizeToggle,
     onToggleDescription,
     onClose,
@@ -128,6 +130,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
               sizesNormal={isSinglePlayerMode ? [100, 0] : fsSplitSizes}
               showFullscreenButton={true}
               onCodeChange={onCodeChange}
+              onLanguageChange={onLanguageChange}
               onFullscreenToggle={onClose}
               onRun={onRun}
               runDisabled={isSubmitting}

@@ -1,10 +1,7 @@
 import React, { FC, memo, useCallback, useEffect, useState } from 'react';
-import { Spinner } from '../../ui';
-import LanguageSelector from '../LanguageSelector';
 import { Game, SubmitResult } from '@/types';
 import { SubmissionProgress } from '@/types/websocket';
 import { useTheme } from 'next-themes';
-import { Button } from '@/components/ui/Button';
 import { ProblemDetailsPane } from './ProblemDetailsPane';
 import { FullscreenOverlay } from './FullscreenOverlay';
 import { ProblemEditorSplit } from './CodeEditorSplitProps';
@@ -81,34 +78,6 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
 
     return (
       <div className="flex flex-col h-screen">
-        {/* Header */}
-        {!isFullscreen && (
-          <div className="grid grid-cols-12 gap-4 mb-4">
-            <div className="col-span-12 md:col-span-8">
-              <h1 className="text-2xl font-bold">{game.problem.title}</h1>
-              <div className="flex items-center gap-4 mt-2">
-                <LanguageSelector
-                  selectedLanguage={selectedLanguage}
-                  onChange={onLanguageChange}
-                />
-              </div>
-            </div>
-            <div className="col-span-12 md:col-span-4 flex justify-end items-start">
-              <Button
-                onClick={onSubmitCode}
-                disabled={isSubmitting}
-                className="w-full md:w-auto"
-              >
-                {isSubmitting ? <Spinner size="sm" /> : 'Submit Solution'}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Global submit banner removed: messages now shown in TestCaseDisplay */}
-
-        {/* Compact Test Case Display under Problem Details (left pane) */}
-
         {!isFullscreen ? (
           <div
             className="flex-1 flex min-h-0 game-editor-container"
@@ -158,6 +127,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                 sizesNormal={sizesNormal}
                 showFullscreenButton={true}
                 onCodeChange={onCodeChange}
+                onLanguageChange={onLanguageChange}
                 onFullscreenToggle={handleToggleFullscreen}
                 onRun={onSubmitCode}
                 runDisabled={isSubmitting}
@@ -190,6 +160,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
             problemTestCases={game.problem.test_cases}
             problemIOSchema={game.problem.io_schema}
             onCodeChange={onCodeChange}
+            onLanguageChange={onLanguageChange}
             onMaximizeToggle={
               isSinglePlayerMode ? () => {} : handleMaximizeToggle
             }

@@ -1,6 +1,7 @@
 import React, { FC, memo } from 'react';
 import { Expand, Minimize, Play, Music } from 'lucide-react';
 import CodeEditor from '../CodeEditor';
+import LanguageSelector from '../LanguageSelector';
 import { useFullscreen } from '@/contexts/FullscreenContext';
 
 interface EditorPaneProps {
@@ -14,6 +15,8 @@ interface EditorPaneProps {
   showFullscreenButton?: boolean;
   showMusicButton?: boolean;
   isMusicPlaying?: boolean;
+  showLanguageSelector?: boolean;
+  onLanguageChange?: (language: 'python' | 'javascript' | 'go') => void;
   onChange?: (code: string) => void;
   onFullscreenToggle?: () => void;
   onRun?: () => void;
@@ -33,6 +36,8 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     showFullscreenButton = false,
     showMusicButton = false,
     isMusicPlaying = false,
+    showLanguageSelector = false,
+    onLanguageChange,
     onChange,
     onFullscreenToggle,
     onRun,
@@ -53,11 +58,19 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     return (
       <div className="border rounded-lg min-w-0 h-full flex flex-col relative">
         <div className={headerClass}>
-          <span
-            className={`font-medium truncate ${isMinimized ? 'hidden' : ''}`}
-          >
-            {title}
-          </span>
+          <div className="flex items-center gap-3">
+            <span
+              className={`font-medium truncate ${isMinimized ? 'hidden' : ''}`}
+            >
+              {title}
+            </span>
+            {showLanguageSelector && onLanguageChange && !isMinimized && (
+              <LanguageSelector
+                selectedLanguage={language}
+                onChange={onLanguageChange}
+              />
+            )}
+          </div>
           <div className="flex items-center space-x-2">
             {onRun && (
               <button

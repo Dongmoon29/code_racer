@@ -126,6 +126,7 @@ interface ProblemDetailsPaneProps {
 export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
   ({
     isExpanded,
+    title,
     description,
     examples,
     constraints,
@@ -148,7 +149,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
     return (
       <div className="border rounded-lg min-w-0 h-full flex flex-col">
         <div className="bg-[hsl(var(--muted))] px-4 py-2 flex items-center justify-between">
-          <span className="font-medium truncate">Problem Details</span>
+          <span className="font-medium truncate">{title}</span>
           <div className="flex items-center space-x-2">
             <button
               onClick={onToggle}

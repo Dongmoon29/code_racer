@@ -74,7 +74,11 @@ const LOFI_STREAMS = [
   },
 ];
 
-export function LofiPlayer({ isCollapsed = false, onPlayingChange, onClose }: LofiPlayerProps) {
+export function LofiPlayer({
+  isCollapsed = false,
+  onPlayingChange,
+  onClose,
+}: LofiPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -93,7 +97,9 @@ export function LofiPlayer({ isCollapsed = false, onPlayingChange, onClose }: Lo
   });
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const playerIdRef = useRef<string>(`lofi-player-${Math.random().toString(36).substring(2, 11)}`);
+  const playerIdRef = useRef<string>(
+    `lofi-player-${Math.random().toString(36).substring(2, 11)}`
+  );
 
   const currentStream = LOFI_STREAMS[currentStreamIndex];
 
@@ -119,7 +125,16 @@ export function LofiPlayer({ isCollapsed = false, onPlayingChange, onClose }: Lo
   }, [isPlaying, onPlayingChange]);
 
   const initPlayer = () => {
-    if (!containerRef.current || playerRef.current || !window.YT) return;
+    if (!containerRef.current || playerRef.current) return;
+
+    // Check if YouTube API is fully loaded
+    if (
+      !window.YT ||
+      !window.YT.Player ||
+      typeof window.YT.Player !== 'function'
+    ) {
+      return;
+    }
 
     // Create a unique div for the player
     const playerDiv = document.createElement('div');
@@ -161,23 +176,43 @@ export function LofiPlayer({ isCollapsed = false, onPlayingChange, onClose }: Lo
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Check if API is already loaded
-    if (window.YT) {
+    // Check if API is already loaded and Player is available
+    if (
+      window.YT &&
+      window.YT.Player &&
+      typeof window.YT.Player === 'function'
+    ) {
       initPlayer();
       return;
     }
 
     // Check if script is already being loaded
-    const existingScript = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
+    const existingScript = document.querySelector(
+      'script[src="https://www.youtube.com/iframe_api"]'
+    );
     if (existingScript) {
       // Wait for API to load
       const checkYT = setInterval(() => {
-        if (window.YT) {
+        if (
+          window.YT &&
+          window.YT.Player &&
+          typeof window.YT.Player === 'function'
+        ) {
           clearInterval(checkYT);
           initPlayer();
         }
       }, 100);
-      return () => clearInterval(checkYT);
+
+      // Timeout after 10 seconds
+      const timeout = setTimeout(() => {
+        clearInterval(checkYT);
+        console.error('YouTube IFrame API failed to load within timeout');
+      }, 10000);
+
+      return () => {
+        clearInterval(checkYT);
+        clearTimeout(timeout);
+      };
     }
 
     // Load YouTube IFrame API
@@ -205,7 +240,10 @@ export function LofiPlayer({ isCollapsed = false, onPlayingChange, onClose }: Lo
 
   // Reinitialize player when stream changes
   useEffect(() => {
-    if (playerRef.current && typeof playerRef.current.loadVideoById === 'function') {
+    if (
+      playerRef.current &&
+      typeof playerRef.current.loadVideoById === 'function'
+    ) {
       try {
         playerRef.current.loadVideoById(currentStream.id);
         if (isPlaying) {
@@ -219,7 +257,8 @@ export function LofiPlayer({ isCollapsed = false, onPlayingChange, onClose }: Lo
   }, [currentStreamIndex]);
 
   const togglePlay = () => {
-    if (!playerRef.current || typeof playerRef.current.playVideo !== 'function') return;
+    if (!playerRef.current || typeof playerRef.current.playVideo !== 'function')
+      return;
 
     try {
       if (isPlaying) {
@@ -233,7 +272,8 @@ export function LofiPlayer({ isCollapsed = false, onPlayingChange, onClose }: Lo
   };
 
   const toggleMute = () => {
-    if (!playerRef.current || typeof playerRef.current.mute !== 'function') return;
+    if (!playerRef.current || typeof playerRef.current.mute !== 'function')
+      return;
 
     try {
       if (isMuted) {
@@ -250,7 +290,10 @@ export function LofiPlayer({ isCollapsed = false, onPlayingChange, onClose }: Lo
 
   const handleVolumeChange = (newVolume: number) => {
     setVolume(newVolume);
-    if (playerRef.current && typeof playerRef.current.setVolume === 'function') {
+    if (
+      playerRef.current &&
+      typeof playerRef.current.setVolume === 'function'
+    ) {
       try {
         playerRef.current.setVolume(newVolume);
         if (newVolume === 0) {
@@ -298,7 +341,9 @@ export function LofiPlayer({ isCollapsed = false, onPlayingChange, onClose }: Lo
                   isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
                 )}
               />
-              <span className="text-xs font-medium text-muted-foreground">Lofi Radio</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                Lofi Radio
+              </span>
             </div>
             {onClose && (
               <button

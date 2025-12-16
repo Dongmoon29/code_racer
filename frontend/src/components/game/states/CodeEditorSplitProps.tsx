@@ -15,6 +15,7 @@ interface CodeEditorSplitProps {
   sizesNormal: number[];
   showFullscreenButton?: boolean;
   onCodeChange: (code: string) => void;
+  onLanguageChange?: (language: 'python' | 'javascript' | 'go') => void;
   onFullscreenToggle?: () => void;
   onRun?: () => void;
   runDisabled?: boolean;
@@ -35,6 +36,7 @@ export const ProblemEditorSplit: FC<CodeEditorSplitProps> = memo(
     sizesNormal,
     showFullscreenButton = false,
     onCodeChange,
+    onLanguageChange,
     onFullscreenToggle,
     onRun,
     runDisabled = false,
@@ -79,6 +81,8 @@ export const ProblemEditorSplit: FC<CodeEditorSplitProps> = memo(
             showFullscreenButton={showFullscreenButton}
             showMusicButton={true}
             isMusicPlaying={isMusicPlaying}
+            showLanguageSelector={true}
+            onLanguageChange={onLanguageChange}
             onChange={onCodeChange}
             onFullscreenToggle={onFullscreenToggle}
             onRun={onRun}
@@ -119,6 +123,8 @@ export const ProblemEditorSplit: FC<CodeEditorSplitProps> = memo(
             showFullscreenButton={showFullscreenButton}
             showMusicButton={true}
             isMusicPlaying={isMusicPlaying}
+            showLanguageSelector={true}
+            onLanguageChange={onLanguageChange}
             onChange={onCodeChange}
             onFullscreenToggle={onFullscreenToggle}
             onRun={onRun}
@@ -178,6 +184,8 @@ export const ProblemEditorSplit: FC<CodeEditorSplitProps> = memo(
               showFullscreenButton={showFullscreenButton}
               showMusicButton={true}
               isMusicPlaying={isMusicPlaying}
+              showLanguageSelector={true}
+              onLanguageChange={onLanguageChange}
               onChange={onCodeChange}
               onFullscreenToggle={onFullscreenToggle}
               onRun={onRun}
