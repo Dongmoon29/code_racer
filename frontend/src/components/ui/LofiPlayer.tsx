@@ -478,13 +478,6 @@ export function LofiPlayer({
                         background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${volume}%, hsl(var(--accent)) ${volume}%, hsl(var(--accent)) 100%)`,
                       }}
                     />
-                    <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-                      <span>0</span>
-                      <span className="font-medium text-primary">
-                        {volume}%
-                      </span>
-                      <span>100</span>
-                    </div>
                   </div>
                 </div>
               </div>
