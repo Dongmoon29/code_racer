@@ -3,6 +3,7 @@ import { Expand, Minimize, Play, Music } from 'lucide-react';
 import CodeEditor from '../CodeEditor';
 import LanguageSelector from '../LanguageSelector';
 import { useFullscreen } from '@/contexts/FullscreenContext';
+import { useLofiPlayer } from '@/contexts/LofiPlayerContext';
 
 interface EditorPaneProps {
   title: string;
@@ -14,14 +15,12 @@ interface EditorPaneProps {
   isResizing: boolean;
   showFullscreenButton?: boolean;
   showMusicButton?: boolean;
-  isMusicPlaying?: boolean;
   showLanguageSelector?: boolean;
   onLanguageChange?: (language: 'python' | 'javascript' | 'go') => void;
   onChange?: (code: string) => void;
   onFullscreenToggle?: () => void;
   onRun?: () => void;
   runDisabled?: boolean;
-  onMusicToggle?: () => void;
 }
 
 export const EditorPane: FC<EditorPaneProps> = memo(
@@ -35,16 +34,15 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     isResizing,
     showFullscreenButton = false,
     showMusicButton = false,
-    isMusicPlaying = false,
     showLanguageSelector = false,
     onLanguageChange,
     onChange,
     onFullscreenToggle,
     onRun,
     runDisabled = false,
-    onMusicToggle,
   }) => {
     const { isFullscreen } = useFullscreen();
+    const { isMusicPlaying, setShowMusicPlayer } = useLofiPlayer();
     const headerClass = `bg-[hsl(var(--muted))] px-4 py-2 flex items-center ${
       isMinimized ? 'justify-center' : 'justify-between'
     }`;
@@ -86,15 +84,17 @@ export const EditorPane: FC<EditorPaneProps> = memo(
                 <Play className="w-4 h-4" />
               </button>
             )}
-            {showMusicButton && onMusicToggle && (
+            {showMusicButton && (
               <button
-                onClick={onMusicToggle}
+                onClick={() => setShowMusicPlayer(true)}
                 className="cursor-pointer p-1 hover:text-[hsl(var(--muted-foreground))] rounded-md transition-colors shrink-0"
                 title="Toggle Music Player"
               >
                 <Music
                   className={`w-4 h-4 ${
-                    isMusicPlaying ? 'animate-pulse text-[hsl(var(--primary))]' : ''
+                    isMusicPlaying
+                      ? 'animate-pulse text-[hsl(var(--primary))]'
+                      : ''
                   }`}
                 />
               </button>

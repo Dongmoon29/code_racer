@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react';
+import { FC, useState } from 'react';
 import { SubmissionProgress, TestCaseResult } from '@/types/websocket';
 import { TestCase, IOSchema } from '@/types';
 import { Spinner } from '@/components/ui/Spinner';

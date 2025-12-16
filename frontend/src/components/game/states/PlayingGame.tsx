@@ -6,6 +6,8 @@ import { ProblemDetailsPane } from './ProblemDetailsPane';
 import { FullscreenOverlay } from './FullscreenOverlay';
 import { ProblemEditorSplit } from './CodeEditorSplitProps';
 import { useFullscreen } from '@/contexts/FullscreenContext';
+import { useLofiPlayer } from '@/contexts/LofiPlayerContext';
+import { LofiPlayer } from '@/components/ui/LofiPlayer';
 
 interface PlayingGameProps {
   game: Game;
@@ -36,6 +38,8 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
   }) => {
     const { theme } = useTheme();
     const { isFullscreen, setIsFullscreen } = useFullscreen();
+    const { showMusicPlayer, setShowMusicPlayer, setIsMusicPlaying } =
+      useLofiPlayer();
     const [maximizedEditor, setMaximizedEditor] = useState<
       'my' | 'opponent' | null
     >(null);
@@ -161,6 +165,25 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
             isSubmitting={isSubmitting}
           />
         )}
+
+        {/* Global LofiPlayer - always rendered to prevent unmounting */}
+        {showMusicPlayer && (
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowMusicPlayer(false)}
+          />
+        )}
+        <div
+          className={`fixed top-16 right-4 z-50 bg-[hsl(var(--card))] border rounded-lg shadow-lg w-64 transition-opacity ${
+            showMusicPlayer ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <LofiPlayer
+            onPlayingChange={setIsMusicPlaying}
+            onClose={() => setShowMusicPlayer(false)}
+          />
+        </div>
       </div>
     );
   }

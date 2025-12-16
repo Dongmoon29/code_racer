@@ -9,6 +9,7 @@ import AdminLayout from '../components/layout/AdminLayout';
 import '../styles/globals.css';
 import { useAuthStore } from '../stores/authStore';
 import { FullscreenProvider } from '../contexts/FullscreenContext';
+import { LofiPlayerProvider } from '../contexts/LofiPlayerContext';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const { initializeAuth } = useAuthStore();
@@ -37,18 +38,20 @@ function MyApp({ Component, pageProps }: AppProps) {
     <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={queryClient}>
         <FullscreenProvider>
-          {isAdminRoute ? (
-            <>
-              <Head>
-                <title>{adminTitle}</title>
-              </Head>
-              <AdminLayout>
-                <Component {...pageProps} />
-              </AdminLayout>
-            </>
-          ) : (
-            <Component {...pageProps} />
-          )}
+          <LofiPlayerProvider>
+            {isAdminRoute ? (
+              <>
+                <Head>
+                  <title>{adminTitle}</title>
+                </Head>
+                <AdminLayout>
+                  <Component {...pageProps} />
+                </AdminLayout>
+              </>
+            ) : (
+              <Component {...pageProps} />
+            )}
+          </LofiPlayerProvider>
         </FullscreenProvider>
       </QueryClientProvider>
       <Analytics />
