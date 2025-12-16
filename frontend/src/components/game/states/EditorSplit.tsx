@@ -1,7 +1,8 @@
-import React, { FC, memo } from 'react';
+import React, { FC, memo, useState } from 'react';
 import Split from 'react-split';
 import { EditorPane } from './EditorPane';
 import { useSplitConfig } from './hooks/useSplitConfig';
+import { LofiPlayer } from '@/components/ui/LofiPlayer';
 
 interface EditorSplitProps {
   myCode: string;
@@ -40,6 +41,9 @@ export const EditorSplit: FC<EditorSplitProps> = memo(
     onDragEnd,
     isSinglePlayerMode = false,
   }) => {
+    const [showMusicPlayer, setShowMusicPlayer] = useState(false);
+    const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+
     const splitConfig = useSplitConfig(
       maximizedEditor,
       sizesNormal,
@@ -58,8 +62,11 @@ export const EditorSplit: FC<EditorSplitProps> = memo(
             isMinimized={false}
             isResizing={false}
             showFullscreenButton={showFullscreenButton}
+            showMusicButton={true}
+            isMusicPlaying={isMusicPlaying}
             onChange={onCodeChange}
             onFullscreenToggle={onFullscreenToggle}
+            onMusicToggle={() => setShowMusicPlayer(!showMusicPlayer)}
           />
         ) : (
           // Multiplayer mode - show split editors
@@ -78,8 +85,11 @@ export const EditorSplit: FC<EditorSplitProps> = memo(
               isMinimized={maximizedEditor === 'opponent'}
               isResizing={isResizing}
               showFullscreenButton={showFullscreenButton}
+              showMusicButton={true}
+              isMusicPlaying={isMusicPlaying}
               onChange={onCodeChange}
               onFullscreenToggle={onFullscreenToggle}
+              onMusicToggle={() => setShowMusicPlayer(!showMusicPlayer)}
             />
             <EditorPane
               title={opponentName ?? ''}
@@ -92,6 +102,25 @@ export const EditorSplit: FC<EditorSplitProps> = memo(
             />
           </Split>
         )}
+
+        {/* Music Player - rendered outside editors to prevent unmounting */}
+        {showMusicPlayer && (
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowMusicPlayer(false)}
+          />
+        )}
+        <div
+          className={`fixed top-16 right-4 z-50 bg-[hsl(var(--card))] border rounded-lg shadow-lg w-64 transition-opacity ${
+            showMusicPlayer ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <LofiPlayer
+            onPlayingChange={setIsMusicPlaying}
+            onClose={() => setShowMusicPlayer(false)}
+          />
+        </div>
       </>
     );
   }

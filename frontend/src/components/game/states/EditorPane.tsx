@@ -1,5 +1,5 @@
 import React, { FC, memo } from 'react';
-import { Expand, Minimize, Play } from 'lucide-react';
+import { Expand, Minimize, Play, Music } from 'lucide-react';
 import CodeEditor from '../CodeEditor';
 import { useFullscreen } from '@/contexts/FullscreenContext';
 
@@ -12,10 +12,13 @@ interface EditorPaneProps {
   isMinimized: boolean;
   isResizing: boolean;
   showFullscreenButton?: boolean;
+  showMusicButton?: boolean;
+  isMusicPlaying?: boolean;
   onChange?: (code: string) => void;
   onFullscreenToggle?: () => void;
   onRun?: () => void;
   runDisabled?: boolean;
+  onMusicToggle?: () => void;
 }
 
 export const EditorPane: FC<EditorPaneProps> = memo(
@@ -28,10 +31,13 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     isMinimized,
     isResizing,
     showFullscreenButton = false,
+    showMusicButton = false,
+    isMusicPlaying = false,
     onChange,
     onFullscreenToggle,
     onRun,
     runDisabled = false,
+    onMusicToggle,
   }) => {
     const { isFullscreen } = useFullscreen();
     const headerClass = `bg-[hsl(var(--muted))] px-4 py-2 flex items-center ${
@@ -45,7 +51,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
       : 'h-[calc(100%-40px)] overflow-auto';
 
     return (
-      <div className="border rounded-lg min-w-0 h-full flex flex-col">
+      <div className="border rounded-lg min-w-0 h-full flex flex-col relative">
         <div className={headerClass}>
           <span
             className={`font-medium truncate ${isMinimized ? 'hidden' : ''}`}
@@ -65,6 +71,19 @@ export const EditorPane: FC<EditorPaneProps> = memo(
                 title="Run Submission"
               >
                 <Play className="w-4 h-4" />
+              </button>
+            )}
+            {showMusicButton && onMusicToggle && (
+              <button
+                onClick={onMusicToggle}
+                className="cursor-pointer p-1 hover:text-[hsl(var(--muted-foreground))] rounded-md transition-colors shrink-0"
+                title="Toggle Music Player"
+              >
+                <Music
+                  className={`w-4 h-4 ${
+                    isMusicPlaying ? 'animate-pulse text-[hsl(var(--primary))]' : ''
+                  }`}
+                />
               </button>
             )}
             {showFullscreenButton && onFullscreenToggle && (
