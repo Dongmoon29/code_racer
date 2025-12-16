@@ -1,9 +1,10 @@
-import React, { FC, memo } from 'react';
-import { Expand, Minimize, Play, Music } from 'lucide-react';
+import React, { FC, memo, useState, useRef, useEffect } from 'react';
+import { Expand, Minimize, Play, Music, Settings } from 'lucide-react';
 import CodeEditor from '../CodeEditor';
 import LanguageSelector from '../LanguageSelector';
 import { useFullscreen } from '@/contexts/FullscreenContext';
 import { useLofiPlayer } from '@/contexts/LofiPlayerContext';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 interface EditorPaneProps {
   title: string;
@@ -43,9 +44,32 @@ export const EditorPane: FC<EditorPaneProps> = memo(
   }) => {
     const { isFullscreen } = useFullscreen();
     const { isMusicPlaying, setShowMusicPlayer } = useLofiPlayer();
+    const [showSettings, setShowSettings] = useState(false);
+    const settingsRef = useRef<HTMLDivElement>(null);
+
     const headerClass = `bg-[hsl(var(--muted))] px-4 py-2 flex items-center ${
       isMinimized ? 'justify-center' : 'justify-between'
     }`;
+
+    // 외부 클릭 시 설정 메뉴 닫기
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          settingsRef.current &&
+          !settingsRef.current.contains(event.target as Node)
+        ) {
+          setShowSettings(false);
+        }
+      };
+
+      if (showSettings) {
+        document.addEventListener('mousedown', handleClickOutside);
+      }
+
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }, [showSettings]);
 
     // Keep the editor mounted even when minimized to allow live updates.
     // Use height collapse instead of display:none to avoid breaking editor updates.
@@ -112,6 +136,24 @@ export const EditorPane: FC<EditorPaneProps> = memo(
                 )}
               </button>
             )}
+            {/* Settings Button */}
+            <div className="relative" ref={settingsRef}>
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className="cursor-pointer p-1 hover:text-[hsl(var(--muted-foreground))] rounded-md transition-colors shrink-0"
+                title="Settings"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+              {showSettings && (
+                <div className="absolute right-0 top-full mt-2 bg-[hsl(var(--card))] border border-border rounded-lg shadow-lg px-2 py-0.5 z-50 min-w-[160px]">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-medium">Theme</span>
+                    <ThemeToggle />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className={contentClass}>
