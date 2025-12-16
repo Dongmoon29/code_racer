@@ -240,6 +240,7 @@ export const userApi = {
         email: string;
         role: string;
         created_at: string;
+        updated_at?: string;
       }>;
       page: number;
       limit: number;

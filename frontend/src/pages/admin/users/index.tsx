@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../../hooks/useAuth';
 import { userApi } from '@/lib/api';
@@ -118,6 +119,9 @@ export default function AdminUsersPage() {
                   </span>
                 </button>
               </th>
+              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider">
+                Updated
+              </th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -129,10 +133,18 @@ export default function AdminUsersPage() {
                 email: string;
                 role: string;
                 created_at?: string;
+                updated_at?: string;
               }) => (
                 <tr key={u.id}>
                   <td className="px-4 py-3 text-xs font-mono">{u.id}</td>
-                  <td className="px-4 py-3 text-sm">{u.name}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <Link
+                      href={`/users/${u.id}`}
+                      className="underline underline-offset-2 hover:opacity-80"
+                    >
+                      {u.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-sm">{u.email}</td>
                   <td className="px-4 py-3 text-sm">
                     <span
@@ -144,6 +156,11 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3 text-sm">
                     {u.created_at
                       ? new Date(u.created_at).toLocaleDateString()
+                      : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {u.updated_at
+                      ? new Date(u.updated_at).toLocaleDateString()
                       : '-'}
                   </td>
                   <td className="px-4 py-3 text-right text-sm">
