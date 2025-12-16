@@ -45,12 +45,9 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
           )}
         </div>
 
-        <h1 className="text-xl lg:text-2xl font-bold text-foreground mb-1 text-center">
+        <h1 className="text-xl lg:text-2xl font-bold text-foreground mb-4 text-center">
           {user?.name}
         </h1>
-        <p className="text-base lg:text-lg text-muted-foreground mb-4 text-center">
-          {user?.email}
-        </p>
       </div>
 
       {/* Location */}
