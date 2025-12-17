@@ -247,3 +247,13 @@ export interface Contributor {
   html_url: string;
   contributions: number;
 }
+
+// User profile related types
+export interface UserProfile {
+  homepage?: string;
+  linkedin?: string;
+  github?: string;
+  company?: string;
+  job_title?: string;
+  fav_language?: string;
+}

@@ -4,7 +4,7 @@ import { matchApi } from '@/lib/api';
 import { Game } from '@/types';
 import axios, { AxiosError } from 'axios';
 import { ApiErrorResponse } from '@/types';
-import { createErrorHandler } from '@/lib/error-tracking';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 interface UseGameDataProps {
   matchId: string;
@@ -21,7 +21,7 @@ export const useGameData = ({
   matchId,
 }: UseGameDataProps): UseGameDataReturn => {
   const router = useRouter();
-  const errorHandler = createErrorHandler('useGameData', 'fetchGame');
+  const errorHandler = useErrorHandler('useGameData', 'fetchGame');
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['game', matchId],

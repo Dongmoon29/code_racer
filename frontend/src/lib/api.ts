@@ -1,18 +1,7 @@
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
-import type { ProblemDetail, Game } from '@/types';
+import type { ProblemDetail, Game, UserProfile } from '@/types';
 import { createErrorHandler } from '@/lib/error-tracking';
-
-// ProblemDetail type is imported from central types
-
-export interface UserProfile {
-  homepage?: string;
-  linkedin?: string;
-  github?: string;
-  company?: string;
-  job_title?: string;
-  fav_language?: string;
-}
 
 // API client basic configuration
 const api = axios.create({

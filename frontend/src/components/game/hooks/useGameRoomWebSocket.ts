@@ -5,7 +5,7 @@ import WebSocketClient, {
   CodeUpdateMessage,
 } from '@/lib/websocket';
 import { Game, SubmitResult } from '@/types';
-import { getCodeTemplate } from '@/lib/api';
+import { getCodeTemplate, matchApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { type SupportedLanguage } from '@/constants';
 import {
@@ -13,6 +13,7 @@ import {
   TestCaseDetailMessage,
   SubmissionStatusMessage,
 } from '@/types/websocket';
+import { createErrorHandler } from '@/lib/error-tracking';
 import { WEBSOCKET_MESSAGE_TYPES } from '@/constants/websocket';
 
 interface UseGameRoomWebSocketProps {
@@ -401,19 +402,11 @@ export const useGameRoomWebSocket = ({
     setSubmitResult(null);
 
     try {
-      const response = await fetch(`/api/matches/${matchId}/submit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
-        },
-        body: JSON.stringify({
-          code: myCode,
-          language: selectedLanguage,
-        }),
-      });
-
-      const result = await response.json();
+      const result = await matchApi.submitSolution(
+        matchId,
+        myCode,
+        selectedLanguage
+      );
 
       if (result.success) {
         setSubmitResult({
@@ -430,7 +423,15 @@ export const useGameRoomWebSocket = ({
           is_winner: false,
         });
       }
-    } catch {
+    } catch (error) {
+      const errorHandler = createErrorHandler(
+        'useGameRoomWebSocket',
+        'submitSolution'
+      );
+      errorHandler(error, {
+        matchId,
+        language: selectedLanguage,
+      });
       setSubmitResult({
         success: false,
         message: 'Network error occurred.',
