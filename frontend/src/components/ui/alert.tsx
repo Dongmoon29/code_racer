@@ -29,7 +29,7 @@ const alertVariants = cva(
 interface AlertProps
   extends React.ComponentProps<'div'>,
     VariantProps<typeof alertVariants> {
-  onClick?: () => void; // onClick prop 추가
+  onClick?: () => void; // Optional onClick handler
 }
 
 function Alert({ className, variant, ...props }: AlertProps) {

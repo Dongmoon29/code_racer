@@ -127,6 +127,16 @@ export const DEFAULT_VALUES = {
   MIN_TITLE_LENGTH: 1,
   MIN_DESCRIPTION_LENGTH: 1,
   MIN_FUNCTION_NAME_LENGTH: 1,
+
+  // Error tracking
+  DEFAULT_ERROR_LIMIT: 10,
+  MAX_ERRORS_TO_KEEP: 100,
+
+  // Revalidation intervals (in seconds)
+  REVALIDATE_INTERVALS: {
+    HOUR: 3600,
+    DAY: 86400,
+  },
 } as const;
 
 // Matchmaking state constants

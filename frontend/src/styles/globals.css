@@ -95,12 +95,12 @@ body {
     color var(--theme-transition-duration) ease;
 }
 
-/* 트랜지션을 위한 추가 스타일 */
+/* Additional styles for transitions */
 .transition-all {
   transition-property: all;
 }
 
-/* 코드 에디터 스크롤 처리 */
+/* Code editor scroll handling */
 .cm-editor {
   overflow-x: auto;
   max-width: 100%;

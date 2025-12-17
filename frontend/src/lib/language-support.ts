@@ -5,7 +5,7 @@ import { go } from '@codemirror/lang-go';
 import { rust } from '@codemirror/lang-rust';
 import { LanguageSupport } from '@codemirror/language';
 
-// 각 언어별 자동완성 제안
+// Autocomplete suggestions for each language
 const pythonCompletions = [
   { label: 'def', type: 'keyword' },
   { label: 'class', type: 'keyword' },
@@ -67,7 +67,7 @@ const rustCompletions = [
   { label: 'println!', type: 'macro' },
 ];
 
-// 언어별 자동완성 함수
+// Language-specific autocomplete function
 function createCompletions(completions: unknown[]) {
   return (context: CompletionContext) => {
     const before = context.matchBefore(/\w+/);

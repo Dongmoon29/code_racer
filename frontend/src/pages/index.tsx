@@ -15,6 +15,7 @@ import {
   generateWebsiteStructuredData,
   generateSoftwareApplicationStructuredData,
 } from '@/lib/json-ld-schemas';
+import { DEFAULT_VALUES } from '@/constants';
 
 interface HomeProps {
   contributors: Contributor[];
@@ -327,7 +328,7 @@ export const getStaticProps: GetStaticProps = async () => {
       props: {
         contributors,
       },
-      revalidate: 3600, // 1시간마다 재생성
+      revalidate: DEFAULT_VALUES.REVALIDATE_INTERVALS.HOUR,
     };
   } catch (error) {
     console.error('Failed to fetch contributors', error);

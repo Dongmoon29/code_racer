@@ -36,10 +36,14 @@ export enum ErrorCategory {
   UNKNOWN = 'unknown',
 }
 
+// Error tracking constants
+const DEFAULT_ERROR_LIMIT = 10;
+const MAX_ERRORS_TO_KEEP = 100;
+
 export class ErrorTracker {
   private static instance: ErrorTracker;
   private errors: ErrorInfo[] = [];
-  private maxErrors = 100; // Keep only last 100 errors
+  private maxErrors = MAX_ERRORS_TO_KEEP;
 
   static getInstance(): ErrorTracker {
     if (!ErrorTracker.instance) {
@@ -102,18 +106,18 @@ export class ErrorTracker {
     return 'Unknown error occurred';
   }
 
-  // Send error to external service (Sentry, LogRocket, etc.)
+  // TODO: Implement external error tracking service integration (Sentry, LogRocket, etc.)
+  // When implemented, uncomment and use the following method:
   // private sendToExternalService(
   //   errorInfo: ErrorInfo,
   //   severity: ErrorSeverity,
   //   category: ErrorCategory
   // ): void {
-  // TODO: Implement external error tracking service integration
-  // Example: Sentry.captureException(error, { extra: errorInfo.context });
+  //   Sentry.captureException(error, { extra: errorInfo.context });
   // }
 
   // Get recent errors for debugging
-  getRecentErrors(limit: number = 10): ErrorInfo[] {
+  getRecentErrors(limit: number = DEFAULT_ERROR_LIMIT): ErrorInfo[] {
     return this.errors.slice(0, limit);
   }
 

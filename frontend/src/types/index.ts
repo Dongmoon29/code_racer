@@ -154,7 +154,7 @@ export interface GameState {
   time_limit: number;
 }
 
-// 사용자 관련 타입
+// User-related types
 export interface User {
   id: string;
   email: string;
@@ -190,7 +190,7 @@ export interface AlertVariant {
   variant?: 'default' | 'destructive' | 'warning' | 'success' | 'info';
 }
 
-// 게임 관련 추가 타입
+// Additional game-related types
 export interface Game {
   id: string;
   // Preferred naming aligned with backend

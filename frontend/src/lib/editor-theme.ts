@@ -2,7 +2,7 @@ import { EditorView } from '@codemirror/view';
 import { HighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 
-// VS Code Light 테마의 자동완성 스타일
+// VS Code Light theme autocomplete styles
 const vscodeLightCompletionStyle = {
   '.cm-tooltip': {
     backgroundColor: '#F3F3F3',
@@ -28,7 +28,7 @@ const vscodeLightCompletionStyle = {
   },
 };
 
-// VS Code Dark 테마의 자동완성 스타일
+// VS Code Dark theme autocomplete styles
 const vscodeDarkCompletionStyle = {
   '.cm-tooltip': {
     backgroundColor: '#252526',
@@ -54,7 +54,7 @@ const vscodeDarkCompletionStyle = {
   },
 };
 
-// VS Code Light 테마 스타일 정의
+// VS Code Light theme style definition
 export const vscodeLightTheme = EditorView.theme({
   '&': {
     backgroundColor: '#FFFFFF',
@@ -100,7 +100,7 @@ export const vscodeLightTheme = EditorView.theme({
   ...vscodeLightCompletionStyle,
 });
 
-// VS Code Light 구문 강조 스타일
+// VS Code Light syntax highlighting styles
 export const vscodeLightHighlightStyle = HighlightStyle.define([
   { tag: tags.keyword, color: '#0000FF' },
   { tag: tags.operator, color: '#000000' },
@@ -124,7 +124,7 @@ export const vscodeLightHighlightStyle = HighlightStyle.define([
   { tag: tags.name, color: '#0000FF' },
 ]);
 
-// VS Code Dark+ 테마 스타일 정의
+// VS Code Dark+ theme style definition
 export const vscodeDarkTheme = EditorView.theme({
   '&': {
     backgroundColor: '#1E1E1E',
@@ -170,7 +170,7 @@ export const vscodeDarkTheme = EditorView.theme({
   ...vscodeDarkCompletionStyle,
 });
 
-// VS Code Dark+ 구문 강조 스타일
+// VS Code Dark+ syntax highlighting styles
 export const vscodeDarkHighlightStyle = HighlightStyle.define([
   { tag: tags.keyword, color: '#569CD6' },
   { tag: tags.operator, color: '#D4D4D4' },
