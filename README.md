@@ -3,22 +3,23 @@
 Real-time competitive coding platform where developers race to solve programming challenges.
 
 [![Go](https://img.shields.io/badge/Go-1.25.0-blue)](https://golang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-15.5.4-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.0.9-black)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0.0-61dafb)](https://reactjs.org/)
 
 ## Features
 
 - **Real-time Racing**: Live 1v1 coding competitions with instant opponent visibility
 - **Auto Matchmaking**: FIFO-based matching by difficulty (Easy/Medium/Hard)
-- **Multi-language**: Python, JavaScript, Go, Java, C++
+- **Multi-language**: Python, JavaScript, Go
 - **Live Execution**: Judge0 API integration for instant code evaluation
+- **Elo Rating System**: Competitive ranking system with rating updates after matches
 - **OAuth**: Google and GitHub authentication
 - **Vim Mode**: CodeMirror editor with Vim keybindings
 - **Admin Panel**: Problem and user management
 
 ## Tech Stack
 
-**Frontend**: Next.js 15 • React 19 • TypeScript • Tailwind CSS v4 • CodeMirror 6 • Zustand • TanStack Query
+**Frontend**: Next.js 16 • React 19 • TypeScript • Tailwind CSS v4 • CodeMirror 6 • Zustand • TanStack Query
 
 **Backend**: Go 1.25 • Gin • PostgreSQL • Redis • GORM • JWT • OAuth2 • WebSocket
 
@@ -71,9 +72,13 @@ frontend/
 ├── src/
 │   ├── components/       # React components
 │   ├── pages/            # Next.js pages
-│   ├── lib/              # API clients, WebSocket
+│   ├── lib/              # API clients, WebSocket, utilities
+│   │   └── websocket/    # WebSocket base classes
 │   ├── hooks/            # Custom hooks
-│   └── stores/           # Zustand state
+│   ├── stores/           # Zustand state
+│   ├── constants/        # Application constants
+│   ├── types/            # TypeScript type definitions
+│   └── contexts/         # React contexts
 └── public/               # Static assets
 ```
 
