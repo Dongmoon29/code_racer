@@ -64,7 +64,7 @@ export class MatchmakingWebSocketClient extends BaseWebSocketClient {
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        const wsUrl = this.buildWebSocketUrl('/ws/matching');
+        const wsUrl = this.buildWebSocketUrl('matching');
         this.ws = new WebSocket(wsUrl);
 
         this.setupEventHandlers(

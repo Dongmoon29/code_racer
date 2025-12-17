@@ -28,13 +28,19 @@ export abstract class BaseWebSocketClient {
 
   /**
    * Build WebSocket URL with authentication token
+   * @param path - WebSocket path without /ws prefix (e.g., gameId or 'matching')
    */
   protected buildWebSocketUrl(path: string): string {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
     let wsUrl: string;
     if (process.env.NEXT_PUBLIC_WS_URL) {
-      wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}${path}`;
+      // If NEXT_PUBLIC_WS_URL is set, it should be the full base URL (e.g., ws://localhost:8080/ws)
+      // We append the path to it
+      const baseUrl = process.env.NEXT_PUBLIC_WS_URL.endsWith('/')
+        ? process.env.NEXT_PUBLIC_WS_URL.slice(0, -1)
+        : process.env.NEXT_PUBLIC_WS_URL;
+      wsUrl = `${baseUrl}/${path}`;
     } else {
       let wsHost: string;
       if (process.env.NODE_ENV === 'production') {
@@ -47,7 +53,7 @@ export abstract class BaseWebSocketClient {
           'http://localhost:8080';
         wsHost = wsHost.replace(/^https?:\/\//, '');
       }
-      wsUrl = `${wsProtocol}//${wsHost}${path}`;
+      wsUrl = `${wsProtocol}//${wsHost}/ws/${path}`;
     }
 
     // Add authentication token

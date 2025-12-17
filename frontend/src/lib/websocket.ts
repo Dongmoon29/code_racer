@@ -38,7 +38,7 @@ export class WebSocketClient extends BaseWebSocketClient {
 
   private connect() {
     try {
-      const wsUrl = this.buildWebSocketUrl(`/ws/${this.gameId}`);
+      const wsUrl = this.buildWebSocketUrl(this.gameId);
       this.ws = new WebSocket(wsUrl);
 
       this.setupEventHandlers(
