@@ -11,7 +11,8 @@ type UserRepository interface {
 	FindByEmail(email string) (*model.User, error)
 	Update(user *model.User) error
 	// ListUsers returns users with offset/limit and total count, ordered by field/dir
-	ListUsers(offset int, limit int, orderByField string, orderDir string) ([]*model.User, int64, error)
+	// search parameter searches in name, email, or ID fields
+	ListUsers(offset int, limit int, orderByField string, orderDir string, search string) ([]*model.User, int64, error)
 	// GetLeaderboardUsers returns users who have played at least one ranked PvP game
 	GetLeaderboardUsers(limit int) ([]*model.User, error)
 }

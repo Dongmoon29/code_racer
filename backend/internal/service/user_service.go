@@ -17,7 +17,7 @@ type UserService interface {
 	GetUserByID(userID uuid.UUID) (*model.UserResponse, error)
 	GetProfile(userID uuid.UUID) (*model.User, error)
 	UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRequest) (*model.User, error)
-	ListUsers(page int, limit int, orderBy string, dir string) ([]*model.User, int64, error)
+	ListUsers(page int, limit int, orderBy string, dir string, search string) ([]*model.User, int64, error)
 	GetLeaderboard(limit int) ([]*model.LeaderboardUser, error)
 }
 
@@ -143,7 +143,7 @@ func (s *userService) UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRe
 	}, nil
 }
 
-func (s *userService) ListUsers(page int, limit int, orderBy string, dir string) ([]*model.User, int64, error) {
+func (s *userService) ListUsers(page int, limit int, orderBy string, dir string, search string) ([]*model.User, int64, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -158,7 +158,7 @@ func (s *userService) ListUsers(page int, limit int, orderBy string, dir string)
 	if dir == "" {
 		dir = "desc"
 	}
-	users, total, err := s.userRepo.ListUsers(offset, limit, orderBy, dir)
+	users, total, err := s.userRepo.ListUsers(offset, limit, orderBy, dir, search)
 	if err != nil {
 		return nil, 0, apperr.Wrap(err, apperr.CodeInternal, "Failed to list users")
 	}

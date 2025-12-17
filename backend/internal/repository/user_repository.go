@@ -62,17 +62,14 @@ func (r *userRepository) Update(user *model.User) error {
 	return r.db.Save(user).Error
 }
 
-func (r *userRepository) ListUsers(offset int, limit int, orderByField string, orderDir string) ([]*model.User, int64, error) {
+func (r *userRepository) ListUsers(offset int, limit int, orderByField string, orderDir string, search string) ([]*model.User, int64, error) {
 	var users []*model.User
 	var total int64
-
-	if err := r.db.Model(&model.User{}).Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
 
 	// whitelist fields to avoid SQL injection
 	allowed := map[string]string{
 		"created_at": "created_at",
+		"updated_at": "updated_at",
 		"name":       "name",
 		"email":      "email",
 		"role":       "role",
@@ -87,13 +84,64 @@ func (r *userRepository) ListUsers(offset int, limit int, orderByField string, o
 		dir = "ASC"
 	}
 
-	if err := r.db.
-		Order(field + " " + dir).
-		Order("id " + dir).
-		Offset(offset).Limit(limit).
-		Find(&users).Error; err != nil {
+	// Build base query
+	query := r.db.Model(&model.User{})
+	countQuery := r.db.Model(&model.User{})
+
+	// Apply search filter if provided
+	if search != "" {
+		searchPattern := "%" + search + "%"
+		// Try to parse as UUID first (for exact ID match)
+		if _, err := uuid.Parse(search); err == nil {
+			// Exact match for UUID
+			query = query.Where("id = ?", search)
+			countQuery = countQuery.Where("id = ?", search)
+		} else {
+			// Search in name, email, and ID fields (ID as string for partial match)
+			// Convert UUID to string for ILIKE comparison
+			searchCondition := "name ILIKE ? OR email ILIKE ? OR id::text ILIKE ?"
+			query = query.Where(searchCondition, searchPattern, searchPattern, searchPattern)
+			countQuery = countQuery.Where(searchCondition, searchPattern, searchPattern, searchPattern)
+			
+			r.logger.Debug().
+				Str("search", search).
+				Str("searchPattern", searchPattern).
+				Msg("ListUsers: applying search filter (name, email, or ID)")
+		}
+	}
+
+	// Count total matching records
+	if err := countQuery.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
+
+	r.logger.Debug().
+		Str("orderByField", orderByField).
+		Str("orderDir", orderDir).
+		Str("field", field).
+		Str("dir", dir).
+		Str("search", search).
+		Int("offset", offset).
+		Int("limit", limit).
+		Msg("ListUsers: building query with sorting and search")
+
+	// Primary sort by the specified field
+	query = query.Order(field + " " + dir)
+	
+	// Secondary sort by id for consistent ordering when field values are equal
+	query = query.Order("id " + dir)
+	
+	// Apply pagination
+	query = query.Offset(offset).Limit(limit)
+	
+	if err := query.Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	r.logger.Debug().
+		Int("resultCount", len(users)).
+		Int64("total", total).
+		Msg("ListUsers: query completed")
 
 	return users, total, nil
 }

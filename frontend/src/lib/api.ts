@@ -219,7 +219,7 @@ export const getCodeTemplate = (
   }
 
   const template = problem.io_templates.find((t) => t.language === language);
-  
+
   if (process.env.NODE_ENV === 'development') {
     console.log('Found template:', template);
   }
@@ -228,9 +228,19 @@ export const getCodeTemplate = (
 };
 
 export const userApi = {
-  adminList: async (page: number, limit = 20, sort?: string) => {
+  adminList: async (
+    page: number,
+    limit = 20,
+    sort?: string,
+    search?: string
+  ) => {
     const response = await api.get(`/admin/users`, {
-      params: { page, limit, ...(sort ? { sort } : {}) },
+      params: {
+        page,
+        limit,
+        ...(sort ? { sort } : {}),
+        ...(search ? { search } : {}),
+      },
     });
     return response.data as {
       success: boolean;
@@ -239,6 +249,7 @@ export const userApi = {
         name: string;
         email: string;
         role: string;
+        oauth_provider?: string;
         created_at: string;
         updated_at?: string;
       }>;

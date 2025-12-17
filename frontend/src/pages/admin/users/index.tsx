@@ -7,11 +7,54 @@ export default function AdminUsersPage() {
   const PAGE_SIZE = 20;
   const [page, setPage] = useState<number>(1);
   const [sort, setSort] = useState<string>('created_at:desc');
+  const [search, setSearch] = useState<string>('');
+  const [searchInput, setSearchInput] = useState<string>('');
   const queryClient = useQueryClient();
 
+  // Helper function to handle sort toggle
+  const handleSortToggle = (field: 'created_at' | 'updated_at') => {
+    setPage(1); // Reset to first page when sorting changes
+    const currentField = sort.split(':')[0];
+    const currentDir = sort.split(':')[1] || 'desc';
+
+    if (currentField === field) {
+      // Toggle direction if same field
+      setSort(`${field}:${currentDir === 'desc' ? 'asc' : 'desc'}`);
+    } else {
+      // Switch to new field with default desc
+      setSort(`${field}:desc`);
+    }
+  };
+
+  // Handle search submission
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearch(searchInput.trim());
+    setPage(1); // Reset to first page when searching
+  };
+
+  // Handle search input clear
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearch('');
+    setPage(1);
+  };
+
+  // Helper function to get sort icon
+  const getSortIcon = (field: 'created_at' | 'updated_at') => {
+    const currentField = sort.split(':')[0];
+    const currentDir = sort.split(':')[1] || 'desc';
+
+    if (currentField !== field) {
+      return '↕';
+    }
+    return currentDir === 'desc' ? '▼' : '▲';
+  };
+
   const { data, isFetching, isError, error } = useQuery({
-    queryKey: ['admin-users', { page, limit: PAGE_SIZE, sort }],
-    queryFn: () => userApi.adminList(page, PAGE_SIZE, sort),
+    queryKey: ['admin-users', { page, limit: PAGE_SIZE, sort, search }],
+    queryFn: () =>
+      userApi.adminList(page, PAGE_SIZE, sort, search || undefined),
     keepPreviousData: true,
   });
 
@@ -19,10 +62,14 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (!data?.has_next) return;
     queryClient.prefetchQuery({
-      queryKey: ['admin-users', { page: page + 1, limit: PAGE_SIZE, sort }],
-      queryFn: () => userApi.adminList(page + 1, PAGE_SIZE, sort),
+      queryKey: [
+        'admin-users',
+        { page: page + 1, limit: PAGE_SIZE, sort, search },
+      ],
+      queryFn: () =>
+        userApi.adminList(page + 1, PAGE_SIZE, sort, search || undefined),
     });
-  }, [data, page, sort, queryClient]);
+  }, [data, page, sort, search, queryClient]);
 
   // Build pagination range like: 1 … 4 5 [6] 7 8 … 24
   const paginationRange = useMemo(() => {
@@ -61,6 +108,43 @@ export default function AdminUsersPage() {
         <h1 className="text-2xl font-bold">User Management</h1>
       </div>
 
+      {/* Search Bar */}
+      <div className="mb-6">
+        <form onSubmit={handleSearch} className="flex items-center gap-2">
+          <div className="flex-1 max-w-md">
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search by Name, Email, or ID..."
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isFetching}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Search
+          </button>
+          {search && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </form>
+        {search && (
+          <p className="mt-2 text-sm text-gray-600">
+            Searching for: <span className="font-semibold">{search}</span> (
+            {data?.total ?? 0} results)
+          </p>
+        )}
+      </div>
+
       <div className="overflow-hidden rounded-lg shadow">
         {isError && (
           <div className="px-4 py-2 text-sm text-red-600 border-b border-red-200 bg-red-50">
@@ -83,29 +167,27 @@ export default function AdminUsersPage() {
                 Role
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                OAuth
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 <button
-                  className="inline-flex items-center gap-1"
-                  onClick={() => {
-                    setPage(1);
-                    const [, dir = 'desc'] = sort.startsWith('created_at')
-                      ? sort.split(':')
-                      : ['created_at', 'desc'];
-                    setSort(`created_at:${dir === 'desc' ? 'asc' : 'desc'}`);
-                  }}
+                  className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+                  onClick={() => handleSortToggle('created_at')}
                   title="Sort by created date"
                 >
                   Created
-                  <span>
-                    {sort === 'created_at:desc'
-                      ? '▼'
-                      : sort === 'created_at:asc'
-                      ? '▲'
-                      : '↕'}
-                  </span>
+                  <span>{getSortIcon('created_at')}</span>
                 </button>
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                Updated
+                <button
+                  className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+                  onClick={() => handleSortToggle('updated_at')}
+                  title="Sort by updated date"
+                >
+                  Updated
+                  <span>{getSortIcon('updated_at')}</span>
+                </button>
               </th>
               <th className="px-4 py-3" />
             </tr>
@@ -117,6 +199,7 @@ export default function AdminUsersPage() {
                 name: string;
                 email: string;
                 role: string;
+                oauth_provider?: string;
                 created_at?: string;
                 updated_at?: string;
               }) => (
@@ -135,6 +218,9 @@ export default function AdminUsersPage() {
                     <span className="inline-flex px-2 py-1 rounded-full text-xs font-semibold">
                       {u.role}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {u.oauth_provider ? u.oauth_provider : '-'}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {u.created_at

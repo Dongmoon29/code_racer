@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -127,14 +128,25 @@ func (c *UserController) AdminListUsers(ctx *gin.Context) {
 	orderBy := "created_at"
 	dir := "desc"
 	if sortParam != "" {
-		var f, d string
-		if _, err := fmt.Sscanf(sortParam, "%[^:]:%s", &f, &d); err == nil {
-			orderBy = f
-			dir = d
+		parts := strings.Split(sortParam, ":")
+		if len(parts) == 2 {
+			orderBy = parts[0]
+			dir = parts[1]
 		}
 	}
 
-	users, total, err := c.userService.ListUsers(page, limit, orderBy, dir)
+	search := strings.TrimSpace(ctx.Query("search")) // Search query for name, email, or ID
+
+	c.logger.Debug().
+		Str("sortParam", sortParam).
+		Str("orderBy", orderBy).
+		Str("dir", dir).
+		Str("search", search).
+		Int("page", page).
+		Int("limit", limit).
+		Msg("AdminListUsers: parameters")
+
+	users, total, err := c.userService.ListUsers(page, limit, orderBy, dir, search)
 	if err != nil {
 		WriteError(ctx, err)
 		return
