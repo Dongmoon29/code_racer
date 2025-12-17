@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
+import Image from 'next/image';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { communityApi, communityCommentApi } from '@/lib/api';
@@ -434,10 +435,13 @@ const PostItem: React.FC<PostItemProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {post.user?.profile_image ? (
-                <img
+                <Image
                   src={post.user.profile_image}
                   alt={post.user.name}
+                  width={24}
+                  height={24}
                   className="w-6 h-6 rounded-full"
+                  unoptimized
                 />
               ) : (
                 <div className="w-6 h-6 rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-xs">
@@ -561,10 +565,13 @@ const PostItem: React.FC<PostItemProps> = ({
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2">
                           {comment.user?.profile_image ? (
-                            <img
+                            <Image
                               src={comment.user.profile_image}
                               alt={comment.user.name}
+                              width={24}
+                              height={24}
                               className="w-6 h-6 rounded-full"
+                              unoptimized
                             />
                           ) : (
                             <div className="w-6 h-6 rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-xs">
