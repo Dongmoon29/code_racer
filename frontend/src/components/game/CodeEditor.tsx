@@ -50,7 +50,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const initialValueRef = useRef(value);
 
   // Function to create all extensions
   const createExtensions = useCallback(
@@ -141,7 +140,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
     const editorElement = editorRef.current;
     const state = EditorState.create({
-      doc: initialValueRef.current,
+      doc: value,
       extensions: createExtensions(theme),
     });
 
@@ -164,7 +163,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       view.destroy();
       editorElement.removeEventListener('contextmenu', disableContextMenu);
     };
-  }, [createExtensions, theme, readOnly]);
+    // We intentionally exclude `theme` here because theme changes are handled
+    // by the reconfiguration effect above. Including it would recreate the
+    // editor and reset the document.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createExtensions, readOnly, value]);
 
   // Update only when value changes externally (preserve focus)
   useEffect(() => {
