@@ -1,4 +1,4 @@
-// 공통 API 타입
+// Common API types
 export interface ApiErrorResponse {
   success: boolean;
   message: string;

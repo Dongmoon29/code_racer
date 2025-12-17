@@ -119,11 +119,13 @@ export class MatchmakingWebSocketClient {
         };
 
         this.ws.onclose = (event) => {
-          console.log(
-            'Matchmaking WebSocket disconnected:',
-            event.code,
-            event.reason
-          );
+          if (process.env.NODE_ENV === 'development') {
+            console.log(
+              'Matchmaking WebSocket disconnected:',
+              event.code,
+              event.reason
+            );
+          }
           this.callbacks.onDisconnect?.();
 
           // Try reconnection if not intentional disconnect
@@ -136,7 +138,10 @@ export class MatchmakingWebSocketClient {
         };
 
         this.ws.onerror = (error) => {
-          console.error('Matchmaking WebSocket error:', error);
+          this.errorHandler(error, {
+            action: 'websocket_error',
+            event: 'onerror',
+          });
           this.callbacks.onError?.(error);
           reject(error);
         };
@@ -151,10 +156,14 @@ export class MatchmakingWebSocketClient {
   }
 
   private handleMessage(message: MatchingWebSocketMessage) {
-    console.log('🎯 Handling message type:', message.type);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎯 Handling message type:', message.type);
+    }
     switch (message.type) {
       case WEBSOCKET_MESSAGE_TYPES.MATCHING_STATUS:
-        console.log('📊 Matching status update:', message);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📊 Matching status update:', message);
+        }
         this.callbacks.onStatusUpdate?.(message);
 
         // If status is 'canceled', disconnect after a short delay
@@ -165,11 +174,15 @@ export class MatchmakingWebSocketClient {
         }
         break;
       case WEBSOCKET_MESSAGE_TYPES.MATCH_FOUND:
-        console.log('🎉 Match found!:', message);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🎉 Match found!:', message);
+        }
         this.callbacks.onMatchFound?.(message);
         break;
       default:
-        console.warn('Unknown matchmaking message type:', message);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Unknown matchmaking message type:', message);
+        }
     }
   }
 
@@ -181,9 +194,11 @@ export class MatchmakingWebSocketClient {
       WEBSOCKET_CONSTANTS.MATCHMAKING.MAX_RECONNECT_DELAY_MS
     ); // Maximum 10 seconds
 
-    console.log(
-      `Attempting to reconnect matchmaking WebSocket (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`
-    );
+    if (process.env.NODE_ENV === 'development') {
+      console.log(
+        `Attempting to reconnect matchmaking WebSocket (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`
+      );
+    }
 
     this.reconnectTimeout = setTimeout(() => {
       this.connect().catch((error) => {
@@ -201,7 +216,11 @@ export class MatchmakingWebSocketClient {
     mode: 'casual_pvp' | 'ranked_pvp' | 'single' = 'casual_pvp'
   ) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.error('WebSocket is not connected');
+      this.errorHandler(new Error('WebSocket is not connected'), {
+        action: 'startMatching',
+        difficulty,
+        mode,
+      });
       return;
     }
 
@@ -211,17 +230,23 @@ export class MatchmakingWebSocketClient {
       mode,
     };
 
-    console.log('🚀 Sending start_matching message:', message);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🚀 Sending start_matching message:', message);
+    }
     this.ws.send(JSON.stringify(message));
-    console.log(
-      '✅ Message sent successfully. Started matching with difficulty:',
-      difficulty
-    );
+    if (process.env.NODE_ENV === 'development') {
+      console.log(
+        '✅ Message sent successfully. Started matching with difficulty:',
+        difficulty
+      );
+    }
   }
 
   cancelMatching() {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.error('WebSocket is not connected');
+      this.errorHandler(new Error('WebSocket is not connected'), {
+        action: 'cancelMatching',
+      });
       return;
     }
 
@@ -230,7 +255,9 @@ export class MatchmakingWebSocketClient {
     };
 
     this.ws.send(JSON.stringify(message));
-    console.log('Cancelled matching');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Cancelled matching');
+    }
   }
 
   disconnect() {
@@ -246,7 +273,9 @@ export class MatchmakingWebSocketClient {
       this.ws = null;
     }
 
-    console.log('Matchmaking WebSocket disconnected intentionally');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Matchmaking WebSocket disconnected intentionally');
+    }
   }
 
   // Intentional disconnect after matchmaking completion (no error handling)
@@ -265,7 +294,9 @@ export class MatchmakingWebSocketClient {
 
     // Call disconnect callback after matchmaking completion
     this.callbacks.onMatchmakingDisconnect?.();
-    console.log('Matchmaking WebSocket disconnected after match found');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Matchmaking WebSocket disconnected after match found');
+    }
   }
 
   isConnected(): boolean {

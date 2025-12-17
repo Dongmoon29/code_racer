@@ -38,7 +38,9 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
         setError(null);
       } catch (err) {
         setError('Failed to load recent commits.');
-        console.error('Error fetching commits:', err);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error fetching commits:', err);
+        }
       } finally {
         setLoading(false);
       }

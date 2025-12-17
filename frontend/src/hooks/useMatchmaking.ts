@@ -141,7 +141,9 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
         },
 
         onMatchFound: (message: MatchFoundMessage) => {
-          console.log('Match found:', message);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Match found:', message);
+          }
           setMatchingState(MATCHING_STATE.FOUND);
 
           if (wsClientRef.current) {
@@ -160,7 +162,9 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
 
         onMatchmakingDisconnect: () => {
           // Intentional disconnect after matchmaking completion - no error handling
-          console.log('Matchmaking completed, disconnecting intentionally');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Matchmaking completed, disconnecting intentionally');
+          }
         },
 
         onDisconnect: () => {
@@ -176,7 +180,14 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
         },
 
         onError: (err) => {
-          console.error('Matchmaking WebSocket error:', err);
+          const errorHandler = createErrorHandler(
+            'useMatchmaking',
+            'websocket_error'
+          );
+          errorHandler(err, {
+            matchingState,
+            userId: user?.id,
+          });
           setError('Connection error occurred. Please try again.');
           setMatchingState(MATCHING_STATE.ERROR);
         },

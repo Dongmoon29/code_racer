@@ -48,7 +48,9 @@ const AuthCallback: React.FC = () => {
             }
           } catch (e) {
             // If /users/me fails, ignore; user will be initialized later
-            console.error(e);
+            if (process.env.NODE_ENV === 'development') {
+              console.error(e);
+            }
           }
 
           // Navigate to dashboard
@@ -58,7 +60,9 @@ const AuthCallback: React.FC = () => {
           setLoading(false);
         }
       } catch (error: unknown) {
-        console.error('Token exchange failed:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Token exchange failed:', error);
+        }
 
         let errorMessage = 'An error occurred during authentication.';
 

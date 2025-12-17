@@ -8,16 +8,18 @@ import {
 
 // ✅ Good: Using constants
 const handleLanguageChange = (language: SupportedLanguage) => {
-  switch (language) {
-    case SUPPORTED_LANGUAGES.PYTHON:
-      console.log('Python selected');
-      break;
-    case SUPPORTED_LANGUAGES.JAVASCRIPT:
-      console.log('JavaScript selected');
-      break;
-    case SUPPORTED_LANGUAGES.GO:
-      console.log('Go selected');
-      break;
+  if (process.env.NODE_ENV === 'development') {
+    switch (language) {
+      case SUPPORTED_LANGUAGES.PYTHON:
+        console.log('Python selected');
+        break;
+      case SUPPORTED_LANGUAGES.JAVASCRIPT:
+        console.log('JavaScript selected');
+        break;
+      case SUPPORTED_LANGUAGES.GO:
+        console.log('Go selected');
+        break;
+    }
   }
 };
 

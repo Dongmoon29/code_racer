@@ -72,7 +72,9 @@ export default function ProblemList() {
     try {
       await deleteProblemMutation.mutateAsync(id);
     } catch (err) {
-      console.error('Failed to delete problem:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to delete problem:', err);
+      }
       // Error is already handled by the mutation
     }
   };

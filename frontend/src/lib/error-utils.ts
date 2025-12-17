@@ -39,10 +39,13 @@ export const handleApiError = (
 ): string => {
   const message = extractErrorMessage(error);
 
-  if (context) {
-    console.error(`${context}:`, error);
-  } else {
-    console.error('API Error:', error);
+  // Log errors in development only
+  if (process.env.NODE_ENV === 'development') {
+    if (context) {
+      console.error(`${context}:`, error);
+    } else {
+      console.error('API Error:', error);
+    }
   }
 
   return message;
@@ -64,7 +67,7 @@ export const safeAsync = async <T>(
   } catch (error) {
     if (errorHandler) {
       errorHandler(error);
-    } else {
+    } else if (process.env.NODE_ENV === 'development') {
       console.error('Async operation failed:', error);
     }
     return null;

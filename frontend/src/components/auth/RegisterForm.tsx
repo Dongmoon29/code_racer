@@ -37,7 +37,9 @@ const RegisterForm: FC = () => {
 
       router.push('/login?registered=true');
     } catch (err: unknown) {
-      console.error('Registration failed:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Registration failed:', err);
+      }
       setError(extractErrorMessage(err, 'Registration failed'));
     } finally {
       setLoading(false);

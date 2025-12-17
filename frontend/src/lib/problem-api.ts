@@ -4,6 +4,7 @@ import {
   ProblemDetail,
   ProblemSummary,
 } from '@/types';
+import { trackAPIError } from '@/lib/error-tracking';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
@@ -34,15 +35,25 @@ async function apiRequest<T>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    console.error('Problem API Error:', {
-      status: response.status,
-      statusText: response.statusText,
-      endpoint: `${API_BASE_URL}${endpoint}`,
-      errorData,
-    });
-    throw new Error(
+    const error = new Error(
       errorData.message || `HTTP error! status: ${response.status}`
     );
+    
+    // Track error using error tracking system
+    if (typeof window !== 'undefined') {
+      trackAPIError(error, {
+        component: 'problem-api',
+        action: 'apiRequest',
+        additionalData: {
+          status: response.status,
+          statusText: response.statusText,
+          endpoint: `${API_BASE_URL}${endpoint}`,
+          errorData,
+        },
+      });
+    }
+    
+    throw error;
   }
 
   return response.json();

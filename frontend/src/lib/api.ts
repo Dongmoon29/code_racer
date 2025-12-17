@@ -44,7 +44,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('Request interceptor error:', error);
+    // Error interceptor - errors are handled by response interceptor
     return Promise.reject(error);
   }
 );
@@ -211,20 +211,29 @@ export const getCodeTemplate = (
   language: string
 ): string => {
   if (!problem) {
-    console.error('Problem is undefined');
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Problem is undefined');
+    }
     return '';
   }
 
   if (!problem.io_templates || !Array.isArray(problem.io_templates)) {
-    console.error('Problem io_templates is not available', problem);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Problem io_templates is not available', problem);
+    }
     return '';
   }
 
-  console.log('Available io_templates:', problem.io_templates);
-  console.log('Looking for language:', language);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Available io_templates:', problem.io_templates);
+    console.log('Looking for language:', language);
+  }
 
   const template = problem.io_templates.find((t) => t.language === language);
-  console.log('Found template:', template);
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Found template:', template);
+  }
 
   return template ? template.code : '';
 };

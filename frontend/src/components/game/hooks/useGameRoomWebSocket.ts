@@ -319,7 +319,9 @@ export const useGameRoomWebSocket = ({
           break;
 
         default:
-          console.log('Unknown message type:', message.type);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Unknown message type:', message.type);
+          }
       }
     },
     [

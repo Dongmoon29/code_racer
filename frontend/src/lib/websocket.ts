@@ -71,7 +71,10 @@ export class WebSocketClient {
     // So we use query parameter as primary method, cookie as fallback (backend checks both)
     const token = sessionStorage.getItem('authToken');
     if (!token) {
-      console.error('No authentication token found for WebSocket connection');
+      this.errorHandler(new Error('No authentication token found for WebSocket connection'), {
+        action: 'connect',
+        gameId: this.gameId,
+      });
       return;
     }
 
@@ -118,7 +121,11 @@ export class WebSocketClient {
     };
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      this.errorHandler(error, {
+        action: 'websocket_error',
+        event: 'onerror',
+        gameId: this.gameId,
+      });
     };
   }
 
@@ -135,8 +142,13 @@ export class WebSocketClient {
         this.connect();
       }, delay);
     } else {
-      console.error(
-        'Max reconnection attempts reached. WebSocket connection failed.'
+      this.errorHandler(
+        new Error('Max reconnection attempts reached. WebSocket connection failed.'),
+        {
+          action: 'handleDisconnect',
+          reconnectAttempts: this.reconnectAttempts,
+          gameId: this.gameId,
+        }
       );
     }
   }
@@ -180,12 +192,17 @@ export class WebSocketClient {
       };
       this.ws.send(JSON.stringify(message));
     } else {
-      console.error('WebSocket is not connected');
+      this.errorHandler(new Error('WebSocket is not connected'), {
+        action: 'sendCodeUpdate',
+        gameId: this.gameId,
+      });
     }
   }
 
   public disconnect() {
-    console.log('Disconnecting WebSocket...');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Disconnecting WebSocket...');
+    }
 
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);

@@ -331,7 +331,9 @@ export const getStaticProps: GetStaticProps = async () => {
       revalidate: DEFAULT_VALUES.REVALIDATE_INTERVALS.HOUR,
     };
   } catch (error) {
-    console.error('Failed to fetch contributors', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to fetch contributors', error);
+    }
     return {
       props: {
         contributors: [],

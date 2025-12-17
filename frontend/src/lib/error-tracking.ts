@@ -75,16 +75,18 @@ export class ErrorTracker {
       this.errors = this.errors.slice(0, this.maxErrors);
     }
 
-    // Log to console with enhanced information
-    console.error(
-      `[${severity.toUpperCase()}] ${category.toUpperCase()} Error:`,
-      {
-        message: errorInfo.message,
-        context: errorInfo.context,
-        stack: errorInfo.stack,
-        timestamp: new Date(errorInfo.timestamp).toISOString(),
-      }
-    );
+    // Log to console with enhanced information (development only)
+    if (process.env.NODE_ENV === 'development') {
+      console.error(
+        `[${severity.toUpperCase()}] ${category.toUpperCase()} Error:`,
+        {
+          message: errorInfo.message,
+          context: errorInfo.context,
+          stack: errorInfo.stack,
+          timestamp: new Date(errorInfo.timestamp).toISOString(),
+        }
+      );
+    }
 
     // In production, you might want to send to external service like Sentry
     // if (process.env.NODE_ENV === 'production') {

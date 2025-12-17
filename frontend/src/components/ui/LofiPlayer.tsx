@@ -169,7 +169,9 @@ export function LofiPlayer({
         },
       });
     } catch (error) {
-      console.error('Failed to initialize YouTube player:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to initialize YouTube player:', error);
+      }
     }
   };
 
@@ -207,7 +209,9 @@ export function LofiPlayer({
       // Timeout after 10 seconds
       const timeout = setTimeout(() => {
         clearInterval(checkYT);
-        console.error('YouTube IFrame API failed to load within timeout');
+        if (process.env.NODE_ENV === 'development') {
+          console.error('YouTube IFrame API failed to load within timeout');
+        }
       }, 10000);
 
       return () => {
@@ -251,7 +255,9 @@ export function LofiPlayer({
           playerRef.current.playVideo();
         }
       } catch (error) {
-        console.error('Failed to load video:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to load video:', error);
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -268,7 +274,9 @@ export function LofiPlayer({
         playerRef.current.playVideo();
       }
     } catch (error) {
-      console.error('Failed to toggle playback:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to toggle playback:', error);
+      }
     }
   };
 
@@ -285,7 +293,9 @@ export function LofiPlayer({
         setIsMuted(true);
       }
     } catch (error) {
-      console.error('Failed to toggle mute:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to toggle mute:', error);
+      }
     }
   };
 
@@ -303,7 +313,9 @@ export function LofiPlayer({
           setIsMuted(false);
         }
       } catch (error) {
-        console.error('Failed to set volume:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to set volume:', error);
+        }
       }
     }
   };

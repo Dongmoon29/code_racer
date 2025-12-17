@@ -59,7 +59,9 @@ const LoginForm: FC = () => {
           if (fallbackUser) {
             useAuthStore.getState().login(fallbackUser);
           }
-          console.error(e);
+          if (process.env.NODE_ENV === 'development') {
+            console.error(e);
+          }
         }
 
         const redirect = router.query.redirect as string;
@@ -72,7 +74,9 @@ const LoginForm: FC = () => {
         setError(response.message || 'Login failed');
       }
     } catch (err: unknown) {
-      console.error('Login failed:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Login failed:', err);
+      }
       setError(extractErrorMessage(err, 'Invalid email or password'));
     } finally {
       setLoading(false);
