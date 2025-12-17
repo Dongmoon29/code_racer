@@ -26,6 +26,11 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const router = useRouter();
 
+  const primaryItems = navigationItems.filter(
+    (item) => item.label !== 'Admin'
+  );
+  const bottomItems = navigationItems.filter((item) => item.label === 'Admin');
+
   return (
     <div
       className={cn(
@@ -62,7 +67,7 @@ export function DashboardSidebar({
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-3 space-y-1 w-full">
-        {navigationItems.map((item) => {
+        {primaryItems.map((item) => {
           const isActive = item.pattern
             ? router.pathname.startsWith(item.pattern)
             : router.pathname === item.href;
@@ -77,6 +82,25 @@ export function DashboardSidebar({
           );
         })}
       </nav>
+
+      {bottomItems.length > 0 && (
+        <nav className="px-2 py-3 space-y-1 w-full border-t border-[var(--gray-6)]">
+          {bottomItems.map((item) => {
+            const isActive = item.pattern
+              ? router.pathname.startsWith(item.pattern)
+              : router.pathname === item.href;
+
+            return (
+              <NavigationLink
+                key={item.href}
+                item={item}
+                isActive={isActive}
+                isCollapsed={isCollapsed}
+              />
+            );
+          })}
+        </nav>
+      )}
     </div>
   );
 }

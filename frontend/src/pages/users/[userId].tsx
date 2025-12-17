@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Overview, GameHistory, ProfileSidebar, PublicProfileSidebar } from '@/components/profile';
+import { GameHistory, ProfileSidebar, PublicProfileSidebar } from '@/components/profile';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -124,7 +124,6 @@ const UserProfilePage = () => {
 
             <div className="flex-1 min-w-0">
               <div className="space-y-6">
-                <Overview user={user!} />
                 <GameHistory currentUserId={user?.id} games={recentGames} />
               </div>
             </div>

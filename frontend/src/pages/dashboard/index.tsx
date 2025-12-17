@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { ProfileSidebar, Overview, GameHistory } from '@/components/profile';
+import { ProfileSidebar, GameHistory } from '@/components/profile';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 import { ROUTES } from '@/lib/router';
 
@@ -110,7 +110,6 @@ const DashboardIndex = () => {
 
             <div className="flex-1 min-w-0">
               <div className="space-y-6">
-                <Overview user={user!} />
                 <GameHistory currentUserId={user?.id} games={recentGames} />
               </div>
             </div>
