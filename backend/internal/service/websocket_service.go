@@ -55,7 +55,7 @@ type Hub struct {
 
 	// Mutex lock
 	mu sync.RWMutex
-	
+
 	// Shutdown channel for graceful shutdown
 	shutdown chan struct{}
 }
@@ -859,7 +859,7 @@ func (h *Hub) Run() {
 
 		case cancelReq := <-h.cancelMatching:
 			h.handleCancelMatching(cancelReq)
-			
+
 		case <-h.shutdown:
 			h.logger.Info().Msg("WebSocket hub shutting down")
 			// Close all client connections

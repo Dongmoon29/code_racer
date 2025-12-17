@@ -193,6 +193,7 @@ export const useGameRoomWebSocket = ({
           (message as SubmissionStatusMessage & { passed_test_cases?: number })
             .passed_test_cases ?? 0;
         const totalCount =
+          game?.problem?.test_cases?.length ??
           message.total_test_cases ??
           (message as SubmissionStatusMessage & { total?: number }).total ??
           0;
@@ -221,6 +222,7 @@ export const useGameRoomWebSocket = ({
       setSubmissionProgress,
       setSubmitResult,
       refetchGame,
+      game?.problem?.test_cases?.length,
       showToast,
     ]
   );
