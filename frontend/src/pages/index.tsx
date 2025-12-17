@@ -197,15 +197,7 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span>
-                      Testing cases for the each problem is not working
-                      properly. So I&apos;m looking for a solution to fix this.
-                      You are welcome to tackle this issue!
-                    </span>
-                  </div>
-                  <div className="text-md font-extrabold mb-4 mt-10">
-                    This project is still under development!! and it&apos;s open
-                    source so you can see the code and contribute to it!
+                    <span>Working on UI for the better UX!</span>
                   </div>
                 </div>
                 <div className="mt-6">
