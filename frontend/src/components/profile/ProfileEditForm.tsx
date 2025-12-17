@@ -97,7 +97,9 @@ export default function ProfileEditForm({
           .toLowerCase() as LanguageOption,
       };
       await api.put('/users/profile', payload);
+      // Refresh any cached user data so profile sections update immediately
       await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      await queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       setSubmitSuccess(true);
       if (onSaved) onSaved();
     } catch (e) {
