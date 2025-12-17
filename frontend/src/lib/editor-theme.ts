@@ -12,7 +12,8 @@ const vscodeLightCompletionStyle = {
   },
   '.cm-tooltip.cm-tooltip-autocomplete': {
     '& > ul': {
-      fontFamily: 'var(--font-mono)',
+      fontFamily:
+        '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
       fontSize: '13px',
       maxHeight: '300px',
       maxWidth: '400px',
@@ -38,7 +39,8 @@ const vscodeDarkCompletionStyle = {
   },
   '.cm-tooltip.cm-tooltip-autocomplete': {
     '& > ul': {
-      fontFamily: 'var(--font-mono)',
+      fontFamily:
+        '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
       fontSize: '13px',
       maxHeight: '300px',
       maxWidth: '400px',
