@@ -26,9 +26,7 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const router = useRouter();
 
-  const primaryItems = navigationItems.filter(
-    (item) => item.label !== 'Admin'
-  );
+  const primaryItems = navigationItems.filter((item) => item.label !== 'Admin');
   const bottomItems = navigationItems.filter((item) => item.label === 'Admin');
 
   return (
@@ -44,9 +42,9 @@ export function DashboardSidebar({
           <Link
             href="/"
             aria-label="Go to home"
-            className="group flex items-center gap-2 cursor-pointer rounded-md transition-all duration-150 hover:bg-[var(--gray-4)] hover:translate-x-0.5 hover:shadow-sm"
+            className="flex items-center gap-2 cursor-pointer rounded-md"
           >
-            <div className="h-10 w-10 rounded-lg flex items-center justify-center transition-transform duration-150 group-hover:scale-105">
+            <div className="h-10 w-10 rounded-lg flex items-center justify-center">
               <Logo />
             </div>
           </Link>
