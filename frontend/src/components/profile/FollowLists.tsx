@@ -10,13 +10,20 @@ interface FollowListsProps {
   userId: string;
 }
 
+type FollowerUser = {
+  id: string;
+  name: string;
+  email: string;
+  profile_image?: string;
+};
+
 export const FollowersList: React.FC<FollowListsProps> = ({ userId }) => {
   const { data, isLoading } = useQuery({
     queryKey: ['followers', userId],
     queryFn: () => userApi.getFollowers(userId, 1, 50),
   });
 
-  const followers = data?.items || [];
+  const followers: FollowerUser[] = data?.items || [];
 
   return (
     <div className="bg-card rounded-lg p-6">
@@ -43,7 +50,7 @@ export const FollowingList: React.FC<FollowListsProps> = ({ userId }) => {
     queryFn: () => userApi.getFollowing(userId, 1, 50),
   });
 
-  const following = data?.items || [];
+  const following: FollowerUser[] = data?.items || [];
 
   return (
     <div className="bg-card rounded-lg p-6">
@@ -67,12 +74,7 @@ export const FollowingList: React.FC<FollowListsProps> = ({ userId }) => {
 };
 
 interface FollowerItemProps {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    profile_image?: string;
-  };
+  user: FollowerUser;
 }
 
 const FollowerItem: React.FC<FollowerItemProps> = ({ user }) => {
