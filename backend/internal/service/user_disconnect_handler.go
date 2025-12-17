@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/go-redis/redis/v8"
@@ -216,16 +217,13 @@ func (h *UserDisconnectHandler) handleNetworkDisconnect(matchID, userID uuid.UUI
 		Str("userID", userID.String()).
 		Msg("User disconnected due to network issues")
 
-	// Set a grace period for reconnection (5 minutes)
-	gracePeriod := 5 * time.Minute
-
 	// Store disconnect timestamp in Redis for reconnection tracking
 	disconnectKey := fmt.Sprintf("match:%s:user:%s:disconnect", matchID.String(), userID.String())
 	ctx := context.Background()
 
 	// Store disconnect time with expiration
 	disconnectTime := time.Now()
-	err := h.redisManager.rdb.Set(ctx, disconnectKey, disconnectTime.Unix(), gracePeriod).Err()
+	err := h.redisManager.rdb.Set(ctx, disconnectKey, disconnectTime.Unix(), constants.ReconnectionGracePeriod).Err()
 	if err != nil {
 		h.logger.Error().Err(err).
 			Str("matchID", matchID.String()).
@@ -259,17 +257,14 @@ func (h *UserDisconnectHandler) handleTechnicalDisconnect(matchID, userID uuid.U
 }
 
 // notifyRemainingUsers notifies remaining users about the disconnection
+// Currently logs the event. WebSocket broadcasting should be implemented
+// by integrating with WebSocketService to send real-time notifications.
 func (h *UserDisconnectHandler) notifyRemainingUsers(matchID, userID uuid.UUID, eventType string) error {
-	// Get remaining users
 	users, err := h.redisManager.GetMatchUsers(matchID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get match users: %w", err)
 	}
 
-	// Broadcast to remaining users
-	// Note: WebSocket broadcasting should be implemented here to notify
-	// remaining users about the disconnection in real-time
-	// This would require integration with the WebSocket service
 	h.logger.Info().
 		Str("matchID", matchID.String()).
 		Str("userID", userID.String()).
@@ -277,6 +272,8 @@ func (h *UserDisconnectHandler) notifyRemainingUsers(matchID, userID uuid.UUID, 
 		Int("remainingUsers", len(users)).
 		Msg("Notifying remaining users about disconnection")
 
+	// TODO: Integrate with WebSocketService to broadcast disconnection events
+	// Example: wsService.BroadcastToMatch(matchID, messageBytes)
 	return nil
 }
 
@@ -301,9 +298,8 @@ func (h *UserDisconnectHandler) CheckReconnectionEligibility(matchID, userID uui
 		return false, fmt.Errorf("invalid disconnect timestamp format: %w", err)
 	}
 
-	// Check if within grace period (5 minutes)
-	gracePeriod := 5 * time.Minute
-	if time.Since(disconnectTime) > gracePeriod {
+	// Check if within grace period
+	if time.Since(disconnectTime) > constants.ReconnectionGracePeriod {
 		return false, fmt.Errorf("reconnection grace period expired")
 	}
 

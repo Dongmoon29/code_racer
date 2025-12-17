@@ -107,10 +107,6 @@ func (s *IOSchema) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 // ========================
-// Legacy types for backward compatibility
-// ========================
-
-// ========================
 // DTOs and conversion methods
 // ========================
 

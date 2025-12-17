@@ -61,3 +61,12 @@ const (
 	// DefaultRedisDialTimeout is the default dial timeout
 	DefaultRedisDialTimeout = 5 * time.Second
 )
+
+// User disconnection constants
+const (
+	// ReconnectionGracePeriod is the grace period allowed for user reconnection
+	ReconnectionGracePeriod = 5 * time.Minute
+
+	// InactiveConnectionThreshold is the threshold for considering a connection inactive
+	InactiveConnectionThreshold = 5 * time.Minute
+)

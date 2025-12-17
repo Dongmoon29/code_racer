@@ -47,11 +47,11 @@ func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Pr
 	// - paramCount == 1: each element is the single argument value (may itself be array/object)
 	// - paramCount > 1: each element is an array of arguments
 	if paramCount == 1 {
-		template := `// ===== 사용자 코드 (그대로 유지) =====
+		template := `// ===== User code (preserved as-is) =====
 %s
 // ====================================
 
-// ===== 실행 래퍼 (자동 생성) =====
+// ===== Execution wrapper (auto-generated) =====
 (function() {
     try {
         const raw = require('fs').readFileSync(0, 'utf-8').trim();
@@ -67,11 +67,11 @@ func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Pr
 		return fmt.Sprintf(template, userCode, problem.FunctionName), nil
 	}
 
-	template := `// ===== 사용자 코드 (그대로 유지) =====
+	template := `// ===== User code (preserved as-is) =====
 %s
 // ====================================
 
-// ===== 실행 래퍼 (자동 생성) =====
+// ===== Execution wrapper (auto-generated) =====
 (function() {
     try {
         const raw = require('fs').readFileSync(0, 'utf-8').trim();
@@ -105,11 +105,11 @@ func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Proble
 	}
 
 	if paramCount == 1 {
-		template := `// ===== 사용자 코드 (그대로 유지) =====
+		template := `// ===== User code (preserved as-is) =====
 %s
 // ====================================
 
-// ===== 실행 래퍼 (자동 생성) =====
+// ===== Execution wrapper (auto-generated) =====
 (function() {
     try {
         const raw = require('fs').readFileSync(0, 'utf-8').trim();
@@ -125,11 +125,11 @@ func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Proble
 		return fmt.Sprintf(template, userCode, problem.FunctionName)
 	}
 
-	template := `// ===== 사용자 코드 (그대로 유지) =====
+	template := `// ===== User code (preserved as-is) =====
 %s
 // ====================================
 
-// ===== 실행 래퍼 (자동 생성) =====
+// ===== Execution wrapper (auto-generated) =====
 (function() {
     try {
         const raw = require('fs').readFileSync(0, 'utf-8').trim();

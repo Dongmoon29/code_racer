@@ -34,7 +34,7 @@ function solution(nums) {
     return nums.sort((a, b) => a - b);
 }`,
 			testCase: "[3,1,4,1,5]",
-			expected: `// ===== 사용자 코드 (그대로 유지) =====
+			expected: `// ===== User code (preserved as-is) =====
 const fs = require('fs');
 
 function solution(nums) {
@@ -42,7 +42,7 @@ function solution(nums) {
 }
 // ====================================
 
-// ===== 실행 래퍼 (자동 생성) =====
+// ===== Execution wrapper (auto-generated) =====
 (function() {
     try {
         const raw = require('fs').readFileSync(0, 'utf-8').trim();
@@ -64,7 +64,7 @@ function solution(nums) {
     return nums.sort((a, b) => a - b);
 }`,
 			testCase: "[3,1,4,1,5]",
-			expected: `// ===== 사용자 코드 (그대로 유지) =====
+			expected: `// ===== User code (preserved as-is) =====
 import { readFile } from 'fs';
 
 function solution(nums) {
@@ -72,7 +72,7 @@ function solution(nums) {
 }
 // ====================================
 
-// ===== 실행 래퍼 (자동 생성) =====
+// ===== Execution wrapper (auto-generated) =====
 (function() {
     try {
         const raw = require('fs').readFileSync(0, 'utf-8').trim();
@@ -95,7 +95,7 @@ function solution(nums) {
     return nums.sort((a, b) => a - b);
 }`,
 			testCase: "[3,1,4,1,5]",
-			expected: `// ===== 사용자 코드 (그대로 유지) =====
+			expected: `// ===== User code (preserved as-is) =====
 const fs = require('fs');
 const path = require('path');
 
@@ -104,7 +104,7 @@ function solution(nums) {
 }
 // ====================================
 
-// ===== 실행 래퍼 (자동 생성) =====
+// ===== Execution wrapper (auto-generated) =====
 (function() {
     try {
         const raw = require('fs').readFileSync(0, 'utf-8').trim();
@@ -124,13 +124,13 @@ function solution(nums) {
     return nums.sort((a, b) => a - b);
 }`,
 			testCase: "[3,1,4,1,5]",
-			expected: `// ===== 사용자 코드 (그대로 유지) =====
+			expected: `// ===== User code (preserved as-is) =====
 function solution(nums) {
     return nums.sort((a, b) => a - b);
 }
 // ====================================
 
-// ===== 실행 래퍼 (자동 생성) =====
+// ===== Execution wrapper (auto-generated) =====
 (function() {
     try {
         const raw = require('fs').readFileSync(0, 'utf-8').trim();

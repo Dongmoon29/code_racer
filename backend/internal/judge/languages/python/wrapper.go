@@ -51,11 +51,11 @@ func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Pr
 		template := `import json
 import sys
 
-# ===== 사용자 코드 (그대로 유지) =====
+# ===== User code (preserved as-is) =====
 %s
 # ====================================
 
-# ===== 실행 래퍼 (자동 생성) =====
+# ===== Execution wrapper (auto-generated) =====
 if __name__ == "__main__":
     try:
         raw = sys.stdin.read().strip()
@@ -75,11 +75,11 @@ if __name__ == "__main__":
 	template := `import json
 import sys
 
-# ===== 사용자 코드 (그대로 유지) =====
+# ===== User code (preserved as-is) =====
 %s
 # ====================================
 
-# ===== 실행 래퍼 (자동 생성) =====
+# ===== Execution wrapper (auto-generated) =====
 if __name__ == "__main__":
     try:
         raw = sys.stdin.read().strip()
@@ -118,11 +118,11 @@ func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Proble
 		template := `import json
 import sys
 
-# ===== 사용자 코드 (그대로 유지) =====
+# ===== User code (preserved as-is) =====
 %s
 # ====================================
 
-# ===== 실행 래퍼 (자동 생성) =====
+# ===== Execution wrapper (auto-generated) =====
 if __name__ == "__main__":
     try:
         raw = sys.stdin.read().strip()
@@ -138,11 +138,11 @@ if __name__ == "__main__":
 	template := `import json
 import sys
 
-# ===== 사용자 코드 (그대로 유지) =====
+# ===== User code (preserved as-is) =====
 %s
 # ====================================
 
-# ===== 실행 래퍼 (자동 생성) =====
+# ===== Execution wrapper (auto-generated) =====
 if __name__ == "__main__":
     try:
         raw = sys.stdin.read().strip()

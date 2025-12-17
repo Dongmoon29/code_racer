@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/google/uuid"
 )
@@ -197,15 +198,13 @@ func (cm *ConnectionManager) CleanupInactiveConnections() {
 	defer cm.mu.Unlock()
 
 	now := time.Now()
-	inactiveThreshold := 5 * time.Minute
-
 	var toRemove []string
 
 	for key, state := range cm.connections {
 		// Remove connections that have been inactive for too long
-		if !state.Connected && now.Sub(state.DisconnectTime) > inactiveThreshold {
+		if !state.Connected && now.Sub(state.DisconnectTime) > constants.InactiveConnectionThreshold {
 			toRemove = append(toRemove, key)
-		} else if state.Connected && now.Sub(state.LastPing) > inactiveThreshold {
+		} else if state.Connected && now.Sub(state.LastPing) > constants.InactiveConnectionThreshold {
 			// Remove connections with expired ping
 			state.Connected = false
 			state.DisconnectTime = now
@@ -315,10 +314,9 @@ func (cm *ConnectionManager) GetMetrics() ConnectionMetrics {
 	}
 
 	now := time.Now()
-	inactiveThreshold := 5 * time.Minute
 
 	for _, state := range cm.connections {
-		if state.Connected && now.Sub(state.LastPing) < inactiveThreshold {
+		if state.Connected && now.Sub(state.LastPing) < constants.InactiveConnectionThreshold {
 			metrics.ActiveConnections++
 		} else {
 			metrics.InactiveConnections++

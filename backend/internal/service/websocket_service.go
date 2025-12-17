@@ -136,9 +136,6 @@ type MatchFoundMessage struct {
 	Opponent interface{} `json:"opponent"`
 }
 
-// GameServiceInterface for game creation during matching
-// Deprecated: GameServiceInterface replaced by MatchmakingService/MatchService
-
 // WebSocketService interface for WebSocket operations
 type WebSocketService interface {
 	InitHub() *Hub

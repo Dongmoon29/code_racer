@@ -37,7 +37,7 @@ def solution(nums):
 			expected: `import json
 import sys
 
-# ===== 사용자 코드 (그대로 유지) =====
+# ===== User code (preserved as-is) =====
 import heapq
 
 def solution(nums):
@@ -45,7 +45,7 @@ def solution(nums):
     return nums
 # ====================================
 
-# ===== 실행 래퍼 (자동 생성) =====
+# ===== Execution wrapper (auto-generated) =====
 if __name__ == "__main__":
     try:
         raw = sys.stdin.read().strip()
@@ -69,7 +69,7 @@ def solution(nums):
 			expected: `import json
 import sys
 
-# ===== 사용자 코드 (그대로 유지) =====
+# ===== User code (preserved as-is) =====
 import heapq
 import math
 from collections import defaultdict
@@ -79,7 +79,7 @@ def solution(nums):
     return nums
 # ====================================
 
-# ===== 실행 래퍼 (자동 생성) =====
+# ===== Execution wrapper (auto-generated) =====
 if __name__ == "__main__":
     try:
         raw = sys.stdin.read().strip()
@@ -98,12 +98,12 @@ if __name__ == "__main__":
 			expected: `import json
 import sys
 
-# ===== 사용자 코드 (그대로 유지) =====
+# ===== User code (preserved as-is) =====
 def solution(nums):
     return sorted(nums)
 # ====================================
 
-# ===== 실행 래퍼 (자동 생성) =====
+# ===== Execution wrapper (auto-generated) =====
 if __name__ == "__main__":
     try:
         raw = sys.stdin.read().strip()
@@ -154,7 +154,7 @@ def solution(nums):
 			expected: `import json
 import sys
 
-# ===== 사용자 코드 (그대로 유지) =====
+# ===== User code (preserved as-is) =====
 import heapq
 
 def solution(nums):
@@ -162,7 +162,7 @@ def solution(nums):
     return nums
 # ====================================
 
-# ===== 실행 래퍼 (자동 생성) =====
+# ===== Execution wrapper (auto-generated) =====
 if __name__ == "__main__":
     try:
         raw = sys.stdin.read().strip()
