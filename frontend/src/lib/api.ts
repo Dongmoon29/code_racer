@@ -276,6 +276,7 @@ export const userApi = {
       users: Array<{
         id: string;
         name: string;
+        profile_image?: string;
         rating: number;
       }>;
     };

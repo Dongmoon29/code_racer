@@ -174,9 +174,10 @@ func (s *userService) GetLeaderboard(limit int) ([]*model.LeaderboardUser, error
 	leaderboardUsers := make([]*model.LeaderboardUser, len(users))
 	for i, user := range users {
 		leaderboardUsers[i] = &model.LeaderboardUser{
-			ID:     user.ID,
-			Name:   user.Name,
-			Rating: user.Rating,
+			ID:           user.ID,
+			Name:         user.Name,
+			ProfileImage: user.ProfileImage,
+			Rating:       user.Rating,
 		}
 	}
 

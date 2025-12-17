@@ -42,9 +42,10 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 }
 
 type LeaderboardUser struct {
-	ID     uuid.UUID `json:"id"`
-	Name   string    `json:"name"`
-	Rating int       `json:"rating"`
+	ID           uuid.UUID `json:"id"`
+	Name         string    `json:"name"`
+	ProfileImage string    `json:"profile_image,omitempty"`
+	Rating       int       `json:"rating"`
 }
 
 type UserResponse struct {
