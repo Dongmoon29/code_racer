@@ -47,7 +47,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     const [showSettings, setShowSettings] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
 
-    const headerClass = `bg-[var(--gray-3)] px-4 py-2 flex items-center border-b border-[var(--gray-6)] ${
+    const headerClass = `bg-[var(--gray-3)] px-4 py-2 flex items-center border-b border-[var(--gray-6)] rounded-t-lg ${
       isMinimized ? 'justify-center' : 'justify-between'
     }`;
 
