@@ -153,12 +153,12 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(
 
     // Button styles (chess.com style)
     const buttonBaseClass =
-      'w-full rounded-lg border bg-[var(--color-panel)] border-[var(--gray-6)] px-4 py-3 flex items-center justify-between text-[var(--color-text)] hover:bg-[var(--gray-4)] transition-colors';
+      'cursor-pointer w-full rounded-lg border bg-[var(--color-panel)] border-[var(--gray-6)] px-4 py-3 flex items-center justify-between text-[var(--color-text)] hover:bg-[var(--gray-4)] transition-colors';
     const dropdownButtonClass =
-      'w-full rounded-lg border bg-[var(--color-panel)] border-[var(--gray-6)] px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--gray-4)] transition-colors text-left';
+      'cursor-pointer w-full rounded-lg border bg-[var(--color-panel)] border-[var(--gray-6)] px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--gray-4)] transition-colors text-left';
     const selectedButtonClass = `${buttonBaseClass} border-[var(--green-6)]`;
     const startGameButtonClass =
-      'w-full rounded-lg bg-[var(--green-9)] hover:bg-[var(--green-10)] text-white font-semibold py-3 px-4 transition-colors disabled:opacity-60 disabled:cursor-not-allowed';
+      'cursor-pointer w-full rounded-lg bg-[var(--green-9)] hover:bg-[var(--green-10)] text-white font-semibold py-3 px-4 transition-colors disabled:opacity-60 disabled:cursor-not-allowed';
 
     return (
       <div className="max-w-md mx-auto space-y-3">
