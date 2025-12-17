@@ -39,8 +39,9 @@ const LoginForm: FC = () => {
       const response = await authApi.login(data.email, data.password);
 
       if (response.success) {
-        // Security: Store token in sessionStorage (more secure than localStorage)
-        // sessionStorage is cleared when browser tab is closed
+        // Backend sets httpOnly cookie (auth_token) as primary authentication method
+        // Store token in sessionStorage as backup for WebSocket connections
+        // WebSocket may not reliably send cookies, so we need token in query parameter
         if (response.data?.token) {
           sessionStorage.setItem('authToken', response.data.token);
         }

@@ -13,11 +13,12 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  // NOTE: Auth token is stored in sessionStorage (see LoginForm/auth flow).
-  // Fallback to localStorage for backward compatibility.
+  // NOTE: Primary authentication is via httpOnly cookie (set by backend)
+  // sessionStorage token is used as fallback for Authorization header
+  // This ensures compatibility with WebSocket connections and when cookies fail
   const token =
     typeof window !== 'undefined'
-      ? sessionStorage.getItem('authToken') || localStorage.getItem('authToken')
+      ? sessionStorage.getItem('authToken')
       : null;
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {

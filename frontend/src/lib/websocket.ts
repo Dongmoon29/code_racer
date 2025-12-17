@@ -66,16 +66,17 @@ export class WebSocketClient {
       wsUrl = `${wsProtocol}//${wsHost}/ws/${this.gameId}`;
     }
 
-    // Security: Use Authorization header instead of URL parameter
-    // This prevents token exposure in logs and browser history
+    // WebSocket authentication: Use token from sessionStorage
+    // Note: Backend sets httpOnly cookie, but WebSocket connections may not reliably send cookies
+    // So we use query parameter as primary method, cookie as fallback (backend checks both)
     const token = sessionStorage.getItem('authToken');
     if (!token) {
-      console.error('No authentication token found');
+      console.error('No authentication token found for WebSocket connection');
       return;
     }
 
-    // Add token as query parameter (WebSocket doesn't support custom headers)
-    // This is a limitation of WebSocket protocol, but we use sessionStorage for better security
+    // Add token as query parameter (WebSocket doesn't support custom headers reliably)
+    // Backend middleware checks: cookie > Authorization header > query parameter
     wsUrl = `${wsUrl}?token=${encodeURIComponent(token)}`;
 
     // Create WebSocket connection

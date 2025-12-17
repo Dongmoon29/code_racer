@@ -133,7 +133,9 @@ func (c *AuthController) Login(ctx *gin.Context) {
 	}
 
 	// Set httpOnly cookie for security (when same-origin)
-	ctx.SetCookie("auth_token", response.AccessToken, constants.CookieExpirySeconds, "/", "", true, true) // 7 days, httpOnly, secure
+	// Secure flag is set based on environment (false for development, true for production)
+	secure := util.IsProduction()
+	ctx.SetCookie("auth_token", response.AccessToken, constants.CookieExpirySeconds, "/", "", true, secure) // 7 days, httpOnly, secure based on environment
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -171,12 +173,16 @@ func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 }
 
 func (c *AuthController) GoogleAuthHandler(ctx *gin.Context) {
+	state := uuid.New().String()
+
 	config := c.oauthConfigProvider.GetGoogleConfig()
 	if config == nil {
 		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get Google OAuth config")
 		return
 	}
-	url := config.AuthCodeURL("state-token")
+	// Add prompt=select_account to always show account selection page
+	// This prevents automatic login when user is already logged into Google
+	url := config.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", "select_account"))
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
 }
 
@@ -298,7 +304,9 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 	c.logger.Info().Msg("ExchangeToken: Token exchange successful")
 
 	// Set httpOnly cookie for security (when same-origin)
-	ctx.SetCookie("auth_token", response.AccessToken, constants.CookieExpirySeconds, "/", "", true, true) // 7 days, httpOnly, secure
+	// Secure flag is set based on environment (false for development, true for production)
+	secure := util.IsProduction()
+	ctx.SetCookie("auth_token", response.AccessToken, constants.CookieExpirySeconds, "/", "", true, secure) // 7 days, httpOnly, secure based on environment
 
 	OK(ctx, gin.H{"user": response.User, "token": response.AccessToken})
 }
@@ -322,7 +330,9 @@ func (c *AuthController) validateState(state string) bool {
 
 func (c *AuthController) Logout(ctx *gin.Context) {
 	// Clear the httpOnly cookie
-	ctx.SetCookie("auth_token", "", -1, "/", "", true, true) // Expire immediately
+	// Secure flag is set based on environment (false for development, true for production)
+	secure := util.IsProduction()
+	ctx.SetCookie("auth_token", "", -1, "/", "", true, secure) // Expire immediately
 
 	JSONMessage(ctx, http.StatusOK, "Successfully logged out")
 }

@@ -63,24 +63,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true });
 
-      // Check if token exists in sessionStorage
-      const token = sessionStorage.getItem('authToken');
-      if (!token) {
-        set({ user: null, isLoggedIn: false, isLoading: false });
-        return;
-      }
-
+      // Try to get user info - backend uses httpOnly cookie for primary auth
+      // sessionStorage token is used as fallback for WebSocket connections
+      // If cookie exists, this will succeed; if not, we'll get 401 and clear sessionStorage
       const response = await authApi.getCurrentUser();
       const user = response?.data; // unified: { success, data: User }
       if (user) {
         set({ user, isLoggedIn: true });
       } else {
+        // No user data - clear sessionStorage token as backup
+        sessionStorage.removeItem('authToken');
         set({ user: null, isLoggedIn: false });
       }
     } catch (error) {
       const errorHandler = createErrorHandler('authStore', 'initializeAuth');
       if (error instanceof AxiosError && error.response?.status === 401) {
-        // User is not authenticated - clear token
+        // User is not authenticated - clear sessionStorage token
         sessionStorage.removeItem('authToken');
         set({ user: null, isLoggedIn: false });
       } else {

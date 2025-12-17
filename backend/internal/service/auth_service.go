@@ -174,6 +174,7 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user")
 		}
+		// User doesn't exist, create new OAuth user
 		user = &model.User{
 			Email:         googleUser.Email,
 			Name:          googleUser.Name,
@@ -186,11 +187,24 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to create user")
 		}
 	} else {
-		if user.OAuthProvider == "google" {
+		// User exists - check if it's an OAuth account or regular account
+		if user.OAuthProvider == "" {
+			// Regular account exists - link OAuth account
+			user.OAuthProvider = "google"
+			user.OAuthID = googleUser.ID
+			user.ProfileImage = googleUser.Picture
+			if err := s.userRepo.Update(user); err != nil {
+				return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to link OAuth account")
+			}
+		} else if user.OAuthProvider == "google" {
+			// Same OAuth provider - update profile image
 			user.ProfileImage = googleUser.Picture
 			if err := s.userRepo.Update(user); err != nil {
 				return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to update user")
 			}
+		} else {
+			// Different OAuth provider - return error
+			return nil, apperr.New(apperr.CodeConflict, "Email is already registered with a different OAuth provider")
 		}
 	}
 
@@ -245,6 +259,7 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user")
 		}
+		// User doesn't exist, create new OAuth user
 		user = &model.User{
 			ID:            uuid.New(),
 			Email:         githubUser.Email,
@@ -259,12 +274,26 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to create user")
 		}
 	} else {
-		if user.OAuthProvider == "github" {
+		// User exists - check if it's an OAuth account or regular account
+		if user.OAuthProvider == "" {
+			// Regular account exists - link OAuth account
+			user.OAuthProvider = "github"
+			user.OAuthID = githubUser.ID
+			user.ProfileImage = githubUser.AvatarURL
+			if err := s.userRepo.Update(user); err != nil {
+				s.logger.Error().Err(err).Msg("Failed to link OAuth account")
+				return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to link OAuth account")
+			}
+		} else if user.OAuthProvider == "github" {
+			// Same OAuth provider - update profile image
 			user.ProfileImage = githubUser.AvatarURL
 			if err := s.userRepo.Update(user); err != nil {
 				s.logger.Error().Err(err).Msg("Failed to update user profile image")
 				return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to update user")
 			}
+		} else {
+			// Different OAuth provider - return error
+			return nil, apperr.New(apperr.CodeConflict, "Email is already registered with a different OAuth provider")
 		}
 	}
 

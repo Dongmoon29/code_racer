@@ -85,14 +85,17 @@ export class MatchmakingWebSocketClient {
 
         const wsUrl = `${wsProtocol}//${wsHost}/ws/matching`;
 
-        // Security: Use sessionStorage instead of localStorage
+        // WebSocket authentication: Use token from sessionStorage
+        // Note: Backend sets httpOnly cookie, but WebSocket connections may not reliably send cookies
+        // So we use query parameter as primary method, cookie as fallback (backend checks both)
         const token = sessionStorage.getItem('authToken');
         if (!token) {
-          reject(new Error('No authentication token found'));
+          reject(new Error('No authentication token found for WebSocket connection'));
           return;
         }
 
-        // Add token as query parameter (WebSocket limitation)
+        // Add token as query parameter (WebSocket doesn't support custom headers reliably)
+        // Backend middleware checks: cookie > Authorization header > query parameter
         const wsUrlWithToken = `${wsUrl}?token=${encodeURIComponent(token)}`;
 
         this.ws = new WebSocket(wsUrlWithToken);
