@@ -220,6 +220,7 @@ export default function ProfileEditForm({
         type="submit"
         disabled={isSubmitting || !isDirty || !isValid}
         className="w-full"
+        style={{ width: '100%', cursor: 'pointer' }}
       >
         {isSubmitting ? 'Saving...' : 'Save'}
       </Button>
