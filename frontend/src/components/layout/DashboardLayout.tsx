@@ -1,5 +1,5 @@
 import { ReactNode, useMemo } from 'react';
-import { Car, Trophy, User, Shield } from 'lucide-react';
+import { Trophy, User, Shield } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { ROUTES } from '@/lib/router';
@@ -23,11 +23,6 @@ function useNavigationItems(userId?: string, userRole?: string): NavigationItem[
         href: '/leaderboard',
         label: 'Leaderboard',
         icon: <Trophy className="w-5 h-5 shrink-0" />,
-      },
-      {
-        href: '/race',
-        label: 'Race',
-        icon: <Car className="w-5 h-5 shrink-0" />,
       },
     ];
 

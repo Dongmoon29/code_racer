@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { GameHistory, ProfileSidebar, PublicProfileSidebar } from '@/components/profile';
+import { MatchingScreen } from '@/components/game/MatchingScreen';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -101,6 +102,10 @@ const UserProfilePage = () => {
   const recentGames = user?.recent_games;
   const isOwnProfile = currentUser?.id === userId;
 
+  const handleMatchFound = (gameId: string) => {
+    router.push(`/game/${gameId}`);
+  };
+
   return (
     <DashboardLayout>
       <Head>
@@ -124,6 +129,11 @@ const UserProfilePage = () => {
 
             <div className="flex-1 min-w-0">
               <div className="space-y-6">
+                {isOwnProfile && (
+                  <div className="bg-card rounded-lg border p-6">
+                    <MatchingScreen onMatchFound={handleMatchFound} />
+                  </div>
+                )}
                 <GameHistory currentUserId={user?.id} games={recentGames} />
               </div>
             </div>
