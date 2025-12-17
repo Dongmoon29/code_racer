@@ -280,6 +280,72 @@ export const userApi = {
       }>;
     };
   },
+
+  // Follow/Unfollow APIs
+  follow: async (userId: string) => {
+    const response = await api.post(`/users/${userId}/follow`);
+    return response.data as {
+      success: boolean;
+      message: string;
+    };
+  },
+
+  unfollow: async (userId: string) => {
+    const response = await api.delete(`/users/${userId}/follow`);
+    return response.data as {
+      success: boolean;
+      message: string;
+    };
+  },
+
+  getFollowStats: async (userId: string) => {
+    const response = await api.get(`/users/${userId}/follow/stats`);
+    return response.data as {
+      success: boolean;
+      stats: {
+        user_id: string;
+        followers: number;
+        following: number;
+        is_following: boolean;
+      };
+    };
+  },
+
+  getFollowers: async (userId: string, page = 1, limit = 20) => {
+    const response = await api.get(`/users/${userId}/followers`, {
+      params: { page, limit },
+    });
+    return response.data as {
+      success: boolean;
+      items: Array<{
+        id: string;
+        name: string;
+        email: string;
+        profile_image?: string;
+      }>;
+      total: number;
+      page: number;
+      limit: number;
+    };
+  },
+
+  getFollowing: async (userId: string, page = 1, limit = 20) => {
+    const response = await api.get(`/users/${userId}/following`, {
+      params: { page, limit },
+    });
+    return response.data as {
+      success: boolean;
+      items: Array<{
+        id: string;
+        name: string;
+        email: string;
+        profile_image?: string;
+      }>;
+      total: number;
+      page: number;
+      limit: number;
+    };
+  },
 };
 
 export default api;

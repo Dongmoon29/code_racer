@@ -9,7 +9,10 @@ import {
   Github,
   Linkedin,
   Globe,
+  Users,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { userApi } from '@/lib/api';
 import ProfileEditForm, { LanguageOption } from './ProfileEditForm';
 
 interface UserInfo {
@@ -34,6 +37,16 @@ interface ProfileSidebarProps {
 
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user }) => {
   const [showEdit, setShowEdit] = useState(false);
+
+  // Get follow stats
+  const { data: followStats } = useQuery({
+    queryKey: ['followStats', user.id],
+    queryFn: () => userApi.getFollowStats(user.id),
+  });
+
+  const followers = followStats?.stats.followers ?? 0;
+  const following = followStats?.stats.following ?? 0;
+
   return (
     <div className="w-full max-w-sm mx-auto lg:mx-0">
       <div className="flex flex-col gap-4">
@@ -58,6 +71,24 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user }) => {
           <h1 className="text-xl lg:text-2xl font-bold text-foreground mb-4 text-center">
             {user?.name}
           </h1>
+
+          {/* Follow Stats */}
+          <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground mb-4">
+            <div className="flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              <span className="font-semibold text-foreground">
+                {followers}
+              </span>
+              <span>followers</span>
+            </div>
+            <span>·</span>
+            <div className="flex items-center gap-1">
+              <span className="font-semibold text-foreground">
+                {following}
+              </span>
+              <span>following</span>
+            </div>
+          </div>
 
           <Button
             onClick={() => setShowEdit((v) => !v)}

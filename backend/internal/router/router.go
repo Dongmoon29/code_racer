@@ -24,6 +24,7 @@ func Setup(
 	userController *controller.UserController,
 	problemController *controller.ProblemController,
 	wsController *controller.WebSocketController,
+	followController *controller.FollowController,
 	authMiddleware *middleware.AuthMiddleware,
 	cfg *config.Config,
 	db *gorm.DB,
@@ -105,6 +106,9 @@ func Setup(
 			auth.POST("/exchange-token", authController.ExchangeToken)
 		}
 
+		// Public user routes (stats can be viewed without auth)
+		api.GET("/users/:userId/follow/stats", followController.GetFollowStats)
+
 		// secured routes
 		secured := api.Group("/")
 		secured.Use(authMiddleware.APIAuthRequired())
@@ -123,6 +127,12 @@ func Setup(
 				user.GET("/:userId/profile", userController.GetProfile)
 				user.PUT("/profile", userController.UpdateProfile)
 				user.GET("/leaderboard", userController.GetLeaderboard)
+
+				// Follow routes
+				user.POST("/:userId/follow", followController.Follow)
+				user.DELETE("/:userId/follow", followController.Unfollow)
+				user.GET("/:userId/followers", followController.GetFollowers)
+				user.GET("/:userId/following", followController.GetFollowing)
 			}
 
 			// admin users

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import {
   MapPin,
@@ -8,7 +8,11 @@ import {
   Github,
   Linkedin,
   Globe,
+  Users,
 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { userApi } from '@/lib/api';
+import { useAuthStore } from '@/stores/authStore';
 
 interface UserInfo {
   id: string;
@@ -33,6 +37,46 @@ interface PublicProfileSidebarProps {
 const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
   user,
 }) => {
+  const { user: currentUser } = useAuthStore();
+  const queryClient = useQueryClient();
+  const isOwnProfile = currentUser?.id === user.id;
+
+  // Get follow stats
+  const { data: followStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['followStats', user.id],
+    queryFn: () => userApi.getFollowStats(user.id),
+    enabled: !isOwnProfile,
+  });
+
+  // Follow mutation
+  const followMutation = useMutation({
+    mutationFn: () => userApi.follow(user.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['followStats', user.id] });
+    },
+  });
+
+  // Unfollow mutation
+  const unfollowMutation = useMutation({
+    mutationFn: () => userApi.unfollow(user.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['followStats', user.id] });
+    },
+  });
+
+  const handleFollow = () => {
+    if (followStats?.stats.is_following) {
+      unfollowMutation.mutate();
+    } else {
+      followMutation.mutate();
+    }
+  };
+
+  const isFollowing = followStats?.stats.is_following ?? false;
+  const followers = followStats?.stats.followers ?? 0;
+  const following = followStats?.stats.following ?? 0;
+  const isLoading = followMutation.isPending || unfollowMutation.isPending;
+
   return (
     <div className="w-full max-w-sm mx-auto lg:mx-0">
       <div className="flex flex-col gap-4">
@@ -58,6 +102,44 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
             {user?.name}
           </h1>
         </div>
+
+        {/* Follow/Unfollow Button */}
+        {!isOwnProfile && currentUser && (
+          <div className="max-w-md mx-auto space-y-3">
+            <button
+              type="button"
+              onClick={handleFollow}
+              disabled={isLoading || statsLoading}
+              className={`w-full rounded-lg font-semibold py-3 px-4 transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+                isFollowing
+                  ? 'bg-[var(--gray-6)] hover:bg-[var(--gray-7)] text-foreground'
+                  : 'bg-[var(--green-9)] hover:bg-[var(--green-10)] text-white'
+              }`}
+            >
+              {isFollowing ? 'Unfollow' : 'Follow'}
+            </button>
+
+            {/* Follow Stats */}
+            {!statsLoading && (
+              <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  <span className="font-semibold text-foreground">
+                    {followers}
+                  </span>
+                  <span>followers</span>
+                </div>
+                <span>·</span>
+                <div className="flex items-center gap-1">
+                  <span className="font-semibold text-foreground">
+                    {following}
+                  </span>
+                  <span>following</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Location */}
         {user?.company && (

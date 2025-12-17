@@ -98,6 +98,7 @@ func main() {
 		deps.userController,
 		deps.problemController,
 		deps.wsController,
+		deps.followController,
 		deps.authMiddleware,
 		cfg,
 		db,
@@ -114,6 +115,7 @@ type dependencies struct {
 	userController    *controller.UserController
 	problemController *controller.ProblemController
 	wsController      *controller.WebSocketController
+	followController  *controller.FollowController
 	authMiddleware    *middleware.AuthMiddleware
 	wsHub             *service.Hub
 }
@@ -130,6 +132,7 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 		userController:    controllers.userController,
 		problemController: controllers.problemController,
 		wsController:      controllers.wsController,
+		followController:  controllers.followController,
 		authMiddleware:    middleware.authMiddleware,
 		wsHub:             wsHub,
 	}
@@ -138,9 +141,10 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 // initializeRepositories creates all repository instances
 func initializeRepositories(db *gorm.DB, appLogger logger.Logger) *repositories {
 	return &repositories{
-		userRepository:  repository.NewUserRepository(db, appLogger),
-		matchRepository: repository.NewMatchRepository(db, appLogger),
-		problemRepo:     repository.NewProblemRepository(db, appLogger),
+		userRepository:   repository.NewUserRepository(db, appLogger),
+		matchRepository:  repository.NewMatchRepository(db, appLogger),
+		problemRepo:      repository.NewProblemRepository(db, appLogger),
+		followRepository: repository.NewFollowRepository(db, appLogger),
 	}
 }
 
@@ -167,6 +171,7 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 	go wsHub.Run()
 
 	problemService := service.NewProblemService(repos.problemRepo, appLogger)
+	followService := service.NewFollowService(repos.followRepository, appLogger)
 
 	return &services{
 		authService:        authService,
@@ -176,6 +181,7 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 		matchmakingService: matchmakingService,
 		wsService:          wsService,
 		problemService:     problemService,
+		followService:      followService,
 	}, wsHub
 }
 
@@ -194,6 +200,7 @@ func initializeControllers(services *services, oauthCfg *config.OAuthConfig, app
 		userController:    controller.NewUserController(services.userService, appLogger),
 		problemController: controller.NewProblemController(services.problemService, appLogger),
 		wsController:      controller.NewWebSocketController(services.wsService, appLogger, allowedOrigins, environment),
+		followController:  controller.NewFollowController(services.followService, appLogger),
 	}
 }
 
@@ -250,6 +257,7 @@ type repositories struct {
 	userRepository  interfaces.UserRepository
 	matchRepository repository.MatchRepository
 	problemRepo     repository.ProblemRepository
+	followRepository interfaces.FollowRepository
 }
 
 type services struct {
@@ -260,6 +268,7 @@ type services struct {
 	matchmakingService service.MatchmakingService
 	wsService          service.WebSocketService
 	problemService     service.ProblemService
+	followService      service.FollowService
 }
 
 type controllers struct {
@@ -268,6 +277,7 @@ type controllers struct {
 	userController    *controller.UserController
 	problemController *controller.ProblemController
 	wsController      *controller.WebSocketController
+	followController  *controller.FollowController
 }
 
 type middlewareInstances struct {
