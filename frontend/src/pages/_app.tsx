@@ -16,7 +16,7 @@ import { LofiPlayerProvider } from '../contexts/LofiPlayerContext';
 // Wrapper component to sync Radix Theme with next-themes
 function RadixThemeWrapper({ children }: { children: React.ReactNode }) {
   const { theme, systemTheme } = useNextTheme();
-  const radixTheme = theme === 'system' ? (systemTheme || 'light') : theme || 'light';
+  const radixTheme = theme === 'system' ? (systemTheme || 'dark') : theme || 'dark';
 
   return (
     <Theme
@@ -54,7 +54,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   })();
 
   return (
-    <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <NextThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <RadixThemeWrapper>
         <QueryClientProvider client={queryClient}>
           <FullscreenProvider>
