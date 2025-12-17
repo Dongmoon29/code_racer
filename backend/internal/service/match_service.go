@@ -18,6 +18,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
+	"github.com/Dongmoon29/code_racer/internal/types"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -85,7 +86,25 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 		Str("userID", userID.String()).
 		Msg("Starting solution submission")
 
-		// Fetch match from repository (only if playing)
+	match, err := s.fetchMatch(matchID)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := s.evaluateCode(req, match, matchID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if result.Passed {
+		return s.handleWinner(matchID, userID, result)
+	}
+
+	return s.createFailureResponse(result), nil
+}
+
+// fetchMatch retrieves the match from repository
+func (s *matchService) fetchMatch(matchID uuid.UUID) (*model.Match, error) {
 	match, err := s.matchRepo.FindPlayingMatchByID(matchID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to find playing match")
@@ -94,13 +113,16 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 		}
 		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load match")
 	}
+	return match, nil
+}
 
+// evaluateCode evaluates the submitted code via Judge service
+func (s *matchService) evaluateCode(req *model.SubmitSolutionRequest, match *model.Match, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
 	s.logger.Debug().
 		Str("code", req.Code).
 		Str("language", req.Language).
 		Msg("Evaluating submitted code")
 
-		// Evaluate code via Judge service (Judge0) with realtime notifications
 	result, err := s.judgeService.EvaluateCodeWithRealtime(req.Code, req.Language, &match.Problem, matchID, userID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Code evaluation failed")
@@ -118,106 +140,156 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 		Str("errorMessage", result.ErrorMessage).
 		Msg("Code evaluation completed")
 
-		// Check if all test cases passed
-	if result.Passed {
-		s.logger.Debug().Msg("All test cases passed, setting winner")
+	return result, nil
+}
 
-		// Set winner using a distributed lock (prevent race on simultaneous submits)
-		ctx := context.Background()
-		lockKey := fmt.Sprintf("match:%s:winner_lock", matchID.String())
-		lockValue := userID.String()
-		lockExpiry := 10 * time.Second
+// handleWinner processes winner determination with distributed locking
+func (s *matchService) handleWinner(matchID uuid.UUID, userID uuid.UUID, result *types.EvaluationResult) (*model.SubmitSolutionResponse, error) {
+	s.logger.Debug().Msg("All test cases passed, setting winner")
 
-		// Try to acquire the distributed lock
-		lockAcquired, err := s.rdb.SetNX(ctx, lockKey, lockValue, lockExpiry).Result()
-		if err != nil {
-			s.logger.Error().Err(err).Msg("Failed to acquire winner lock")
-			return nil, err
-		}
+	ctx := context.Background()
+	lockKey := fmt.Sprintf("match:%s:winner_lock", matchID.String())
+	lockValue := userID.String()
+	lockExpiry := 10 * time.Second
 
-		if !lockAcquired {
-			// Another player already won
-			s.logger.Info().Msg("Another player already won the game")
-			return &model.SubmitSolutionResponse{
-				Success:  true,
-				Message:  "Your solution passed all test cases, but another player won first",
-				IsWinner: false,
-			}, nil
-		}
-
-		// Ensure lock is released (defer)
-		defer func() {
-			s.rdb.Del(ctx, lockKey)
-		}()
-
-		// Persist winner in DB
-		if err := s.matchRepo.SetWinner(matchID, userID, result.ExecutionTime, result.MemoryUsage); err != nil {
-			s.logger.Error().Err(err).Msg("Failed to set winner")
-			return nil, err
-		}
-
-		// Update match status in Redis
-		matchKey := fmt.Sprintf("match:%s", matchID.String())
-		if err := s.rdb.HSet(ctx, matchKey, "status", string(model.MatchStatusFinished)).Err(); err != nil {
-			s.logger.Error().Err(err).Msg("Failed to update match status in Redis")
-		}
-
-		// ELO update for ranked matches
-		// Reload match to ensure we have the latest mode and participants
-		updatedMatch, err := s.matchRepo.FindByID(matchID)
-		if err == nil && updatedMatch != nil && updatedMatch.Mode == model.MatchModeRankedPVP && updatedMatch.PlayerBID != nil {
-			winnerID := userID
-			var loserID uuid.UUID
-			if winnerID == updatedMatch.PlayerAID {
-				loserID = *updatedMatch.PlayerBID
-			} else {
-				loserID = updatedMatch.PlayerAID
-			}
-
-			// Fetch users
-			winner, err1 := s.userRepo.FindByID(winnerID)
-			loser, err2 := s.userRepo.FindByID(loserID)
-			if err1 == nil && err2 == nil && winner != nil && loser != nil {
-				winnerOld := winner.Rating
-				loserOld := loser.Rating
-				newWinner, newLoser := applyElo(winnerOld, loserOld, true)
-				winner.Rating = newWinner
-				loser.Rating = newLoser
-				if err := s.userRepo.Update(winner); err != nil {
-					s.logger.Error().Err(err).Msg("Failed to update winner rating")
-				}
-				if err := s.userRepo.Update(loser); err != nil {
-					s.logger.Error().Err(err).Msg("Failed to update loser rating")
-				}
-
-				// Persist rating deltas on match for result screen display
-				updatedMatch.WinnerRatingDelta = newWinner - winnerOld
-				updatedMatch.LoserRatingDelta = newLoser - loserOld
-				if err := s.matchRepo.Update(updatedMatch); err != nil {
-					s.logger.Error().Err(err).Msg("Failed to update match rating deltas")
-				}
-			} else {
-				s.logger.Warn().Msg("Failed to load users for ELO update")
-			}
-		}
-
-		// Send game finished notification via WebSocket
-		s.sendGameFinishedNotification(matchID, userID)
-		s.logger.Info().Msg("Match completed - winner determined")
-
-		return &model.SubmitSolutionResponse{
-			Success:  true,
-			Message:  "Your solution passed all test cases",
-			IsWinner: true,
-		}, nil
+	lockAcquired, err := s.acquireWinnerLock(ctx, lockKey, lockValue, lockExpiry)
+	if err != nil {
+		return nil, err
 	}
 
+	if !lockAcquired {
+		return s.createSecondPlaceResponse(), nil
+	}
+
+	defer s.releaseWinnerLock(ctx, lockKey)
+
+	if err := s.persistWinner(matchID, userID, result); err != nil {
+		return nil, err
+	}
+
+	s.updateMatchStatusInRedis(ctx, matchID)
+	s.updateEloRatings(matchID, userID)
+	s.sendGameFinishedNotification(matchID, userID)
+
+	s.logger.Info().Msg("Match completed - winner determined")
+	return s.createSuccessResponse(), nil
+}
+
+// acquireWinnerLock attempts to acquire distributed lock for winner determination
+func (s *matchService) acquireWinnerLock(ctx context.Context, lockKey, lockValue string, lockExpiry time.Duration) (bool, error) {
+	lockAcquired, err := s.rdb.SetNX(ctx, lockKey, lockValue, lockExpiry).Result()
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to acquire winner lock")
+		return false, err
+	}
+	return lockAcquired, nil
+}
+
+// releaseWinnerLock releases the distributed lock
+func (s *matchService) releaseWinnerLock(ctx context.Context, lockKey string) {
+	s.rdb.Del(ctx, lockKey)
+}
+
+// persistWinner saves winner information to database
+func (s *matchService) persistWinner(matchID uuid.UUID, userID uuid.UUID, result *types.EvaluationResult) error {
+	if err := s.matchRepo.SetWinner(matchID, userID, result.ExecutionTime, result.MemoryUsage); err != nil {
+		s.logger.Error().Err(err).Msg("Failed to set winner")
+		return err
+	}
+	return nil
+}
+
+// updateMatchStatusInRedis updates match status to finished in Redis
+func (s *matchService) updateMatchStatusInRedis(ctx context.Context, matchID uuid.UUID) {
+	matchKey := fmt.Sprintf("match:%s", matchID.String())
+	if err := s.rdb.HSet(ctx, matchKey, "status", string(model.MatchStatusFinished)).Err(); err != nil {
+		s.logger.Error().Err(err).Msg("Failed to update match status in Redis")
+	}
+}
+
+// updateEloRatings updates ELO ratings for ranked matches
+func (s *matchService) updateEloRatings(matchID uuid.UUID, userID uuid.UUID) {
+	updatedMatch, err := s.matchRepo.FindByID(matchID)
+	if err != nil || updatedMatch == nil || updatedMatch.Mode != model.MatchModeRankedPVP || updatedMatch.PlayerBID == nil {
+		return
+	}
+
+	winnerID, loserID := s.determineWinnerAndLoser(updatedMatch, userID)
+	if err := s.applyEloUpdate(updatedMatch, winnerID, loserID); err != nil {
+		s.logger.Warn().Err(err).Msg("Failed to update ELO ratings")
+	}
+}
+
+// determineWinnerAndLoser determines winner and loser IDs from match
+func (s *matchService) determineWinnerAndLoser(match *model.Match, userID uuid.UUID) (uuid.UUID, uuid.UUID) {
+	winnerID := userID
+	var loserID uuid.UUID
+	if winnerID == match.PlayerAID {
+		loserID = *match.PlayerBID
+	} else {
+		loserID = match.PlayerAID
+	}
+	return winnerID, loserID
+}
+
+// applyEloUpdate applies ELO rating updates to winner and loser
+func (s *matchService) applyEloUpdate(match *model.Match, winnerID, loserID uuid.UUID) error {
+	winner, err1 := s.userRepo.FindByID(winnerID)
+	loser, err2 := s.userRepo.FindByID(loserID)
+	if err1 != nil || err2 != nil || winner == nil || loser == nil {
+		return fmt.Errorf("failed to load users for ELO update")
+	}
+
+	winnerOld := winner.Rating
+	loserOld := loser.Rating
+	newWinner, newLoser := applyElo(winnerOld, loserOld, true)
+
+	winner.Rating = newWinner
+	loser.Rating = newLoser
+
+	if err := s.userRepo.Update(winner); err != nil {
+		return fmt.Errorf("failed to update winner rating: %w", err)
+	}
+	if err := s.userRepo.Update(loser); err != nil {
+		return fmt.Errorf("failed to update loser rating: %w", err)
+	}
+
+	match.WinnerRatingDelta = newWinner - winnerOld
+	match.LoserRatingDelta = newLoser - loserOld
+	if err := s.matchRepo.Update(match); err != nil {
+		return fmt.Errorf("failed to update match rating deltas: %w", err)
+	}
+
+	return nil
+}
+
+// createSuccessResponse creates success response for winner
+func (s *matchService) createSuccessResponse() *model.SubmitSolutionResponse {
+	return &model.SubmitSolutionResponse{
+		Success:  true,
+		Message:  "Your solution passed all test cases",
+		IsWinner: true,
+	}
+}
+
+// createSecondPlaceResponse creates response for second place
+func (s *matchService) createSecondPlaceResponse() *model.SubmitSolutionResponse {
+	s.logger.Info().Msg("Another player already won the game")
+	return &model.SubmitSolutionResponse{
+		Success:  true,
+		Message:  "Your solution passed all test cases, but another player won first",
+		IsWinner: false,
+	}
+}
+
+// createFailureResponse creates failure response
+func (s *matchService) createFailureResponse(result *types.EvaluationResult) *model.SubmitSolutionResponse {
 	s.logger.Debug().Msg("Solution failed some test cases")
 	return &model.SubmitSolutionResponse{
 		Success:  false,
 		Message:  fmt.Sprintf("Your solution failed: %s", result.ErrorMessage),
 		IsWinner: false,
-	}, nil
+	}
 }
 
 // applyElo applies ELO update with K-factor to winner/loser ratings.

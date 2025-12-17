@@ -1063,72 +1063,101 @@ func (s *webSocketService) executeCleanupPipeline(pipe redis.Pipeliner, ctx cont
 
 // readPump reads messages from the client
 func (c *Client) readPump(wsService *webSocketService) {
-	defer func() {
-		if r := recover(); r != nil {
-			wsService.logger.Error().Interface("panic", r).Msg("Recovered from panic in readPump")
-		}
-		c.hub.unregister <- c
-		c.conn.Close()
-		// Clean up user data when connection is closed
-		wsService.cleanupUserData(c.userID, c.matchID)
-	}()
+	defer c.handleReadPumpCleanup(wsService)
 
+	c.setupReadPumpConnection()
+
+	for {
+		message, err := c.readMessage()
+		if err != nil {
+			wsService.logger.Debug().Err(err).Msg("WebSocket read error, closing connection")
+			break
+		}
+
+		msg, msgType := c.parseMessage(message)
+		if msg == nil {
+			continue
+		}
+
+		c.handleMessageByType(msgType, msg, wsService)
+	}
+}
+
+// handleReadPumpCleanup handles cleanup when readPump exits
+func (c *Client) handleReadPumpCleanup(wsService *webSocketService) {
+	if r := recover(); r != nil {
+		wsService.logger.Error().Interface("panic", r).Msg("Recovered from panic in readPump")
+	}
+	c.hub.unregister <- c
+	c.conn.Close()
+	wsService.cleanupUserData(c.userID, c.matchID)
+}
+
+// setupReadPumpConnection configures WebSocket connection settings
+func (c *Client) setupReadPumpConnection() {
 	c.conn.SetReadLimit(constants.MaxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(constants.PongWait))
 	c.conn.SetPongHandler(func(string) error {
 		c.conn.SetReadDeadline(time.Now().Add(constants.PongWait))
 		return nil
 	})
+}
 
-	for {
-		_, message, err := c.conn.ReadMessage()
-		if err != nil {
-			// On any read error, log and close gracefully to avoid repeated reads on failed connection
-			wsService.logger.Debug().Err(err).Msg("WebSocket read error, closing connection")
-			break
-		}
+// readMessage reads a single message from the WebSocket connection
+func (c *Client) readMessage() ([]byte, error) {
+	_, message, err := c.conn.ReadMessage()
+	return message, err
+}
 
-		// Parse message
-		var msg map[string]interface{}
-		if err := json.Unmarshal(message, &msg); err != nil {
-			// Don't log message parsing failures (client errors)
-			continue
-		}
-
-		// Handle message by type
-		msgType, ok := msg["type"].(string)
-		if !ok {
-			// Don't log invalid message types
-			continue
-		}
-
-		switch msgType {
-		case constants.Auth:
-			// Handle auth message (already authenticated at connection time)
-			// Logging removed
-
-		case constants.Ping:
-			// Respond to ping message with pong
-			pongMsg := map[string]interface{}{
-				"type":      constants.Pong,
-				"timestamp": time.Now().Unix(),
-			}
-			pongBytes, _ := json.Marshal(pongMsg)
-			c.send <- pongBytes
-
-		case constants.StartMatching:
-			c.handleStartMatchingMessage(msg)
-
-		case constants.CancelMatching:
-			c.handleCancelMatchingMessage()
-
-		case constants.CodeUpdate:
-			c.handleCodeUpdateMessage(msg, wsService)
-
-		default:
-			// Don't log unknown message types
-		}
+// parseMessage parses JSON message and extracts message type
+func (c *Client) parseMessage(message []byte) (map[string]interface{}, string) {
+	var msg map[string]interface{}
+	if err := json.Unmarshal(message, &msg); err != nil {
+		// Don't log message parsing failures (client errors)
+		return nil, ""
 	}
+
+	msgType, ok := msg["type"].(string)
+	if !ok {
+		// Don't log invalid message types
+		return nil, ""
+	}
+
+	return msg, msgType
+}
+
+// handleMessageByType routes messages to appropriate handlers based on type
+func (c *Client) handleMessageByType(msgType string, msg map[string]interface{}, wsService *webSocketService) {
+	switch msgType {
+	case constants.Auth:
+		// Handle auth message (already authenticated at connection time)
+		// Logging removed
+
+	case constants.Ping:
+		c.handlePingMessage()
+
+	case constants.StartMatching:
+		c.handleStartMatchingMessage(msg)
+
+	case constants.CancelMatching:
+		c.handleCancelMatchingMessage()
+
+	case constants.CodeUpdate:
+		c.handleCodeUpdateMessage(msg, wsService)
+
+	default:
+		// Don't log unknown message types
+	}
+}
+
+// handlePingMessage responds to ping messages with pong
+func (c *Client) handlePingMessage() {
+	pongMsg := map[string]interface{}{
+		"type":      constants.Pong,
+		"timestamp": time.Now().Unix(),
+	}
+	pongBytes, _ := json.Marshal(pongMsg)
+	c.send <- pongBytes
 }
 
 // handleStartMatchingMessage processes start matching messages
