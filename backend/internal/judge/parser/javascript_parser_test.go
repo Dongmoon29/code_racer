@@ -38,7 +38,7 @@ function main() {
 			}{
 				imports:   []string{"const fs = require('fs');"},
 				functions: []string{"function solution(nums) {\n    return nums.sort((a, b) => a - b);\n}", "function main() {", "}"},
-				mainCode:  []string{"    console.log(solution([3,1,4,1,5]));\n}"},
+				mainCode:  []string{"    console.log(solution([3,1,4,1,5]));"},
 				userCode:  "function solution(nums) {\n    return nums.sort((a, b) => a - b);\n}\nfunction main() {\n}\n\n",
 			},
 		},
@@ -92,7 +92,7 @@ for (let i = 0; i < testCases.length; i++) {
 			}{
 				imports:   []string{"const fs = require('fs');", "import { readFile } from 'fs';"},
 				functions: []string{"function helper(arr) {\n    return arr.length;\n}", "function solution(nums) {\n    return nums.map(x => x * 2);\n}", "for (let i = 0; i < testCases.length; i++) {", "}"},
-				mainCode:  []string{"    console.log(solution(testCases[i]));\n}"},
+				mainCode:  []string{"    console.log(solution(testCases[i]));"},
 				userCode:  "function helper(arr) {\n    return arr.length;\n}\nfunction solution(nums) {\n    return nums.map(x => x * 2);\n}\nfor (let i = 0; i < testCases.length; i++) {\n}\n\n\n\n// Test cases\nconst testCases = [[1,2,3], [4,5,6]];",
 			},
 		},
