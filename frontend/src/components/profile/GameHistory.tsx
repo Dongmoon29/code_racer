@@ -74,9 +74,10 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
 
       <div className="space-y-3">
         {items.slice(0, 5).map((game) => (
-          <div
+          <Link
             key={game.id}
-            className={`p-4 rounded-lg border transition-colors}`}
+            href={ROUTES.GAME_ROOM(game.id)}
+            className="block p-4 rounded-lg border transition-colors hover:bg-muted/50 cursor-pointer"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-2 font-bold">
@@ -137,7 +138,7 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
                 )}
               </>
             )}
-          </div>
+          </Link>
         ))}
       </div>
 
