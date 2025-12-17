@@ -14,7 +14,7 @@ const GamePage: React.FC = () => {
   if (!id) {
     return (
       <Layout title="Loading... | Code Racer" description="Loading game...">
-        <div className="flex justify-center items-center h-64 text-[hsl(var(--foreground))]">
+        <div className="flex justify-center items-center h-64 text-[var(--color-text)]">
           <Spinner size="lg" />
         </div>
       </Layout>
@@ -30,10 +30,10 @@ const GamePage: React.FC = () => {
       <Layout title="Invalid Game | Code Racer" description="Invalid game ID">
         <div className="max-w-2xl mx-auto p-6">
           <Alert variant="error">
-            <AlertTitle className="text-lg font-semibold text-[hsl(var(--foreground))]">
+            <AlertTitle className="text-lg font-semibold text-[var(--color-text)]">
               Invalid Game ID
             </AlertTitle>
-            <AlertDescription className="mt-2 text-[hsl(var(--muted-foreground))]">
+            <AlertDescription className="mt-2 text-[var(--gray-11)]">
               <p className="mb-4">The game ID provided is not valid.</p>
               <Button
                 onClick={() => router.push('/dashboard')}
@@ -54,7 +54,7 @@ const GamePage: React.FC = () => {
       title="Game Room | Code Racer"
       description="Compete in real-time coding challenge"
     >
-      <div className="w-full min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+      <div className="w-full min-h-screen bg-[var(--color-background)] text-[var(--color-text)]">
         <div className="mx-auto px-4 py-6">
           <GameRoom gameId={id} />
         </div>

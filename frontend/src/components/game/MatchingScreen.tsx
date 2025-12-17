@@ -69,43 +69,39 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(
       value: typeof mode;
       title: string;
       subtitle: string;
-      colors: string;
       accent: string;
     }> = [
       {
         value: 'casual_pvp',
         title: 'Casual PvP',
         subtitle: 'Friendly race, no rating',
-        colors: 'from-emerald-500 to-teal-500',
-        accent: 'text-green-600',
+        accent: 'text-[var(--green-11)]',
       },
       {
         value: 'ranked_pvp',
         title: 'Ranked PvP',
         subtitle: 'Climb the leaderboard',
-        colors: 'from-indigo-500 to-purple-500',
-        accent: 'text-yellow-600',
+        accent: 'text-[var(--accent-11)]',
       },
       {
         value: 'single',
         title: 'Single',
         subtitle: 'Solo time attack',
-        colors: 'from-orange-500 to-rose-500',
-        accent: 'text-red-600',
+        accent: 'text-[var(--amber-11)]',
       },
     ];
 
     // Simple, reusable styles
     const cardBaseClass =
-      'w-full h-36 rounded-2xl border bg-[hsl(var(--background))] border-[hsl(var(--border))] flex flex-col justify-center items-start p-4 cursor-pointer';
+      'w-full h-36 rounded-2xl border bg-[var(--color-panel)] border-[var(--gray-6)] flex flex-col justify-center items-start p-4 cursor-pointer hover:bg-[var(--gray-4)] transition-colors';
     const ctaClass =
-      'w-14 h-14 flex items-center justify-center rounded-full text-white font-semibold shadow-lg bg-green-600 cursor-pointer';
+      'w-14 h-14 flex items-center justify-center rounded-full text-white font-semibold shadow-lg bg-[var(--accent-9)] hover:bg-[var(--accent-10)] cursor-pointer transition-colors';
 
     return (
       <div className="max-w-5xl mx-auto p-6">
         {/* Mode card selector */}
         <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 text-[hsl(var(--foreground))]">
+          <h2 className="text-lg font-semibold mb-4 text-[var(--color-text)]">
             Mode
           </h2>
           <div className="flex flex-col sm:flex-row gap-4">
@@ -125,7 +121,7 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(
                     <div className={`text-xl font-bold mb-1 ${m.accent}`}>
                       {m.title}
                     </div>
-                    <div className="text-[hsl(var(--muted-foreground))] text-sm">
+                    <div className="text-[var(--gray-11)] text-sm">
                       {m.subtitle}
                     </div>
                   </div>
@@ -137,7 +133,7 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(
 
         {/* Difficulty card selector */}
         <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-4 text-[hsl(var(--foreground))]">
+          <h2 className="text-lg font-semibold mb-4 text-[var(--color-text)]">
             Difficulty
           </h2>
           <DifficultySelector

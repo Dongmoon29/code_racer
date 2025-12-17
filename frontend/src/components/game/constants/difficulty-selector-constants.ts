@@ -49,7 +49,7 @@ export const DIFFICULTY_SELECTOR_CONSTANTS = {
   // Styling
   STYLES: {
     GRADIENT_TEXT:
-      'bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent',
+      'bg-gradient-to-r from-[var(--accent-9)] via-[var(--accent-10)] to-[var(--green-9)] bg-clip-text text-transparent',
     CARD_HOVER: 'hover:scale-105',
     TRANSITION: `transition-all duration-${TIMER_CONSTANTS.UI_DELAYS.MEDIUM} transform`,
   },

@@ -28,11 +28,11 @@ const vscodeLightCompletionStyle = {
   },
 };
 
-// VS Code Dark theme autocomplete styles
+// GitHub Dark theme autocomplete styles
 const vscodeDarkCompletionStyle = {
   '.cm-tooltip': {
-    backgroundColor: '#252526',
-    border: '1px solid #454545',
+    backgroundColor: '#161B22',
+    border: '1px solid #30363D',
     borderRadius: '3px',
     padding: '0',
   },
@@ -46,9 +46,10 @@ const vscodeDarkCompletionStyle = {
     '& > ul > li': {
       padding: '4px 8px',
       lineHeight: '1.2',
+      color: '#C9D1D9',
     },
     '& > ul > li[aria-selected]': {
-      backgroundColor: '#2C2C2D',
+      backgroundColor: '#1F6FEB33',
       color: '#FFFFFF',
     },
   },
@@ -124,72 +125,85 @@ export const vscodeLightHighlightStyle = HighlightStyle.define([
   { tag: tags.name, color: '#0000FF' },
 ]);
 
-// VS Code Dark+ theme style definition
+// GitHub Dark theme style definition
 export const vscodeDarkTheme = EditorView.theme({
   '&': {
-    backgroundColor: '#1E1E1E',
-    color: '#D4D4D4',
+    backgroundColor: '#0D1117',
+    color: '#C9D1D9',
     height: '100%',
   },
   '.cm-content': {
-    caretColor: '#AEAFAD',
+    caretColor: '#C9D1D9',
   },
   '.cm-cursor': {
-    borderLeftColor: '#AEAFAD',
+    borderLeftColor: '#C9D1D9',
   },
   '.cm-activeLine': {
-    backgroundColor: '#2C323C44',
+    backgroundColor: '#161B2233',
   },
   '.cm-activeLineGutter': {
-    backgroundColor: '#2C323C44',
+    backgroundColor: '#161B2233',
   },
   '.cm-gutters': {
-    backgroundColor: '#1E1E1E',
-    color: '#858585',
+    backgroundColor: '#0D1117',
+    color: '#6E7681',
     border: 'none',
-    borderRight: '1px solid #333',
+    borderRight: '1px solid #30363D',
   },
   '.cm-lineNumbers': {
-    color: '#858585',
+    color: '#6E7681',
   },
   '.cm-matchingBracket': {
-    backgroundColor: '#3B514D',
+    backgroundColor: '#163356',
     color: '#FFFFFF !important',
-    outline: '1px solid #4E4E4E',
+    outline: '1px solid #1F6FEB',
   },
   '.cm-selectionMatch': {
-    backgroundColor: '#3B514D',
+    backgroundColor: '#163356',
   },
   '.cm-searchMatch': {
-    backgroundColor: '#613214',
-    outline: '1px solid #896B1B',
+    backgroundColor: '#3E1F18',
+    outline: '1px solid #8B949E',
   },
   '.cm-searchMatch.cm-searchMatch-selected': {
-    backgroundColor: '#896B1B',
+    backgroundColor: '#6E7681',
   },
   ...vscodeDarkCompletionStyle,
 });
 
-// VS Code Dark+ syntax highlighting styles
+// GitHub Dark syntax highlighting styles
 export const vscodeDarkHighlightStyle = HighlightStyle.define([
-  { tag: tags.keyword, color: '#569CD6' },
-  { tag: tags.operator, color: '#D4D4D4' },
-  { tag: tags.special(tags.variableName), color: '#9CDCFE' },
-  { tag: tags.typeName, color: '#4EC9B0' },
-  { tag: tags.atom, color: '#569CD6' },
-  { tag: tags.number, color: '#B5CEA8' },
-  { tag: tags.definition(tags.variableName), color: '#9CDCFE' },
-  { tag: tags.string, color: '#CE9178' },
-  { tag: tags.special(tags.string), color: '#CE9178' },
-  { tag: tags.comment, color: '#6A9955' },
-  { tag: tags.variableName, color: '#9CDCFE' },
-  { tag: tags.tagName, color: '#569CD6' },
-  { tag: tags.attributeName, color: '#9CDCFE' },
-  { tag: tags.propertyName, color: '#9CDCFE' },
+  // 키워드, 제어문 등
+  { tag: tags.keyword, color: '#FF7B72' },
+  { tag: tags.operator, color: '#C9D1D9' },
+
+  // 변수 / 함수 / 특수 식별자
+  { tag: tags.special(tags.variableName), color: '#D2A8FF' },
+  { tag: tags.definition(tags.variableName), color: '#D2A8FF' },
+  { tag: tags.variableName, color: '#C9D1D9' },
+
+  // 타입 / 클래스
+  { tag: tags.typeName, color: '#FFA657' },
   { tag: tags.className, color: '#4EC9B0' },
-  { tag: tags.heading, color: '#569CD6' },
-  { tag: tags.content, color: '#D4D4D4' },
-  { tag: tags.meta, color: '#D4D4D4' },
-  { tag: tags.link, color: '#569CD6' },
-  { tag: tags.name, color: '#569CD6' },
+
+  // 리터럴
+  { tag: tags.atom, color: '#79C0FF' },
+  { tag: tags.number, color: '#79C0FF' },
+  { tag: tags.string, color: '#A5D6FF' },
+  { tag: tags.special(tags.string), color: '#A5D6FF' },
+
+  // 주석
+  { tag: tags.comment, color: '#8B949E' },
+
+  // HTML / JSX
+  { tag: tags.tagName, color: '#7EE787' },
+  { tag: tags.attributeName, color: '#79C0FF' },
+  { tag: tags.propertyName, color: '#79C0FF' },
+
+  // 메타, 링크, 기타
+  { tag: tags.heading, color: '#79C0FF' },
+  { tag: tags.content, color: '#C9D1D9' },
+  { tag: tags.meta, color: '#8B949E' },
+  { tag: tags.link, color: '#79C0FF' },
+  { tag: tags.name, color: '#C9D1D9' },
 ]);

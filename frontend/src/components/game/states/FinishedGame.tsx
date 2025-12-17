@@ -94,7 +94,7 @@ export const FinishedGame: React.FC<Props> = memo(
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div>
             <h1 className="text-2xl font-bold">{game.problem.title}</h1>
-            <div className="mt-1 text-sm text-gray-500">
+            <div className="mt-1 text-sm text-[var(--gray-11)]">
               Mode: {formatMode(game.mode)}
               {game.problem?.difficulty
                 ? ` · Difficulty: ${game.problem.difficulty}`
@@ -109,8 +109,8 @@ export const FinishedGame: React.FC<Props> = memo(
             <span
               className={`px-3 py-1 rounded-full text-sm font-semibold border ${
                 winnerIsMe
-                  ? 'bg-green-900/30 text-green-200 border-green-700/50'
-                  : 'bg-yellow-900/30 text-yellow-200 border-yellow-700/50'
+                  ? 'bg-[var(--green-3)] text-[var(--green-11)] border-[var(--green-6)]'
+                  : 'bg-[var(--amber-3)] text-[var(--amber-11)] border-[var(--amber-6)]'
               }`}
             >
               {winnerBadge}
@@ -130,24 +130,24 @@ export const FinishedGame: React.FC<Props> = memo(
 
             {/* Stats grid */}
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-gray-700/60 bg-black/20 p-3">
-                <div className="text-xs text-gray-400">Execution time</div>
-                <div className="mt-1 font-semibold">{execLabel ?? '-'}</div>
+              <div className="rounded-lg border border-[var(--gray-6)] bg-[var(--gray-3)] p-3">
+                <div className="text-xs text-[var(--gray-11)]">Execution time</div>
+                <div className="mt-1 font-semibold text-[var(--color-text)]">{execLabel ?? '-'}</div>
               </div>
-              <div className="rounded-lg border border-gray-700/60 bg-black/20 p-3">
-                <div className="text-xs text-gray-400">Memory</div>
-                <div className="mt-1 font-semibold">{memLabel ?? '-'}</div>
+              <div className="rounded-lg border border-[var(--gray-6)] bg-[var(--gray-3)] p-3">
+                <div className="text-xs text-[var(--gray-11)]">Memory</div>
+                <div className="mt-1 font-semibold text-[var(--color-text)]">{memLabel ?? '-'}</div>
               </div>
             </div>
 
             {/* Player comparison */}
-            <div className="mt-4 rounded-lg border border-gray-700/60 bg-black/20 p-3">
-              <div className="text-xs text-gray-400 mb-2">Players</div>
+            <div className="mt-4 rounded-lg border border-[var(--gray-6)] bg-[var(--gray-3)] p-3">
+              <div className="text-xs text-[var(--gray-11)] mb-2">Players</div>
               <div className="space-y-2">
                 {playerALabel && (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">
+                      <span className="font-medium text-[var(--color-text)]">
                         {playerALabel.name}
                         {playerALabel.isWinner ? ' (W)' : ''}
                         {me?.name && playerALabel.name === me.name
@@ -155,7 +155,7 @@ export const FinishedGame: React.FC<Props> = memo(
                           : ''}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-300">
+                    <div className="text-sm text-[var(--gray-11)]">
                       {typeof playerALabel.rating === 'number'
                         ? `Rating: ${playerALabel.rating}`
                         : 'Rating: -'}
@@ -168,7 +168,7 @@ export const FinishedGame: React.FC<Props> = memo(
                 {playerBLabel && (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">
+                      <span className="font-medium text-[var(--color-text)]">
                         {playerBLabel.name}
                         {playerBLabel.isWinner ? ' (W)' : ''}
                         {me?.name && playerBLabel.name === me.name
@@ -176,7 +176,7 @@ export const FinishedGame: React.FC<Props> = memo(
                           : ''}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-300">
+                    <div className="text-sm text-[var(--gray-11)]">
                       {typeof playerBLabel.rating === 'number'
                         ? `Rating: ${playerBLabel.rating}`
                         : 'Rating: -'}
@@ -187,7 +187,7 @@ export const FinishedGame: React.FC<Props> = memo(
                   </div>
                 )}
                 {!playerALabel && !playerBLabel ? (
-                  <div className="text-sm text-gray-400">No player data</div>
+                  <div className="text-sm text-[var(--gray-11)]">No player data</div>
                 ) : null}
               </div>
             </div>
@@ -215,7 +215,7 @@ export const FinishedGame: React.FC<Props> = memo(
 
           {/* Right: winner code */}
           <div>
-            <div className="h-[520px] border border-gray-200 rounded overflow-hidden">
+            <div className="h-[520px] border border-[var(--gray-6)] rounded overflow-hidden">
               <CodeEditor
                 value={winnerCode}
                 readOnly={true}

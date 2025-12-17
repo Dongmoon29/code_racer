@@ -47,7 +47,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     const [showSettings, setShowSettings] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
 
-    const headerClass = `bg-[hsl(var(--muted))] px-4 py-2 flex items-center ${
+    const headerClass = `bg-[var(--gray-3)] px-4 py-2 flex items-center border-b border-[var(--gray-6)] ${
       isMinimized ? 'justify-center' : 'justify-between'
     }`;
 
@@ -101,7 +101,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
                 className={`cursor-pointer p-1 rounded-md transition-colors shrink-0 ${
                   runDisabled
                     ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:text-[hsl(var(--muted-foreground))]'
+                    : 'hover:text-[var(--color-text)]'
                 }`}
                 title="Run Submission"
               >
@@ -111,13 +111,13 @@ export const EditorPane: FC<EditorPaneProps> = memo(
             {showMusicButton && (
               <button
                 onClick={() => setShowMusicPlayer(true)}
-                className="cursor-pointer p-1 hover:text-[hsl(var(--muted-foreground))] rounded-md transition-colors shrink-0"
+                className="cursor-pointer p-1 hover:text-[var(--color-text)] rounded-md transition-colors shrink-0"
                 title="Toggle Music Player"
               >
                 <Music
                   className={`w-4 h-4 ${
                     isMusicPlaying
-                      ? 'animate-pulse text-[hsl(var(--primary))]'
+                      ? 'animate-pulse text-[var(--accent-9)]'
                       : ''
                   }`}
                 />
@@ -126,7 +126,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
             {showFullscreenButton && onFullscreenToggle && (
               <button
                 onClick={onFullscreenToggle}
-                className="cursor-pointer p-1 hover:text-[hsl(var(--muted-foreground))] rounded-md transition-colors shrink-0"
+                className="cursor-pointer p-1 hover:text-[var(--color-text)] rounded-md transition-colors shrink-0"
                 title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
               >
                 {isFullscreen ? (
@@ -140,13 +140,13 @@ export const EditorPane: FC<EditorPaneProps> = memo(
             <div className="relative" ref={settingsRef}>
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="cursor-pointer p-1 hover:text-[hsl(var(--muted-foreground))] rounded-md transition-colors shrink-0"
+                className="cursor-pointer p-1 hover:text-[var(--color-text)] rounded-md transition-colors shrink-0"
                 title="Settings"
               >
                 <Settings className="w-4 h-4" />
               </button>
               {showSettings && (
-                <div className="absolute right-0 top-full mt-2 bg-[hsl(var(--card))] border border-border rounded-lg shadow-lg px-2 py-0.5 z-50 min-w-[160px]">
+                <div className="absolute right-0 top-full mt-2 bg-[var(--color-panel)] border border-[var(--gray-6)] rounded-lg shadow-lg px-2 py-0.5 z-50 min-w-[160px]">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-xs font-medium">Theme</span>
                     <ThemeToggle />

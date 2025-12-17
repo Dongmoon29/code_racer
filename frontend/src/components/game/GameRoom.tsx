@@ -122,11 +122,11 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-red-600 mb-2">Error</h2>
-          <p className="text-gray-600 mb-4">{gameError}</p>
+          <h2 className="text-xl font-semibold text-[var(--red-11)] mb-2">Error</h2>
+          <p className="text-[var(--gray-11)] mb-4">{gameError}</p>
           <button
             onClick={refetchGame}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-4 py-2 bg-[var(--accent-9)] text-white rounded hover:bg-[var(--accent-10)] transition-colors"
           >
             Retry
           </button>
@@ -140,8 +140,8 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Game Not Found</h2>
-          <p className="text-gray-600">
+          <h2 className="text-xl font-semibold mb-2 text-[var(--color-text)]">Game Not Found</h2>
+          <p className="text-[var(--gray-11)]">
             The requested game could not be found.
           </p>
         </div>

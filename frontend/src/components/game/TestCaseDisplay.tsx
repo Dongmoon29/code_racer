@@ -183,10 +183,10 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
         <div className="space-y-3">
           {inputParams.map((param, idx) => (
             <div key={idx}>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+              <label className="text-xs font-medium text-[var(--gray-11)] mb-1.5 block">
                 {param.name} =
               </label>
-              <div className="px-3 py-2 rounded-md bg-[hsl(var(--muted))] border border-border/30 font-mono text-sm text-white">
+              <div className="px-3 py-2 rounded-md bg-[var(--gray-3)] border border-[var(--gray-6)] font-mono text-sm text-[var(--color-text)]">
                 {param.value}
               </div>
             </div>
@@ -195,10 +195,10 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
 
         {/* Expected Output */}
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+          <label className="text-xs font-medium text-[var(--gray-11)] mb-1.5 block">
             Expected Output =
           </label>
-          <div className="px-3 py-2 rounded-md bg-[hsl(var(--muted))] border border-border/30 font-mono text-sm text-white">
+          <div className="px-3 py-2 rounded-md bg-[var(--gray-3)] border border-[var(--gray-6)] font-mono text-sm text-[var(--color-text)]">
             {expectedOutput}
           </div>
         </div>
@@ -207,15 +207,15 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
         {testResult.status === 'completed' &&
           testResult.actualOutput !== undefined && (
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+              <label className="text-xs font-medium text-[var(--gray-11)] mb-1 block">
                 Actual Output =
               </label>
               <div
                 className={cn(
                   'px-3 py-2 rounded-md border font-mono text-sm',
                   testResult.passed
-                    ? 'bg-green-900/20 border-green-800 text-green-400'
-                    : 'bg-red-900/20 border-red-800 text-red-400'
+                    ? 'bg-[var(--green-3)] border-[var(--green-7)] text-[var(--green-11)]'
+                    : 'bg-[var(--red-3)] border-[var(--red-7)] text-[var(--red-11)]'
                 )}
               >
                 {formatValue(testResult.actualOutput)}
@@ -225,15 +225,15 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
 
         {/* Status and Metrics */}
         {testResult.status === 'completed' && (
-          <div className="flex items-center justify-between pt-2 border-t border-border/30">
+          <div className="flex items-center justify-between pt-2 border-t border-[var(--gray-6)]">
             <div className="flex items-center gap-2">
               {testResult.passed ? (
-                <span className="text-green-500 font-bold">✓ Passed</span>
+                <span className="text-[var(--green-11)] font-bold">✓ Passed</span>
               ) : (
-                <span className="text-red-500 font-bold">✗ Failed</span>
+                <span className="text-[var(--red-11)] font-bold">✗ Failed</span>
               )}
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-[var(--gray-11)]">
               {testResult.executionTime && (
                 <span>{(testResult.executionTime * 1000).toFixed(2)}ms</span>
               )}
@@ -247,9 +247,9 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
         )}
 
         {testResult.status === 'running' && (
-          <div className="flex items-center gap-2 pt-2 border-t border-border/30">
-            <Spinner size="sm" className="text-blue-500" />
-            <span className="text-xs text-muted-foreground">Running...</span>
+          <div className="flex items-center gap-2 pt-2 border-t border-[var(--gray-6)]">
+            <Spinner size="sm" className="text-[var(--accent-9)]" />
+            <span className="text-xs text-[var(--gray-11)]">Running...</span>
           </div>
         )}
       </div>
@@ -263,9 +263,9 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {isSubmitting ? (
-              <Spinner size="sm" className="text-blue-500" />
+              <Spinner size="sm" className="text-[var(--accent-9)]" />
             ) : (
-              <span className="text-green-500 font-bold">✓</span>
+              <span className="text-[var(--green-11)] font-bold">✓</span>
             )}
             <span className={`${statusTextSize} font-medium`}>
               {getStatusText()}
@@ -308,7 +308,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
         {testCases.length > 0 && (
           <Card variant="ghost" className={cardPadding}>
             {/* Test Case Tabs */}
-            <div className="mb-4 border-b border-border/50 pb-2">
+            <div className="mb-4 border-b border-[var(--gray-6)] pb-2">
               <div className="flex flex-wrap items-center justify-center gap-1">
                 {testCases.map((testCase, index) => {
                   const result = testCaseResults.find((r) => r.index === index);
@@ -327,29 +327,29 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
                         'px-2.5 py-1.5 text-xs font-medium transition-colors relative cursor-pointer whitespace-nowrap shrink-0',
                         'border-b-2 border-transparent',
                         isActive
-                          ? 'text-white border-blue-400'
-                          : 'text-[hsl(var(--muted-foreground))] hover:text-white'
+                          ? 'text-[var(--color-text)] border-[var(--accent-9)]'
+                          : 'text-[var(--gray-11)] hover:text-[var(--color-text)]'
                       )}
                     >
                       <div className="flex items-center gap-1">
                         {isRunning && (
                           <Spinner
                             size="sm"
-                            className="w-3 h-3 text-blue-500 shrink-0"
+                            className="w-3 h-3 text-[var(--accent-9)] shrink-0"
                           />
                         )}
                         {isPassed && (
-                          <span className="text-green-500 text-xs shrink-0">
+                          <span className="text-[var(--green-11)] text-xs shrink-0">
                             ✓
                           </span>
                         )}
                         {isFailed && (
-                          <span className="text-red-500 text-xs shrink-0">
+                          <span className="text-[var(--red-11)] text-xs shrink-0">
                             ✗
                           </span>
                         )}
                         {!isRunning && !isPassed && !isFailed && (
-                          <span className="text-gray-400 text-xs shrink-0">
+                          <span className="text-[var(--gray-9)] text-xs shrink-0">
                             ○
                           </span>
                         )}

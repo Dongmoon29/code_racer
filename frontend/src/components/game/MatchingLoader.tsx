@@ -62,7 +62,7 @@ export const MatchingLoader: FC<MatchingLoaderProps> = memo(
           <Button
             variant="outline"
             onClick={onCancel}
-            className="min-w-[140px] border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+            className="min-w-[140px] border-[var(--red-6)] text-[var(--red-11)] hover:bg-[var(--red-4)] transition-colors"
           >
             Cancel
           </Button>

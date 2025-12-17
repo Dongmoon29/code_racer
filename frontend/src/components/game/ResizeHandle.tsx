@@ -53,9 +53,9 @@ export const ResizeHandle: React.FC<ResizeHandleProps> = ({
     <div
       className={`
         relative flex items-center justify-center cursor-col-resize
-        w-1 h-full bg-transparent hover:bg-blue-500/20
+        w-1 h-full bg-transparent hover:bg-[var(--accent-4)]
         transition-colors duration-200 group
-        ${isDragging ? 'bg-blue-500/40' : ''}
+        ${isDragging ? 'bg-[var(--accent-5)]' : ''}
         ${disabled ? 'cursor-default opacity-50' : ''}
         ${className}
       `}
@@ -65,20 +65,20 @@ export const ResizeHandle: React.FC<ResizeHandleProps> = ({
     >
       <div
         className={`
-          w-0.5 h-full bg-gray-400/60
-          group-hover:bg-blue-500/80
+          w-0.5 h-full bg-[var(--gray-7)]
+          group-hover:bg-[var(--accent-9)]
           transition-colors duration-200
-          ${isDragging ? 'bg-blue-500' : ''}
+          ${isDragging ? 'bg-[var(--accent-9)]' : ''}
           ${isHovered ? 'w-1' : ''}
         `}
       />
 
       {isDragging && (
-        <div className="absolute inset-0 w-2 bg-blue-500/20 -mx-0.5" />
+        <div className="absolute inset-0 w-2 bg-[var(--accent-4)] -mx-0.5" />
       )}
 
       {isHovered && !isDragging && (
-        <div className="absolute inset-0 w-1 bg-blue-500/30 -mx-0.5" />
+        <div className="absolute inset-0 w-1 bg-[var(--accent-5)] -mx-0.5" />
       )}
     </div>
   );
