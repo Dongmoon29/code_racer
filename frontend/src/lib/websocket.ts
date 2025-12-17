@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { WEBSOCKET_CONSTANTS } from '@/constants';
-import { createErrorHandler } from '@/lib/error-tracking';
+import { BaseWebSocketClient } from './websocket/base';
 
 // WebSocket related type definitions
 export interface WebSocketMessage {
@@ -20,137 +20,55 @@ export interface CodeUpdateMessage extends WebSocketMessage {
   user_id?: string; // Backend sends as 'user_id' in JSON
 }
 
-// WebSocket connection management class
-export class WebSocketClient {
-  private ws: WebSocket | null = null;
+// WebSocket connection management class for game rooms
+export class WebSocketClient extends BaseWebSocketClient {
   private messageHandlers: ((message: WebSocketMessage) => void)[] = [];
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts =
-    WEBSOCKET_CONSTANTS.CONNECTION.MAX_RECONNECT_ATTEMPTS;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
   private pingInterval: NodeJS.Timeout | null = null;
   private lastPingTime = 0;
-  private errorHandler = createErrorHandler(
-    'WebSocketClient',
-    'websocket_operation'
-  );
 
   constructor(private gameId: string) {
+    super(
+      'WebSocketClient',
+      WEBSOCKET_CONSTANTS.CONNECTION.MAX_RECONNECT_ATTEMPTS,
+      WEBSOCKET_CONSTANTS.CONNECTION.RECONNECT_BASE_DELAY_MS,
+      WEBSOCKET_CONSTANTS.CONNECTION.MAX_RECONNECT_DELAY_MS
+    );
     this.connect();
   }
 
   private connect() {
-    // WebSocket URL configuration
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    try {
+      const wsUrl = this.buildWebSocketUrl(`/ws/${this.gameId}`);
+      this.ws = new WebSocket(wsUrl);
 
-    // Get WebSocket URL from environment variables
-    let wsUrl: string;
-    if (process.env.NEXT_PUBLIC_WS_URL) {
-      // Case when full URL is set in environment variables
-      wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}/${this.gameId}`;
-    } else {
-      // Default configuration when environment variables are not set
-      let wsHost: string;
-      if (process.env.NODE_ENV === 'production') {
-        // Production: get backend domain from environment variables
-        wsHost =
-          process.env.NEXT_PUBLIC_WS_HOST ||
-          'code-racer-651798881748.asia-northeast3.run.app';
-      } else {
-        // Development: use environment variables or default values
-        wsHost =
-          process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
-          'http://localhost:8080';
-        wsHost = wsHost.replace(/^https?:\/\//, '');
-      }
-      wsUrl = `${wsProtocol}//${wsHost}/ws/${this.gameId}`;
-    }
-
-    // WebSocket authentication: Use token from sessionStorage
-    // Note: Backend sets httpOnly cookie, but WebSocket connections may not reliably send cookies
-    // So we use query parameter as primary method, cookie as fallback (backend checks both)
-    const token = sessionStorage.getItem('authToken');
-    if (!token) {
-      this.errorHandler(new Error('No authentication token found for WebSocket connection'), {
+      this.setupEventHandlers(
+        () => {
+          this.startPingInterval();
+          const token = sessionStorage.getItem('authToken');
+          if (token) {
+            this.sendAuthMessage(token);
+          }
+        },
+        (event) => {
+          const messages = this.parseMessage<WebSocketMessage>(event.data as string);
+          messages.forEach((message) => this.handleMessage(message));
+        },
+        () => {
+          this.handleDisconnect();
+        }
+      );
+    } catch (error) {
+      this.errorHandler(error, {
         action: 'connect',
         gameId: this.gameId,
       });
-      return;
     }
-
-    // Add token as query parameter (WebSocket doesn't support custom headers reliably)
-    // Backend middleware checks: cookie > Authorization header > query parameter
-    wsUrl = `${wsUrl}?token=${encodeURIComponent(token)}`;
-
-    // Create WebSocket connection
-    this.ws = new WebSocket(wsUrl);
-
-    this.ws.onopen = () => {
-      this.reconnectAttempts = 0;
-      this.startPingInterval();
-
-      // Send authentication message after connection (optional)
-      this.sendAuthMessage(token);
-    };
-
-    this.ws.onmessage = (event) => {
-      const raw = event.data;
-      // Some backends may concatenate multiple JSON objects with newlines in a single frame
-      const chunks = typeof raw === 'string' ? raw.split('\n') : [raw];
-
-      for (const chunk of chunks) {
-        const trimmed = typeof chunk === 'string' ? chunk.trim() : chunk;
-        if (!trimmed) continue;
-        try {
-          const message = JSON.parse(trimmed) as WebSocketMessage;
-          this.handleMessage(message);
-        } catch (error) {
-          // Report both the full payload and the specific chunk that failed
-          this.errorHandler(error, {
-            action: 'parse_message',
-            messageData: raw,
-            chunk: trimmed,
-            gameId: this.gameId,
-          });
-        }
-      }
-    };
-
-    this.ws.onclose = () => {
-      this.handleDisconnect();
-    };
-
-    this.ws.onerror = (error) => {
-      this.errorHandler(error, {
-        action: 'websocket_error',
-        event: 'onerror',
-        gameId: this.gameId,
-      });
-    };
   }
 
   private handleDisconnect() {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      const delay = Math.min(
-        WEBSOCKET_CONSTANTS.CONNECTION.RECONNECT_BASE_DELAY_MS *
-          Math.pow(2, this.reconnectAttempts),
-        WEBSOCKET_CONSTANTS.CONNECTION.MAX_RECONNECT_DELAY_MS
-      );
-
-      this.reconnectTimeout = setTimeout(() => {
-        this.connect();
-      }, delay);
-    } else {
-      this.errorHandler(
-        new Error('Max reconnection attempts reached. WebSocket connection failed.'),
-        {
-          action: 'handleDisconnect',
-          reconnectAttempts: this.reconnectAttempts,
-          gameId: this.gameId,
-        }
-      );
-    }
+    this.attemptReconnect(() => {
+      this.connect();
+    });
   }
 
   private startPingInterval() {
@@ -159,12 +77,11 @@ export class WebSocketClient {
     }
 
     this.pingInterval = setInterval(() => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        // Send ping message (browser WebSocket doesn't support ping method)
-        this.ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+      if (this.isConnected()) {
+        this.sendMessage({ type: 'ping', timestamp: Date.now() });
         this.lastPingTime = Date.now();
       }
-    }, WEBSOCKET_CONSTANTS.CONNECTION.PING_INTERVAL_MS); // Ping every 30 seconds
+    }, WEBSOCKET_CONSTANTS.CONNECTION.PING_INTERVAL_MS);
   }
 
   private handleMessage(message: WebSocketMessage) {
@@ -185,53 +102,26 @@ export class WebSocketClient {
 
   // Send code update message
   sendCodeUpdate(code: string) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      const message = {
-        type: 'code_update',
-        data: { code },
-      };
-      this.ws.send(JSON.stringify(message));
-    } else {
-      this.errorHandler(new Error('WebSocket is not connected'), {
-        action: 'sendCodeUpdate',
-        gameId: this.gameId,
-      });
-    }
+    this.sendMessage({
+      type: 'code_update',
+      data: { code },
+    });
   }
 
-  public disconnect() {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Disconnecting WebSocket...');
-    }
-
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
-
+  public override disconnect(): void {
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
       this.pingInterval = null;
     }
-
-    if (this.ws) {
-      this.ws.close(
-        WEBSOCKET_CONSTANTS.CLOSE_CODES.NORMAL_CLOSURE,
-        'User requested disconnect'
-      );
-      this.ws = null;
-    }
+    super.disconnect();
   }
 
   // Send authentication message
   private sendAuthMessage(token: string) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      const authMessage = {
-        type: 'auth',
-        data: { token },
-      };
-      this.ws.send(JSON.stringify(authMessage));
-    }
+    this.sendMessage({
+      type: 'auth',
+      data: { token },
+    });
   }
 }
 

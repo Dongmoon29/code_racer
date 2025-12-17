@@ -1,6 +1,6 @@
 import { WEBSOCKET_CONSTANTS } from '@/constants';
 import { WEBSOCKET_MESSAGE_TYPES } from '@/constants/websocket';
-import { createErrorHandler } from '@/lib/error-tracking';
+import { BaseWebSocketClient } from './websocket/base';
 
 export interface MatchingRequest {
   type: typeof WEBSOCKET_MESSAGE_TYPES.START_MATCHING;
@@ -48,103 +48,63 @@ export interface MatchingWebSocketCallbacks {
   onError?: (error: Event) => void;
 }
 
-export class MatchmakingWebSocketClient {
-  private ws: WebSocket | null = null;
+export class MatchmakingWebSocketClient extends BaseWebSocketClient {
   private callbacks: MatchingWebSocketCallbacks = {};
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts =
-    WEBSOCKET_CONSTANTS.MATCHMAKING.MAX_RECONNECT_ATTEMPTS;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
-  private isIntentionalDisconnect = false;
-  private errorHandler = createErrorHandler(
-    'MatchmakingWebSocketClient',
-    'websocket_operation'
-  );
 
   constructor(callbacks: MatchingWebSocketCallbacks = {}) {
+    super(
+      'MatchmakingWebSocketClient',
+      WEBSOCKET_CONSTANTS.MATCHMAKING.MAX_RECONNECT_ATTEMPTS,
+      WEBSOCKET_CONSTANTS.MATCHMAKING.RECONNECT_BASE_DELAY_MS,
+      WEBSOCKET_CONSTANTS.MATCHMAKING.MAX_RECONNECT_DELAY_MS
+    );
     this.callbacks = callbacks;
   }
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        const wsProtocol =
-          window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = this.buildWebSocketUrl('/ws/matching');
+        this.ws = new WebSocket(wsUrl);
 
-        let wsHost: string;
-        if (process.env.NODE_ENV === 'production') {
-          wsHost =
-            process.env.NEXT_PUBLIC_WS_HOST ||
-            'code-racer-651798881748.asia-northeast3.run.app';
-        } else {
-          wsHost =
-            process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
-            'http://localhost:8080';
-          wsHost = wsHost.replace(/^https?:\/\//, '');
-        }
-
-        const wsUrl = `${wsProtocol}//${wsHost}/ws/matching`;
-
-        // WebSocket authentication: Use token from sessionStorage
-        // Note: Backend sets httpOnly cookie, but WebSocket connections may not reliably send cookies
-        // So we use query parameter as primary method, cookie as fallback (backend checks both)
-        const token = sessionStorage.getItem('authToken');
-        if (!token) {
-          reject(new Error('No authentication token found for WebSocket connection'));
-          return;
-        }
-
-        // Add token as query parameter (WebSocket doesn't support custom headers reliably)
-        // Backend middleware checks: cookie > Authorization header > query parameter
-        const wsUrlWithToken = `${wsUrl}?token=${encodeURIComponent(token)}`;
-
-        this.ws = new WebSocket(wsUrlWithToken);
-
-        this.ws.onopen = () => {
-          this.reconnectAttempts = 0;
-          this.callbacks.onConnect?.();
-          resolve();
-        };
-
-        this.ws.onmessage = (event) => {
-          try {
-            const message = JSON.parse(event.data) as MatchingWebSocketMessage;
-            this.handleMessage(message);
-          } catch (error) {
-            this.errorHandler(error, {
-              action: 'parse_message',
-              messageData: event.data,
-            });
-          }
-        };
-
-        this.ws.onclose = (event) => {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(
-              'Matchmaking WebSocket disconnected:',
-              event.code,
-              event.reason
+        this.setupEventHandlers(
+          () => {
+            this.callbacks.onConnect?.();
+            resolve();
+          },
+          (event) => {
+            const messages = this.parseMessage<MatchingWebSocketMessage>(
+              event.data as string
             );
-          }
-          this.callbacks.onDisconnect?.();
+            messages.forEach((message) => this.handleMessage(message));
+          },
+          (event) => {
+            if (process.env.NODE_ENV === 'development') {
+              console.log(
+                'Matchmaking WebSocket disconnected:',
+                event.code,
+                event.reason
+              );
+            }
+            this.callbacks.onDisconnect?.();
 
-          // Try reconnection if not intentional disconnect
-          if (
-            !this.isIntentionalDisconnect &&
-            this.reconnectAttempts < this.maxReconnectAttempts
-          ) {
-            this.attemptReconnect();
+            // Try reconnection if not intentional disconnect
+            if (!this.isIntentionalDisconnect) {
+              this.attemptReconnect(() => {
+                this.connect().catch((error) => {
+                  this.errorHandler(error, {
+                    action: 'reconnect',
+                    reconnectAttempt: this.reconnectAttempts,
+                  });
+                });
+              });
+            }
+          },
+          (error) => {
+            this.callbacks.onError?.(error);
+            reject(error);
           }
-        };
-
-        this.ws.onerror = (error) => {
-          this.errorHandler(error, {
-            action: 'websocket_error',
-            event: 'onerror',
-          });
-          this.callbacks.onError?.(error);
-          reject(error);
-        };
+        );
       } catch (error) {
         this.errorHandler(error, {
           action: 'connect',
@@ -186,44 +146,10 @@ export class MatchmakingWebSocketClient {
     }
   }
 
-  private attemptReconnect() {
-    this.reconnectAttempts++;
-    const delay = Math.min(
-      WEBSOCKET_CONSTANTS.MATCHMAKING.RECONNECT_BASE_DELAY_MS *
-        Math.pow(2, this.reconnectAttempts),
-      WEBSOCKET_CONSTANTS.MATCHMAKING.MAX_RECONNECT_DELAY_MS
-    ); // Maximum 10 seconds
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(
-        `Attempting to reconnect matchmaking WebSocket (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`
-      );
-    }
-
-    this.reconnectTimeout = setTimeout(() => {
-      this.connect().catch((error) => {
-        this.errorHandler(error, {
-          action: 'reconnect',
-          reconnectAttempt: this.reconnectAttempts,
-          delay,
-        });
-      });
-    }, delay);
-  }
-
   startMatching(
     difficulty: 'Easy' | 'Medium' | 'Hard',
     mode: 'casual_pvp' | 'ranked_pvp' | 'single' = 'casual_pvp'
   ) {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      this.errorHandler(new Error('WebSocket is not connected'), {
-        action: 'startMatching',
-        difficulty,
-        mode,
-      });
-      return;
-    }
-
     const message: MatchingRequest = {
       type: WEBSOCKET_MESSAGE_TYPES.START_MATCHING,
       difficulty,
@@ -233,7 +159,9 @@ export class MatchmakingWebSocketClient {
     if (process.env.NODE_ENV === 'development') {
       console.log('🚀 Sending start_matching message:', message);
     }
-    this.ws.send(JSON.stringify(message));
+
+    this.sendMessage(message);
+
     if (process.env.NODE_ENV === 'development') {
       console.log(
         '✅ Message sent successfully. Started matching with difficulty:',
@@ -243,64 +171,27 @@ export class MatchmakingWebSocketClient {
   }
 
   cancelMatching() {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      this.errorHandler(new Error('WebSocket is not connected'), {
-        action: 'cancelMatching',
-      });
-      return;
-    }
-
     const message: CancelRequest = {
       type: WEBSOCKET_MESSAGE_TYPES.CANCEL_MATCHING,
     };
 
-    this.ws.send(JSON.stringify(message));
+    this.sendMessage(message);
+
     if (process.env.NODE_ENV === 'development') {
       console.log('Cancelled matching');
-    }
-  }
-
-  disconnect() {
-    this.isIntentionalDisconnect = true;
-
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
-
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Matchmaking WebSocket disconnected intentionally');
     }
   }
 
   // Intentional disconnect after matchmaking completion (no error handling)
   disconnectAfterMatch() {
     this.isIntentionalDisconnect = true;
-
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
-
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
+    this.cleanup();
 
     // Call disconnect callback after matchmaking completion
     this.callbacks.onMatchmakingDisconnect?.();
     if (process.env.NODE_ENV === 'development') {
       console.log('Matchmaking WebSocket disconnected after match found');
     }
-  }
-
-  isConnected(): boolean {
-    return this.ws?.readyState === WebSocket.OPEN;
   }
 }
 
