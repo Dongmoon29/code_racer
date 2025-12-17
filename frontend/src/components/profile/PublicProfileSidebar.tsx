@@ -101,16 +101,34 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
           <h1 className="text-xl lg:text-2xl font-bold text-foreground mb-4 text-center">
             {user?.name}
           </h1>
-        </div>
 
-        {/* Follow/Unfollow Button */}
-        {!isOwnProfile && currentUser && (
-          <div className="max-w-md mx-auto space-y-3">
+          {/* Follow Stats */}
+          {!isOwnProfile && currentUser && !statsLoading && (
+            <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground mb-4">
+              <div className="flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                <span className="font-semibold text-foreground">
+                  {followers}
+                </span>
+                <span>followers</span>
+              </div>
+              <span>·</span>
+              <div className="flex items-center gap-1">
+                <span className="font-semibold text-foreground">
+                  {following}
+                </span>
+                <span>following</span>
+              </div>
+            </div>
+          )}
+
+          {/* Follow/Unfollow Button */}
+          {!isOwnProfile && currentUser && (
             <button
               type="button"
               onClick={handleFollow}
               disabled={isLoading || statsLoading}
-              className={`w-full rounded-lg font-semibold py-3 px-4 transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+              className={`w-full rounded-lg font-semibold py-3 px-4 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
                 isFollowing
                   ? 'bg-[var(--gray-6)] hover:bg-[var(--gray-7)] text-foreground'
                   : 'bg-[var(--green-9)] hover:bg-[var(--green-10)] text-white'
@@ -118,40 +136,17 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
             >
               {isFollowing ? 'Unfollow' : 'Follow'}
             </button>
-
-            {/* Follow Stats */}
-            {!statsLoading && (
-              <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Users className="w-4 h-4" />
-                  <span className="font-semibold text-foreground">
-                    {followers}
-                  </span>
-                  <span>followers</span>
-                </div>
-                <span>·</span>
-                <div className="flex items-center gap-1">
-                  <span className="font-semibold text-foreground">
-                    {following}
-                  </span>
-                  <span>following</span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Location */}
         {user?.company && (
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+          <div className="flex align-center items-center space-x-2 text-sm text-muted-foreground">
             <MapPin className="w-4 h-4" />
             <span>{user.company}</span>
+            {/* Job Title */}
+            {user?.job_title && <span>{user.job_title}</span>}
           </div>
-        )}
-
-        {/* Job Title */}
-        {user?.job_title && (
-          <div className="text-sm text-muted-foreground">{user.job_title}</div>
         )}
 
         {/* Rating */}
