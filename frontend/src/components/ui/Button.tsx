@@ -1,29 +1,44 @@
 import * as React from 'react';
+import { Button as RadixButton } from '@radix-ui/themes';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
-
 import { cn } from '@/lib/utils';
 
+// Map our variants to Radix Themes variants
+const variantMap = {
+  default: 'solid' as const,
+  destructive: 'solid' as const,
+  outline: 'outline' as const,
+  secondary: 'soft' as const,
+  ghost: 'ghost' as const,
+  link: 'ghost' as const,
+};
+
+const sizeMap: Record<'default' | 'sm' | 'lg' | 'icon', '1' | '2' | '3'> = {
+  default: '2',
+  sm: '1',
+  lg: '3',
+  icon: '2',
+};
+
+// Keep buttonVariants for backward compatibility with custom styles
 const buttonVariants = cva(
   "inline-flex items-center justify-center cursor-pointer gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none",
   {
     variants: {
       variant: {
-        default: 'btn-neon', // 새로운 neon 스타일 적용
-        destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-        outline:
-          'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-        secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+        default: 'btn-neon', // Custom neon style
+        destructive: '',
+        outline: '',
+        secondary: '',
+        ghost: '',
+        link: '',
       },
       size: {
-        default: 'h-9 px-4 py-2',
-        sm: 'h-8 rounded-md px-3',
-        lg: 'h-12 rounded-md px-8 text-lg', // 크기 약간 수정
-        icon: 'size-9',
+        default: '',
+        sm: '',
+        lg: '',
+        icon: '',
       },
     },
     defaultVariants: {
@@ -33,18 +48,57 @@ const buttonVariants = cva(
   }
 );
 
+interface ButtonProps
+  extends React.ComponentProps<'button'>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+  color?: 'gray' | 'gold' | 'bronze' | 'brown' | 'yellow' | 'amber' | 'orange' | 'tomato' | 'red' | 'ruby' | 'crimson' | 'pink' | 'plum' | 'purple' | 'violet' | 'iris' | 'indigo' | 'blue' | 'cyan' | 'teal' | 'jade' | 'green' | 'grass' | 'lime' | 'mint' | 'sky';
+  radius?: 'none' | 'small' | 'medium' | 'large' | 'full';
+  highContrast?: boolean;
+}
+
 function Button({
   className,
-  variant,
-  size,
+  variant = 'default',
+  size = 'default',
   asChild = false,
+  color,
+  radius,
+  highContrast,
   ...props
-}: React.ComponentProps<'button'> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean;
-  }) {
-  const Comp = asChild ? Slot : 'button';
+}: ButtonProps) {
+  // Use Radix Themes Button for most cases
+  if (variant !== 'default' || !className?.includes('btn-neon')) {
+    const radixVariant = (variant && variantMap[variant]) || 'solid';
+    const radixSize: '1' | '2' | '3' = (size && sizeMap[size]) || '2';
+    
+    // Map destructive to red color
+    const radixColor = color || (variant === 'destructive' ? 'red' : undefined);
+    
+    if (asChild) {
+      return (
+        <Slot
+          className={cn(buttonVariants({ variant, size, className }))}
+          {...props}
+        />
+      );
+    }
 
+    return (
+      <RadixButton
+        variant={radixVariant}
+        size={radixSize}
+        color={radixColor}
+        radius={radius}
+        highContrast={highContrast}
+        className={cn(className)}
+        {...props}
+      />
+    );
+  }
+
+  // Keep custom neon button style for default variant
+  const Comp = asChild ? Slot : 'button';
   return (
     <Comp
       data-slot="button"

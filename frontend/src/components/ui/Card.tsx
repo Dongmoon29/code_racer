@@ -1,4 +1,6 @@
 import React from 'react';
+import { Card as RadixCard, Heading, Text, Flex } from '@radix-ui/themes';
+import { cn } from '@/lib/utils';
 
 // 기본 Card Props
 export interface CardProps {
@@ -35,34 +37,6 @@ interface CardFooterProps {
   className?: string;
 }
 
-// Variant 스타일 정의
-const getVariantStyles = (variant: CardProps['variant'] = 'default') => {
-  switch (variant) {
-    case 'elevated':
-      return 'shadow-lg hover:shadow-xl';
-    case 'outline':
-      return 'border-2 shadow-none';
-    case 'ghost':
-      return 'border-none shadow-none bg-transparent';
-    default:
-      return 'shadow-sm hover:shadow-lg';
-  }
-};
-
-// Size 스타일 정의
-const getSizeStyles = (size: CardProps['size'] = 'default') => {
-  switch (size) {
-    case 'sm':
-      return 'text-sm';
-    case 'lg':
-      return 'text-lg';
-    case 'xl':
-      return 'text-xl';
-    default:
-      return 'text-base';
-  }
-};
-
 // 메인 Card 컴포넌트
 export const Card: React.FC<CardProps> = ({
   children,
@@ -71,31 +45,41 @@ export const Card: React.FC<CardProps> = ({
   variant = 'default',
   size = 'default',
 }) => {
-  const variantStyles = getVariantStyles(variant);
-  const sizeStyles = getSizeStyles(size);
+  // Map variants to Radix Card props
+  const variantProps: {
+    variant?: 'surface' | 'classic' | 'ghost';
+    style?: React.CSSProperties;
+  } = {};
+
+  if (variant === 'outline') {
+    variantProps.variant = 'classic';
+  } else if (variant === 'ghost') {
+    variantProps.variant = 'ghost';
+  } else {
+    variantProps.variant = 'surface';
+  }
+
+  // Add custom styles for elevated variant
+  const customStyles =
+    variant === 'elevated'
+      ? { boxShadow: 'var(--shadow-4)' }
+      : onClick
+        ? { cursor: 'pointer' }
+        : undefined;
 
   return (
-    <div
-      className={`
-        bg-[hsl(var(--card))]
-        text-[hsl(var(--card-foreground))]
-        rounded-xl 
-        border 
-        border-border 
-        overflow-hidden 
-        transition-all
-        duration-300
-        ease-in-out
-        p-3
-        ${variantStyles}
-        ${sizeStyles}
-        ${onClick ? 'cursor-pointer hover:scale-[1.02]' : ''}
-        ${className}
-      `}
+    <RadixCard
+      {...variantProps}
+      style={customStyles}
+      className={cn(
+        'transition-all duration-300 ease-in-out',
+        onClick && 'hover:scale-[1.02]',
+        className
+      )}
       onClick={onClick}
     >
       {children}
-    </div>
+    </RadixCard>
   );
 };
 
@@ -104,7 +88,11 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
   children,
   className = '',
 }) => {
-  return <div className={`p-6 pb-0 ${className}`}>{children}</div>;
+  return (
+    <Flex direction="column" gap="2" className={cn('p-6 pb-0', className)}>
+      {children}
+    </Flex>
+  );
 };
 
 export const CardTitle: React.FC<CardTitleProps> = ({
@@ -112,11 +100,9 @@ export const CardTitle: React.FC<CardTitleProps> = ({
   className = '',
 }) => {
   return (
-    <h3
-      className={`text-2xl font-semibold leading-none tracking-tight ${className}`}
-    >
+    <Heading size="6" className={cn('leading-none tracking-tight', className)}>
       {children}
-    </h3>
+    </Heading>
   );
 };
 
@@ -125,11 +111,9 @@ export const CardDescription: React.FC<CardDescriptionProps> = ({
   className = '',
 }) => {
   return (
-    <p
-      className={`text-sm text-[hsl(var(--muted-foreground))] mt-1.5 ${className}`}
-    >
+    <Text size="2" color="gray" className={cn('mt-1.5', className)}>
       {children}
-    </p>
+    </Text>
   );
 };
 
@@ -137,7 +121,7 @@ export const CardContent: React.FC<CardContentProps> = ({
   children,
   className = '',
 }) => {
-  return <div className={`p-6 ${className}`}>{children}</div>;
+  return <div className={cn('p-6', className)}>{children}</div>;
 };
 
 export const CardFooter: React.FC<CardFooterProps> = ({
@@ -145,7 +129,9 @@ export const CardFooter: React.FC<CardFooterProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`p-6 pt-0 flex items-center ${className}`}>{children}</div>
+    <Flex align="center" className={cn('p-6 pt-0', className)}>
+      {children}
+    </Flex>
   );
 };
 

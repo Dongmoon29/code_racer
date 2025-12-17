@@ -1,30 +1,49 @@
 import React from 'react';
+import { Badge as RadixBadge } from '@radix-ui/themes';
 import { cn } from '@/lib/utils';
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface BadgeProps {
+  children?: React.ReactNode;
+  className?: string;
   variant?: 'default' | 'secondary' | 'destructive' | 'outline';
+  color?: 'gray' | 'gold' | 'bronze' | 'brown' | 'yellow' | 'amber' | 'orange' | 'tomato' | 'red' | 'ruby' | 'crimson' | 'pink' | 'plum' | 'purple' | 'violet' | 'iris' | 'indigo' | 'blue' | 'cyan' | 'teal' | 'jade' | 'green' | 'grass' | 'lime' | 'mint' | 'sky';
+  size?: '1' | '2' | '3';
+  radius?: 'none' | 'small' | 'medium' | 'large' | 'full';
 }
 
-const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
-  ({ className, variant = 'default', ...props }, ref) => {
+// Map our variants to Radix Badge variants
+const variantMap: Record<NonNullable<BadgeProps['variant']>, 'solid' | 'soft' | 'outline'> = {
+  default: 'solid',
+  secondary: 'soft',
+  destructive: 'solid',
+  outline: 'outline',
+};
+
+// Map our variants to Radix Badge colors
+const variantToColor: Record<NonNullable<BadgeProps['variant']>, BadgeProps['color']> = {
+  default: undefined, // Use default accent color
+  secondary: 'gray',
+  destructive: 'red',
+  outline: undefined,
+};
+
+const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
+  ({ className, variant = 'default', color, size = '2', radius, children, ...props }, ref) => {
+    const radixVariant = variantMap[variant];
+    const radixColor = color || variantToColor[variant];
+
     return (
-      <div
+      <RadixBadge
         ref={ref}
-        className={cn(
-          'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-          {
-            'border-transparent bg-primary text-primary-foreground hover:bg-primary/80':
-              variant === 'default',
-            'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80':
-              variant === 'secondary',
-            'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80':
-              variant === 'destructive',
-            'text-foreground': variant === 'outline',
-          },
-          className
-        )}
+        variant={radixVariant}
+        color={radixColor}
+        size={size}
+        radius={radius}
+        className={cn(className)}
         {...props}
-      />
+      >
+        {children}
+      </RadixBadge>
     );
   }
 );

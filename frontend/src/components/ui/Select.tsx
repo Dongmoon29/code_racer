@@ -1,5 +1,7 @@
 import React from 'react';
+import { Select as RadixSelect } from '@radix-ui/themes';
 import { LucideIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface SelectOption {
   value: string;
@@ -14,6 +16,10 @@ interface SelectProps {
   icon?: LucideIcon;
   disabled?: boolean;
   className?: string;
+  size?: '1' | '2' | '3';
+  variant?: 'surface' | 'classic' | 'soft' | 'ghost';
+  color?: 'gray' | 'gold' | 'bronze' | 'brown' | 'yellow' | 'amber' | 'orange' | 'tomato' | 'red' | 'ruby' | 'crimson' | 'pink' | 'plum' | 'purple' | 'violet' | 'iris' | 'indigo' | 'blue' | 'cyan' | 'teal' | 'jade' | 'green' | 'grass' | 'lime' | 'mint' | 'sky';
+  radius?: 'none' | 'small' | 'medium' | 'large' | 'full';
 }
 
 export function Select({
@@ -24,54 +30,44 @@ export function Select({
   icon: Icon,
   disabled = false,
   className = '',
+  size = '2',
+  variant = 'surface',
+  color,
+  radius,
 }: SelectProps) {
   return (
-    <div className="relative">
+    <div className={cn('relative', className)}>
       {Icon && (
         <Icon
-          className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))]"
-          size={20}
+          className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10 text-[var(--gray-9)] pointer-events-none"
+          size={16}
         />
       )}
-      <select
+      <RadixSelect.Root
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onValueChange={onChange}
         disabled={disabled}
-        className={`
-          w-full 
-          ${Icon ? 'pl-12' : 'pl-4'} 
-          pr-4 
-          py-2 
-          rounded-lg 
-          bg-[hsl(var(--card))] 
-          border 
-          border-input 
-          text-[hsl(var(--foreground))] 
-          focus:bg-[hsl(var(--background))] 
-          focus:border-[hsl(var(--ring))] 
-          focus:outline-none 
-          focus:ring-1 
-          focus:ring-[hsl(var(--ring))] 
-          appearance-none 
-          cursor-pointer 
-          disabled:opacity-50
-          disabled:cursor-not-allowed
-          [&>option]:bg-[hsl(var(--background))] 
-          [&>option]:text-[hsl(var(--foreground))]
-          ${className}
-        `}
+        size={size}
       >
-        {placeholder && (
-          <option value="" disabled>
-            {placeholder}
-          </option>
-        )}
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        <RadixSelect.Trigger
+          variant={variant}
+          color={color}
+          radius={radius}
+          className={cn(Icon && 'pl-10')}
+        />
+        <RadixSelect.Content>
+          {placeholder && (
+            <RadixSelect.Item value="" disabled>
+              {placeholder}
+            </RadixSelect.Item>
+          )}
+          {options.map((option) => (
+            <RadixSelect.Item key={option.value} value={option.value}>
+              {option.label}
+            </RadixSelect.Item>
+          ))}
+        </RadixSelect.Content>
+      </RadixSelect.Root>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import '@radix-ui/themes/styles.css';
 
 :root {
   --background: 0 0% 100%;

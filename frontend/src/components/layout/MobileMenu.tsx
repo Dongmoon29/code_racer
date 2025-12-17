@@ -22,16 +22,16 @@ const MobileMenu: FC<MobileMenuProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="md:hidden py-4 relative z-50">
+    <div className="md:hidden py-4 relative z-50 border-t border-[var(--gray-6)] bg-[var(--color-panel)]">
       {isLoggedIn && user ? (
         <div className="space-y-3">
-          <div className="px-2 text-sm text-[hsl(var(--foreground))] flex items-center space-x-2">
+          <div className="px-2 text-sm text-[var(--gray-11)] flex items-center space-x-2">
             <span>Signed in as</span>
-            <span>{user.email}</span>
+            <span className="font-medium">{user.email}</span>
           </div>
           <Link
             href="/dashboard"
-            className="block px-2 py-2 text-foreground hover:bg-muted rounded text-[hsl(var(--foreground))]"
+            className="block px-2 py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
             onClick={onClose}
           >
             Dashboard
@@ -39,7 +39,7 @@ const MobileMenu: FC<MobileMenuProps> = ({
           {user.role === 'admin' && (
             <Link
               href="/admin"
-              className="block px-2 py-2 text-foreground hover:bg-muted rounded text-[hsl(var(--foreground))]"
+              className="block px-2 py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
               onClick={onClose}
             >
               Admin Panel
@@ -50,7 +50,7 @@ const MobileMenu: FC<MobileMenuProps> = ({
               onLogout();
               onClose();
             }}
-            className="block w-full text-left px-2 py-2 text-foreground hover:bg-muted rounded text-[hsl(var(--foreground))]"
+            className="block w-full text-left px-2 py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
           >
             Logout
           </button>
@@ -59,14 +59,14 @@ const MobileMenu: FC<MobileMenuProps> = ({
         <div className="space-y-3">
           <Link
             href="/login"
-            className="block px-2 py-2 text-foreground hover:bg-muted rounded text-[hsl(var(--foreground))]"
+            className="block px-2 py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
             onClick={onClose}
           >
             Login
           </Link>
           <Link
             href="/register"
-            className="block px-2 py-2 text-foreground hover:bg-muted rounded text-[hsl(var(--foreground))]"
+            className="block px-2 py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
             onClick={onClose}
           >
             Register

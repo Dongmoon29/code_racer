@@ -28,8 +28,7 @@ const UserDropdown: FC<UserDropdownProps> = ({
     <div className="relative z-50" ref={dropdownRef}>
       <button
         onClick={onToggle}
-        className="flex items-center space-x-3 hover:text-primary focus:outline-none cursor-pointer"
-        style={{ color: 'hsl(var(--foreground))' }}
+        className="flex items-center space-x-3 text-[var(--color-text)] hover:text-[var(--accent-9)] focus:outline-none cursor-pointer transition-colors"
       >
         <div className="relative w-6 h-6 rounded-full overflow-hidden">
           <Image
@@ -43,7 +42,7 @@ const UserDropdown: FC<UserDropdownProps> = ({
             blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
           />
         </div>
-        <span className="text-sm">{user.name}</span>
+        <span className="text-sm font-medium">{user.name}</span>
         <svg
           className={`w-4 h-4 transition-transform ${
             isOpen ? 'transform rotate-180' : ''
@@ -63,8 +62,7 @@ const UserDropdown: FC<UserDropdownProps> = ({
 
       {isOpen && (
         <div
-          className="absolute right-0 mt-2 w-48 rounded-md shadow-lg z-[59] border border-border"
-          style={{ backgroundColor: 'hsl(var(--background))' }}
+          className="absolute right-0 mt-2 w-48 rounded-md shadow-lg z-[59] border border-[var(--gray-6)] bg-[var(--color-panel)]"
         >
           <div className="py-1">
             <button
@@ -72,16 +70,14 @@ const UserDropdown: FC<UserDropdownProps> = ({
                 onNavigateToProfile();
                 onClose();
               }}
-              className="block w-full text-left px-4 py-2 text-sm hover:bg-muted cursor-pointer"
-              style={{ color: 'hsl(var(--foreground))' }}
+              className="block w-full text-left px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--gray-4)] cursor-pointer transition-colors"
             >
               My Profile
             </button>
             {user.role === 'admin' && (
               <Link
                 href="/admin"
-                className="block w-full text-left px-4 py-2 text-sm hover:bg-muted cursor-pointer"
-                style={{ color: 'hsl(var(--foreground))' }}
+                className="block w-full text-left px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--gray-4)] cursor-pointer transition-colors"
                 onClick={onClose}
               >
                 Admin Panel
@@ -89,8 +85,7 @@ const UserDropdown: FC<UserDropdownProps> = ({
             )}
             <button
               onClick={onLogout}
-              className="block w-full text-left px-4 py-2 text-sm hover:bg-muted cursor-pointer"
-              style={{ color: 'hsl(var(--foreground))' }}
+              className="block w-full text-left px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--gray-4)] cursor-pointer transition-colors"
             >
               Logout
             </button>

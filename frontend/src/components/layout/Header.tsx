@@ -40,26 +40,33 @@ const Header: FC = () => {
   };
 
   return (
-    <header className="border-b border-border bg-[color:hsl(var(--header))] relative z-50">
+    <header className="border-b border-[var(--gray-6)] bg-[var(--color-panel)] relative z-50">
       <div className="px-4">
         <div className="flex justify-between items-stretch h-12">
           <div className="flex justify-between items-center gap-4 h-full">
             <div className="flex items-center gap-3">
-              <Link href="/" className="flex items-center gap-3">
+              <Link 
+                href="/" 
+                className="flex items-center gap-3 text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors"
+              >
                 <Logo />
-                codeRacer
+                <span className="font-semibold">codeRacer</span>
               </Link>
             </div>
             <div
               className={`flex items-center gap-3 h-full ${
                 isDashboardRoute
-                  ? 'border-b-2 border-orange-300 text-orange-300'
+                  ? 'border-b-2 border-[var(--accent-9)]'
                   : ''
               }`}
             >
               <Link
                 href="/dashboard"
-                className="flex font-medium text-sm items-center gap-3 h-full hover:text-orange-500 transition-colors"
+                className={`flex font-medium text-sm items-center gap-3 h-full transition-colors ${
+                  isDashboardRoute
+                    ? 'text-[var(--accent-9)]'
+                    : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
+                }`}
                 aria-current={isDashboardRoute ? 'page' : undefined}
               >
                 Dashboard
@@ -71,8 +78,7 @@ const Header: FC = () => {
             <ThemeToggle />
             <button
               onClick={toggleMenu}
-              className="text-foreground hover:text-primary focus:outline-none"
-              style={{ color: 'hsl(var(--foreground))' }}
+              className="text-[var(--color-text)] hover:text-[var(--accent-9)] focus:outline-none transition-colors"
             >
               <svg
                 className="w-6 h-6"
@@ -105,8 +111,7 @@ const Header: FC = () => {
             ) : (
               <Link
                 href="/login"
-                className="hover:text-primary text-sm"
-                style={{ color: 'hsl(var(--foreground))' }}
+                className="text-[var(--gray-11)] hover:text-[var(--accent-9)] text-sm transition-colors"
               >
                 Login
               </Link>

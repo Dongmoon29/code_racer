@@ -8,16 +8,16 @@ const alertVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border-[hsl(var(--border))]',
+          'bg-[var(--color-panel)] text-[var(--color-text)] border-[var(--gray-6)]',
         destructive:
-          'bg-red-500 border-destructive/50 text-white dark:border-destructive [&>svg]:text-destructive',
-        info: 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-200/30 dark:bg-blue-900/30 dark:text-blue-200',
+          'bg-[var(--red-3)] border-[var(--red-6)] text-[var(--red-11)] dark:bg-[var(--red-2)] dark:border-[var(--red-6)] dark:text-[var(--red-11)]',
+        info: 'bg-[var(--blue-3)] border-[var(--blue-6)] text-[var(--blue-11)] dark:bg-[var(--blue-2)] dark:border-[var(--blue-6)] dark:text-[var(--blue-11)]',
         success:
-          'border-green-200 bg-green-50 text-green-800 dark:border-green-200/30 dark:bg-green-900/30 dark:text-green-200',
+          'bg-[var(--green-3)] border-[var(--green-6)] text-[var(--green-11)] dark:bg-[var(--green-2)] dark:border-[var(--green-6)] dark:text-[var(--green-11)]',
         warning:
-          'border-yellow-200 bg-yellow-50 text-yellow-800 dark:border-yellow-200/30 dark:bg-yellow-900/30 dark:text-yellow-200',
+          'bg-[var(--amber-3)] border-[var(--amber-6)] text-[var(--amber-11)] dark:bg-[var(--amber-2)] dark:border-[var(--amber-6)] dark:text-[var(--amber-11)]',
         error:
-          'border-red-200 bg-red-50 text-red-800 dark:border-red-200/30 dark:bg-red-900/30 dark:text-red-200',
+          'bg-[var(--red-3)] border-[var(--red-6)] text-[var(--red-11)] dark:bg-[var(--red-2)] dark:border-[var(--red-6)] dark:text-[var(--red-11)]',
       },
     },
     defaultVariants: {
@@ -29,7 +29,7 @@ const alertVariants = cva(
 interface AlertProps
   extends React.ComponentProps<'div'>,
     VariantProps<typeof alertVariants> {
-  onClick?: () => void; // Optional onClick handler
+  onClick?: () => void;
 }
 
 function Alert({ className, variant, ...props }: AlertProps) {
