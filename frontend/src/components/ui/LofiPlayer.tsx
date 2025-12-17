@@ -368,7 +368,7 @@ export function LofiPlayer({
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-1.5 hover:bg-accent/40 rounded-md transition-colors group"
+                className="p-1.5 hover:bg-accent/40 rounded-md transition-colors group cursor-pointer"
                 title="Close"
               >
                 <X className="w-4 h-4 group-hover:rotate-90 transition-transform" />
@@ -417,10 +417,10 @@ export function LofiPlayer({
                 <button
                   onClick={togglePlay}
                   className={cn(
-                    'p-3 rounded-full transition-all duration-200',
+                    'p-3 rounded-full transition-all duration-200 cursor-pointer',
                     'bg-gradient-to-br from-primary/20 to-primary/10',
-                    'hover:from-primary/30 hover:to-primary/20',
-                    'border border-primary/20',
+                    'hover:from-primary/40 hover:to-primary/30',
+                    'border border-primary/20 hover:border-primary/40',
                     'shadow-lg hover:shadow-xl',
                     isPlaying && 'animate-pulse'
                   )}

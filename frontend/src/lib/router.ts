@@ -12,6 +12,7 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   LEADERBOARD: '/leaderboard',
   RACE: '/race',
+  SETTINGS: '/settings',
   PROFILE: '/profile',
   USER_PROFILE: (userId: string) => `/users/${userId}`,
 
@@ -99,6 +100,10 @@ export class RouterHelper {
 
   goToRace() {
     return this.push(ROUTES.RACE);
+  }
+
+  goToSettings() {
+    return this.push(ROUTES.SETTINGS);
   }
 
   goToProfile() {
