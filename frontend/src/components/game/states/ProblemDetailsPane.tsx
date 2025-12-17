@@ -1,5 +1,5 @@
-import React, { FC, memo, useState } from 'react';
-import { FileText, Minimize2, CheckCircle2 } from 'lucide-react';
+import React, { FC, memo, useEffect, useState } from 'react';
+import { FileText, Minimize2, CheckCircle2, Loader2 } from 'lucide-react';
 import { ProblemDetailsTabs } from './ProblemDetailsTabs';
 import TestCaseDisplay from '../TestCaseDisplay';
 import { SubmissionProgress } from '@/types/websocket';
@@ -46,6 +46,16 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
       'description'
     );
 
+    const isEvaluating = submissionProgress?.isSubmitting;
+
+    // Automatically switch to "Test Results" tab when evaluation starts
+    useEffect(() => {
+      if (!submissionProgress) return;
+      if (submissionProgress.isSubmitting) {
+        setActiveTab('test-results');
+      }
+    }, [submissionProgress]);
+
     if (!isExpanded) {
       return (
         <button
@@ -67,7 +77,8 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
       {
         id: 'test-results',
         label: 'Test Results',
-        icon: CheckCircle2,
+        icon: isEvaluating ? Loader2 : CheckCircle2,
+        isLoading: !!isEvaluating,
       },
     ];
 

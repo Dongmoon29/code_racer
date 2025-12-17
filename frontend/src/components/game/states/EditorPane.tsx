@@ -1,5 +1,5 @@
-import React, { FC, memo, useState, useRef, useEffect } from 'react';
-import { Expand, Minimize, Play, Music, Settings } from 'lucide-react';
+import { FC, memo, useState, useRef, useEffect } from 'react';
+import { Expand, Minimize, Play, Music, Settings, Loader2 } from 'lucide-react';
 import CodeEditor from '../CodeEditor';
 import LanguageSelector from '../LanguageSelector';
 import { useFullscreen } from '@/contexts/FullscreenContext';
@@ -105,7 +105,11 @@ export const EditorPane: FC<EditorPaneProps> = memo(
                 }`}
                 title="Run Submission"
               >
-                <Play className="w-4 h-4" />
+                {runDisabled ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-[var(--accent-9)]" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
               </button>
             )}
             {showMusicButton && (
@@ -116,9 +120,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
               >
                 <Music
                   className={`w-4 h-4 ${
-                    isMusicPlaying
-                      ? 'animate-pulse text-[var(--accent-9)]'
-                      : ''
+                    isMusicPlaying ? 'animate-pulse text-[var(--accent-9)]' : ''
                   }`}
                 />
               </button>

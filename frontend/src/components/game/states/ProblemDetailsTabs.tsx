@@ -5,6 +5,7 @@ interface Tab {
   id: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  isLoading?: boolean;
 }
 
 interface ProblemDetailsTabsProps {
@@ -39,7 +40,9 @@ export const ProblemDetailsTabs: FC<ProblemDetailsTabsProps> = memo(
                 <Icon
                   className={cn(
                     'w-4 h-4',
-                    isActive
+                    tab.isLoading
+                      ? 'animate-spin text-[var(--accent-9)]'
+                      : isActive
                       ? 'text-[var(--accent-9)]'
                       : 'text-[var(--gray-11)]'
                   )}
