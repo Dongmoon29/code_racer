@@ -106,8 +106,8 @@ func Setup(
 			auth.POST("/exchange-token", authController.ExchangeToken)
 		}
 
-		// Public user routes (stats can be viewed without auth)
-		api.GET("/users/:userId/follow/stats", followController.GetFollowStats)
+		// Public user routes (stats can be viewed without auth, but optional auth for is_following)
+		api.GET("/users/:userId/follow/stats", authMiddleware.OptionalAuth(), followController.GetFollowStats)
 
 		// secured routes
 		secured := api.Group("/")

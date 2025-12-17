@@ -45,7 +45,7 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
   const { data: followStats, isLoading: statsLoading } = useQuery({
     queryKey: ['followStats', user.id],
     queryFn: () => userApi.getFollowStats(user.id),
-    enabled: !isOwnProfile,
+    enabled: !isOwnProfile && !!currentUser, // Only fetch if not own profile and user is authenticated
   });
 
   // Follow mutation
@@ -130,7 +130,7 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
               disabled={isLoading || statsLoading}
               className={`w-full rounded-lg font-semibold py-3 px-4 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
                 isFollowing
-                  ? 'bg-[var(--gray-6)] hover:bg-[var(--gray-7)] text-foreground'
+                  ? 'bg-red-600 hover:bg-red-700 text-white dark:bg-red-600 dark:hover:bg-red-700'
                   : 'bg-[var(--green-9)] hover:bg-[var(--green-10)] text-white'
               }`}
             >

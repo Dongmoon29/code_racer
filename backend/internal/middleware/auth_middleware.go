@@ -56,6 +56,26 @@ func (m *AuthMiddleware) WebSocketAuthRequired() gin.HandlerFunc {
 	}
 }
 
+// OptionalAuth sets userID in context if token is present, but doesn't require authentication
+func (m *AuthMiddleware) OptionalAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokenString := m.extractToken(c, false)
+		if tokenString != "" {
+			// Try to validate token, but don't fail if invalid
+			claims, err := m.authService.ValidateToken(tokenString)
+			if err == nil {
+				userID, err := uuid.Parse(claims.UserID)
+				if err == nil {
+					c.Set("userID", userID)
+					m.logger.Debug().Str("userID", userID.String()).Msg("Optional auth: user authenticated")
+				}
+			}
+		}
+		// Continue regardless of authentication status
+		c.Next()
+	}
+}
+
 // extractToken extracts JWT token from request (header, cookie, or query param)
 func (m *AuthMiddleware) extractToken(c *gin.Context, allowQueryParam bool) string {
 	// Priority order: Authorization header > Cookie > Query parameter (if allowed)
