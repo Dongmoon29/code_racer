@@ -73,9 +73,11 @@ export const EditorPane: FC<EditorPaneProps> = memo(
 
     // Keep the editor mounted even when minimized to allow live updates.
     // Use height collapse instead of display:none to avoid breaking editor updates.
-    const contentClass = isMinimized
-      ? 'h-0 overflow-hidden'
-      : 'h-[calc(100%-40px)] overflow-auto';
+    // The outer container handles border radius and clipping so the inner editor
+    // visuals match the rounded corners.
+    const contentClass = `${
+      isMinimized ? 'h-0' : 'h-[calc(100%-40px)]'
+    } rounded-b-lg overflow-hidden`;
 
     return (
       <div className="border rounded-lg min-w-0 h-full flex flex-col relative">
