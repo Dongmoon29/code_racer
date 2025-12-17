@@ -25,6 +25,8 @@ func Setup(
 	problemController *controller.ProblemController,
 	wsController *controller.WebSocketController,
 	followController *controller.FollowController,
+	communityController *controller.CommunityController,
+	postCommentController *controller.PostCommentController,
 	authMiddleware *middleware.AuthMiddleware,
 	cfg *config.Config,
 	db *gorm.DB,
@@ -128,12 +130,38 @@ func Setup(
 				user.PUT("/profile", userController.UpdateProfile)
 				user.GET("/leaderboard", userController.GetLeaderboard)
 
-				// Follow routes
-				user.POST("/:userId/follow", followController.Follow)
-				user.DELETE("/:userId/follow", followController.Unfollow)
-				user.GET("/:userId/followers", followController.GetFollowers)
-				user.GET("/:userId/following", followController.GetFollowing)
+			// Follow routes
+			user.POST("/:userId/follow", followController.Follow)
+			user.DELETE("/:userId/follow", followController.Unfollow)
+			user.GET("/:userId/followers", followController.GetFollowers)
+			user.GET("/:userId/following", followController.GetFollowing)
+		}
+
+		// Community routes (community board)
+		community := secured.Group("/feedback") // Keep API path as /feedback for backward compatibility
+		{
+			// Public routes - all authenticated users can view and create
+			community.POST("", communityController.CreatePost)
+			community.GET("", communityController.ListPosts) // All users can view all posts
+			community.GET("/my", communityController.GetUserPosts)
+			community.GET("/:id", communityController.GetPost)
+
+			// Post comments routes (separate group to avoid wildcard conflict)
+			comments := community.Group("/comments")
+			{
+				comments.GET("/:feedbackId", postCommentController.GetComments)
+				comments.POST("/:feedbackId", postCommentController.CreateComment)
+				comments.PUT("/:id", postCommentController.UpdateComment)
+				comments.DELETE("/:id", postCommentController.DeleteComment)
 			}
+
+			// Admin-only routes
+			community.Use(authMiddleware.AdminRequired())
+			{
+				community.PATCH("/:id/status", communityController.UpdatePostStatus)
+				community.DELETE("/:id", communityController.DeletePost)
+			}
+		}
 
 			// admin users
 			admin := secured.Group("/admin")

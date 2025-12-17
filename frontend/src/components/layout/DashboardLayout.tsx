@@ -1,5 +1,5 @@
 import { ReactNode, useMemo } from 'react';
-import { Trophy, User, Shield, Settings } from 'lucide-react';
+import { Trophy, User, Shield, Settings, MessageSquare } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { ROUTES } from '@/lib/router';
@@ -29,6 +29,12 @@ function useNavigationItems(userId?: string, userRole?: string): NavigationItem[
         label: 'Settings',
         icon: <Settings className="w-5 h-5 shrink-0" />,
         pattern: '/settings',
+      },
+      {
+        href: ROUTES.COMMUNITY,
+        label: 'Community',
+        icon: <MessageSquare className="w-5 h-5 shrink-0" />,
+        pattern: '/community',
       },
     ];
 

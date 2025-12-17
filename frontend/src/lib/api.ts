@@ -349,4 +349,184 @@ export const userApi = {
   },
 };
 
+export const communityApi = {
+  create: async (type: 'bug' | 'feature' | 'improvement' | 'other', title: string, content: string) => {
+    const response = await api.post('/feedback', {
+      type,
+      title,
+      content,
+    });
+    return response.data as {
+      success: boolean;
+      data: {
+        id: string;
+        user_id: string;
+        type: string;
+        title: string;
+        content: string;
+        status: string;
+        created_at: string;
+        updated_at: string;
+      };
+    };
+  },
+
+  listPosts: async (limit = 50, offset = 0, status?: string, type?: string) => {
+    const params: any = { limit, offset };
+    if (status) params.status = status;
+    if (type) params.type = type;
+    
+    const response = await api.get('/feedback', { params });
+    return response.data as {
+      success: boolean;
+      data: {
+        items: Array<{
+          id: string;
+          user_id: string;
+          type: string;
+          title: string;
+          content: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+          user?: {
+            id: string;
+            name: string;
+            email: string;
+            profile_image?: string;
+          };
+        }>;
+        total: number;
+        limit: number;
+        offset: number;
+      };
+    };
+  },
+
+  getMyPosts: async (limit = 20, offset = 0) => {
+    const response = await api.get('/feedback/my', {
+      params: { limit, offset },
+    });
+    return response.data as {
+      success: boolean;
+      data: {
+        items: Array<{
+          id: string;
+          user_id: string;
+          type: string;
+          title: string;
+          content: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        }>;
+        total: number;
+        limit: number;
+        offset: number;
+      };
+    };
+  },
+
+  getPost: async (id: string) => {
+    const response = await api.get(`/feedback/${id}`);
+    return response.data as {
+      success: boolean;
+      data: {
+        id: string;
+        user_id: string;
+        type: string;
+        title: string;
+        content: string;
+        status: string;
+        created_at: string;
+        updated_at: string;
+      };
+    };
+  },
+};
+
+export const communityCommentApi = {
+  create: async (postId: string, content: string) => {
+    const response = await api.post(`/feedback/comments/${postId}`, {
+      content,
+    });
+    return response.data as {
+      success: boolean;
+      data: {
+        id: string;
+        post_id: string;
+        user_id: string;
+        content: string;
+        created_at: string;
+        updated_at: string;
+        user?: {
+          id: string;
+          name: string;
+          email: string;
+          profile_image?: string;
+        };
+      };
+    };
+  },
+
+  getComments: async (postId: string, limit = 50, offset = 0) => {
+    const response = await api.get(`/feedback/comments/${postId}`, {
+      params: { limit, offset },
+    });
+    return response.data as {
+      success: boolean;
+      data: {
+        items: Array<{
+          id: string;
+          post_id: string;
+          user_id: string;
+          content: string;
+          created_at: string;
+          updated_at: string;
+          user?: {
+            id: string;
+            name: string;
+            email: string;
+            profile_image?: string;
+          };
+        }>;
+        total: number;
+        limit: number;
+        offset: number;
+      };
+    };
+  },
+
+  update: async (commentId: string, content: string) => {
+    const response = await api.put(`/feedback/comments/${commentId}`, {
+      content,
+    });
+    return response.data as {
+      success: boolean;
+      data: {
+        id: string;
+        post_id: string;
+        user_id: string;
+        content: string;
+        created_at: string;
+        updated_at: string;
+        user?: {
+          id: string;
+          name: string;
+          email: string;
+          profile_image?: string;
+        };
+      };
+    };
+  },
+
+  delete: async (commentId: string) => {
+    const response = await api.delete(`/feedback/comments/${commentId}`);
+    return response.data as {
+      success: boolean;
+      message: string;
+    };
+  },
+};
+
 export default api;

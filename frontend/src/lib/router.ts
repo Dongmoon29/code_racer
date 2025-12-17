@@ -14,6 +14,8 @@ export const ROUTES = {
   RACE: '/race',
   SETTINGS: '/settings',
   PROFILE: '/profile',
+  COMMUNITY: '/community',
+  FEEDBACK: '/feedback', // Keep for backward compatibility
   USER_PROFILE: (userId: string) => `/users/${userId}`,
 
   // Game routes

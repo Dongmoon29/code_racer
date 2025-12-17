@@ -99,6 +99,8 @@ func main() {
 		deps.problemController,
 		deps.wsController,
 		deps.followController,
+		deps.communityController,
+		deps.postCommentController,
 		deps.authMiddleware,
 		cfg,
 		db,
@@ -116,6 +118,8 @@ type dependencies struct {
 	problemController *controller.ProblemController
 	wsController      *controller.WebSocketController
 	followController  *controller.FollowController
+	communityController *controller.CommunityController
+	postCommentController *controller.PostCommentController
 	authMiddleware    *middleware.AuthMiddleware
 	wsHub             *service.Hub
 }
@@ -133,6 +137,8 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 		problemController: controllers.problemController,
 		wsController:      controllers.wsController,
 		followController:  controllers.followController,
+		communityController: controllers.communityController,
+		postCommentController: controllers.postCommentController,
 		authMiddleware:    middleware.authMiddleware,
 		wsHub:             wsHub,
 	}
@@ -145,6 +151,8 @@ func initializeRepositories(db *gorm.DB, appLogger logger.Logger) *repositories 
 		matchRepository:  repository.NewMatchRepository(db, appLogger),
 		problemRepo:      repository.NewProblemRepository(db, appLogger),
 		followRepository: repository.NewFollowRepository(db, appLogger),
+		communityRepository: repository.NewCommunityRepository(db, appLogger),
+		postCommentRepository: repository.NewPostCommentRepository(db, appLogger),
 	}
 }
 
@@ -172,6 +180,8 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 
 	problemService := service.NewProblemService(repos.problemRepo, appLogger)
 	followService := service.NewFollowService(repos.followRepository, appLogger)
+	communityService := service.NewCommunityService(repos.communityRepository, appLogger)
+	postCommentService := service.NewPostCommentService(repos.postCommentRepository, appLogger)
 
 	return &services{
 		authService:        authService,
@@ -182,6 +192,8 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 		wsService:          wsService,
 		problemService:     problemService,
 		followService:      followService,
+		communityService:   communityService,
+		postCommentService: postCommentService,
 	}, wsHub
 }
 
@@ -201,6 +213,8 @@ func initializeControllers(services *services, oauthCfg *config.OAuthConfig, app
 		problemController: controller.NewProblemController(services.problemService, appLogger),
 		wsController:      controller.NewWebSocketController(services.wsService, appLogger, allowedOrigins, environment),
 		followController:  controller.NewFollowController(services.followService, appLogger),
+		communityController: controller.NewCommunityController(services.communityService, appLogger),
+		postCommentController: controller.NewPostCommentController(services.postCommentService, appLogger),
 	}
 }
 
@@ -258,6 +272,8 @@ type repositories struct {
 	matchRepository repository.MatchRepository
 	problemRepo     repository.ProblemRepository
 	followRepository interfaces.FollowRepository
+	communityRepository interfaces.CommunityRepository
+	postCommentRepository interfaces.PostCommentRepository
 }
 
 type services struct {
@@ -269,6 +285,8 @@ type services struct {
 	wsService          service.WebSocketService
 	problemService     service.ProblemService
 	followService      service.FollowService
+	communityService   interfaces.CommunityService
+	postCommentService interfaces.PostCommentService
 }
 
 type controllers struct {
@@ -278,6 +296,8 @@ type controllers struct {
 	problemController *controller.ProblemController
 	wsController      *controller.WebSocketController
 	followController  *controller.FollowController
+	communityController *controller.CommunityController
+	postCommentController *controller.PostCommentController
 }
 
 type middlewareInstances struct {
