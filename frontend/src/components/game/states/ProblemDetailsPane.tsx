@@ -75,7 +75,9 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
       <div className="border rounded-lg min-w-0 h-full flex flex-col">
         {/* Header with title and minimize button */}
         <div className="bg-[var(--gray-3)] px-4 py-2 flex items-center justify-between border-b border-[var(--gray-6)] shrink-0">
-          <span className="font-medium truncate text-[var(--color-text)]">{title}</span>
+          <span className="font-medium truncate text-[var(--color-text)]">
+            {title}
+          </span>
           <div className="flex items-center space-x-2">
             <button
               onClick={onToggle}
@@ -96,7 +98,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
           }
         >
           {activeTab === 'description' ? (
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4 h-full">
               <div>
                 <h2 className="text-xl font-medium mb-2">
                   Problem Description
@@ -148,7 +150,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
               </div>
             </div>
           ) : (
-            <div className="p-4">
+            <div className="p-4 h-full">
               {submissionProgress && testCases ? (
                 <TestCaseDisplay
                   submissionProgress={submissionProgress}

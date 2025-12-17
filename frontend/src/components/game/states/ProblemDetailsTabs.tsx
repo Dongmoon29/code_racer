@@ -1,5 +1,4 @@
-import React, { FC, memo, useState } from 'react';
-import { FileText, CheckCircle2 } from 'lucide-react';
+import React, { FC, memo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface Tab {
@@ -21,7 +20,7 @@ export const ProblemDetailsTabs: FC<ProblemDetailsTabsProps> = memo(
       <div className="flex flex-col flex-1 min-h-0">
         {/* Tab Header */}
         <div className="flex border-b border-[var(--gray-6)] bg-[var(--gray-3)] shrink-0">
-          {tabs.map((tab, index) => {
+          {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             const Icon = tab.icon;
 
@@ -40,7 +39,9 @@ export const ProblemDetailsTabs: FC<ProblemDetailsTabsProps> = memo(
                 <Icon
                   className={cn(
                     'w-4 h-4',
-                    isActive ? 'text-[var(--accent-9)]' : 'text-[var(--gray-11)]'
+                    isActive
+                      ? 'text-[var(--accent-9)]'
+                      : 'text-[var(--gray-11)]'
                   )}
                 />
                 <span>{tab.label}</span>
@@ -53,11 +54,12 @@ export const ProblemDetailsTabs: FC<ProblemDetailsTabsProps> = memo(
         </div>
 
         {/* Tab Content */}
-        <div className="h-[calc(100vh-12rem)] overflow-y-auto">{children}</div>
+        <div className="min-h-[calc(100vh-12rem)] h-full overflow-y-auto">
+          {children}
+        </div>
       </div>
     );
   }
 );
 
 ProblemDetailsTabs.displayName = 'ProblemDetailsTabs';
-
