@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { ArrowRightToLine, ArrowLeftToLine } from 'lucide-react';
@@ -25,6 +25,17 @@ export function DashboardSidebar({
   onToggle,
 }: DashboardSidebarProps) {
   const router = useRouter();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const primaryItems = navigationItems.filter((item) => item.label !== 'Admin');
   const bottomItems = navigationItems.filter((item) => item.label === 'Admin');
@@ -49,18 +60,20 @@ export function DashboardSidebar({
             </div>
           </Link>
         )}
-        <button
-          onClick={onToggle}
-          className="p-1.5 rounded-md text-[var(--gray-11)] shrink-0 cursor-pointer transition-all duration-150 hover:bg-[var(--gray-4)] hover:text-[var(--color-text)] hover:shadow-sm hover:scale-105"
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          type="button"
-        >
-          {isCollapsed ? (
-            <ArrowRightToLine className="w-6 h-6" />
-          ) : (
-            <ArrowLeftToLine className="w-6 h-6" />
-          )}
-        </button>
+        {!isMobile && (
+          <button
+            onClick={onToggle}
+            className="p-1.5 rounded-md text-[var(--gray-11)] shrink-0 cursor-pointer transition-all duration-150 hover:bg-[var(--gray-4)] hover:text-[var(--color-text)] hover:shadow-sm hover:scale-105"
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            type="button"
+          >
+            {isCollapsed ? (
+              <ArrowRightToLine className="w-6 h-6" />
+            ) : (
+              <ArrowLeftToLine className="w-6 h-6" />
+            )}
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
