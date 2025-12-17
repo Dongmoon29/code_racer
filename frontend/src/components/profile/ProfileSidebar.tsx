@@ -29,7 +29,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user }) => {
   return (
     <div className="w-full max-w-sm mx-auto lg:mx-0">
       {/* Profile Image and Basic Info */}
-      <div className="flex flex-col items-center mb-6">
+      <div className="w-full flex flex-col items-center mb-6">
         <div className="w-48 h-48 lg:w-64 lg:h-64 rounded-full overflow-hidden mb-4 flex items-center justify-center">
           {user?.profile_image ? (
             <Image
@@ -50,7 +50,10 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user }) => {
           {user?.name}
         </h1>
 
-        <Button className="w-full mb-4" onClick={() => setShowEdit((v) => !v)}>
+        <Button
+          onClick={() => setShowEdit((v) => !v)}
+          style={{ width: '100%', cursor: 'pointer' }}
+        >
           {showEdit ? 'Cancel' : 'Edit Profile'}
         </Button>
       </div>

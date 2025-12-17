@@ -23,7 +23,7 @@ const sizeMap: Record<'default' | 'sm' | 'lg' | 'icon', '1' | '2' | '3'> = {
 
 // Keep buttonVariants for backward compatibility with custom styles
 const buttonVariants = cva(
-  "inline-flex items-center justify-center cursor-pointer gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none",
   {
     variants: {
       variant: {
@@ -40,10 +40,15 @@ const buttonVariants = cva(
         lg: '',
         icon: '',
       },
+      cursor: {
+        default: 'cursor-pointer',
+        defaultCursor: 'cursor-default',
+      },
     },
     defaultVariants: {
       variant: 'default',
       size: 'default',
+      cursor: 'default',
     },
   }
 );
@@ -52,7 +57,33 @@ interface ButtonProps
   extends React.ComponentProps<'button'>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
-  color?: 'gray' | 'gold' | 'bronze' | 'brown' | 'yellow' | 'amber' | 'orange' | 'tomato' | 'red' | 'ruby' | 'crimson' | 'pink' | 'plum' | 'purple' | 'violet' | 'iris' | 'indigo' | 'blue' | 'cyan' | 'teal' | 'jade' | 'green' | 'grass' | 'lime' | 'mint' | 'sky';
+  color?:
+    | 'gray'
+    | 'gold'
+    | 'bronze'
+    | 'brown'
+    | 'yellow'
+    | 'amber'
+    | 'orange'
+    | 'tomato'
+    | 'red'
+    | 'ruby'
+    | 'crimson'
+    | 'pink'
+    | 'plum'
+    | 'purple'
+    | 'violet'
+    | 'iris'
+    | 'indigo'
+    | 'blue'
+    | 'cyan'
+    | 'teal'
+    | 'jade'
+    | 'green'
+    | 'grass'
+    | 'lime'
+    | 'mint'
+    | 'sky';
   radius?: 'none' | 'small' | 'medium' | 'large' | 'full';
   highContrast?: boolean;
 }
@@ -61,6 +92,7 @@ function Button({
   className,
   variant = 'default',
   size = 'default',
+  cursor = 'default',
   asChild = false,
   color,
   radius,
@@ -71,14 +103,21 @@ function Button({
   if (variant !== 'default' || !className?.includes('btn-neon')) {
     const radixVariant = (variant && variantMap[variant]) || 'solid';
     const radixSize: '1' | '2' | '3' = (size && sizeMap[size]) || '2';
-    
+
     // Map destructive to red color
     const radixColor = color || (variant === 'destructive' ? 'red' : undefined);
-    
+
+    const cursorClass =
+      cursor === 'defaultCursor' ? 'cursor-default' : 'cursor-pointer';
+
     if (asChild) {
       return (
         <Slot
-          className={cn(buttonVariants({ variant, size, className }))}
+          className={cn(
+            buttonVariants({ variant, size }),
+            cursorClass,
+            className
+          )}
           {...props}
         />
       );
@@ -91,7 +130,7 @@ function Button({
         color={radixColor}
         radius={radius}
         highContrast={highContrast}
-        className={cn(className)}
+        className={cn(cursorClass, className)}
         {...props}
       />
     );
@@ -102,7 +141,7 @@ function Button({
   return (
     <Comp
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, cursor, className }))}
       {...props}
     />
   );
