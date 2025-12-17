@@ -9,6 +9,7 @@ import Logo from './Logo';
 import UserDropdown from '../ui/UserDropdown';
 import MobileMenu from './MobileMenu';
 import { useDropdown } from '@/hooks/useDropdown';
+import { ROUTES } from '@/lib/router';
 
 const Header: FC = () => {
   const { user, isLoggedIn, logout } = useAuthStore();
@@ -16,7 +17,7 @@ const Header: FC = () => {
   const dropdown = useDropdown();
   const router = useRouter();
 
-  const isDashboardRoute = router.pathname.startsWith('/dashboard');
+  const isDashboardRoute = router.pathname.startsWith('/dashboard') || router.pathname.startsWith('/users');
 
   const handleLogout = async () => {
     await logout();
@@ -61,7 +62,7 @@ const Header: FC = () => {
               }`}
             >
               <Link
-                href="/dashboard"
+                href={user?.id ? ROUTES.USER_PROFILE(user.id) : '/dashboard'}
                 className={`flex font-medium text-sm items-center gap-3 h-full transition-colors ${
                   isDashboardRoute
                     ? 'text-[var(--accent-9)]'
