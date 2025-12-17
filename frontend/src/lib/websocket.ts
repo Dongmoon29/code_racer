@@ -50,7 +50,9 @@ export class WebSocketClient extends BaseWebSocketClient {
           }
         },
         (event) => {
-          const messages = this.parseMessage<WebSocketMessage>(event.data as string);
+          const messages = this.parseMessage<WebSocketMessage>(
+            event.data as string
+          );
           messages.forEach((message) => this.handleMessage(message));
         },
         () => {
