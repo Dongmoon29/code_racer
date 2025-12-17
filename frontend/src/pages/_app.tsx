@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { AppProps } from 'next/app';
-import { ThemeProvider as NextThemeProvider, useTheme as useNextTheme } from 'next-themes';
+import {
+  ThemeProvider as NextThemeProvider,
+  useTheme as useNextTheme,
+} from 'next-themes';
 import { Theme } from '@radix-ui/themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/router';
@@ -12,11 +15,13 @@ import '../styles/globals.css';
 import { useAuthStore } from '../stores/authStore';
 import { FullscreenProvider } from '../contexts/FullscreenContext';
 import { LofiPlayerProvider } from '../contexts/LofiPlayerContext';
+import { ToastProvider } from '../components/ui/Toast';
 
 // Wrapper component to sync Radix Theme with next-themes
 function RadixThemeWrapper({ children }: { children: React.ReactNode }) {
   const { theme, systemTheme } = useNextTheme();
-  const radixTheme = theme === 'system' ? (systemTheme || 'dark') : theme || 'dark';
+  const radixTheme =
+    theme === 'system' ? systemTheme || 'dark' : theme || 'dark';
 
   return (
     <Theme
@@ -59,18 +64,20 @@ function MyApp({ Component, pageProps }: AppProps) {
         <QueryClientProvider client={queryClient}>
           <FullscreenProvider>
             <LofiPlayerProvider>
-              {isAdminRoute ? (
-                <>
-                  <Head>
-                    <title>{adminTitle}</title>
-                  </Head>
-                  <AdminLayout>
-                    <Component {...pageProps} />
-                  </AdminLayout>
-                </>
-              ) : (
-                <Component {...pageProps} />
-              )}
+              <ToastProvider>
+                {isAdminRoute ? (
+                  <>
+                    <Head>
+                      <title>{adminTitle}</title>
+                    </Head>
+                    <AdminLayout>
+                      <Component {...pageProps} />
+                    </AdminLayout>
+                  </>
+                ) : (
+                  <Component {...pageProps} />
+                )}
+              </ToastProvider>
             </LofiPlayerProvider>
           </FullscreenProvider>
         </QueryClientProvider>

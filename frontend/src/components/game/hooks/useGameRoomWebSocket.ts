@@ -15,6 +15,7 @@ import {
 } from '@/types/websocket';
 import { createErrorHandler } from '@/lib/error-tracking';
 import { WEBSOCKET_MESSAGE_TYPES } from '@/constants/websocket';
+import { useToast } from '@/components/ui/Toast';
 
 interface UseGameRoomWebSocketProps {
   matchId: string;
@@ -56,6 +57,7 @@ export const useGameRoomWebSocket = ({
   const router = useRouter();
   const wsRef = useRef<WebSocketClient | null>(null);
   const { user: currentUser } = useAuthStore();
+  const { showToast } = useToast();
 
   // Template setup
   useEffect(() => {
@@ -179,6 +181,29 @@ export const useGameRoomWebSocket = ({
           : 'Test cases failed.',
       }));
 
+      // Toast notification for evaluation result
+      if (message.passed) {
+        showToast({
+          title: 'Evaluation Complete',
+          message: 'All test cases passed!',
+          variant: 'success',
+        });
+      } else {
+        const passedCount =
+          (message as SubmissionStatusMessage & { passed_test_cases?: number })
+            .passed_test_cases ?? 0;
+        const totalCount =
+          message.total_test_cases ??
+          (message as SubmissionStatusMessage & { total?: number }).total ??
+          0;
+
+        showToast({
+          title: 'Evaluation Result',
+          message: `${passedCount}/${totalCount} test cases passed`,
+          variant: 'error',
+        });
+      }
+
       // If all test cases passed, check if game is finished (for single player games)
       if (message.passed) {
         setSubmitResult({
@@ -196,6 +221,7 @@ export const useGameRoomWebSocket = ({
       setSubmissionProgress,
       setSubmitResult,
       refetchGame,
+      showToast,
     ]
   );
 
@@ -343,6 +369,23 @@ export const useGameRoomWebSocket = ({
   useEffect(() => {
     if (!game) return;
 
+    // Require auth token before opening WebSocket connection
+    const token =
+      typeof window !== 'undefined'
+        ? sessionStorage.getItem('authToken')
+        : null;
+
+    if (!token) {
+      // If token is missing, show a gentle notification and skip WS connection
+      showToast({
+        title: 'Authentication Required',
+        message:
+          'Your session has expired or you are not logged in. Please log in again and try submitting.',
+        variant: 'error',
+      });
+      return;
+    }
+
     const wsClient = new WebSocketClient(matchId);
 
     wsClient.addMessageHandler(handleWebSocketMessage);
@@ -355,7 +398,14 @@ export const useGameRoomWebSocket = ({
         wsRef.current = null;
       }
     };
-  }, [game, matchId, router, handleWebSocketMessage, setSubmitResult]);
+  }, [
+    game,
+    matchId,
+    router,
+    handleWebSocketMessage,
+    setSubmitResult,
+    showToast,
+  ]);
 
   // Code change handler
   const handleCodeChange = useCallback(
