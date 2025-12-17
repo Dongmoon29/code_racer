@@ -1,4 +1,5 @@
-import React, { memo, FC } from 'react';
+import React, { memo, FC, useMemo } from 'react';
+import { Select } from '@/components/ui/Select';
 
 const LANGUAGES = [
   { id: 'javascript', name: 'JavaScript' },
@@ -16,21 +17,26 @@ interface LanguageSelectorProps {
 
 const LanguageSelector: FC<LanguageSelectorProps> = memo(
   ({ selectedLanguage, onChange, disabled = false }) => {
+    const options = useMemo(
+      () =>
+        LANGUAGES.map((language) => ({
+          value: language.id,
+          label: language.name,
+        })),
+      []
+    );
+
     return (
       <div className="flex items-center">
-        <select
-          id="language-select"
+        <Select
           value={selectedLanguage}
-          onChange={(e) => onChange(e.target.value as SupportedLanguage)}
+          onChange={(value) => onChange(value as SupportedLanguage)}
+          options={options}
           disabled={disabled}
-          className="px-2 py-1 cursor-pointer border rounded-md text-sm focus:outline-none disabled:opacity-50"
-        >
-          {LANGUAGES.map((language) => (
-            <option key={language.id} value={language.id}>
-              {language.name}
-            </option>
-          ))}
-        </select>
+          size="1"
+          variant="surface"
+          className="min-w-[120px]"
+        />
       </div>
     );
   }

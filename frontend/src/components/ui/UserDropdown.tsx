@@ -61,9 +61,7 @@ const UserDropdown: FC<UserDropdownProps> = ({
       </button>
 
       {isOpen && (
-        <div
-          className="absolute right-0 mt-2 w-48 rounded-md shadow-lg z-[59] border border-[var(--gray-6)] bg-[var(--color-panel)]"
-        >
+        <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg z-[59] border border-[var(--gray-6)] bg-[var(--color-background)]">
           <div className="py-1">
             <button
               onClick={() => {
