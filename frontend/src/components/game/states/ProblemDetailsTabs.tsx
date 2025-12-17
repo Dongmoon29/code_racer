@@ -18,9 +18,9 @@ interface ProblemDetailsTabsProps {
 export const ProblemDetailsTabs: FC<ProblemDetailsTabsProps> = memo(
   ({ tabs, activeTab, onTabChange, children }) => {
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col flex-1 min-h-0">
         {/* Tab Header */}
-        <div className="flex border-b border-border bg-[hsl(var(--muted))]">
+        <div className="flex border-b border-border bg-[hsl(var(--muted))] shrink-0">
           {tabs.map((tab, index) => {
             const isActive = activeTab === tab.id;
             const Icon = tab.icon;
@@ -53,7 +53,7 @@ export const ProblemDetailsTabs: FC<ProblemDetailsTabsProps> = memo(
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-auto">{children}</div>
+        <div className="h-[calc(100vh-12rem)] overflow-y-auto">{children}</div>
       </div>
     );
   }

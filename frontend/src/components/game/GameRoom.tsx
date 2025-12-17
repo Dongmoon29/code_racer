@@ -151,21 +151,23 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
 
   // Game state-based rendering
   return (
-    <GameStateRenderer
-      game={game}
-      currentUser={currentUser}
-      myCode={myCode}
-      opponentCode={isSinglePlayerMode ? '' : opponentCode}
-      selectedLanguage={selectedLanguage}
-      submitResult={submitResult}
-      isSubmitting={isSubmitting}
-      submissionProgress={submissionProgress}
-      onCodeChange={handleCodeChange}
-      onLanguageChange={handleLanguageChange}
-      onSubmitCode={handleSubmitCode}
-      onToggleMyCode={() => {}}
-      onToggleOpponentCode={() => {}}
-    />
+    <div className="h-full">
+      <GameStateRenderer
+        game={game}
+        currentUser={currentUser}
+        myCode={myCode}
+        opponentCode={isSinglePlayerMode ? '' : opponentCode}
+        selectedLanguage={selectedLanguage}
+        submitResult={submitResult}
+        isSubmitting={isSubmitting}
+        submissionProgress={submissionProgress}
+        onCodeChange={handleCodeChange}
+        onLanguageChange={handleLanguageChange}
+        onSubmitCode={handleSubmitCode}
+        onToggleMyCode={() => {}}
+        onToggleOpponentCode={() => {}}
+      />
+    </div>
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { FC, memo, useCallback, useEffect, useState } from 'react';
+import { FC, memo, useCallback, useEffect, useState } from 'react';
 import { Game, SubmitResult } from '@/types';
 import { SubmissionProgress } from '@/types/websocket';
 import { useTheme } from 'next-themes';
@@ -80,7 +80,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
     }, [isFullscreenMy, setIsFullscreen]);
 
     return (
-      <div className="flex flex-col h-screen">
+      <div className="flex flex-col h-full min-h-screen ">
         {!isFullscreen ? (
           <div
             className="flex-1 flex min-h-0 game-editor-container"
@@ -92,7 +92,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                 isDescriptionExpanded ? 'w-[25%]' : 'w-[40px]'
               } h-full flex flex-col`}
             >
-              <div className="flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 min-h-0 h-full">
                 <ProblemDetailsPane
                   isExpanded={isDescriptionExpanded}
                   title={game.problem.title}

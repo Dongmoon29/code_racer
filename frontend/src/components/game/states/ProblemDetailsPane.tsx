@@ -74,7 +74,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
     return (
       <div className="border rounded-lg min-w-0 h-full flex flex-col">
         {/* Header with title and minimize button */}
-        <div className="bg-[hsl(var(--muted))] px-4 py-2 flex items-center justify-between border-b border-border">
+        <div className="bg-[hsl(var(--muted))] px-4 py-2 flex items-center justify-between border-b border-border shrink-0">
           <span className="font-medium truncate">{title}</span>
           <div className="flex items-center space-x-2">
             <button
