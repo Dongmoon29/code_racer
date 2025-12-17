@@ -77,7 +77,7 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
           <Link
             key={game.id}
             href={ROUTES.GAME_ROOM(game.id)}
-            className="block p-4 rounded-lg border transition-colors hover:bg-muted/50 cursor-pointer"
+            className="block p-4 rounded-lg border transition-all duration-200 hover:bg-muted/50 hover:-translate-y-1 cursor-pointer"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-2 font-bold">
