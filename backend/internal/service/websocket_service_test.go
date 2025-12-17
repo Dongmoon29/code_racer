@@ -54,8 +54,8 @@ func (m *MockUserRepository) Update(user *model.User) error {
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) ListUsers(offset, limit int, orderByField, orderDir string) ([]*model.User, int64, error) {
-	args := m.Called(offset, limit, orderByField, orderDir)
+func (m *MockUserRepository) ListUsers(offset, limit int, orderByField, orderDir, search string) ([]*model.User, int64, error) {
+	args := m.Called(offset, limit, orderByField, orderDir, search)
 	return args.Get(0).([]*model.User), args.Get(1).(int64), args.Error(2)
 }
 

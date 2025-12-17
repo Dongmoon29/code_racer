@@ -24,7 +24,7 @@ func (m *mockUserService) GetProfile(id uuid.UUID) (*model.User, error)         
 func (m *mockUserService) UpdateProfile(id uuid.UUID, req *model.UpdateProfileRequest) (*model.User, error) {
 	return &model.User{}, nil
 }
-func (m *mockUserService) ListUsers(page int, limit int, orderBy string, dir string) ([]*model.User, int64, error) {
+func (m *mockUserService) ListUsers(page int, limit int, orderBy string, dir string, search string) ([]*model.User, int64, error) {
 	return []*model.User{}, 0, nil
 }
 func (m *mockUserService) GetLeaderboard(limit int) ([]*model.LeaderboardUser, error) {
