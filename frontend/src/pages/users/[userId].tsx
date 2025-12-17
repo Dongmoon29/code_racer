@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -8,6 +8,7 @@ import { GameHistory, ProfileSidebar, PublicProfileSidebar } from '@/components/
 import { MatchingScreen } from '@/components/game/MatchingScreen';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 import { useAuthStore } from '@/stores/authStore';
+import { FollowersList, FollowingList } from '@/components/profile/FollowLists';
 
 interface UserInfo {
   id: string;
@@ -42,10 +43,13 @@ interface UserProfileResponse extends UserInfo {
   recent_games: RecentGameSummary[];
 }
 
+type ProfileTab = 'games' | 'followers' | 'following';
+
 const UserProfilePage = () => {
   const router = useRouter();
   const { userId } = router.query;
   const { user: currentUser } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<ProfileTab>('games');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['userProfile', userId],
@@ -121,20 +125,36 @@ const UserProfilePage = () => {
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="lg:w-80 flex-shrink-0">
               {isOwnProfile ? (
-                <ProfileSidebar user={user!} />
+                <ProfileSidebar
+                  user={user!}
+                  onShowFollowers={() => setActiveTab('followers')}
+                  onShowFollowing={() => setActiveTab('following')}
+                />
               ) : (
-                <PublicProfileSidebar user={user!} />
+                <PublicProfileSidebar
+                  user={user!}
+                  onShowFollowers={() => setActiveTab('followers')}
+                  onShowFollowing={() => setActiveTab('following')}
+                />
               )}
             </div>
 
             <div className="flex-1 min-w-0">
               <div className="space-y-6">
-                {isOwnProfile && (
+                {isOwnProfile && activeTab === 'games' && (
                   <div className="bg-card rounded-lg border p-6">
                     <MatchingScreen onMatchFound={handleMatchFound} />
                   </div>
                 )}
-                <GameHistory currentUserId={user?.id} games={recentGames} />
+                {activeTab === 'games' && (
+                  <GameHistory currentUserId={user?.id} games={recentGames} />
+                )}
+                {activeTab === 'followers' && (
+                  <FollowersList userId={user?.id || ''} />
+                )}
+                {activeTab === 'following' && (
+                  <FollowingList userId={user?.id || ''} />
+                )}
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import {
   MapPin,
@@ -32,10 +32,14 @@ interface UserInfo {
 
 interface PublicProfileSidebarProps {
   user: UserInfo;
+  onShowFollowers?: () => void;
+  onShowFollowing?: () => void;
 }
 
 const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
   user,
+  onShowFollowers,
+  onShowFollowing,
 }) => {
   const { user: currentUser } = useAuthStore();
   const queryClient = useQueryClient();
@@ -105,20 +109,28 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
           {/* Follow Stats */}
           {!isOwnProfile && currentUser && !statsLoading && (
             <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground mb-4">
-              <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={onShowFollowers}
+                className="flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer"
+              >
                 <Users className="w-4 h-4" />
                 <span className="font-semibold text-foreground">
                   {followers}
                 </span>
                 <span>followers</span>
-              </div>
+              </button>
               <span>·</span>
-              <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={onShowFollowing}
+                className="flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer"
+              >
                 <span className="font-semibold text-foreground">
                   {following}
                 </span>
                 <span>following</span>
-              </div>
+              </button>
             </div>
           )}
 

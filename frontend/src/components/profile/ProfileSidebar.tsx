@@ -33,9 +33,15 @@ interface UserInfo {
 
 interface ProfileSidebarProps {
   user: UserInfo;
+  onShowFollowers?: () => void;
+  onShowFollowing?: () => void;
 }
 
-const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user }) => {
+const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
+  user,
+  onShowFollowers,
+  onShowFollowing,
+}) => {
   const [showEdit, setShowEdit] = useState(false);
 
   // Get follow stats
@@ -74,20 +80,24 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user }) => {
 
           {/* Follow Stats */}
           <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground mb-4">
-            <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onShowFollowers}
+              className="flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer"
+            >
               <Users className="w-4 h-4" />
-              <span className="font-semibold text-foreground">
-                {followers}
-              </span>
+              <span className="font-semibold text-foreground">{followers}</span>
               <span>followers</span>
-            </div>
+            </button>
             <span>·</span>
-            <div className="flex items-center gap-1">
-              <span className="font-semibold text-foreground">
-                {following}
-              </span>
+            <button
+              type="button"
+              onClick={onShowFollowing}
+              className="flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              <span className="font-semibold text-foreground">{following}</span>
               <span>following</span>
-            </div>
+            </button>
           </div>
 
           <Button
