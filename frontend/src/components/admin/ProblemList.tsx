@@ -15,6 +15,7 @@ import { ProblemListHeader } from './ProblemListHeader';
 import { ProblemListFilters } from './ProblemListFilters';
 import { ProblemListTable } from './ProblemListTable';
 import { ProblemListStats } from './ProblemListStats';
+import { DIFFICULTY_CONFIG } from '@/constants';
 
 const DEFAULT_PROBLEM_JSON = `{
   "title": "INSERT_TITLE_HERE",
@@ -119,11 +120,11 @@ export default function ProblemList() {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'Easy':
+      case DIFFICULTY_CONFIG.Easy.value:
         return 'bg-green-100 text-green-800';
-      case 'Medium':
+      case DIFFICULTY_CONFIG.Medium.value:
         return 'bg-yellow-100 text-yellow-800';
-      case 'Hard':
+      case DIFFICULTY_CONFIG.Hard.value:
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';

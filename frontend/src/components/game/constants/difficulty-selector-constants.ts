@@ -1,25 +1,25 @@
 // Difficulty Selector related constants
-import { TIMER_CONSTANTS } from '@/constants';
+import { TIMER_CONSTANTS, DIFFICULTY_CONFIG } from '@/constants';
 export const DIFFICULTY_SELECTOR_CONSTANTS = {
-  // Difficulty options
+  // Difficulty options (using shared DIFFICULTY_CONFIG)
   DIFFICULTY_OPTIONS: [
     {
-      value: 'Easy',
-      label: 'Easy',
-      color: 'text-green-600',
-      description: 'Perfect for beginners',
+      value: DIFFICULTY_CONFIG.Easy.value,
+      label: DIFFICULTY_CONFIG.Easy.label,
+      color: DIFFICULTY_CONFIG.Easy.color,
+      description: DIFFICULTY_CONFIG.Easy.description,
     },
     {
-      value: 'Medium',
-      label: 'Medium',
-      color: 'text-yellow-600',
-      description: 'Balanced challenge',
+      value: DIFFICULTY_CONFIG.Medium.value,
+      label: DIFFICULTY_CONFIG.Medium.label,
+      color: DIFFICULTY_CONFIG.Medium.color,
+      description: DIFFICULTY_CONFIG.Medium.description,
     },
     {
-      value: 'Hard',
-      label: 'Hard',
-      color: 'text-red-600',
-      description: 'Expert level',
+      value: DIFFICULTY_CONFIG.Hard.value,
+      label: DIFFICULTY_CONFIG.Hard.label,
+      color: DIFFICULTY_CONFIG.Hard.color,
+      description: DIFFICULTY_CONFIG.Hard.description,
     },
   ] as const,
 

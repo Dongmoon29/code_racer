@@ -113,6 +113,38 @@ export const HTTP_STATUS = {
   INTERNAL_SERVER_ERROR: 500,
 } as const;
 
+// Difficulty constants (shared across components)
+export const DIFFICULTY_OPTIONS = ['Easy', 'Medium', 'Hard'] as const;
+export type DifficultyOption = (typeof DIFFICULTY_OPTIONS)[number];
+
+// Difficulty configuration (shared across components)
+export const DIFFICULTY_CONFIG = {
+  Easy: {
+    value: 'Easy' as const,
+    label: 'Easy',
+    color: 'text-green-600 dark:text-green-400',
+    bgColor: 'bg-green-50 dark:bg-green-950/30',
+    icon: '🟢',
+    description: 'Perfect for beginners',
+  },
+  Medium: {
+    value: 'Medium' as const,
+    label: 'Medium',
+    color: 'text-yellow-600 dark:text-yellow-400',
+    bgColor: 'bg-yellow-50 dark:bg-yellow-950/30',
+    icon: '🟡',
+    description: 'Balanced challenge',
+  },
+  Hard: {
+    value: 'Hard' as const,
+    label: 'Hard',
+    color: 'text-red-600 dark:text-red-400',
+    bgColor: 'bg-red-50 dark:bg-red-950/30',
+    icon: '🔴',
+    description: 'Expert level',
+  },
+} as const;
+
 // Default values
 export const DEFAULT_VALUES = {
   // Problem form

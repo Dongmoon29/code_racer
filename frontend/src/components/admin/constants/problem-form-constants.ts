@@ -5,7 +5,7 @@ import {
   IOTemplateRequest,
   ExampleRequest,
 } from '@/types';
-import { DEFAULT_VALUES } from '@/constants';
+import { DEFAULT_VALUES, DIFFICULTY_OPTIONS, DIFFICULTY_CONFIG } from '@/constants';
 
 export const PROBLEM_FORM_CONSTANTS = {
   // Default values
@@ -15,7 +15,7 @@ export const PROBLEM_FORM_CONSTANTS = {
     EXAMPLES: [] as ExampleRequest[],
     CONSTRAINTS: '',
     EXPECTED_OUTPUTS: [] as string[],
-    DIFFICULTY: 'Easy' as const,
+    DIFFICULTY: DIFFICULTY_CONFIG.Easy.value,
     INPUT_FORMAT: '',
     OUTPUT_FORMAT: '',
     FUNCTION_NAME: '',
@@ -26,8 +26,8 @@ export const PROBLEM_FORM_CONSTANTS = {
     TEST_CASES: [{ input: '', expected_output: '' }] as TestCase[],
   },
 
-  // Difficulty options
-  DIFFICULTY_OPTIONS: ['Easy', 'Medium', 'Hard'] as const,
+  // Difficulty options (using shared DIFFICULTY_OPTIONS)
+  DIFFICULTY_OPTIONS,
 
   // Form modes
   FORM_MODES: {

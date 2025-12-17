@@ -1,22 +1,22 @@
 // Matching Loader related constants
-import { TIMER_CONSTANTS } from '@/constants';
+import { TIMER_CONSTANTS, DIFFICULTY_CONFIG } from '@/constants';
 export const MATCHING_LOADER_CONSTANTS = {
-  // Difficulty-specific configuration
+  // Difficulty-specific configuration (using shared DIFFICULTY_CONFIG)
   DIFFICULTY_CONFIG: {
     Easy: {
-      color: 'text-green-600 dark:text-green-400',
-      bgColor: 'bg-green-50 dark:bg-green-950/30',
-      icon: '🟢',
+      color: DIFFICULTY_CONFIG.Easy.color,
+      bgColor: DIFFICULTY_CONFIG.Easy.bgColor,
+      icon: DIFFICULTY_CONFIG.Easy.icon,
     },
     Medium: {
-      color: 'text-yellow-700 dark:text-yellow-400',
-      bgColor: 'bg-yellow-50 dark:bg-yellow-950/30',
-      icon: '🟡',
+      color: DIFFICULTY_CONFIG.Medium.color,
+      bgColor: DIFFICULTY_CONFIG.Medium.bgColor,
+      icon: DIFFICULTY_CONFIG.Medium.icon,
     },
     Hard: {
-      color: 'text-red-600 dark:text-red-400',
-      bgColor: 'bg-red-50 dark:bg-red-950/30',
-      icon: '🔴',
+      color: DIFFICULTY_CONFIG.Hard.color,
+      bgColor: DIFFICULTY_CONFIG.Hard.bgColor,
+      icon: DIFFICULTY_CONFIG.Hard.icon,
     },
   } as const,
 
