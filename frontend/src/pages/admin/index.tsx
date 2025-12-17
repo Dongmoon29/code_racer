@@ -22,9 +22,9 @@ export default function AdminPage() {
         <Link
           key={feature.href}
           href={feature.href}
-          className="block group hover:-translate-y-2 transition-transform duration-200"
+          className="block group hover:-translate-y-2 transition-transform duration-200 h-full"
         >
-          <div className="bg-[hsl(var(--card))] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
+          <div className="bg-[hsl(var(--card))] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 h-full flex flex-col">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl mr-4">
                 {feature.icon}
@@ -32,7 +32,7 @@ export default function AdminPage() {
               <h3 className="text-xl font-semibold">{feature.title}</h3>
             </div>
             <p className="mb-4">{feature.description}</p>
-            <div className="flex items-center">
+            <div className="flex items-center mt-auto">
               <span className="text-sm font-medium">Manage</span>
               <svg
                 className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform"
