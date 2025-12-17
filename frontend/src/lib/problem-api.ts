@@ -4,69 +4,25 @@ import {
   ProblemDetail,
   ProblemSummary,
 } from '@/types';
-import { trackAPIError } from '@/lib/error-tracking';
+import api from '@/lib/api';
+import { createErrorHandler } from '@/lib/error-tracking';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
-
-// API request helper function
-async function apiRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  // NOTE: Primary authentication is via httpOnly cookie (set by backend)
-  // sessionStorage token is used as fallback for Authorization header
-  // This ensures compatibility with WebSocket connections and when cookies fail
-  const token =
-    typeof window !== 'undefined'
-      ? sessionStorage.getItem('authToken')
-      : null;
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    // Allow cookie-based auth when same-origin, and keep behavior consistent with axios client.
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const error = new Error(
-      errorData.message || `HTTP error! status: ${response.status}`
-    );
-    
-    // Track error using error tracking system
-    if (typeof window !== 'undefined') {
-      trackAPIError(error, {
-        component: 'problem-api',
-        action: 'apiRequest',
-        additionalData: {
-          status: response.status,
-          statusText: response.statusText,
-          endpoint: `${API_BASE_URL}${endpoint}`,
-          errorData,
-        },
-      });
-    }
-    
-    throw error;
-  }
-
-  return response.json();
-}
+const errorHandler = createErrorHandler('problemApi', 'apiRequest');
 
 // Create problem (Admin only)
 export async function createProblem(
   data: CreateProblemRequest
 ): Promise<ProblemDetail> {
-  return apiRequest<ProblemDetail>('/problems', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  try {
+    const response = await api.post<{ success: boolean; data: ProblemDetail }>(
+      '/problems',
+      data
+    );
+    return response.data.data!;
+  } catch (error) {
+    errorHandler(error, { action: 'createProblem', data });
+    throw error;
+  }
 }
 
 // Update problem (Admin only)
@@ -74,17 +30,26 @@ export async function updateProblem(
   id: string,
   data: UpdateProblemRequest
 ): Promise<ProblemDetail> {
-  return apiRequest<ProblemDetail>(`/problems/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
+  try {
+    const response = await api.put<{ success: boolean; data: ProblemDetail }>(
+      `/problems/${id}`,
+      data
+    );
+    return response.data.data!;
+  } catch (error) {
+    errorHandler(error, { action: 'updateProblem', id, data });
+    throw error;
+  }
 }
 
 // Delete problem (Admin only)
 export async function deleteProblem(id: string): Promise<void> {
-  return apiRequest<void>(`/problems/${id}`, {
-    method: 'DELETE',
-  });
+  try {
+    await api.delete(`/problems/${id}`);
+  } catch (error) {
+    errorHandler(error, { action: 'deleteProblem', id });
+    throw error;
+  }
 }
 
 // Get all problems
@@ -92,31 +57,57 @@ export async function getAllProblems(): Promise<{
   success: boolean;
   data: ProblemSummary[];
 }> {
-  return apiRequest<{ success: boolean; data: ProblemSummary[] }>('/problems');
+  try {
+    const response = await api.get<{
+      success: boolean;
+      data: ProblemSummary[];
+    }>('/problems');
+    return response.data;
+  } catch (error) {
+    errorHandler(error, { action: 'getAllProblems' });
+    throw error;
+  }
 }
 
 // Get specific problem
 export async function getProblem(id: string): Promise<ProblemDetail> {
-  const response = await apiRequest<{ success: boolean; data: ProblemDetail }>(
-    `/problems/${id}`
-  );
-  return response.data;
+  try {
+    const response = await api.get<{ success: boolean; data: ProblemDetail }>(
+      `/problems/${id}`
+    );
+    return response.data.data!;
+  } catch (error) {
+    errorHandler(error, { action: 'getProblem', id });
+    throw error;
+  }
 }
 
 // Get problems by difficulty
 export async function getProblemsByDifficulty(
   difficulty: string
 ): Promise<ProblemSummary[]> {
-  return apiRequest<ProblemSummary[]>(
-    `/problems/difficulty?difficulty=${difficulty}`
-  );
+  try {
+    const response = await api.get<ProblemSummary[]>('/problems/difficulty', {
+      params: { difficulty },
+    });
+    return response.data;
+  } catch (error) {
+    errorHandler(error, { action: 'getProblemsByDifficulty', difficulty });
+    throw error;
+  }
 }
 
 // Search problems
 export async function searchProblems(query: string): Promise<ProblemSummary[]> {
-  return apiRequest<ProblemSummary[]>(
-    `/problems/search?q=${encodeURIComponent(query)}`
-  );
+  try {
+    const response = await api.get<ProblemSummary[]>('/problems/search', {
+      params: { q: query },
+    });
+    return response.data;
+  } catch (error) {
+    errorHandler(error, { action: 'searchProblems', query });
+    throw error;
+  }
 }
 
 // Get problems with pagination
@@ -129,10 +120,18 @@ export async function getProblemsWithPagination(
   page: number;
   limit: number;
 }> {
-  return apiRequest<{
-    problems: ProblemSummary[];
-    total: number;
-    page: number;
-    limit: number;
-  }>(`/problems/page?page=${page}&limit=${limit}`);
+  try {
+    const response = await api.get<{
+      problems: ProblemSummary[];
+      total: number;
+      page: number;
+      limit: number;
+    }>('/problems/page', {
+      params: { page, limit },
+    });
+    return response.data;
+  } catch (error) {
+    errorHandler(error, { action: 'getProblemsWithPagination', page, limit });
+    throw error;
+  }
 }

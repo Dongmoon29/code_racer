@@ -8,10 +8,13 @@ import {
   useCreateProblem,
   useUpdateProblem,
 } from '@/hooks/useProblem';
-import Link from 'next/link';
 import { CreateProblemRequest, ProblemDetail, ProblemSummary } from '@/types';
 import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
 import CodeEditor from '@/components/game/CodeEditor';
+import { ProblemListHeader } from './ProblemListHeader';
+import { ProblemListFilters } from './ProblemListFilters';
+import { ProblemListTable } from './ProblemListTable';
+import { ProblemListStats } from './ProblemListStats';
 
 const DEFAULT_PROBLEM_JSON = `{
   "title": "INSERT_TITLE_HERE",
@@ -630,173 +633,33 @@ export default function ProblemList() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Problem Management</h1>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              setJsonError('');
-              setIsJsonModalOpen(true);
-            }}
-            className="px-6 py-2 rounded-md border"
-          >
-            + Add New Problem with JSON
-          </button>
-          <Link href="/admin/problems/create" className="px-6 py-2 rounded-md">
-            + Add New Problem
-          </Link>
-        </div>
-      </div>
+      <ProblemListHeader
+        onOpenJsonModal={() => {
+          setJsonError('');
+          setIsJsonModalOpen(true);
+        }}
+      />
 
-      {/* Filter and Search */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="Search by problem title..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2"
-          />
-        </div>
-        <div className="w-full md:w-48">
-          <select
-            value={difficultyFilter}
-            onChange={(e) => setDifficultyFilter(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2"
-          >
-            <option value="all">All Difficulties</option>
-            <option value="Easy">Easy</option>
-            <option value="Medium">Medium</option>
-            <option value="Hard">Hard</option>
-          </select>
-        </div>
-      </div>
+      <ProblemListFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        difficultyFilter={difficultyFilter}
+        onDifficultyChange={setDifficultyFilter}
+      />
 
-      {/* Problem List */}
-      <div className="rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y">
-            <thead className="">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Difficulty
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Updated
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className=" divide-y">
-              {filteredProblems.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center">
-                    {searchTerm || difficultyFilter !== 'all'
-                      ? 'No problems match the search criteria.'
-                      : 'No problems registered.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredProblems.map((problem: ProblemSummary) => (
-                  <tr key={problem.id} className="">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        type="button"
-                        className="text-sm font-medium underline underline-offset-2 hover:opacity-80 text-left"
-                        onClick={() => {
-                          setViewProblemId(problem.id);
-                          setIsViewJsonModalOpen(true);
-                          setViewJsonNotice('');
-                        }}
-                      >
-                        {problem.title}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getDifficultyColor(
-                          problem.difficulty
-                        )}`}
-                      >
-                        {problem.difficulty}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm ">
-                      {new Date(problem.created_at).toLocaleDateString('en-US')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm ">
-                      {new Date(problem.updated_at).toLocaleDateString('en-US')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <Link href={`/admin/problems/edit/${problem.id}`}>
-                          Edit
-                        </Link>
-                        <button
-                          onClick={() =>
-                            handleDelete(problem.id, problem.title)
-                          }
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <ProblemListTable
+        problems={filteredProblems}
+        onViewProblem={(id) => {
+          setViewProblemId(id);
+          setIsViewJsonModalOpen(true);
+          setViewJsonNotice('');
+        }}
+        onDeleteProblem={handleDelete}
+        getDifficultyColor={getDifficultyColor}
+        hasFilters={!!(searchTerm || difficultyFilter !== 'all')}
+      />
 
-      {/* Statistics */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className=" p-4 rounded-lg shadow bg-[hsl(var(--card))]">
-          <div className="text-sm font-medium ">Total Problems</div>
-          <div className="text-2xl font-bold ">{problems.length}</div>
-        </div>
-
-        <div className=" p-4 rounded-lg shadow bg-[hsl(var(--card))]">
-          <div className="text-sm font-medium ">Easy</div>
-          <div className="text-2xl font-bold text-green-600">
-            {
-              problems.filter((p: ProblemSummary) => p.difficulty === 'Easy')
-                .length
-            }
-          </div>
-        </div>
-
-        <div className=" p-4 rounded-lg shadow bg-[hsl(var(--card))]">
-          <div className="text-sm font-medium ">Medium</div>
-          <div className="text-2xl font-bold text-yellow-600">
-            {
-              problems.filter((p: ProblemSummary) => p.difficulty === 'Medium')
-                .length
-            }
-          </div>
-        </div>
-
-        <div className=" p-4 rounded-lg shadow bg-[hsl(var(--card))]">
-          <div className="text-sm font-medium ">Hard</div>
-          <div className="text-2xl font-bold text-red-600">
-            {
-              problems.filter((p: ProblemSummary) => p.difficulty === 'Hard')
-                .length
-            }
-          </div>
-        </div>
-      </div>
+      <ProblemListStats problems={problems} />
     </div>
   );
 }
