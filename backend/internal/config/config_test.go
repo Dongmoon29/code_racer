@@ -96,11 +96,11 @@ func TestLoadConfigMissingRequired(t *testing.T) {
 	// LoadConfig 호출
 	cfg, err := LoadConfig()
 
-	// 에러가 발생해야 함
+		// Error should occur
 	require.Error(t, err)
 	assert.Nil(t, cfg)
 
-	// 에러 메시지에 필수 환경 변수들이 포함되어 있는지 확인
+		// Verify that error message includes required environment variables
 	requiredVars := []string{
 		"DB_HOST",
 		"DB_USER",

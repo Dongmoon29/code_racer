@@ -118,7 +118,7 @@ func (s *userService) UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRe
 		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user profile")
 	}
 
-	// 프로필 정보 업데이트
+	// Update profile information
 	if req.Name != "" {
 		user.Name = req.Name
 	}

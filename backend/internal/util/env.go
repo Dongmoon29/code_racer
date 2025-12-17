@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// GetenvRequired 환경 변수를 가져오거나 에러를 반환합니다
+// GetenvRequired retrieves an environment variable or returns an error if it's not set
 func GetenvRequired(key string) (string, error) {
 	value := os.Getenv(key)
 	if value == "" {

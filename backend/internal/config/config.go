@@ -83,7 +83,7 @@ func LoadConfig() (*Config, error) {
 
 	config.RedisUsername = util.GetEnv("REDIS_USERNAME", "default")
 
-	// Redis 패스워드는 선택적일 수 있음
+	// Redis password is optional
 	config.RedisPassword = util.GetEnv("REDIS_PASSWORD", "")
 
 	// JWT 설정
