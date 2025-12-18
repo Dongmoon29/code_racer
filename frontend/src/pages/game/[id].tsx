@@ -5,13 +5,18 @@ import { GameRoom } from '../../components/dynamic';
 import { Spinner } from '../../components/ui';
 import { Button } from '@/components/ui/Button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 const GamePage: React.FC = () => {
   const router = useRouter();
   const { id } = router.query;
+  const { isLoading: isAuthLoading } = useAuthGuard({
+    requireAuth: true,
+    redirectTo: '/login',
+  });
 
-  // 게임 ID가 로드되지 않은 경우
-  if (!id) {
+  // 인증 로딩 중이거나 게임 ID가 로드되지 않은 경우
+  if (isAuthLoading || !id) {
     return (
       <Layout title="Loading... | Code Racer" description="Loading game...">
         <div className="flex justify-center items-center h-64 text-[var(--color-text)]">
