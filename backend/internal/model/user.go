@@ -15,23 +15,24 @@ const (
 )
 
 type User struct {
-	ID            uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
-	Email         string    `gorm:"type:varchar(255);unique;not null" json:"email"`
-	Password      string    `gorm:"type:varchar(255)" json:"-"`
-	Name          string    `gorm:"type:varchar(255);not null" json:"name"`
-	ProfileImage  string    `gorm:"type:varchar(255)" json:"profile_image"`
-	Role          Role      `gorm:"type:varchar(20);default:'user'" json:"role"`
-	OAuthProvider string    `gorm:"type:varchar(20)" json:"oauth_provider,omitempty"`
-	OAuthID       string    `gorm:"type:varchar(255)" json:"oauth_id,omitempty"`
-	Homepage      string    `gorm:"type:varchar(255)" json:"homepage"`
-	LinkedIn      string    `gorm:"type:varchar(255)" json:"linkedin"`
-	GitHub        string    `gorm:"type:varchar(255)" json:"github"`
-	Company       string    `gorm:"type:varchar(255)" json:"company"`
-	JobTitle      string    `gorm:"type:varchar(255)" json:"job_title"`
-	FavLanguage   string    `gorm:"type:varchar(50)" json:"fav_language"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
-	Rating        int       `gorm:"type:integer;default:1000" json:"rating"`
+	ID            uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
+	Email         string     `gorm:"type:varchar(255);unique;not null" json:"email"`
+	Password      string     `gorm:"type:varchar(255)" json:"-"`
+	Name          string     `gorm:"type:varchar(255);not null" json:"name"`
+	ProfileImage  string     `gorm:"type:varchar(255)" json:"profile_image"`
+	Role          Role       `gorm:"type:varchar(20);default:'user'" json:"role"`
+	OAuthProvider string     `gorm:"type:varchar(20)" json:"oauth_provider,omitempty"`
+	OAuthID       string     `gorm:"type:varchar(255)" json:"oauth_id,omitempty"`
+	Homepage      string     `gorm:"type:varchar(255)" json:"homepage"`
+	LinkedIn      string     `gorm:"type:varchar(255)" json:"linkedin"`
+	GitHub        string     `gorm:"type:varchar(255)" json:"github"`
+	Company       string     `gorm:"type:varchar(255)" json:"company"`
+	JobTitle      string     `gorm:"type:varchar(255)" json:"job_title"`
+	FavLanguage   string     `gorm:"type:varchar(50)" json:"fav_language"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+	LastLoginAt   *time.Time `gorm:"type:timestamptz" json:"last_login_at,omitempty"`
+	Rating        int        `gorm:"type:integer;default:1000" json:"rating"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {

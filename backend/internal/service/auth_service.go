@@ -92,6 +92,17 @@ func (s *authService) Login(req *model.LoginRequest) (*model.LoginResponse, erro
 		return nil, apperr.New(apperr.CodeUnauthorized, "Invalid email or password")
 	}
 
+	// Update last login time
+	now := time.Now()
+	user.LastLoginAt = &now
+	if err := s.userRepo.Update(user); err != nil {
+		s.logger.Warn().
+			Err(err).
+			Str("user_id", user.ID.String()).
+			Msg("Failed to update last_login_at")
+		// Don't fail login if we can't update last_login_at
+	}
+
 	// JWT token generation
 	token, err := s.generateToken(user.ID, user.Email, string(user.Role))
 	if err != nil {
@@ -170,6 +181,7 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 	}
 
 	user, err := s.userRepo.FindByEmail(googleUser.Email)
+	now := time.Now()
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user")
@@ -182,12 +194,14 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 			Role:          model.RoleUser,
 			OAuthProvider: "google",
 			OAuthID:       googleUser.ID,
+			LastLoginAt:   &now,
 		}
 		if err := s.userRepo.Create(user); err != nil {
 			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to create user")
 		}
 	} else {
 		// User exists - check if it's an OAuth account or regular account
+		user.LastLoginAt = &now
 		switch user.OAuthProvider {
 		case "":
 			// Regular account exists - link OAuth account
@@ -256,6 +270,7 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 	}
 
 	user, err := s.userRepo.FindByEmail(githubUser.Email)
+	now := time.Now()
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user")
@@ -269,6 +284,7 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 			Role:          model.RoleUser,
 			OAuthProvider: "github",
 			OAuthID:       githubUser.ID,
+			LastLoginAt:   &now,
 		}
 		if err := s.userRepo.Create(user); err != nil {
 			s.logger.Error().Err(err).Msg("Failed to create new user")
@@ -276,6 +292,7 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 		}
 	} else {
 		// User exists - check if it's an OAuth account or regular account
+		user.LastLoginAt = &now
 		switch user.OAuthProvider {
 		case "":
 			// Regular account exists - link OAuth account
