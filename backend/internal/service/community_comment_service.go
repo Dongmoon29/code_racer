@@ -25,9 +25,24 @@ func NewPostCommentService(commentRepo interfaces.PostCommentRepository, logger 
 
 func (s *postCommentService) CreateComment(userID, postID uuid.UUID, req *model.CreatePostCommentRequest) (*model.PostCommentResponse, error) {
 	comment := &model.PostComment{
-		PostID:  postID,
-		UserID:  userID,
-		Content: req.Content,
+		PostID:   postID,
+		UserID:   userID,
+		Content:  req.Content,
+		ParentID: req.ParentID,
+	}
+
+	// If parent_id is provided, verify it exists and belongs to the same post
+	if req.ParentID != nil {
+		parent, err := s.commentRepo.FindByID(*req.ParentID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, apperr.Wrap(err, apperr.CodeNotFound, "Parent comment not found")
+			}
+			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to verify parent comment")
+		}
+		if parent.PostID != postID {
+			return nil, apperr.New(apperr.CodeBadRequest, "Parent comment must belong to the same post")
+		}
 	}
 
 	if err := s.commentRepo.Create(comment); err != nil {
@@ -58,6 +73,21 @@ func (s *postCommentService) GetCommentsByPostID(postID uuid.UUID, limit, offset
 	}
 
 	return responses, total, nil
+}
+
+func (s *postCommentService) GetCommentsByPostIDWithReplies(postID uuid.UUID, viewerID uuid.UUID) ([]*model.PostCommentResponse, error) {
+	comments, err := s.commentRepo.FindByPostIDWithRepliesWithMeta(postID, &viewerID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("postID", postID.String()).Msg("Failed to get comments with replies")
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to get comments with replies")
+	}
+
+	responses := make([]*model.PostCommentResponse, len(comments))
+	for i, c := range comments {
+		responses[i] = c.ToResponse()
+	}
+
+	return responses, nil
 }
 
 func (s *postCommentService) UpdateComment(id, userID uuid.UUID, content string) (*model.PostCommentResponse, error) {
@@ -112,3 +142,30 @@ func (s *postCommentService) DeleteComment(id, userID uuid.UUID) error {
 	return nil
 }
 
+func (s *postCommentService) VoteComment(userID, commentID uuid.UUID, value int16) (*model.PostCommentResponse, error) {
+	if value != -1 && value != 0 && value != 1 {
+		return nil, apperr.New(apperr.CodeBadRequest, "Invalid vote value")
+	}
+
+	// Ensure comment exists
+	_, err := s.commentRepo.FindByID(commentID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeNotFound, "Comment not found")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to get comment")
+	}
+
+	if err := s.commentRepo.Vote(commentID, userID, value); err != nil {
+		s.logger.Error().Err(err).Str("commentID", commentID.String()).Str("userID", userID.String()).Msg("Failed to vote comment")
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to vote comment")
+	}
+
+	updated, err := s.commentRepo.FindByIDWithMeta(commentID, &userID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("commentID", commentID.String()).Msg("Failed to reload comment after vote")
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load comment")
+	}
+
+	return updated.ToResponse(), nil
+}

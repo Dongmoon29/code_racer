@@ -445,15 +445,6 @@ func getFloat64Time(timeValue interface{}) float64 {
 	}
 }
 
-// mustJSON marshals value to JSON string or returns fallback
-func mustJSON(v interface{}) []byte {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return []byte("null")
-	}
-	return b
-}
-
 // EvaluateCodeWithRealtime Code evaluation with real-time notifications (hybrid: batch first, fallback to per-test)
 func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, problem *model.Problem, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
 	// 1. Submission start notification (including total test cases)

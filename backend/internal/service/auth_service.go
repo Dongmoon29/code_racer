@@ -188,7 +188,8 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 		}
 	} else {
 		// User exists - check if it's an OAuth account or regular account
-		if user.OAuthProvider == "" {
+		switch user.OAuthProvider {
+		case "":
 			// Regular account exists - link OAuth account
 			user.OAuthProvider = "google"
 			user.OAuthID = googleUser.ID
@@ -196,13 +197,13 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 			if err := s.userRepo.Update(user); err != nil {
 				return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to link OAuth account")
 			}
-		} else if user.OAuthProvider == "google" {
+		case "google":
 			// Same OAuth provider - update profile image
 			user.ProfileImage = googleUser.Picture
 			if err := s.userRepo.Update(user); err != nil {
 				return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to update user")
 			}
-		} else {
+		default:
 			// Different OAuth provider - return error
 			return nil, apperr.New(apperr.CodeConflict, "Email is already registered with a different OAuth provider")
 		}
@@ -275,7 +276,8 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 		}
 	} else {
 		// User exists - check if it's an OAuth account or regular account
-		if user.OAuthProvider == "" {
+		switch user.OAuthProvider {
+		case "":
 			// Regular account exists - link OAuth account
 			user.OAuthProvider = "github"
 			user.OAuthID = githubUser.ID
@@ -284,14 +286,14 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 				s.logger.Error().Err(err).Msg("Failed to link OAuth account")
 				return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to link OAuth account")
 			}
-		} else if user.OAuthProvider == "github" {
+		case "github":
 			// Same OAuth provider - update profile image
 			user.ProfileImage = githubUser.AvatarURL
 			if err := s.userRepo.Update(user); err != nil {
 				s.logger.Error().Err(err).Msg("Failed to update user profile image")
 				return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to update user")
 			}
-		} else {
+		default:
 			// Different OAuth provider - return error
 			return nil, apperr.New(apperr.CodeConflict, "Email is already registered with a different OAuth provider")
 		}

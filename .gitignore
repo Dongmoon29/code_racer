@@ -23,6 +23,10 @@ node_modules/
 # OS specific
 .DS_Store
 
+# Go build outputs (local binaries)
+backend/api
+backend/api.exe
+
 # Task files
 # tasks.json
 # tasks/ 

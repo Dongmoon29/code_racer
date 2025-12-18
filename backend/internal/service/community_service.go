@@ -47,8 +47,8 @@ func (s *communityService) CreatePost(userID uuid.UUID, req *model.CreatePostReq
 	return created.ToResponse(), nil
 }
 
-func (s *communityService) GetPostByID(id uuid.UUID) (*model.PostResponse, error) {
-	post, err := s.communityRepo.FindByID(id)
+func (s *communityService) GetPostByID(id uuid.UUID, viewerID uuid.UUID) (*model.PostResponse, error) {
+	post, err := s.communityRepo.FindByIDWithMeta(id, &viewerID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperr.Wrap(err, apperr.CodeNotFound, "Post not found")
@@ -74,8 +74,8 @@ func (s *communityService) GetUserPosts(userID uuid.UUID, limit, offset int) ([]
 	return responses, total, nil
 }
 
-func (s *communityService) ListPosts(limit, offset int, status *model.PostStatus, postType *model.PostType) ([]*model.PostResponse, int64, error) {
-	posts, total, err := s.communityRepo.ListAll(limit, offset, status, postType)
+func (s *communityService) ListPosts(viewerID uuid.UUID, limit, offset int, status *model.PostStatus, postType *model.PostType, sort model.PostSort) ([]*model.PostResponse, int64, error) {
+	posts, total, err := s.communityRepo.ListAllWithMeta(limit, offset, status, postType, sort, &viewerID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to list posts")
 		return nil, 0, apperr.Wrap(err, apperr.CodeInternal, "Failed to list posts")
@@ -87,6 +87,34 @@ func (s *communityService) ListPosts(limit, offset int, status *model.PostStatus
 	}
 
 	return responses, total, nil
+}
+
+func (s *communityService) VotePost(userID, postID uuid.UUID, value int16) (*model.PostResponse, error) {
+	if value != -1 && value != 0 && value != 1 {
+		return nil, apperr.New(apperr.CodeBadRequest, "Invalid vote value")
+	}
+
+	// Ensure the post exists
+	_, err := s.communityRepo.FindByID(postID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeNotFound, "Post not found")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to get post")
+	}
+
+	if err := s.communityRepo.Vote(postID, userID, value); err != nil {
+		s.logger.Error().Err(err).Str("postID", postID.String()).Str("userID", userID.String()).Msg("Failed to vote post")
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to vote post")
+	}
+
+	updated, err := s.communityRepo.FindByIDWithMeta(postID, &userID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("postID", postID.String()).Msg("Failed to reload post after vote")
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load post")
+	}
+
+	return updated.ToResponse(), nil
 }
 
 func (s *communityService) UpdatePostStatus(id uuid.UUID, status model.PostStatus) (*model.PostResponse, error) {
@@ -130,4 +158,3 @@ func (s *communityService) DeletePost(id uuid.UUID) error {
 
 	return nil
 }
-

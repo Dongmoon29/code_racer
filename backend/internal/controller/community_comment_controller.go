@@ -12,7 +12,7 @@ import (
 
 type PostCommentController struct {
 	commentService interfaces.PostCommentService
-	logger          logger.Logger
+	logger         logger.Logger
 }
 
 func NewPostCommentController(commentService interfaces.PostCommentService, logger logger.Logger) *PostCommentController {
@@ -55,9 +55,29 @@ func (c *PostCommentController) CreateComment(ctx *gin.Context) {
 // GetComments gets all comments for a post
 // GET /api/feedback/comments/:feedbackId
 func (c *PostCommentController) GetComments(ctx *gin.Context) {
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		Unauthorized(ctx, "User not authenticated")
+		return
+	}
+
 	postID, err := uuid.Parse(ctx.Param("feedbackId"))
 	if err != nil {
 		BadRequest(ctx, "Invalid post ID")
+		return
+	}
+
+	// Check if we should return comments with replies (hierarchical structure)
+	if ctx.Query("withReplies") == "true" {
+		comments, err := c.commentService.GetCommentsByPostIDWithReplies(postID, userID.(uuid.UUID))
+		if err != nil {
+			WriteError(ctx, err)
+			return
+		}
+
+		OK(ctx, gin.H{
+			"items": comments,
+		})
 		return
 	}
 
@@ -83,11 +103,41 @@ func (c *PostCommentController) GetComments(ctx *gin.Context) {
 	}
 
 	OK(ctx, gin.H{
-		"items": comments,
-		"total": total,
-		"limit": limit,
+		"items":  comments,
+		"total":  total,
+		"limit":  limit,
 		"offset": offset,
 	})
+}
+
+// VoteComment votes on a comment: 1(upvote), -1(downvote), 0(remove)
+// POST /api/feedback/comments/:id/vote
+func (c *PostCommentController) VoteComment(ctx *gin.Context) {
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		Unauthorized(ctx, "User not authenticated")
+		return
+	}
+
+	commentID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		BadRequest(ctx, "Invalid comment ID")
+		return
+	}
+
+	var req model.VotePostCommentRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		BadRequest(ctx, "Invalid request: "+err.Error())
+		return
+	}
+
+	updated, err := c.commentService.VoteComment(userID.(uuid.UUID), commentID, req.Value)
+	if err != nil {
+		WriteError(ctx, err)
+		return
+	}
+
+	OK(ctx, updated)
 }
 
 // UpdateComment updates a comment
@@ -147,4 +197,3 @@ func (c *PostCommentController) DeleteComment(ctx *gin.Context) {
 		"message": "Comment deleted successfully",
 	})
 }
-

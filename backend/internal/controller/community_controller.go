@@ -49,13 +49,19 @@ func (c *CommunityController) CreatePost(ctx *gin.Context) {
 // GetPost gets a post by ID
 // GET /api/feedback/:id
 func (c *CommunityController) GetPost(ctx *gin.Context) {
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		Unauthorized(ctx, "User not authenticated")
+		return
+	}
+
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		BadRequest(ctx, "Invalid post ID")
 		return
 	}
 
-	post, err := c.communityService.GetPostByID(id)
+	post, err := c.communityService.GetPostByID(id, userID.(uuid.UUID))
 	if err != nil {
 		WriteError(ctx, err)
 		return
@@ -95,9 +101,9 @@ func (c *CommunityController) GetUserPosts(ctx *gin.Context) {
 	}
 
 	OK(ctx, gin.H{
-		"items": posts,
-		"total": total,
-		"limit": limit,
+		"items":  posts,
+		"total":  total,
+		"limit":  limit,
 		"offset": offset,
 	})
 }
@@ -105,6 +111,12 @@ func (c *CommunityController) GetUserPosts(ctx *gin.Context) {
 // ListPosts lists all posts
 // GET /api/feedback
 func (c *CommunityController) ListPosts(ctx *gin.Context) {
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		Unauthorized(ctx, "User not authenticated")
+		return
+	}
+
 	limit := 20
 	offset := 0
 
@@ -132,18 +144,54 @@ func (c *CommunityController) ListPosts(ctx *gin.Context) {
 		postType = &t
 	}
 
-	posts, total, err := c.communityService.ListPosts(limit, offset, status, postType)
+	sort := model.PostSort(ctx.DefaultQuery("sort", string(model.PostSortHot)))
+	if sort != model.PostSortHot && sort != model.PostSortNew && sort != model.PostSortTop {
+		BadRequest(ctx, "Invalid sort value")
+		return
+	}
+
+	posts, total, err := c.communityService.ListPosts(userID.(uuid.UUID), limit, offset, status, postType, sort)
 	if err != nil {
 		WriteError(ctx, err)
 		return
 	}
 
 	OK(ctx, gin.H{
-		"items": posts,
-		"total": total,
-		"limit": limit,
+		"items":  posts,
+		"total":  total,
+		"limit":  limit,
 		"offset": offset,
 	})
+}
+
+// VotePost votes on a post: 1(upvote), -1(downvote), 0(remove)
+// POST /api/feedback/:id/vote
+func (c *CommunityController) VotePost(ctx *gin.Context) {
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		Unauthorized(ctx, "User not authenticated")
+		return
+	}
+
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		BadRequest(ctx, "Invalid post ID")
+		return
+	}
+
+	var req model.VotePostRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		BadRequest(ctx, "Invalid request: "+err.Error())
+		return
+	}
+
+	post, err := c.communityService.VotePost(userID.(uuid.UUID), id, req.Value)
+	if err != nil {
+		WriteError(ctx, err)
+		return
+	}
+
+	OK(ctx, post)
 }
 
 // UpdatePostStatus updates the status of a post (admin only)
@@ -191,4 +239,3 @@ func (c *CommunityController) DeletePost(ctx *gin.Context) {
 		"message": "Post deleted successfully",
 	})
 }
-

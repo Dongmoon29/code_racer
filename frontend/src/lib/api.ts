@@ -350,7 +350,11 @@ export const userApi = {
 };
 
 export const communityApi = {
-  create: async (type: 'bug' | 'feature' | 'improvement' | 'other', title: string, content: string) => {
+  create: async (
+    type: 'bug' | 'feature' | 'improvement' | 'other',
+    title: string,
+    content: string
+  ) => {
     const response = await api.post('/feedback', {
       type,
       title,
@@ -371,11 +375,17 @@ export const communityApi = {
     };
   },
 
-  listPosts: async (limit = 50, offset = 0, status?: string, type?: string) => {
-    const params: any = { limit, offset };
+  listPosts: async (
+    limit = 50,
+    offset = 0,
+    status?: string,
+    type?: string,
+    sort: 'hot' | 'new' | 'top' = 'hot'
+  ) => {
+    const params: Record<string, string | number> = { limit, offset, sort };
     if (status) params.status = status;
     if (type) params.type = type;
-    
+
     const response = await api.get('/feedback', { params });
     return response.data as {
       success: boolean;
@@ -387,6 +397,9 @@ export const communityApi = {
           title: string;
           content: string;
           status: string;
+          score: number;
+          comment_count: number;
+          my_vote: number;
           created_at: string;
           updated_at: string;
           user?: {
@@ -438,18 +451,55 @@ export const communityApi = {
         title: string;
         content: string;
         status: string;
+        score: number;
+        comment_count: number;
+        my_vote: number;
         created_at: string;
         updated_at: string;
+        user?: {
+          id: string;
+          name: string;
+          email: string;
+          profile_image?: string;
+        };
+      };
+    };
+  },
+
+  vote: async (id: string, value: -1 | 0 | 1) => {
+    const response = await api.post(`/feedback/${id}/vote`, { value });
+    return response.data as {
+      success: boolean;
+      data: {
+        id: string;
+        user_id: string;
+        type: string;
+        title: string;
+        content: string;
+        status: string;
+        score: number;
+        comment_count: number;
+        my_vote: number;
+        created_at: string;
+        updated_at: string;
+        user?: {
+          id: string;
+          name: string;
+          email: string;
+          profile_image?: string;
+        };
       };
     };
   },
 };
 
 export const communityCommentApi = {
-  create: async (postId: string, content: string) => {
-    const response = await api.post(`/feedback/comments/${postId}`, {
-      content,
-    });
+  create: async (postId: string, content: string, parentId?: string) => {
+    const body: { content: string; parent_id?: string } = { content };
+    if (parentId) {
+      body.parent_id = parentId;
+    }
+    const response = await api.post(`/feedback/comments/${postId}`, body);
     return response.data as {
       success: boolean;
       data: {
@@ -469,9 +519,18 @@ export const communityCommentApi = {
     };
   },
 
-  getComments: async (postId: string, limit = 50, offset = 0) => {
+  getComments: async (
+    postId: string,
+    limit = 50,
+    offset = 0,
+    withReplies = false
+  ) => {
+    const params: Record<string, string | number> = { limit, offset };
+    if (withReplies) {
+      params.withReplies = 'true';
+    }
     const response = await api.get(`/feedback/comments/${postId}`, {
-      params: { limit, offset },
+      params,
     });
     return response.data as {
       success: boolean;
@@ -480,9 +539,29 @@ export const communityCommentApi = {
           id: string;
           post_id: string;
           user_id: string;
+          parent_id?: string;
           content: string;
+          score?: number;
+          my_vote?: number;
           created_at: string;
           updated_at: string;
+          replies?: Array<{
+            id: string;
+            post_id: string;
+            user_id: string;
+            parent_id?: string;
+            content: string;
+            score?: number;
+            my_vote?: number;
+            created_at: string;
+            updated_at: string;
+            user?: {
+              id: string;
+              name: string;
+              email: string;
+              profile_image?: string;
+            };
+          }>;
           user?: {
             id: string;
             name: string;
@@ -490,9 +569,35 @@ export const communityCommentApi = {
             profile_image?: string;
           };
         }>;
-        total: number;
-        limit: number;
-        offset: number;
+        total?: number;
+        limit?: number;
+        offset?: number;
+      };
+    };
+  },
+
+  vote: async (commentId: string, value: -1 | 0 | 1) => {
+    const response = await api.post(`/feedback/comments/vote/${commentId}`, {
+      value,
+    });
+    return response.data as {
+      success: boolean;
+      data: {
+        id: string;
+        post_id: string;
+        user_id: string;
+        parent_id?: string;
+        content: string;
+        score: number;
+        my_vote: number;
+        created_at: string;
+        updated_at: string;
+        user?: {
+          id: string;
+          name: string;
+          email: string;
+          profile_image?: string;
+        };
       };
     };
   },

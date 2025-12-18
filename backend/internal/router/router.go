@@ -40,7 +40,7 @@ func Setup(
 		status := gin.H{
 			"status": "ok",
 		}
-		
+
 		// Check database connection
 		if db != nil {
 			sqlDB, err := db.DB()
@@ -52,7 +52,7 @@ func Setup(
 				}
 			}
 		}
-		
+
 		// Check Redis connection
 		if rdb != nil {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -63,7 +63,7 @@ func Setup(
 				status["redis"] = "disconnected"
 			}
 		}
-		
+
 		c.JSON(200, status)
 	})
 
@@ -77,11 +77,11 @@ func Setup(
 	allowedMethods := []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions}
 	allowedHeaders := []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	exposeHeaders := []string{"Content-Length"}
-	
+
 	// Allow credentials when using cookies for authentication
 	// In production, ensure CORS origins are properly configured
 	allowCredentials := !util.IsProduction() || len(allowedOrigins) > 0
-	
+
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     allowedOrigins,
 		AllowMethods:     allowedMethods,
@@ -130,38 +130,40 @@ func Setup(
 				user.PUT("/profile", userController.UpdateProfile)
 				user.GET("/leaderboard", userController.GetLeaderboard)
 
-			// Follow routes
-			user.POST("/:userId/follow", followController.Follow)
-			user.DELETE("/:userId/follow", followController.Unfollow)
-			user.GET("/:userId/followers", followController.GetFollowers)
-			user.GET("/:userId/following", followController.GetFollowing)
-		}
-
-		// Community routes (community board)
-		community := secured.Group("/feedback") // Keep API path as /feedback for backward compatibility
-		{
-			// Public routes - all authenticated users can view and create
-			community.POST("", communityController.CreatePost)
-			community.GET("", communityController.ListPosts) // All users can view all posts
-			community.GET("/my", communityController.GetUserPosts)
-			community.GET("/:id", communityController.GetPost)
-
-			// Post comments routes (separate group to avoid wildcard conflict)
-			comments := community.Group("/comments")
-			{
-				comments.GET("/:feedbackId", postCommentController.GetComments)
-				comments.POST("/:feedbackId", postCommentController.CreateComment)
-				comments.PUT("/:id", postCommentController.UpdateComment)
-				comments.DELETE("/:id", postCommentController.DeleteComment)
+				// Follow routes
+				user.POST("/:userId/follow", followController.Follow)
+				user.DELETE("/:userId/follow", followController.Unfollow)
+				user.GET("/:userId/followers", followController.GetFollowers)
+				user.GET("/:userId/following", followController.GetFollowing)
 			}
 
-			// Admin-only routes
-			community.Use(authMiddleware.AdminRequired())
+			// Community routes (community board)
+			community := secured.Group("/feedback") // Keep API path as /feedback for backward compatibility
 			{
-				community.PATCH("/:id/status", communityController.UpdatePostStatus)
-				community.DELETE("/:id", communityController.DeletePost)
+				// Public routes - all authenticated users can view and create
+				community.POST("", communityController.CreatePost)
+				community.GET("", communityController.ListPosts) // All users can view all posts
+				community.GET("/my", communityController.GetUserPosts)
+				community.POST("/:id/vote", communityController.VotePost)
+				community.GET("/:id", communityController.GetPost)
+
+				// Post comments routes (separate group to avoid wildcard conflict)
+				comments := community.Group("/comments")
+				{
+					comments.GET("/:feedbackId", postCommentController.GetComments)
+					comments.POST("/:feedbackId", postCommentController.CreateComment)
+					comments.POST("/vote/:id", postCommentController.VoteComment)
+					comments.PUT("/:id", postCommentController.UpdateComment)
+					comments.DELETE("/:id", postCommentController.DeleteComment)
+				}
+
+				// Admin-only routes
+				community.Use(authMiddleware.AdminRequired())
+				{
+					community.PATCH("/:id/status", communityController.UpdatePostStatus)
+					community.DELETE("/:id", communityController.DeletePost)
+				}
 			}
-		}
 
 			// admin users
 			admin := secured.Group("/admin")
