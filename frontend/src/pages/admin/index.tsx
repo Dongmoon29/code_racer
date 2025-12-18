@@ -1,56 +1,44 @@
-import Link from 'next/link';
+import { FileText, Users } from 'lucide-react';
+import { DashboardCard, DashboardCardProps } from '@/components/admin/DashboardCard';
 
 export default function AdminPage() {
-  const adminFeatures = [
+  const adminFeatures: DashboardCardProps[] = [
     {
       title: 'Problem Management',
       description: 'Add new coding problems and edit/delete existing ones.',
       href: '/admin/problems',
-      icon: '📝',
+      icon: FileText,
+      iconColor: 'text-blue-600 dark:text-blue-400',
+      iconBgColor: 'bg-blue-50 dark:bg-blue-900/20',
     },
     {
       title: 'User Management',
       description: 'Manage user permissions and monitor accounts.',
       href: '/admin/users',
-      icon: '👥',
+      icon: Users,
+      iconColor: 'text-purple-600 dark:text-purple-400',
+      iconBgColor: 'bg-purple-50 dark:bg-purple-900/20',
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {adminFeatures.map((feature) => (
-        <Link
-          key={feature.href}
-          href={feature.href}
-          className="block group hover:-translate-y-2 transition-transform duration-200 h-full"
-        >
-          <div className="bg-[hsl(var(--card))] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 h-full flex flex-col">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl mr-4">
-                {feature.icon}
-              </div>
-              <h3 className="text-xl font-semibold">{feature.title}</h3>
-            </div>
-            <p className="mb-4">{feature.description}</p>
-            <div className="flex items-center mt-auto">
-              <span className="text-sm font-medium">Manage</span>
-              <svg
-                className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </div>
-          </div>
-        </Link>
-      ))}
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          Admin Dashboard
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Manage your platform's problems and users
+        </p>
+      </div>
+
+      {/* Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {adminFeatures.map((feature) => (
+          <DashboardCard key={feature.href} {...feature} />
+        ))}
+      </div>
     </div>
   );
 }
