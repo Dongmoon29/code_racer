@@ -197,7 +197,7 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span>Working on UI for the better UX!</span>
+                    <span>Working on Community / Comments feature</span>
                   </div>
                 </div>
                 <div className="mt-6">
