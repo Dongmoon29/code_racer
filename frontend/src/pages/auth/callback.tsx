@@ -31,9 +31,7 @@ const AuthCallback: React.FC = () => {
         const response = await authApi.exchangeToken(code, state, provider);
 
         if (response.success) {
-          // Backend sets httpOnly cookie (auth_token) as primary authentication method
-          // Store token in sessionStorage as backup for WebSocket connections
-          // WebSocket may not reliably send cookies, so we need token in query parameter
+          // Store token in sessionStorage for all authentication (HTTP + WebSocket)
           const token = response.token || response.data?.token;
           if (token) {
             sessionStorage.setItem('authToken', token);

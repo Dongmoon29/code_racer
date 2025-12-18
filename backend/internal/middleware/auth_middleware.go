@@ -28,7 +28,7 @@ func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := m.extractToken(c, false)
 		if tokenString == "" {
-			m.logger.Warn().Msg("No Authorization header or cookie found")
+			m.logger.Warn().Msg("No Authorization header found")
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"message": "Authentication required",
@@ -44,7 +44,7 @@ func (m *AuthMiddleware) WebSocketAuthRequired() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		tokenString := m.extractToken(ctx, true)
 		if tokenString == "" {
-			m.logger.Warn().Msg("No Authorization header, cookie, or token parameter found for WebSocket connection")
+			m.logger.Warn().Msg("No Authorization header or token parameter found for WebSocket connection")
 			ctx.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"message": "Authentication required",
@@ -76,29 +76,23 @@ func (m *AuthMiddleware) OptionalAuth() gin.HandlerFunc {
 	}
 }
 
-// extractToken extracts JWT token from request (header, cookie, or query param)
+// extractToken extracts JWT token from request (header or query param)
 func (m *AuthMiddleware) extractToken(c *gin.Context, allowQueryParam bool) string {
-	// Priority order: Authorization header > Cookie > Query parameter (if allowed)
+	// Priority order: Authorization header > Query parameter (for WebSocket)
 	authHeader := c.GetHeader("Authorization")
 	if authHeader != "" && len(authHeader) > 7 && authHeader[:7] == "Bearer " {
 		m.logger.Debug().Msg("Token found in Authorization header")
 		return authHeader[7:]
 	}
-	
-	// Check for JWT token in cookies
-	if cookie, err := c.Cookie("auth_token"); err == nil && cookie != "" {
-		m.logger.Debug().Str("tokenPrefix", util.MaskToken(cookie)).Msg("Token found in cookie")
-		return cookie
-	}
-	
-	// Fallback to query parameter for WebSocket (backward compatibility)
+
+	// Fallback to query parameter for WebSocket connections
 	if allowQueryParam {
 		if tokenParam := c.Query("token"); tokenParam != "" {
 			m.logger.Debug().Str("tokenPrefix", util.MaskToken(tokenParam)).Msg("Token found in query parameter")
 			return tokenParam
 		}
 	}
-	
+
 	return ""
 }
 

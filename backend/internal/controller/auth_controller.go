@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/Dongmoon29/code_racer/internal/config"
-	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -132,11 +131,8 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	// Set httpOnly cookie for security (when same-origin)
-	// Secure flag is set based on environment (false for development, true for production)
-	secure := util.IsProduction()
-	ctx.SetCookie("auth_token", response.AccessToken, constants.CookieExpirySeconds, "/", "", true, secure) // 7 days, httpOnly, secure based on environment
-
+	// Return token in response body only (no cookies)
+	// Client will store token in sessionStorage for both HTTP and WebSocket connections
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Login successful",
@@ -303,11 +299,8 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 
 	c.logger.Info().Msg("ExchangeToken: Token exchange successful")
 
-	// Set httpOnly cookie for security (when same-origin)
-	// Secure flag is set based on environment (false for development, true for production)
-	secure := util.IsProduction()
-	ctx.SetCookie("auth_token", response.AccessToken, constants.CookieExpirySeconds, "/", "", true, secure) // 7 days, httpOnly, secure based on environment
-
+	// Return token in response body only (no cookies)
+	// Client will store token in sessionStorage for both HTTP and WebSocket connections
 	OK(ctx, gin.H{"user": response.User, "token": response.AccessToken})
 }
 
@@ -329,10 +322,7 @@ func (c *AuthController) validateState(state string) bool {
 }
 
 func (c *AuthController) Logout(ctx *gin.Context) {
-	// Clear the httpOnly cookie
-	// Secure flag is set based on environment (false for development, true for production)
-	secure := util.IsProduction()
-	ctx.SetCookie("auth_token", "", -1, "/", "", true, secure) // Expire immediately
-
+	// No server-side action needed for token-based auth
+	// Client will remove token from sessionStorage
 	JSONMessage(ctx, http.StatusOK, "Successfully logged out")
 }

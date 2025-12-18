@@ -9,20 +9,17 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Enable cookie-based authentication for same-origin requests
 });
 
-// Request interceptor - Add Authorization header as fallback
-// Note: Backend sets httpOnly cookie (auth_token) which is automatically sent with requests
-// sessionStorage token is used as fallback for WebSocket connections and when cookies fail
+// Request interceptor - Add Authorization header from sessionStorage
+// Token-based authentication only (no cookies)
 api.interceptors.request.use(
   (config) => {
-    // Get token from sessionStorage as fallback (primary auth is via httpOnly cookie)
-    // This is needed for WebSocket connections which can't use cookies reliably
+    // Get token from sessionStorage for all requests
     const token = sessionStorage.getItem('authToken');
 
     if (token) {
-      // Add Authorization header as fallback (cookie is primary, this is backup)
+      // Add Authorization header with Bearer token
       config.headers.Authorization = `Bearer ${token}`;
     }
 
