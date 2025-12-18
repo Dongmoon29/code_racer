@@ -12,7 +12,7 @@ export default function AdminUsersPage() {
   const queryClient = useQueryClient();
 
   // Helper function to handle sort toggle
-  const handleSortToggle = (field: 'created_at' | 'updated_at') => {
+  const handleSortToggle = (field: 'created_at' | 'updated_at' | 'last_login_at') => {
     setPage(1); // Reset to first page when sorting changes
     const currentField = sort.split(':')[0];
     const currentDir = sort.split(':')[1] || 'desc';
@@ -41,7 +41,7 @@ export default function AdminUsersPage() {
   };
 
   // Helper function to get sort icon
-  const getSortIcon = (field: 'created_at' | 'updated_at') => {
+  const getSortIcon = (field: 'created_at' | 'updated_at' | 'last_login_at') => {
     const currentField = sort.split(':')[0];
     const currentDir = sort.split(':')[1] || 'desc';
 
@@ -189,6 +189,16 @@ export default function AdminUsersPage() {
                   <span>{getSortIcon('updated_at')}</span>
                 </button>
               </th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <button
+                  className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+                  onClick={() => handleSortToggle('last_login_at')}
+                  title="Sort by last login date"
+                >
+                  Last Login
+                  <span>{getSortIcon('last_login_at')}</span>
+                </button>
+              </th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -202,6 +212,7 @@ export default function AdminUsersPage() {
                 oauth_provider?: string;
                 created_at?: string;
                 updated_at?: string;
+                last_login_at?: string;
               }) => (
                 <tr key={u.id}>
                   <td className="px-4 py-3 text-xs font-mono">{u.id}</td>
@@ -230,6 +241,11 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3 text-sm">
                     {u.updated_at
                       ? new Date(u.updated_at).toLocaleDateString()
+                      : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {u.last_login_at
+                      ? new Date(u.last_login_at).toLocaleDateString()
                       : '-'}
                   </td>
                   <td className="px-4 py-3 text-right text-sm">
