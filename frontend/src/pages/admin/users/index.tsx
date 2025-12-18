@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { userApi } from '@/lib/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { IconButton, TextField } from '@radix-ui/themes';
+import { Search, X } from 'lucide-react';
 
 export default function AdminUsersPage() {
   const PAGE_SIZE = 20;
@@ -112,29 +114,37 @@ export default function AdminUsersPage() {
       <div className="mb-6">
         <form onSubmit={handleSearch} className="flex items-center gap-2">
           <div className="flex-1 max-w-md">
-            <input
-              type="text"
+            <TextField.Root
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search by Name, Email, or ID..."
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              size="2"
+              radius="large"
+              className="w-full"
             />
           </div>
-          <button
+          <IconButton
             type="submit"
             disabled={isFetching}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            size="2"
+            variant="solid"
+            aria-label="Search"
+            title="Search"
           >
-            Search
-          </button>
+            <Search size={16} />
+          </IconButton>
           {search && (
-            <button
+            <IconButton
               type="button"
               onClick={handleClearSearch}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              size="2"
+              variant="soft"
+              color="gray"
+              aria-label="Clear search"
+              title="Clear search"
             >
-              Clear
-            </button>
+              <X size={16} />
+            </IconButton>
           )}
         </form>
         {search && (
