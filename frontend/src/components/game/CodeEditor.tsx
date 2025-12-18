@@ -163,11 +163,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       view.destroy();
       editorElement.removeEventListener('contextmenu', disableContextMenu);
     };
-    // We intentionally exclude `theme` here because theme changes are handled
-    // by the reconfiguration effect above. Including it would recreate the
-    // editor and reset the document.
+    // We intentionally exclude `theme` and `value` here because:
+    // - theme changes are handled by the reconfiguration effect above
+    // - value changes are handled by the separate useEffect below
+    // Including them would recreate the editor and cause focus loss
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [createExtensions, readOnly, value]);
+  }, [createExtensions, readOnly]);
 
   // Update only when value changes externally (preserve focus)
   useEffect(() => {
