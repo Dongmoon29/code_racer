@@ -49,7 +49,8 @@ function solution(nums) {
         if (!raw) return;
         const value = JSON.parse(raw);
         const result = solution(value);
-        process.stdout.write(JSON.stringify(result));
+        const output = result === undefined ? 'null' : JSON.stringify(result);
+        process.stdout.write(output);
     } catch (error) {
         console.error(String(error));
         process.exit(1);
@@ -79,7 +80,8 @@ function solution(nums) {
         if (!raw) return;
         const value = JSON.parse(raw);
         const result = solution(value);
-        process.stdout.write(JSON.stringify(result));
+        const output = result === undefined ? 'null' : JSON.stringify(result);
+        process.stdout.write(output);
     } catch (error) {
         console.error(String(error));
         process.exit(1);
@@ -111,7 +113,8 @@ function solution(nums) {
         if (!raw) return;
         const value = JSON.parse(raw);
         const result = solution(value);
-        process.stdout.write(JSON.stringify(result));
+        const output = result === undefined ? 'null' : JSON.stringify(result);
+        process.stdout.write(output);
     } catch (error) {
         console.error(String(error));
         process.exit(1);
@@ -137,7 +140,8 @@ function solution(nums) {
         if (!raw) return;
         const value = JSON.parse(raw);
         const result = solution(value);
-        process.stdout.write(JSON.stringify(result));
+        const output = result === undefined ? 'null' : JSON.stringify(result);
+        process.stdout.write(output);
     } catch (error) {
         console.error(String(error));
         process.exit(1);
