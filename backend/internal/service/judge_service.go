@@ -230,8 +230,19 @@ func (s *judgeService) evaluateTestCase(
 		return early
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	// Calculate timeout: compile timeout + run timeout + network overhead (add 15s buffer)
+	compileTimeout, runTimeout, _ := s.deriveLimits(problem)
+	apiTimeout := time.Duration(compileTimeout+runTimeout+15) * time.Second
+
+	ctx, cancel := context.WithTimeout(context.Background(), apiTimeout)
 	defer cancel()
+
+	s.logger.Debug().
+		Int("compileTimeout", compileTimeout).
+		Int("runTimeout", runTimeout).
+		Dur("apiTimeout", apiTimeout).
+		Msg("Context timeout set for Judge0 API call")
+
 	response, early := s.submitSingle(ctx, wrapped, languageID, testCase.Input, expectedStr, index, problem)
 	if early != nil {
 		return early
@@ -262,6 +273,19 @@ func (s *judgeService) submitSingle(ctx context.Context, wrappedCode string, lan
 		MemoryLimit:      memoryLimit,
 		EnableNetworking: false,
 	}
+
+	// Log the complete Judge0 request before submission
+	s.logger.Info().
+		Int("testCaseIndex", index).
+		Int("languageID", request.LanguageID).
+		Str("wrappedCode", request.SourceCode).
+		Str("expectedOutput", request.ExpectedOutput).
+		Str("stdin", request.Stdin).
+		Int("compileTimeout", request.CompileTimeout).
+		Int("runTimeout", request.RunTimeout).
+		Int("memoryLimit", request.MemoryLimit).
+		Msg("Judge0 request prepared")
+
 	response, err := s.judge0Client.SubmitCode(ctx, request)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Judge0 API request failed")
@@ -538,11 +562,18 @@ func (s *judgeService) notifySubmissionCompleted(matchID uuid.UUID, userID uuid.
 // notifySubmissionFailed Submission failure notification
 func (s *judgeService) notifySubmissionFailed(matchID uuid.UUID, userID uuid.UUID, errorMessage string) {
 	if s.eventBus != nil {
+		s.logger.Info().
+			Str("matchID", matchID.String()).
+			Str("userID", userID.String()).
+			Str("errorMessage", errorMessage).
+			Msg("📤 Publishing SUBMISSION_FAILED event")
 		s.eventBus.Publish(events.TopicSubmissionFailed, &events.SubmissionFailedEvent{
 			MatchID: matchID.String(),
 			UserID:  userID.String(),
 			Message: fmt.Sprintf("Submission failed: %s", errorMessage),
 		})
+	} else {
+		s.logger.Warn().Msg("EventBus is nil, cannot publish SUBMISSION_FAILED")
 	}
 }
 

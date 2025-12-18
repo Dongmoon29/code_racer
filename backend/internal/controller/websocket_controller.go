@@ -116,7 +116,7 @@ func (c *WebSocketController) HandleWebSocket(ctx *gin.Context) {
 	c.logger.Info().
 		Str("userId", userID.(uuid.UUID).String()).
 		Str("matchId", matchID.String()).
-		Msg("WebSocket connection successful")
+		Msg("✅ WebSocket connection established")
 
 	c.wsService.HandleConnection(conn, userID.(uuid.UUID), matchID)
 }
@@ -143,7 +143,7 @@ func (c *WebSocketController) HandleMatchmaking(ctx *gin.Context) {
 
 	c.logger.Info().
 		Str("userId", userID.(uuid.UUID).String()).
-		Msg("WebSocket matchmaking connection successful")
+		Msg("✅ WebSocket matchmaking connection established")
 
 	c.wsService.HandleConnection(conn, userID.(uuid.UUID), matchingGameID)
 }

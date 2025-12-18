@@ -174,10 +174,28 @@ func (c *Judge0Client) validateRequest(req types.Judge0Request) error {
 
 // executeRequest executes a single Judge0 API request
 func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Request) (*types.Judge0Response, error) {
+	startTime := time.Now()
+
 	// Serialize request data
 	reqBody, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	// Log Judge0 request with truncated source code
+	if c.logger != nil {
+		sourceCodeTrunc, _ := truncateForLog(req.SourceCode, 16_000)
+		c.logger.Info().
+			Int("languageID", req.LanguageID).
+			Str("sourceCode", sourceCodeTrunc).
+			Str("expectedOutput", req.ExpectedOutput).
+			Str("stdin", req.Stdin).
+			Int("compileTimeout", req.CompileTimeout).
+			Int("runTimeout", req.RunTimeout).
+			Int("memoryLimit", req.MemoryLimit).
+			Bool("enableNetworking", req.EnableNetworking).
+			Str("endpoint", c.apiEndpoint).
+			Msg("🚀 Submitting code to Judge0")
 	}
 
 	// Create API request
@@ -200,8 +218,32 @@ func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Reque
 		}
 	}
 
+	// Log before HTTP call
+	if c.logger != nil {
+		c.logger.Info().
+			Str("method", "POST").
+			Str("url", fmt.Sprintf("%s/submissions?wait=true", c.apiEndpoint)).
+			Msg("⏳ Sending HTTP request to Judge0...")
+	}
+
 	// Execute API request
 	resp, err := c.httpClient.Do(request)
+
+	// Log after HTTP call (success or failure)
+	elapsed := time.Since(startTime)
+	if err != nil {
+		if c.logger != nil {
+			c.logger.Error().
+				Err(err).
+				Dur("elapsed", elapsed).
+				Msg("❌ Judge0 HTTP request failed")
+		}
+	} else if c.logger != nil {
+		c.logger.Info().
+			Int("statusCode", resp.StatusCode).
+			Dur("elapsed", elapsed).
+			Msg("✅ Judge0 HTTP response received")
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -211,18 +253,6 @@ func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Reque
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Log raw Judge0 response JSON (debug only, truncated)
-	if c.logger != nil {
-		bodyStr := string(body)
-		bodyTrunc, truncated := truncateForLog(bodyStr, 16_000)
-		c.logger.Debug().
-			Int("statusCode", resp.StatusCode).
-			Int("responseBytes", len(body)).
-			Bool("truncated", truncated).
-			Str("judge0ResponseRaw", bodyTrunc).
-			Msg("Judge0 raw response received")
 	}
 
 	// Check response status code
@@ -236,7 +266,80 @@ func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Reque
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
+	// Log Judge0 response in a readable format
+	if c.logger != nil {
+		c.logJudge0Response(&result, resp.StatusCode)
+	}
+
 	return &result, nil
+}
+
+// logJudge0Response logs the Judge0 response in a readable format
+func (c *Judge0Client) logJudge0Response(resp *types.Judge0Response, statusCode int) {
+	logger := c.logger.Info().Int("statusCode", statusCode)
+
+	// Log execution metrics
+	timeValue := getFloat64Time(resp.Time)
+	logger = logger.
+		Float64("executionTime", timeValue).
+		Float64("memoryUsage", resp.Memory)
+
+	// Log stdout (with truncation and newline indication)
+	if resp.Stdout != "" {
+		stdoutTrunc, wasTrunc := truncateForLog(resp.Stdout, 1000)
+		logger = logger.Str("stdout", stdoutTrunc)
+		if wasTrunc {
+			logger = logger.Bool("stdoutTruncated", true)
+		}
+	}
+
+	// Log stderr if present
+	if resp.Stderr != "" {
+		stderrTrunc, wasTrunc := truncateForLog(resp.Stderr, 1000)
+		logger = logger.Str("stderr", stderrTrunc)
+		if wasTrunc {
+			logger = logger.Bool("stderrTruncated", true)
+		}
+	}
+
+	// Log compile errors if present
+	if resp.CompileError != "" {
+		compileErrTrunc, wasTrunc := truncateForLog(resp.CompileError, 1000)
+		logger = logger.Str("compileError", compileErrTrunc)
+		if wasTrunc {
+			logger = logger.Bool("compileErrorTruncated", true)
+		}
+	}
+
+	// Log compile output if present
+	if resp.CompileOutput != "" {
+		compileOutTrunc, wasTrunc := truncateForLog(resp.CompileOutput, 1000)
+		logger = logger.Str("compileOutput", compileOutTrunc)
+		if wasTrunc {
+			logger = logger.Bool("compileOutputTruncated", true)
+		}
+	}
+
+	logger.Msg("Judge0 response received")
+}
+
+// getFloat64Time converts various time types to float64 (helper for logging)
+func getFloat64Time(timeValue interface{}) float64 {
+	switch v := timeValue.(type) {
+	case float64:
+		return v
+	case float32:
+		return float64(v)
+	case int:
+		return float64(v)
+	case int64:
+		return float64(v)
+	case string:
+		// Return 0 for string time values (can be enhanced if needed)
+		return 0
+	default:
+		return 0
+	}
 }
 
 // isNonRetryableError checks if an error should not be retried

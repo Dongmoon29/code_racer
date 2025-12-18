@@ -57,7 +57,10 @@ func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Pr
         const raw = require('fs').readFileSync(0, 'utf-8').trim();
         if (!raw) return;
         const testCases = JSON.parse(raw);
-        const results = testCases.map((value) => %s(value));
+        const results = testCases.map((value) => {
+            const result = %s(value);
+            return result === undefined ? null : result;
+        });
         process.stdout.write(JSON.stringify(results));
     } catch (error) {
         console.error(String(error));
@@ -77,7 +80,10 @@ func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Pr
         const raw = require('fs').readFileSync(0, 'utf-8').trim();
         if (!raw) return;
         const testCases = JSON.parse(raw);
-        const results = testCases.map((args) => %s(...args));
+        const results = testCases.map((args) => {
+            const result = %s(...args);
+            return result === undefined ? null : result;
+        });
         process.stdout.write(JSON.stringify(results));
     } catch (error) {
         console.error(String(error));
@@ -116,7 +122,8 @@ func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Proble
         if (!raw) return;
         const value = JSON.parse(raw);
         const result = %s(value);
-        process.stdout.write(JSON.stringify(result));
+        const output = result === undefined ? 'null' : JSON.stringify(result);
+        process.stdout.write(output);
     } catch (error) {
         console.error(String(error));
         process.exit(1);
@@ -136,7 +143,8 @@ func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Proble
         if (!raw) return;
         const args = JSON.parse(raw);
         const result = %s(...args);
-        process.stdout.write(JSON.stringify(result));
+        const output = result === undefined ? 'null' : JSON.stringify(result);
+        process.stdout.write(output);
     } catch (error) {
         console.error(String(error));
         process.exit(1);

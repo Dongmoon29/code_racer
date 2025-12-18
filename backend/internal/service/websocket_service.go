@@ -381,6 +381,12 @@ func (h *Hub) registerClient(client *Client) {
 
 	// Add client to match-specific map
 	h.addClientToMatch(client)
+
+	h.logger.Info().
+		Str("userId", client.userID.String()).
+		Str("matchId", client.matchID.String()).
+		Int("totalClients", len(h.clients)).
+		Msg("✅ Client registered in Hub")
 }
 
 // unregisterClient removes a client from the hub
@@ -390,6 +396,10 @@ func (h *Hub) unregisterClient(client *Client) {
 
 	// Check if client exists in global map
 	if _, clientExists := h.clients[client]; !clientExists {
+		h.logger.Debug().
+			Str("userId", client.userID.String()).
+			Str("matchId", client.matchID.String()).
+			Msg("🔍 Attempted to unregister non-existent client")
 		return
 	}
 
@@ -410,16 +420,32 @@ func (h *Hub) unregisterClient(client *Client) {
 		client.isMatching = false
 		client.difficulty = ""
 	}
+
+	h.logger.Info().
+		Str("userId", client.userID.String()).
+		Str("matchId", client.matchID.String()).
+		Int("remainingClients", len(h.clients)).
+		Msg("🔌 Client unregistered from Hub")
 }
 
 // logClientDisconnectReason logs the reason for client disconnection
 func (h *Hub) logClientDisconnectReason(client *Client) {
 	if client.disconnectAfterMatch {
-		h.logger.Info().Str("userID", client.userID.String()).Msg("Client disconnected after successful match")
+		h.logger.Info().
+			Str("userId", client.userID.String()).
+			Str("matchId", client.matchID.String()).
+			Msg("🔌 Client disconnected after successful match")
 	} else if client.isMatching {
-		h.logger.Warn().Str("userID", client.userID.String()).Str("difficulty", client.difficulty).Msg("Client disconnected while matching")
+		h.logger.Warn().
+			Str("userId", client.userID.String()).
+			Str("matchId", client.matchID.String()).
+			Str("difficulty", client.difficulty).
+			Msg("⚠️ Client disconnected while matching")
 	} else {
-		h.logger.Info().Str("userID", client.userID.String()).Msg("Client disconnected normally")
+		h.logger.Info().
+			Str("userId", client.userID.String()).
+			Str("matchId", client.matchID.String()).
+			Msg("🔌 Client disconnected normally")
 	}
 }
 
@@ -882,11 +908,21 @@ func (h *Hub) Shutdown() {
 
 // HandleConnection handles a new WebSocket connection
 func (s *webSocketService) HandleConnection(conn *websocket.Conn, userID uuid.UUID, matchID uuid.UUID) {
+	s.logger.Info().
+		Str("userId", userID.String()).
+		Str("matchId", matchID.String()).
+		Msg("🔌 HandleConnection started")
+
 	client := s.createWebSocketClient(conn, userID, matchID)
 	s.registerClientWithHub(client)
 	s.loadExistingCodeForClient(client, matchID, userID)
 	s.addUserToMatchParticipants(matchID, userID)
 	s.startClientGoroutines(client)
+
+	s.logger.Info().
+		Str("userId", userID.String()).
+		Str("matchId", matchID.String()).
+		Msg("✅ HandleConnection completed - client goroutines started")
 }
 
 // createWebSocketClient creates a new WebSocket client
@@ -1088,6 +1124,12 @@ func (c *Client) handleReadPumpCleanup(wsService *webSocketService) {
 	if r := recover(); r != nil {
 		wsService.logger.Error().Interface("panic", r).Msg("Recovered from panic in readPump")
 	}
+
+	wsService.logger.Info().
+		Str("userId", c.userID.String()).
+		Str("matchId", c.matchID.String()).
+		Msg("🔌 WebSocket connection closing (readPump cleanup)")
+
 	c.hub.unregister <- c
 	c.conn.Close()
 	wsService.cleanupUserData(c.userID, c.matchID)
