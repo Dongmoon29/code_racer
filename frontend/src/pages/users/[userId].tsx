@@ -69,7 +69,7 @@ const UserProfilePage = () => {
       <DashboardLayout>
         <div className="py-8">
           <div className="flex items-center justify-center">
-            <Loader variant="branded" />
+            <Loader variant="spinner" size="lg" />
           </div>
         </div>
       </DashboardLayout>
@@ -81,7 +81,7 @@ const UserProfilePage = () => {
       <DashboardLayout>
         <div className="py-8">
           <div className="flex items-center justify-center">
-            <Loader variant="branded" />
+            <Loader variant="spinner" size="lg" />
           </div>
         </div>
       </DashboardLayout>
