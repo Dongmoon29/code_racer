@@ -83,17 +83,7 @@ export const RegisterForm = dynamic(
 );
 
 // UI components that are heavy
-export const CodeRacerLoader = dynamic(
-  () => import('@/components/ui/CodeRacerLoader'),
-  {
-    loading: () => (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    ),
-    ssr: false,
-  }
-);
+// Note: CodeRacerLoader is deprecated, use Loader component instead
 
 export const RecentCommits = dynamic(
   () => import('@/components/ui/RecentCommits'),

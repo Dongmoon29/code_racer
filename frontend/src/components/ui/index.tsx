@@ -1,5 +1,6 @@
 export { Button } from './Button';
-export { Spinner } from './Spinner';
+export { Loader } from './Loader';
+export type { LoaderVariant, LoaderSize } from './Loader';
 export {
   Card,
   CardHeader,
@@ -9,6 +10,5 @@ export {
   CardFooter,
 } from './Card';
 export { Alert, AlertTitle, AlertDescription } from './alert';
-export { default as Loading } from './Loading';
 export { Select } from './Select';
 export { ThemeToggle } from './ThemeToggle';

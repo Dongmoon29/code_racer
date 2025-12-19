@@ -1,7 +1,7 @@
 import { ReactNode, useMemo } from 'react';
 import { Trophy, User, Shield, Settings, MessageSquare } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { LoadingScreen } from '@/components/ui/LoadingScreen';
+import { Loader } from '@/components/ui/Loader';
 import { ROUTES } from '@/lib/router';
 import { useSidebarState } from '@/hooks/useSidebarState';
 import { DashboardSidebar, NavigationItem } from './DashboardSidebar';
@@ -57,7 +57,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigationItems = useNavigationItems(user?.id, user?.role);
 
   if (isLoading || !isLoggedIn) {
-    return <LoadingScreen />;
+    return <Loader variant="fullscreen" />;
   }
 
   return (

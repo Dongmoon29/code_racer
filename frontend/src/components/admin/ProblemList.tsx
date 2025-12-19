@@ -9,7 +9,7 @@ import {
   useUpdateProblem,
 } from '@/hooks/useProblem';
 import { CreateProblemRequest, ProblemDetail, ProblemSummary } from '@/types';
-import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
+import { Loader } from '@/components/ui/Loader';
 import CodeEditor from '@/components/game/CodeEditor';
 import { ProblemListHeader } from './ProblemListHeader';
 import { ProblemListFilters } from './ProblemListFilters';
@@ -220,7 +220,7 @@ export default function ProblemList() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <CodeRacerLoader />
+        <Loader variant="branded" />
       </div>
     );
   }
@@ -333,7 +333,7 @@ export default function ProblemList() {
 
             {isProblemLoading ? (
               <div className="flex justify-center items-center h-64">
-                <CodeRacerLoader />
+                <Loader variant="branded" />
               </div>
             ) : (
               <div className="w-full h-[620px] border rounded-md overflow-hidden">

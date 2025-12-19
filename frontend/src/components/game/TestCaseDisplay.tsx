@@ -1,7 +1,7 @@
 import { FC, useState } from 'react';
 import { SubmissionProgress, TestCaseResult } from '@/types/websocket';
 import { TestCase, IOSchema } from '@/types';
-import { Spinner } from '@/components/ui/Spinner';
+import { Loader } from '@/components/ui/Loader';
 import { Alert } from '@/components/ui/alert';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
@@ -248,7 +248,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
 
         {testResult.status === 'running' && (
           <div className="flex items-center gap-2 pt-2 border-t border-[var(--gray-6)]">
-            <Spinner size="sm" className="text-[var(--accent-9)]" />
+            <Loader variant="inline" size="sm" className="text-[var(--accent-9)]" />
             <span className="text-xs text-[var(--gray-11)]">Running...</span>
           </div>
         )}
@@ -263,7 +263,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {isSubmitting ? (
-              <Spinner size="sm" className="text-[var(--accent-9)]" />
+              <Loader variant="inline" size="sm" className="text-[var(--accent-9)]" />
             ) : (
               <span className="text-[var(--green-11)] font-bold">✓</span>
             )}
@@ -333,7 +333,8 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
                     >
                       <div className="flex items-center gap-1">
                         {isRunning && (
-                          <Spinner
+                          <Loader
+                            variant="inline"
                             size="sm"
                             className="w-3 h-3 text-[var(--accent-9)] shrink-0"
                           />

@@ -10,7 +10,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ExternalLink, GitCommit, Clock, User } from 'lucide-react';
-import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
+import { Loader } from '@/components/ui/Loader';
 
 interface RecentCommitsProps {
   className?: string;
@@ -59,7 +59,7 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <CodeRacerLoader size="sm" />
+          <Loader variant="branded" size="sm" />
         </CardContent>
       </Card>
     );

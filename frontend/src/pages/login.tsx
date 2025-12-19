@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Alert } from '@/components/ui/alert';
 import { useAuthStore } from '@/stores/authStore';
 import { motion } from 'framer-motion';
-import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
+import { Loader } from '@/components/ui/Loader';
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
@@ -39,7 +39,7 @@ const LoginPage: React.FC = () => {
         description="Login to CodeRacer to start competing in real-time coding challenges"
       >
         <div className="flex w-full min-h-[calc(100vh-80px)] items-center justify-center">
-          <CodeRacerLoader size="lg" />
+          <Loader variant="branded" size="lg" />
         </div>
       </Layout>
     );

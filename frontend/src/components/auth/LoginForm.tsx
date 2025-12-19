@@ -5,7 +5,7 @@ import { Eye, EyeOff, Mail } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { authApi } from '../../lib/api';
-import { Spinner } from '../ui';
+import { Loader } from '../ui/Loader';
 import { Button } from '../ui/Button';
 import { Alert } from '../ui/alert';
 import { useRouterHelper } from '@/lib/router';
@@ -125,7 +125,7 @@ const LoginForm: FC = () => {
         />
 
         <Button type="submit" className="w-full h-12" disabled={loading}>
-          {loading ? <Spinner size="sm" /> : 'Login'}
+          {loading ? <Loader variant="inline" size="sm" /> : 'Login'}
         </Button>
       </form>
 

@@ -1,5 +1,5 @@
 import React, { FC, memo } from 'react';
-import { Spinner } from '../../ui';
+import { Loader } from '../../ui/Loader';
 import LanguageSelector from '../LanguageSelector';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/alert';
@@ -41,7 +41,7 @@ export const GameHeader: FC<GameHeaderProps> = memo(
               disabled={isSubmitting}
               className="w-full md:w-auto"
             >
-              {isSubmitting ? <Spinner size="sm" /> : 'Submit Solution'}
+              {isSubmitting ? <Loader variant="inline" size="sm" /> : 'Submit Solution'}
             </Button>
           </div>
         </div>

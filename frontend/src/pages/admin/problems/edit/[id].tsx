@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { getProblem } from '../../../../lib/problem-api';
 import { ProblemFormData } from '@/types';
 import ProblemForm from '../../../../components/admin/ProblemForm';
-import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
+import { Loader } from '@/components/ui/Loader';
 
 export default function EditProblemPage() {
   const router = useRouter();
@@ -70,7 +70,7 @@ export default function EditProblemPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <CodeRacerLoader size="lg" />
+        <Loader variant="branded" size="lg" />
       </div>
     );
   }

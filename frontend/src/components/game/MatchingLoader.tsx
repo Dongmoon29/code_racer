@@ -1,6 +1,6 @@
 import React, { useEffect, useState, memo, FC } from 'react';
 import { Button } from '@/components/ui/Button';
-import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
+import { Loader } from '@/components/ui/Loader';
 import { type Difficulty } from './DifficultySelector';
 import { MATCHING_LOADER_CONSTANTS } from './constants/matching-loader-constants';
 
@@ -54,7 +54,7 @@ export const MatchingLoader: FC<MatchingLoaderProps> = memo(
             Difficulty: {config.icon} {difficulty}
           </p>
           <div className="mt-2">
-            <CodeRacerLoader size="md" />
+            <Loader variant="branded" size="md" />
           </div>
         </div>
 

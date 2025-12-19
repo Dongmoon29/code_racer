@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { GameHistory, ProfileSidebar, PublicProfileSidebar } from '@/components/profile';
 import { MatchingScreen } from '@/components/game/MatchingScreen';
-import CodeRacerLoader from '@/components/ui/CodeRacerLoader';
+import { Loader } from '@/components/ui/Loader';
 import { useAuthStore } from '@/stores/authStore';
 import { FollowersList, FollowingList } from '@/components/profile/FollowLists';
 
@@ -69,7 +69,7 @@ const UserProfilePage = () => {
       <DashboardLayout>
         <div className="py-8">
           <div className="flex items-center justify-center">
-            <CodeRacerLoader />
+            <Loader variant="branded" />
           </div>
         </div>
       </DashboardLayout>
@@ -81,7 +81,7 @@ const UserProfilePage = () => {
       <DashboardLayout>
         <div className="py-8">
           <div className="flex items-center justify-center">
-            <CodeRacerLoader />
+            <Loader variant="branded" />
           </div>
         </div>
       </DashboardLayout>

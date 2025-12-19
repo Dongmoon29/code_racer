@@ -1,6 +1,6 @@
 import React, { FC, useEffect, useMemo } from 'react';
 import { useAuthStore } from '@/stores/authStore';
-import { Spinner } from '../ui';
+import { Loader } from '../ui/Loader';
 import { GameStateRenderer } from './components/GameStateRenderer';
 import { useGameRoomState } from './hooks/useGameRoomState';
 import { useGameRoomWebSocket } from './hooks/useGameRoomWebSocket';
@@ -107,7 +107,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
   if (isAuthLoading || gameLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Spinner size="lg" />
+        <Loader variant="spinner" size="lg" />
       </div>
     );
   }

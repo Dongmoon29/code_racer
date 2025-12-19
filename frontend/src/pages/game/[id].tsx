@@ -2,7 +2,7 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/layout/Layout';
 import { GameRoom } from '../../components/dynamic';
-import { Spinner } from '../../components/ui';
+import { Loader } from '../../components/ui/Loader';
 import { Button } from '@/components/ui/Button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -20,7 +20,7 @@ const GamePage: React.FC = () => {
     return (
       <Layout title="Loading... | Code Racer" description="Loading game...">
         <div className="flex justify-center items-center h-64 text-[var(--color-text)]">
-          <Spinner size="lg" />
+          <Loader variant="spinner" size="lg" />
         </div>
       </Layout>
     );

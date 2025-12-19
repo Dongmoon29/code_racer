@@ -1,7 +1,7 @@
 import { ReactNode, useMemo } from 'react';
 import { Users, FileText, LayoutDashboard } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { LoadingScreen } from '@/components/ui/LoadingScreen';
+import { Loader } from '@/components/ui/Loader';
 import { ROUTES } from '@/lib/router';
 import { useSidebarState } from '@/hooks/useSidebarState';
 import { DashboardSidebar, NavigationItem } from './DashboardSidebar';
@@ -44,7 +44,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const navigationItems = useAdminNavigationItems();
 
   if (isLoading || !isLoggedIn || user?.role !== 'admin') {
-    return <LoadingScreen />;
+    return <Loader variant="fullscreen" />;
   }
 
   return (

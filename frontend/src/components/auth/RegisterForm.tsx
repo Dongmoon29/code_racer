@@ -5,7 +5,7 @@ import { Eye, EyeOff, Mail, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { authApi } from '@/lib/api';
-import { Spinner } from '../ui';
+import { Loader } from '../ui/Loader';
 import { Alert } from '../ui/alert';
 import { Button } from '../ui/Button';
 import { registerSchema, RegisterFormData } from '@/lib/validations/auth';
@@ -109,7 +109,7 @@ const RegisterForm: FC = () => {
         />
 
         <Button type="submit" className="w-full h-12" disabled={loading}>
-          {loading ? <Spinner size="sm" /> : 'Register'}
+          {loading ? <Loader variant="inline" size="sm" /> : 'Register'}
         </Button>
       </form>
 
