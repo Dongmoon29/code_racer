@@ -4,7 +4,11 @@ import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { GameHistory, ProfileSidebar, PublicProfileSidebar } from '@/components/profile';
+import {
+  GameHistory,
+  ProfileSidebar,
+  PublicProfileSidebar,
+} from '@/components/profile';
 import { MatchingScreen } from '@/components/game/MatchingScreen';
 import { Loader } from '@/components/ui/Loader';
 import { useAuthStore } from '@/stores/authStore';
