@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { authApi } from '../../lib/api';
+import { PageSpinner } from '@/components/ui/PageSpinner';
 
 const AuthCallback: React.FC = () => {
   const router = useRouter();
@@ -101,7 +102,7 @@ const AuthCallback: React.FC = () => {
             </p>
           </div>
           <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <PageSpinner size="md" />
           </div>
         </div>
       </div>

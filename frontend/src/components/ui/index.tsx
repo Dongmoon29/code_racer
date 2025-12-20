@@ -1,6 +1,7 @@
 export { Button } from './Button';
 export { Loader } from './Loader';
 export type { LoaderVariant, LoaderSize } from './Loader';
+export { PageSpinner } from './PageSpinner';
 export {
   Card,
   CardHeader,

@@ -165,13 +165,10 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 	}, wsHub
 }
 
-// initializeControllers creates all controller instances
 func initializeControllers(services *services, oauthCfg *config.OAuthConfig, appLogger logger.Logger) *controllers {
-	// Get allowed origins from environment
 	allowedOrigins := getAllowedOrigins()
 	environment := getEnvironment()
 
-	// Create OAuth config provider
 	oauthConfigProvider := controller.NewOAuthConfigProvider(oauthCfg)
 
 	return &controllers{
@@ -186,32 +183,29 @@ func initializeControllers(services *services, oauthCfg *config.OAuthConfig, app
 	}
 }
 
-// getAllowedOrigins gets allowed origins from environment variables
+func addOriginWithHTTPS(origins []string, origin string) []string {
+	origins = append(origins, origin)
+	if strings.HasPrefix(origin, "http://") {
+		httpsVersion := strings.Replace(origin, "http://", "https://", 1)
+		origins = append(origins, httpsVersion)
+	}
+	return origins
+}
+
 func getAllowedOrigins() []string {
 	var origins []string
 
-	// Get additional origins from environment variable
+	// Add frontend URL
 	if frontendURL := os.Getenv("FRONTEND_URL"); frontendURL != "" {
-		origins = append(origins, frontendURL)
-		// Also add HTTPS version
-		if strings.HasPrefix(frontendURL, "http://") {
-			httpsVersion := strings.Replace(frontendURL, "http://", "https://", 1)
-			origins = append(origins, httpsVersion)
-		}
+		origins = addOriginWithHTTPS(origins, frontendURL)
 	}
 
-	// Get additional origins from CORS_ALLOWED_ORIGINS environment variable
+	// Add additional CORS origins
 	if corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS"); corsOrigins != "" {
-		envOrigins := strings.Split(corsOrigins, ",")
-		for _, o := range envOrigins {
-			o = strings.TrimSpace(o)
-			if o != "" {
-				origins = append(origins, o)
-				// Also add HTTPS version
-				if strings.HasPrefix(o, "http://") {
-					httpsVersion := strings.Replace(o, "http://", "https://", 1)
-					origins = append(origins, httpsVersion)
-				}
+		for origin := range strings.SplitSeq(corsOrigins, ",") {
+			origin = strings.TrimSpace(origin)
+			if origin != "" {
+				origins = addOriginWithHTTPS(origins, origin)
 			}
 		}
 	}
@@ -219,7 +213,6 @@ func getAllowedOrigins() []string {
 	return origins
 }
 
-// getEnvironment gets the current environment
 func getEnvironment() string {
 	if env := os.Getenv("ENVIRONMENT"); env != "" {
 		return env
@@ -227,14 +220,12 @@ func getEnvironment() string {
 	return "production"
 }
 
-// initializeMiddleware creates all middleware instances
 func initializeMiddleware(services *services, repos *repositories, appLogger logger.Logger) *middlewareInstances {
 	return &middlewareInstances{
 		authMiddleware: middleware.NewAuthMiddleware(services.authService, repos.userRepository, appLogger),
 	}
 }
 
-// Helper structs for dependency injection
 type repositories struct {
 	userRepository        interfaces.UserRepository
 	matchRepository       repository.MatchRepository

@@ -91,7 +91,6 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 		return nil, fmt.Errorf("failed to get language ID: %w", err)
 	}
 
-	// LeetCode-style: always per-test evaluation.
 	perTestEvaluationResult, perTestEvaluationError := s.aggregatePerTest(code, languageID, problem)
 	if perTestEvaluationError == nil && perTestEvaluationResult != nil {
 		s.logEvaluationResult(perTestEvaluationResult, languageID, problem, "per_test")
