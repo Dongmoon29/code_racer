@@ -20,78 +20,17 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"github.com/joho/godotenv"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
-// isProduction returns true if the application is running in production mode...
-func isProduction() bool {
-	return gin.Mode() == gin.ReleaseMode
-}
-
 func main() {
-	// log (dev or prod) mode
-	log.Info().Msgf("Starting application in %s mode", gin.Mode())
+	appLogger := logger.SetupGlobalLogger()
 
-	// set log format
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	cfg, oauthCfg, db, rdb := initializeApp(appLogger)
 
-	if !isProduction() {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-		log.Info().Msg("Global log level set to DEBUG (development mode)")
-	} else {
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-		log.Info().Msg("Global log level set to INFO (production mode)")
-	}
+	deps := initializeDependencies(db, rdb, cfg, oauthCfg, appLogger)
 
-	log.Logger = log.Output(zerolog.ConsoleWriter{
-		Out:        os.Stdout,
-		TimeFormat: "2006-01-02 15:04:05",
-		NoColor:    isProduction(),
-	})
-	logger := logger.NewZerologLogger(log.Logger)
-
-	// load .env file (dev mode)
-	if !isProduction() {
-		if err := godotenv.Load(); err != nil {
-			logger.Warn().Msg("No .env file found")
-		}
-		logger.Info().Msg("Loaded .env file")
-	}
-
-	// load config
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to load configuration")
-	}
-
-	// load OAuth config (optional)
-	oauthCfg, err := config.LoadOAuthConfig()
-	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to load OAuth configuration")
-		oauthCfg = &config.OAuthConfig{}
-	}
-
-	// init database
-	db, err := config.InitDatabase(cfg, logger)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to initialize database")
-	}
-
-	// init redis
-	rdb := config.InitRedis(cfg)
-
-	// setup database
-	if err := config.SetupDatabase(db); err != nil {
-		log.Fatal().Err(err).Msg("Failed to setup database")
-	}
-
-	// initialize dependencies
-	deps := initializeDependencies(db, rdb, cfg, oauthCfg, logger)
-
-	// setup router
 	r := router.Setup(
 		deps.authController,
 		deps.matchController,
@@ -107,21 +46,52 @@ func main() {
 		rdb,
 	)
 
-	// start server
-	startServer(r, cfg.ServerPort, deps.wsHub, db, rdb, logger)
+	startServer(r, cfg.ServerPort, deps.wsHub, db, rdb, appLogger)
+}
+
+func initializeApp(appLogger logger.Logger) (*config.Config, *config.OAuthConfig, *gorm.DB, *redis.Client) {
+	config.LoadEnvFile(appLogger)
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal().
+			Err(err).
+			Msg("Failed to load application configuration. Please check your environment variables")
+	}
+
+	oauthCfg, err := config.LoadOAuthConfig()
+	if err != nil {
+		appLogger.Warn().Err(err).Msg("Failed to load OAuth configuration")
+		oauthCfg = &config.OAuthConfig{}
+	}
+
+	db, err := config.InitDatabase(cfg, appLogger)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to initialize database")
+	}
+
+	rdb, err := config.InitRedis(cfg, appLogger)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to initialize Redis")
+	}
+
+	if err := config.SetupDatabase(db); err != nil {
+		log.Fatal().Err(err).Msg("Failed to setup database")
+	}
+
+	return cfg, oauthCfg, db, rdb
 }
 
 type dependencies struct {
-	authController    *controller.AuthController
-	matchController   *controller.MatchController
-	userController    *controller.UserController
-	problemController *controller.ProblemController
-	wsController      *controller.WebSocketController
-	followController  *controller.FollowController
-	communityController *controller.CommunityController
+	authController        *controller.AuthController
+	matchController       *controller.MatchController
+	userController        *controller.UserController
+	problemController     *controller.ProblemController
+	wsController          *controller.WebSocketController
+	followController      *controller.FollowController
+	communityController   *controller.CommunityController
 	postCommentController *controller.PostCommentController
-	authMiddleware    *middleware.AuthMiddleware
-	wsHub             *service.Hub
+	authMiddleware        *middleware.AuthMiddleware
+	wsHub                 *service.Hub
 }
 
 func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, oauthCfg *config.OAuthConfig, appLogger logger.Logger) *dependencies {
@@ -131,32 +101,30 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 	middleware := initializeMiddleware(services, repositories, appLogger)
 
 	return &dependencies{
-		authController:    controllers.authController,
-		matchController:   controllers.matchController,
-		userController:    controllers.userController,
-		problemController: controllers.problemController,
-		wsController:      controllers.wsController,
-		followController:  controllers.followController,
-		communityController: controllers.communityController,
+		authController:        controllers.authController,
+		matchController:       controllers.matchController,
+		userController:        controllers.userController,
+		problemController:     controllers.problemController,
+		wsController:          controllers.wsController,
+		followController:      controllers.followController,
+		communityController:   controllers.communityController,
 		postCommentController: controllers.postCommentController,
-		authMiddleware:    middleware.authMiddleware,
-		wsHub:             wsHub,
+		authMiddleware:        middleware.authMiddleware,
+		wsHub:                 wsHub,
 	}
 }
 
-// initializeRepositories creates all repository instances
 func initializeRepositories(db *gorm.DB, appLogger logger.Logger) *repositories {
 	return &repositories{
-		userRepository:   repository.NewUserRepository(db, appLogger),
-		matchRepository:  repository.NewMatchRepository(db, appLogger),
-		problemRepo:      repository.NewProblemRepository(db, appLogger),
-		followRepository: repository.NewFollowRepository(db, appLogger),
-		communityRepository: repository.NewCommunityRepository(db, appLogger),
+		userRepository:        repository.NewUserRepository(db, appLogger),
+		matchRepository:       repository.NewMatchRepository(db, appLogger),
+		problemRepo:           repository.NewProblemRepository(db, appLogger),
+		followRepository:      repository.NewFollowRepository(db, appLogger),
+		communityRepository:   repository.NewCommunityRepository(db, appLogger),
 		postCommentRepository: repository.NewPostCommentRepository(db, appLogger),
 	}
 }
 
-// initializeServices creates all service instances
 func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Config, oauthCfg *config.OAuthConfig, appLogger logger.Logger) (*services, *service.Hub) {
 	authService := service.NewAuthService(repos.userRepository, cfg.JWTSecret, oauthCfg, appLogger)
 	userService := service.NewUserService(repos.userRepository, repos.matchRepository, appLogger)
@@ -207,13 +175,13 @@ func initializeControllers(services *services, oauthCfg *config.OAuthConfig, app
 	oauthConfigProvider := controller.NewOAuthConfigProvider(oauthCfg)
 
 	return &controllers{
-		authController:    controller.NewAuthController(services.authService, appLogger, oauthConfigProvider),
-		matchController:   controller.NewMatchController(services.matchService, appLogger),
-		userController:    controller.NewUserController(services.userService, appLogger),
-		problemController: controller.NewProblemController(services.problemService, appLogger),
-		wsController:      controller.NewWebSocketController(services.wsService, appLogger, allowedOrigins, environment),
-		followController:  controller.NewFollowController(services.followService, appLogger),
-		communityController: controller.NewCommunityController(services.communityService, appLogger),
+		authController:        controller.NewAuthController(services.authService, appLogger, oauthConfigProvider),
+		matchController:       controller.NewMatchController(services.matchService, appLogger),
+		userController:        controller.NewUserController(services.userService, appLogger),
+		problemController:     controller.NewProblemController(services.problemService, appLogger),
+		wsController:          controller.NewWebSocketController(services.wsService, appLogger, allowedOrigins, environment),
+		followController:      controller.NewFollowController(services.followService, appLogger),
+		communityController:   controller.NewCommunityController(services.communityService, appLogger),
 		postCommentController: controller.NewPostCommentController(services.postCommentService, appLogger),
 	}
 }
@@ -256,7 +224,7 @@ func getEnvironment() string {
 	if env := os.Getenv("ENVIRONMENT"); env != "" {
 		return env
 	}
-	return "production" // Default to production
+	return "production"
 }
 
 // initializeMiddleware creates all middleware instances
@@ -268,11 +236,11 @@ func initializeMiddleware(services *services, repos *repositories, appLogger log
 
 // Helper structs for dependency injection
 type repositories struct {
-	userRepository  interfaces.UserRepository
-	matchRepository repository.MatchRepository
-	problemRepo     repository.ProblemRepository
-	followRepository interfaces.FollowRepository
-	communityRepository interfaces.CommunityRepository
+	userRepository        interfaces.UserRepository
+	matchRepository       repository.MatchRepository
+	problemRepo           repository.ProblemRepository
+	followRepository      interfaces.FollowRepository
+	communityRepository   interfaces.CommunityRepository
 	postCommentRepository interfaces.PostCommentRepository
 }
 
@@ -290,13 +258,13 @@ type services struct {
 }
 
 type controllers struct {
-	authController    *controller.AuthController
-	matchController   *controller.MatchController
-	userController    *controller.UserController
-	problemController *controller.ProblemController
-	wsController      *controller.WebSocketController
-	followController  *controller.FollowController
-	communityController *controller.CommunityController
+	authController        *controller.AuthController
+	matchController       *controller.MatchController
+	userController        *controller.UserController
+	problemController     *controller.ProblemController
+	wsController          *controller.WebSocketController
+	followController      *controller.FollowController
+	communityController   *controller.CommunityController
 	postCommentController *controller.PostCommentController
 }
 

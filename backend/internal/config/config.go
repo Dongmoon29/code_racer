@@ -5,7 +5,9 @@ import (
 	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
+	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/util"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -59,7 +61,7 @@ func LoadConfig() (*Config, error) {
 
 	dbPort := util.GetEnv("DB_PORT", "5432")
 	if err := util.ValidatePort(dbPort); err != nil {
-		return nil, fmt.Errorf("DB_PORT: %w", err)
+		return nil, fmt.Errorf("invalid database port configuration (DB_PORT=%s): %w", dbPort, err)
 	}
 	config.DBPort = dbPort
 
@@ -78,7 +80,7 @@ func LoadConfig() (*Config, error) {
 
 	config.RedisPort = util.GetEnv("REDIS_PORT", "6379")
 	if err := util.ValidatePort(config.RedisPort); err != nil {
-		return nil, fmt.Errorf("REDIS_PORT: %w", err)
+		return nil, fmt.Errorf("invalid Redis port configuration (REDIS_PORT=%s): %w", config.RedisPort, err)
 	}
 
 	config.RedisUsername = util.GetEnv("REDIS_USERNAME", "default")
@@ -99,7 +101,7 @@ func LoadConfig() (*Config, error) {
 
 	config.ServerPort = util.GetEnv("PORT", "8080")
 	if err := util.ValidatePort(config.ServerPort); err != nil {
-		return nil, fmt.Errorf("PORT: %w", err)
+		return nil, fmt.Errorf("invalid server port configuration (PORT=%s): %w", config.ServerPort, err)
 	}
 
 	// Judge0 API 설정
@@ -111,13 +113,24 @@ func LoadConfig() (*Config, error) {
 
 	config.Judge0APIEndpoint = util.GetEnv("JUDGE0_API_ENDPOINT", "https://judge0-ce.p.rapidapi.com")
 	if err := util.ValidateURL(config.Judge0APIEndpoint); err != nil {
-		return nil, fmt.Errorf("JUDGE0_API_ENDPOINT: %w", err)
+		return nil, fmt.Errorf("invalid Judge0 API endpoint (JUDGE0_API_ENDPOINT=%s): %w", config.Judge0APIEndpoint, err)
 	}
 
 	// 누락된 환경변수가 있는지 확인
 	if len(missingVars) > 0 {
-		return nil, fmt.Errorf("missing required environment variables: %s", strings.Join(missingVars, ", "))
+		return nil, fmt.Errorf("missing required environment variables: %s. Please set these in your .env file or environment", strings.Join(missingVars, ", "))
 	}
 
 	return &config, nil
+}
+
+// LoadEnvFile loads .env file in development mode
+func LoadEnvFile(appLogger logger.Logger) {
+	if !util.IsProduction() {
+		if err := godotenv.Load(); err != nil {
+			appLogger.Warn().Msg("No .env file found")
+		} else {
+			appLogger.Info().Msg("Loaded .env file")
+		}
+	}
 }

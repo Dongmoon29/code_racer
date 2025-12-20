@@ -1,6 +1,13 @@
 package logger
 
-import "github.com/rs/zerolog"
+import (
+	"os"
+
+	"github.com/Dongmoon29/code_racer/internal/util"
+	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+)
 
 type Logger interface {
 	Debug() *zerolog.Event
@@ -36,4 +43,28 @@ func NewGormWriter(logger Logger) *GormWriter {
 
 func (w *GormWriter) Printf(format string, args ...interface{}) {
 	w.logger.Info().Msgf(format, args...)
+}
+
+func SetupGlobalLogger() Logger {
+	log.Info().Msgf("Starting application in %s mode", gin.Mode())
+
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	// Set log level based on environment
+	if !util.IsProduction() {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Info().Msg("Global log level set to DEBUG (development mode)")
+	} else {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		log.Info().Msg("Global log level set to INFO (production mode)")
+	}
+
+	// Configure console output
+	log.Logger = log.Output(zerolog.ConsoleWriter{
+		Out:        os.Stdout,
+		TimeFormat: "2006-01-02 15:04:05",
+		NoColor:    util.IsProduction(),
+	})
+
+	return NewZerologLogger(log.Logger)
 }

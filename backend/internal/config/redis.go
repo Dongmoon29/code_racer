@@ -3,14 +3,15 @@ package config
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
+	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/go-redis/redis/v8"
-	"github.com/rs/zerolog/log"
 )
 
-func InitRedis(cfg *Config) *redis.Client {
+func InitRedis(cfg *Config, appLogger logger.Logger) (*redis.Client, error) {
 	options := &redis.Options{
 		Addr:         cfg.RedisHost + ":" + cfg.RedisPort,
 		PoolSize:     constants.DefaultRedisPoolSize,
@@ -27,6 +28,11 @@ func InitRedis(cfg *Config) *redis.Client {
 		}
 	}
 
+	appLogger.Info().
+		Str("host", cfg.RedisHost).
+		Str("port", cfg.RedisPort).
+		Msg("Redis configuration")
+
 	rdb := redis.NewClient(options)
 
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultRedisDialTimeout)
@@ -34,9 +40,13 @@ func InitRedis(cfg *Config) *redis.Client {
 
 	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
-		log.Fatal().Str("addr", options.Addr).Err(err).Msg("Failed to connect to Redis")
+		appLogger.Error().
+			Str("addr", options.Addr).
+			Err(err).
+			Msg("Failed to connect to Redis")
+		return nil, fmt.Errorf("failed to connect to Redis at %s: %w", options.Addr, err)
 	}
 
-	log.Info().Msgf("Connected to Redis at %s:%s", cfg.RedisHost, cfg.RedisPort)
-	return rdb
+	appLogger.Info().Msgf("Successfully connected to Redis at %s:%s", cfg.RedisHost, cfg.RedisPort)
+	return rdb, nil
 }

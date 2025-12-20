@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
+	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -25,30 +26,42 @@ func TestMain(m *testing.M) {
 func TestIsProduction(t *testing.T) {
 	tests := []struct {
 		name     string
-		mode     string
+		envValue string
 		expected bool
 	}{
 		{
 			name:     "production mode",
-			mode:     gin.ReleaseMode,
+			envValue: "release",
 			expected: true,
 		},
 		{
 			name:     "development mode",
-			mode:     gin.DebugMode,
+			envValue: "debug",
 			expected: false,
 		},
 		{
 			name:     "test mode",
-			mode:     gin.TestMode,
+			envValue: "test",
+			expected: false,
+		},
+		{
+			name:     "empty mode",
+			envValue: "",
 			expected: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gin.SetMode(tt.mode)
-			assert.Equal(t, tt.expected, isProduction())
+			// Set GIN_MODE environment variable
+			if tt.envValue != "" {
+				os.Setenv("GIN_MODE", tt.envValue)
+			} else {
+				os.Unsetenv("GIN_MODE")
+			}
+			defer os.Unsetenv("GIN_MODE")
+
+			assert.Equal(t, tt.expected, util.IsProduction())
 		})
 	}
 }

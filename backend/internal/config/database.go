@@ -43,6 +43,14 @@ func SetupDatabase(db *gorm.DB) error {
 	return nil
 }
 
+// getDBSSLMode returns the appropriate SSL mode based on the environment
+func getDBSSLMode() string {
+	if util.IsProduction() {
+		return "require"
+	}
+	return "disable"
+}
+
 func InitDatabase(cfg *Config, appLogger logger.Logger) (*gorm.DB, error) {
 	appLogger.Info().
 		Str("host", cfg.DBHost).
@@ -51,10 +59,7 @@ func InitDatabase(cfg *Config, appLogger logger.Logger) (*gorm.DB, error) {
 		Str("port", cfg.DBPort).
 		Msg("Database configuration")
 
-	sslMode := "disable"
-	if util.IsProduction() {
-		sslMode = "require"
-	}
+	sslMode := getDBSSLMode()
 
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=Asia/Seoul",
