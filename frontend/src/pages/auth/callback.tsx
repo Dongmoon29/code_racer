@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { authApi } from '../../lib/api';
 import { PageSpinner } from '@/components/ui/PageSpinner';
+import { ROUTES } from '@/lib/router';
 
 const AuthCallback: React.FC = () => {
   const router = useRouter();
@@ -44,16 +45,19 @@ const AuthCallback: React.FC = () => {
             const user = me?.data; // unified: { success, data: User }
             if (user) {
               useAuthStore.getState().login(user);
+              // Navigate to user profile
+              router.push(ROUTES.USER_PROFILE(user.id));
+            } else {
+              // If user data is not available, redirect to login
+              router.push(ROUTES.LOGIN);
             }
           } catch (e) {
-            // If /users/me fails, ignore; user will be initialized later
+            // If /users/me fails, redirect to login
             if (process.env.NODE_ENV === 'development') {
               console.error(e);
             }
+            router.push(ROUTES.LOGIN);
           }
-
-          // Navigate to dashboard
-          router.push('/dashboard');
         } else {
           setError(response.message || 'Token exchange failed.');
           setLoading(false);
