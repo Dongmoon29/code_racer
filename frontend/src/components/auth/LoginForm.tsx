@@ -124,7 +124,7 @@ const LoginForm: FC = () => {
           }
         />
 
-        <Button type="submit" className="w-full h-12" disabled={loading}>
+        <Button type="submit" className="!w-full h-12" disabled={loading} style={{ width: '100%' }}>
           {loading ? <Loader variant="inline" size="sm" /> : 'Login'}
         </Button>
       </form>

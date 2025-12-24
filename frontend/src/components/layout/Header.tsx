@@ -37,8 +37,6 @@ const Header: FC = () => {
     setMenuOpen(false);
   };
 
-  const isHomePage = router.pathname === '/';
-
   return (
     <header className="bg-transparent border-none relative z-50">
       <div className="px-4 md:px-8">
@@ -46,11 +44,7 @@ const Header: FC = () => {
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className={`flex items-center gap-3 transition-colors ${
-                isHomePage
-                  ? 'text-white hover:text-[var(--accent-9)]'
-                  : 'text-[var(--color-text)] hover:text-[var(--accent-9)]'
-              }`}
+              className="flex items-center gap-3 transition-colors text-[var(--color-text)] hover:text-[var(--accent-9)]"
             >
               <Logo />
               <span className="font-semibold text-lg">codeRacer</span>
@@ -60,11 +54,7 @@ const Header: FC = () => {
           <div className="md:hidden flex items-center space-x-2">
             <button
               onClick={toggleMenu}
-              className={`focus:outline-none transition-colors ${
-                isHomePage
-                  ? 'text-white hover:text-[var(--accent-9)]'
-                  : 'text-[var(--color-text)] hover:text-[var(--accent-9)]'
-              }`}
+              className="focus:outline-none transition-colors text-[var(--color-text)] hover:text-[var(--accent-9)]"
             >
               <svg
                 className="w-6 h-6"
@@ -82,64 +72,50 @@ const Header: FC = () => {
             </button>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6">
-            <Link
-              href="/"
-              className={`text-sm font-medium transition-colors ${
-                isHomePage
-                  ? 'text-white'
-                  : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
-              }`}
-            >
-              Home
-            </Link>
+          <nav className="hidden md:flex items-center">
+            <div className="flex items-center gap-6">
+              <Link
+                href="/"
+                className="text-sm font-medium transition-colors text-[var(--gray-11)] hover:text-[var(--accent-9)]"
+              >
+                Home
+              </Link>
 
-            {isLoggedIn && user ? (
-              <Link
-                href={ROUTES.USER_PROFILE(user.id)}
-                className={`text-sm font-medium transition-colors ${
-                  isHomePage
-                    ? 'text-white'
-                    : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
-                }`}
-              >
-                Dashboard
-              </Link>
-            ) : (
-              <Link
-                href={ROUTES.LOGIN}
-                className={`text-sm font-medium transition-colors ${
-                  isHomePage
-                    ? 'text-white'
-                    : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
-                }`}
-              >
-                Dashboard
-              </Link>
-            )}
+              {isLoggedIn && user ? (
+                <Link
+                  href={ROUTES.USER_PROFILE(user.id)}
+                  className="text-sm font-medium transition-colors text-[var(--gray-11)] hover:text-[var(--accent-9)]"
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <Link
+                  href={ROUTES.LOGIN}
+                  className="text-sm font-medium transition-colors text-[var(--gray-11)] hover:text-[var(--accent-9)]"
+                >
+                  Dashboard
+                </Link>
+              )}
 
-            {isLoggedIn && user ? (
-              <UserDropdown
-                user={user}
-                isOpen={dropdown.isOpen}
-                onToggle={dropdown.toggle}
-                onClose={dropdown.close}
-                dropdownRef={dropdown.dropdownRef}
-                onLogout={handleLogout}
-                onNavigateToProfile={handleNavigateToProfile}
-              />
-            ) : (
-              <Link
-                href="/register"
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isHomePage
-                    ? 'bg-transparent hover:bg-transparent text-white'
-                    : 'bg-transparent hover:bg-transparent text-[var(--color-text)]'
-                }`}
-              >
-                Sign Up
-              </Link>
-            )}
+              {isLoggedIn && user ? (
+                <UserDropdown
+                  user={user}
+                  isOpen={dropdown.isOpen}
+                  onToggle={dropdown.toggle}
+                  onClose={dropdown.close}
+                  dropdownRef={dropdown.dropdownRef}
+                  onLogout={handleLogout}
+                  onNavigateToProfile={handleNavigateToProfile}
+                />
+              ) : (
+                <Link
+                  href="/register"
+                  className="text-sm font-medium transition-colors text-[var(--gray-11)] hover:text-[var(--accent-9)]"
+                >
+                  Login
+                </Link>
+              )}
+            </div>
           </nav>
         </div>
       </div>
