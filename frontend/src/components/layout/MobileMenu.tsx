@@ -25,14 +25,14 @@ const MobileMenu: FC<MobileMenuProps> = ({
   return (
     <div className="md:hidden py-4 relative z-50 border-t border-[var(--gray-6)] bg-[var(--color-panel)]">
       {isLoggedIn && user ? (
-        <div className="space-y-3">
-          <div className="px-2 text-sm text-[var(--gray-11)] flex items-center space-x-2">
+        <div className="space-y-3 px-4">
+          <div className="text-sm text-[var(--gray-11)] flex items-center space-x-2">
             <span>Signed in as</span>
             <span className="font-medium">{user.email}</span>
           </div>
           <Link
             href={ROUTES.USER_PROFILE(user.id)}
-            className="block px-2 py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
+            className="block py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
             onClick={onClose}
           >
             Dashboard
@@ -40,7 +40,7 @@ const MobileMenu: FC<MobileMenuProps> = ({
           {user.role === 'admin' && (
             <Link
               href="/admin"
-              className="block px-2 py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
+              className="block py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
               onClick={onClose}
             >
               Admin Panel
@@ -51,23 +51,23 @@ const MobileMenu: FC<MobileMenuProps> = ({
               onLogout();
               onClose();
             }}
-            className="block w-full text-left px-2 py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
+            className="block w-full text-left py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
           >
             Logout
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 px-4">
           <Link
             href="/login"
-            className="block px-2 py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
+            className="block py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
             onClick={onClose}
           >
             Login
           </Link>
           <Link
             href="/register"
-            className="block px-2 py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
+            className="block py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
             onClick={onClose}
           >
             Register

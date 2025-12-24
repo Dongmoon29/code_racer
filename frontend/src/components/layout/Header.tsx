@@ -142,15 +142,15 @@ const Header: FC = () => {
             )}
           </nav>
         </div>
-
-        <MobileMenu
-          isOpen={menuOpen}
-          isLoggedIn={isLoggedIn}
-          user={user}
-          onLogout={handleLogout}
-          onClose={closeMenu}
-        />
       </div>
+
+      <MobileMenu
+        isOpen={menuOpen}
+        isLoggedIn={isLoggedIn}
+        user={user}
+        onLogout={handleLogout}
+        onClose={closeMenu}
+      />
     </header>
   );
 };
