@@ -65,62 +65,110 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
         contributors={contributors}
       >
         {/* Hero Section */}
-        <section className="relative w-full" aria-label="Hero section">
-          {/* Background Track Image */}
-          <div
-            className="absolute inset-0 z-0"
-            style={{
-              clipPath: 'polygon(0 0, 100% 0, 100% 75%, 0% 95%)',
-            }}
-          >
+        <section
+          className="relative w-full min-h-[calc(100vh-4rem)] flex items-center"
+          aria-label="Hero section"
+        >
+          {/* Background Image */}
+          <div className="absolute inset-0 z-0">
             <Image
-              src="/track.webp"
-              alt="Abstract racing track background with dynamic curves representing coding competition speed and progress"
+              src="/background.png"
+              alt="Abstract coding background with dynamic light trails"
               fill
-              className="object-cover !opacity-75 !dark:opacity-20"
+              className="object-cover"
               priority
               sizes="100vw"
-              quality={85}
-              placeholder="blur"
-              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+              quality={90}
             />
+            {/* Dark overlay for better text readability */}
+            <div className="absolute inset-0 bg-black/40"></div>
           </div>
 
           {/* Content */}
-          <div className="w-full relative z-20 flex flex-col items-center text-center py-24">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 drop-shadow-lg ">
-              Welcome to CodeRacer
-            </h1>
-            <p className="text-xl mb-10 max-w-2xl drop-shadow-md font-medium">
-              Race against your friends to solve coding challenges in real-time.
-              Improve your skills, compete for the top spot, and have fun!
-            </p>
+          <div className="w-full max-w-7xl mx-auto px-4 md:px-8 relative z-20 pt-16">
+            <div className="grid lg:grid-cols-2 gap-8 items-start">
+              {/* Left: Hero Text */}
+              <div className="max-w-2xl">
+                <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 text-white drop-shadow-lg">
+                  Race Your Code.
+                </h1>
+                <p className="text-xl md:text-2xl mb-10 text-white/90 drop-shadow-md font-medium">
+                  Solve problems live, race against others, and prove your speed
+                  under pressure.
+                </p>
 
-            {isLoggedIn ? (
-              <Link href="/dashboard" passHref>
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-                >
-                  <span className="flex items-center gap-2">
-                    🏎️ Go to Dashboard
-                  </span>
-                </Button>
-              </Link>
-            ) : (
-              <div className="space-x-4">
-                <Link href="/login" passHref>
-                  <Button
-                    size="lg"
-                    className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-                  >
-                    <span className="flex items-center gap-2">
-                      🏃‍♂️ Start Racing
-                    </span>
-                  </Button>
-                </Link>
+                <div className="flex flex-col sm:flex-row gap-4 items-start">
+                  {isLoggedIn ? (
+                    <Link href="/dashboard" passHref>
+                      <Button
+                        size="lg"
+                        className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 font-semibold text-lg"
+                      >
+                        <span className="flex items-center gap-2">
+                          Start Racing
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </span>
+                      </Button>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link href="/login" passHref>
+                        <Button
+                          size="lg"
+                          className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 font-semibold text-lg"
+                        >
+                          <span className="flex items-center gap-2">
+                            Start Racing
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </span>
+                        </Button>
+                      </Link>
+                      <Link
+                        href="/about"
+                        className="text-white hover:text-white/80 text-lg font-medium transition-colors underline-offset-4 hover:underline"
+                      >
+                        Learn more
+                      </Link>
+                    </>
+                  )}
+                </div>
               </div>
-            )}
+
+              {/* Right: Recent Updates */}
+              <div className="lg:pt-0">
+                {/* Recent Updates */}
+                <div className="bg-[var(--color-panel)] backdrop-blur-sm border border-[var(--gray-6)] rounded-lg p-0 overflow-hidden">
+                  <RecentCommits
+                    maxCommits={5}
+                    className="!bg-transparent !border-none !shadow-none"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -137,109 +185,6 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
                 description={feature.description}
               />
             ))}
-          </div>
-        </section>
-
-        {/* Recent Updates Section */}
-        <section
-          className="w-full max-w-6xl mx-auto px-4 py-12"
-          aria-label="Recent updates section"
-        >
-          <div className="grid lg:grid-cols-2 gap-8">
-            <div className="lg:col-span-1">
-              <RecentCommits maxCommits={5} />
-            </div>
-            <div className="lg:col-span-1">
-              <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
-                <h3 className="text-xl font-bold mb-4">🚀 Project Status</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span>Working on Community / Comments feature</span>
-                  </div>
-                </div>
-                <div className="mt-6">
-                  <Link
-                    href="https://github.com/Dongmoon29/code_racer"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-                  >
-                    View on GitHub
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Second Hero Section - CTA */}
-        <section
-          className="relative w-full mt-16"
-          aria-label="Call to action section"
-        >
-          {/* Background Track Image */}
-          <div
-            className="absolute inset-0 z-0"
-            style={{
-              clipPath: 'polygon(0 100%, 100% 100%, 100% 25%, 0 5%)',
-            }}
-          >
-            <Image
-              src="/track2.webp"
-              alt="Dynamic racing track background with flowing curves representing continuous coding improvement and competitive spirit"
-              fill
-              className="object-cover !opacity-60 !dark:opacity-20"
-              priority
-            />
-          </div>
-
-          {/* Content */}
-          <div className="relative z-20 flex flex-col items-center text-center py-24">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 drop-shadow-lg ">
-              Ready to Race?
-            </h2>
-            <p className="text-xl mb-10 max-w-2xl drop-shadow-md font-medium">
-              🏁 Join thousands of coders who are improving their skills through
-              fun, competitive coding challenges.
-            </p>
-
-            {isLoggedIn ? (
-              <Link href="/dashboard" passHref>
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-                >
-                  <span className="flex items-center gap-2">
-                    🏎️ Go to Dashboard
-                  </span>
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/register" passHref>
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-                >
-                  <span className="flex items-center gap-2">
-                    🚀 Sign Up Free
-                  </span>
-                </Button>
-              </Link>
-            )}
           </div>
         </section>
       </Layout>

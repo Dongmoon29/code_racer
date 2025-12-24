@@ -4,20 +4,16 @@ import React, { useState, FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuthStore } from '@/stores/authStore';
-import { ThemeToggle } from '../ui/ThemeToggle';
 import Logo from './Logo';
 import UserDropdown from '../ui/UserDropdown';
 import MobileMenu from './MobileMenu';
 import { useDropdown } from '@/hooks/useDropdown';
-import { ROUTES } from '@/lib/router';
 
 const Header: FC = () => {
   const { user, isLoggedIn, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdown = useDropdown();
   const router = useRouter();
-
-  const isDashboardRoute = router.pathname.startsWith('/dashboard') || router.pathname.startsWith('/users');
 
   const handleLogout = async () => {
     await logout();
@@ -40,46 +36,40 @@ const Header: FC = () => {
     setMenuOpen(false);
   };
 
+  const isHomePage = router.pathname === '/';
+
   return (
-    <header className="border-b border-[var(--gray-6)] bg-[var(--color-panel)] relative z-50">
-      <div className="px-4">
-        <div className="flex justify-between items-stretch h-12">
-          <div className="flex justify-between items-center gap-4 h-full">
-            <div className="flex items-center gap-3">
-              <Link 
-                href="/" 
-                className="flex items-center gap-3 text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors"
-              >
-                <Logo />
-                <span className="font-semibold">codeRacer</span>
-              </Link>
-            </div>
-            <div
-              className={`flex items-center gap-3 h-full ${
-                isDashboardRoute
-                  ? 'border-b-2 border-[var(--accent-9)]'
-                  : ''
+    <header
+      className={`${
+        isHomePage
+          ? 'bg-transparent border-none'
+          : 'border-b border-[var(--gray-6)] bg-[var(--color-panel)]'
+      } relative z-50`}
+    >
+      <div className="px-4 md:px-8">
+        <div className="flex justify-between items-stretch h-16">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className={`flex items-center gap-3 transition-colors ${
+                isHomePage
+                  ? 'text-white hover:text-[var(--accent-9)]'
+                  : 'text-[var(--color-text)] hover:text-[var(--accent-9)]'
               }`}
             >
-              <Link
-                href={user?.id ? ROUTES.USER_PROFILE(user.id) : '/dashboard'}
-                className={`flex font-medium text-sm items-center gap-3 h-full transition-colors ${
-                  isDashboardRoute
-                    ? 'text-[var(--accent-9)]'
-                    : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
-                }`}
-                aria-current={isDashboardRoute ? 'page' : undefined}
-              >
-                Dashboard
-              </Link>
-            </div>
+              <Logo />
+              <span className="font-semibold text-lg">codeRacer</span>
+            </Link>
           </div>
 
           <div className="md:hidden flex items-center space-x-2">
-            <ThemeToggle />
             <button
               onClick={toggleMenu}
-              className="text-[var(--color-text)] hover:text-[var(--accent-9)] focus:outline-none transition-colors"
+              className={`focus:outline-none transition-colors ${
+                isHomePage
+                  ? 'text-white hover:text-[var(--accent-9)]'
+                  : 'text-[var(--color-text)] hover:text-[var(--accent-9)]'
+              }`}
             >
               <svg
                 className="w-6 h-6"
@@ -97,8 +87,29 @@ const Header: FC = () => {
             </button>
           </div>
 
-          <nav className="hidden md:flex items-center gap-4">
-            <ThemeToggle />
+          <nav className="hidden md:flex items-center gap-6">
+            <Link
+              href="/"
+              className={`text-sm font-medium transition-colors ${
+                isHomePage
+                  ? 'text-white'
+                  : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
+              }`}
+            >
+              Home
+            </Link>
+
+            <Link
+              href="/leaderboard"
+              className={`text-sm font-medium transition-colors ${
+                isHomePage
+                  ? 'text-white'
+                  : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
+              }`}
+            >
+              Leaderboard
+            </Link>
+
             {isLoggedIn && user ? (
               <UserDropdown
                 user={user}
@@ -110,12 +121,40 @@ const Header: FC = () => {
                 onNavigateToProfile={handleNavigateToProfile}
               />
             ) : (
-              <Link
-                href="/login"
-                className="text-[var(--gray-11)] hover:text-[var(--accent-9)] text-sm transition-colors"
-              >
-                Login
-              </Link>
+              <>
+                <button
+                  className={`transition-colors ${
+                    isHomePage
+                      ? 'text-white hover:text-[var(--accent-9)]'
+                      : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
+                  }`}
+                  aria-label="Search"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </button>
+                <Link
+                  href="/register"
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isHomePage
+                      ? 'bg-gray-800 hover:bg-gray-700 text-white'
+                      : 'bg-[var(--gray-3)] hover:bg-[var(--gray-4)] text-[var(--color-text)]'
+                  }`}
+                >
+                  Sign Up
+                </Link>
+              </>
             )}
           </nav>
         </div>

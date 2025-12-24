@@ -89,13 +89,27 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
     );
   }
 
+  const isDarkMode = className.includes('!bg-transparent');
+  
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <GitCommit className="w-5 h-5" />
+        <CardTitle className={`flex items-center gap-2 ${isDarkMode ? 'text-white' : ''}`}>
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+            />
+          </svg>
           Recent Updates
-          <Badge variant="secondary" className="ml-auto">
+          <Badge variant="secondary" className={`ml-auto ${isDarkMode ? 'bg-gray-700/50 text-white/80 border-gray-600/50' : ''}`}>
             recent {commits.length} commits
           </Badge>
         </CardTitle>
@@ -105,7 +119,7 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
           {commits.map((commit) => (
             <div
               key={commit.sha}
-              className="border-b border-gray-100 pb-3 last:border-b-0"
+              className={`border-b ${isDarkMode ? 'border-white/10' : 'border-gray-100'} pb-3 last:border-b-0`}
             >
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
@@ -125,11 +139,11 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium mb-1">
+                  <p className={`text-sm font-medium mb-1 ${isDarkMode ? 'text-white' : ''}`}>
                     {truncateCommitMessage(commit.commit.message)}
                   </p>
 
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <div className={`flex items-center gap-4 text-xs ${isDarkMode ? 'text-white/70' : 'text-gray-500'}`}>
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {formatRelativeTime(commit.commit.author.date)}
@@ -149,7 +163,7 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
                     href={commit.html_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className={`transition-colors ${isDarkMode ? 'text-white/60 hover:text-white' : 'text-gray-400 hover:text-gray-600'}`}
                   >
                     <ExternalLink className="w-4 h-4" />
                   </Link>
@@ -159,12 +173,12 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
           ))}
         </div>
 
-        <div className="mt-4 pt-3 border-t border-gray-100">
+        <div className={`mt-4 pt-3 border-t ${isDarkMode ? 'border-white/10' : 'border-gray-100'}`}>
           <Link
             href="https://github.com/Dongmoon29/code_racer/commits/main"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            className={`text-sm flex items-center gap-1 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-blue-600 hover:text-blue-800'}`}
           >
             View All Commits
             <ExternalLink className="w-3 h-3" />
