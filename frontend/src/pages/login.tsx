@@ -39,7 +39,7 @@ const LoginPage: React.FC = () => {
         description="Login to CodeRacer to start competing in real-time coding challenges"
       >
         <div className="flex w-full min-h-[calc(100vh-80px)] items-center justify-center">
-          <Loader variant="branded" size="lg" />
+          <Loader variant="spinner" size="lg" />
         </div>
       </Layout>
     );

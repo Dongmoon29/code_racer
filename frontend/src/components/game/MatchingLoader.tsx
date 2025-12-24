@@ -54,7 +54,7 @@ export const MatchingLoader: FC<MatchingLoaderProps> = memo(
             Difficulty: {config.icon} {difficulty}
           </p>
           <div className="mt-2">
-            <Loader variant="branded" size="md" />
+            <Loader variant="spinner" size="md" />
           </div>
         </div>
 

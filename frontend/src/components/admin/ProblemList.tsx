@@ -220,7 +220,7 @@ export default function ProblemList() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader variant="branded" />
+        <Loader variant="spinner" />
       </div>
     );
   }
@@ -333,7 +333,7 @@ export default function ProblemList() {
 
             {isProblemLoading ? (
               <div className="flex justify-center items-center h-64">
-                <Loader variant="branded" />
+                <Loader variant="spinner" />
               </div>
             ) : (
               <div className="w-full h-[620px] border rounded-md overflow-hidden">

@@ -70,7 +70,7 @@ export default function EditProblemPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader variant="branded" size="lg" />
+        <Loader variant="spinner" size="lg" />
       </div>
     );
   }
