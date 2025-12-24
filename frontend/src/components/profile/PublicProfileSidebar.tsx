@@ -199,7 +199,7 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
             href={user.github}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center space-x-2 text-sm text-blue-600 hover:underline break-all"
+            className="flex items-center space-x-2 text-sm hover:underline break-all"
           >
             <Github className="w-4 h-4" />
             <span>{user.github}</span>
@@ -210,7 +210,7 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
             href={user.linkedin}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center space-x-2 text-sm text-blue-600 hover:underline break-all"
+            className="flex items-center space-x-2 text-sm hover:underline break-all"
           >
             <Linkedin className="w-4 h-4" />
             <span>{user.linkedin}</span>
@@ -221,7 +221,7 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
             href={user.homepage}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center space-x-2 text-sm text-blue-600 hover:underline break-all"
+            className="flex items-center space-x-2 text-sm hover:underline break-all"
           >
             <Globe className="w-4 h-4" />
             <span>{user.homepage}</span>

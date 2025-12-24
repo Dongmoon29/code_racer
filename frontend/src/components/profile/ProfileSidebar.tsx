@@ -195,7 +195,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             href={user.homepage}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center space-x-2 text-sm text-blue-600 hover:underline break-all"
+            className="flex items-center space-x-2 text-sm hover:underline break-all"
           >
             <Globe className="w-4 h-4" />
             <span>{user.homepage}</span>
