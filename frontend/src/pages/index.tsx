@@ -1,6 +1,8 @@
 import { FC } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { motion, useInView } from 'framer-motion';
+import { useRef } from 'react';
 import Layout from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '@/stores/authStore';
@@ -21,6 +23,42 @@ interface HomeProps {
   contributors: Contributor[];
   commits: GitHubCommit[];
 }
+
+// Animation variants for scroll-triggered sections
+const fadeInUp = {
+  hidden: { opacity: 0, y: 60 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: 'easeOut' as const,
+    },
+  },
+};
+
+// Reusable animated section component
+const AnimatedSection: FC<{
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}> = ({ children, className = '', delay = 0 }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-100px' });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial="hidden"
+      animate={isInView ? 'visible' : 'hidden'}
+      variants={fadeInUp}
+      transition={{ delay }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
   const { isLoggedIn, user } = useAuthStore();
@@ -66,13 +104,10 @@ const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
         description="Improve your coding skills by competing with friends in real-time"
         contributors={contributors}
       >
-        {/* Hero Section */}
-        <section
-          className="relative w-full min-h-[calc(100vh-4rem)] flex items-center"
-          aria-label="Hero section"
-        >
-          {/* Background Image */}
-          <div className="absolute inset-0 z-0">
+        {/* Full Page Container with Fixed Background */}
+        <div className="relative w-full min-h-screen">
+          {/* Fixed Background Image */}
+          <div className="fixed inset-0 z-0">
             <Image
               src="/background.png"
               alt="Abstract coding background with dynamic light trails"
@@ -86,101 +121,184 @@ const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
             <div className="absolute inset-0 bg-black/40"></div>
           </div>
 
-          {/* Content */}
-          <div className="w-full max-w-7xl mx-auto px-4 md:px-8 relative z-20 pt-16">
-            <div className="grid lg:grid-cols-2 gap-8 items-start">
-              {/* Left: Hero Text */}
-              <div className="max-w-2xl">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 text-white drop-shadow-lg">
-                  Race Your Code.
-                </h1>
-                <p className="text-xl md:text-2xl mb-10 text-white/90 drop-shadow-md font-medium">
-                  Solve problems live, race against others, and prove your speed
-                  under pressure.
-                </p>
+          {/* Content Container */}
+          <div className="relative z-10">
+            {/* Hero Section */}
+            <section
+              className="relative w-full min-h-[calc(100vh-4rem)] flex items-center"
+              aria-label="Hero section"
+            >
+              <div className="w-full max-w-7xl mx-auto px-4 md:px-8 relative z-20 pt-16">
+                <div className="grid lg:grid-cols-2 gap-8 items-start">
+                  {/* Left: Hero Text */}
+                  <motion.div
+                    className="max-w-2xl"
+                    initial="hidden"
+                    animate="visible"
+                    variants={fadeInUp}
+                  >
+                    <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 text-white drop-shadow-lg">
+                      Race Your Code.
+                    </h1>
+                    <p className="text-xl md:text-2xl mb-10 text-white/90 drop-shadow-md font-medium">
+                      Solve problems live, race against others, and prove your
+                      speed under pressure.
+                    </p>
 
-                <div className="flex flex-col sm:flex-row gap-4 items-start">
-                  {isLoggedIn && user ? (
-                    <Link href={ROUTES.USER_PROFILE(user.id)} passHref>
-                      <Button
-                        size="lg"
-                        className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 font-semibold text-lg"
-                      >
-                        <span className="flex items-center gap-2">
-                          Start Racing
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                    <div className="flex flex-col sm:flex-row gap-4 items-start">
+                      {isLoggedIn && user ? (
+                        <Link href={ROUTES.USER_PROFILE(user.id)} passHref>
+                          <Button
+                            size="lg"
+                            className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 font-semibold text-lg"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </span>
-                      </Button>
-                    </Link>
-                  ) : (
-                    <Link href={ROUTES.LOGIN} passHref>
-                      <Button
-                        size="lg"
-                        className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 font-semibold text-lg"
-                      >
-                        <span className="flex items-center gap-2">
-                          Start Racing
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                            <span className="flex items-center gap-2">
+                              Start Racing
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 5l7 7-7 7"
+                                />
+                              </svg>
+                            </span>
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Link href={ROUTES.LOGIN} passHref>
+                          <Button
+                            size="lg"
+                            className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 font-semibold text-lg"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </span>
-                      </Button>
-                    </Link>
-                  )}
+                            <span className="flex items-center gap-2">
+                              Start Racing
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 5l7 7-7 7"
+                                />
+                              </svg>
+                            </span>
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                  </motion.div>
+
+                  {/* Right: Recent Updates */}
+                  <motion.div
+                    className="lg:pt-0"
+                    initial="hidden"
+                    animate="visible"
+                    variants={fadeInUp}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <div className="bg-[var(--color-panel)] backdrop-blur-sm border border-[var(--gray-6)] rounded-lg p-0 overflow-hidden">
+                      <RecentCommits
+                        commits={commits}
+                        className="!bg-transparent !border-none !shadow-none"
+                      />
+                    </div>
+                  </motion.div>
                 </div>
               </div>
+            </section>
 
-              {/* Right: Recent Updates */}
-              <div className="lg:pt-0">
-                {/* Recent Updates */}
-                <div className="bg-[var(--color-panel)] backdrop-blur-sm border border-[var(--gray-6)] rounded-lg p-0 overflow-hidden">
-                  <RecentCommits
-                    commits={commits}
-                    className="!bg-transparent !border-none !shadow-none"
-                  />
+            {/* Features Section */}
+            <section
+              className="relative w-full py-24"
+              aria-label="Features section"
+            >
+              <div className="w-full max-w-6xl mx-auto px-4">
+                <AnimatedSection>
+                  <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 text-white drop-shadow-lg">
+                    Why CodeRacer?
+                  </h2>
+                </AnimatedSection>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 items-stretch">
+                  {FEATURES.map((feature, index) => (
+                    <AnimatedSection
+                      key={feature.id}
+                      delay={index * 0.1}
+                      className="h-full"
+                    >
+                      <FeatureCard
+                        title={feature.title}
+                        description={feature.description}
+                      />
+                    </AnimatedSection>
+                  ))}
                 </div>
+                <AnimatedSection delay={0.4}>
+                  <div className="flex justify-center">
+                    {isLoggedIn && user ? (
+                      <Link href={ROUTES.USER_PROFILE(user.id)} passHref>
+                        <Button
+                          size="lg"
+                          className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 font-semibold text-lg"
+                        >
+                          <span className="flex items-center gap-2">
+                            Start Racing
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </span>
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link href={ROUTES.LOGIN} passHref>
+                        <Button
+                          size="lg"
+                          className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 font-semibold text-lg"
+                        >
+                          <span className="flex items-center gap-2">
+                            Start Racing
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </span>
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </AnimatedSection>
               </div>
-            </div>
+            </section>
           </div>
-        </section>
-
-        {/* Features Section */}
-        <section
-          className="w-full max-w-6xl mx-auto"
-          aria-label="Features section"
-        >
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 py-12 px-4">
-            {FEATURES.map((feature) => (
-              <FeatureCard
-                key={feature.id}
-                title={feature.title}
-                description={feature.description}
-              />
-            ))}
-          </div>
-        </section>
+        </div>
       </Layout>
     </>
   );
