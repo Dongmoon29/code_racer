@@ -1,95 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
   GitHubCommit,
-  getRecentCommits,
   truncateCommitMessage,
   formatRelativeTime,
 } from '@/lib/github-api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { ExternalLink, GitCommit, Clock, User } from 'lucide-react';
-import { Loader } from '@/components/ui/Loader';
+import { ExternalLink, Clock, User } from 'lucide-react';
 
 interface RecentCommitsProps {
   className?: string;
-  maxCommits?: number;
+  commits: GitHubCommit[];
 }
 
 export const RecentCommits: React.FC<RecentCommitsProps> = ({
   className = '',
-  maxCommits = 5,
+  commits = [],
 }) => {
-  const [commits, setCommits] = useState<GitHubCommit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchCommits = async () => {
-      try {
-        setLoading(true);
-        const recentCommits = await getRecentCommits(
-          'Dongmoon29',
-          'code_racer',
-          maxCommits
-        );
-        setCommits(recentCommits);
-        setError(null);
-      } catch (err) {
-        setError('Failed to load recent commits.');
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Error fetching commits:', err);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCommits();
-  }, [maxCommits]);
-
-  if (loading) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <GitCommit className="w-5 h-5" />
-            Recent Updates
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Loader variant="branded" size="sm" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <GitCommit className="w-5 h-5" />
-            Recent Updates
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4">
-            <p>{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="text-blue-600 hover:text-blue-800 mt-2"
-            >
-              Try Again
-            </button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   const isDarkMode = className.includes('!bg-transparent');
+  
+  // If no commits, return empty state
+  if (commits.length === 0) {
+    return null;
+  }
   
   return (
     <Card className={className}>

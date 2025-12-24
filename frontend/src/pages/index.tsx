@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Layout from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '@/stores/authStore';
-import { GetStaticProps } from 'next';
+import { GetServerSideProps } from 'next';
 import { Contributor } from '@/types';
 import { FEATURES } from '@/lib/features';
 import { FeatureCard } from '@/components/pages/FeatureCard';
@@ -14,13 +14,14 @@ import {
   generateWebsiteStructuredData,
   generateSoftwareApplicationStructuredData,
 } from '@/lib/json-ld-schemas';
-import { DEFAULT_VALUES } from '@/constants';
+import { GitHubCommit } from '@/lib/github-api';
 
 interface HomeProps {
   contributors: Contributor[];
+  commits: GitHubCommit[];
 }
 
-const HomePage: FC<HomeProps> = ({ contributors }) => {
+const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
   const { isLoggedIn } = useAuthStore();
 
   // Generate structured data
@@ -163,7 +164,7 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
                 {/* Recent Updates */}
                 <div className="bg-[var(--color-panel)] backdrop-blur-sm border border-[var(--gray-6)] rounded-lg p-0 overflow-hidden">
                   <RecentCommits
-                    maxCommits={5}
+                    commits={commits}
                     className="!bg-transparent !border-none !shadow-none"
                   />
                 </div>
@@ -194,26 +195,40 @@ const HomePage: FC<HomeProps> = ({ contributors }) => {
 
 export default HomePage;
 
-export const getStaticProps: GetStaticProps = async () => {
+export const getServerSideProps: GetServerSideProps = async () => {
   try {
-    const response = await fetch(
-      'https://api.github.com/repos/Dongmoon29/code_racer/contributors'
-    );
-    const contributors = await response.json();
+    // Fetch contributors and commits in parallel
+    const [contributorsResponse, commitsResponse] = await Promise.all([
+      fetch('https://api.github.com/repos/Dongmoon29/code_racer/contributors'),
+      fetch(
+        'https://api.github.com/repos/Dongmoon29/code_racer/commits?per_page=5',
+        {
+          headers: {
+            Accept: 'application/vnd.github.v3+json',
+          },
+        }
+      ),
+    ]);
+
+    const contributors = contributorsResponse.ok
+      ? await contributorsResponse.json()
+      : [];
+    const commits = commitsResponse.ok ? await commitsResponse.json() : [];
 
     return {
       props: {
         contributors,
+        commits,
       },
-      revalidate: DEFAULT_VALUES.REVALIDATE_INTERVALS.HOUR,
     };
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error('Failed to fetch contributors', error);
+      console.error('Failed to fetch data:', error);
     }
     return {
       props: {
         contributors: [],
+        commits: [],
       },
     };
   }
