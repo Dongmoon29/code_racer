@@ -206,7 +206,7 @@ const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
                     variants={fadeInUp}
                     transition={{ delay: 0.2 }}
                   >
-                    <div className="bg-[var(--color-panel)] backdrop-blur-sm border border-[var(--gray-6)] rounded-lg p-0 overflow-hidden">
+                    <div className="bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-lg p-0 overflow-hidden">
                       <RecentCommits
                         commits={commits}
                         className="!bg-transparent !border-none !shadow-none"
