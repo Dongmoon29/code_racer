@@ -1,20 +1,12 @@
 import React, { FC } from 'react';
 import Link from 'next/link';
-import {
-  Trophy,
-  Clock,
-  Users,
-  Code,
-  Calendar,
-  Medal,
-  User,
-} from 'lucide-react';
+import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import {
   normalizeRecentGames,
   GameHistoryItem,
 } from '@/lib/mappers/recentGames';
 import { DifficultyBadge } from '@/components/ui/DifficultyBadge';
-import { formatTimeAgo } from '@/lib/utils';
+import { Badge } from '@/components/ui/Badge';
 import { ROUTES } from '@/lib/router';
 
 interface GameHistoryProps {
@@ -25,16 +17,28 @@ interface GameHistoryProps {
 const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
   const items: GameHistoryItem[] = normalizeRecentGames(games as unknown[]);
 
-  const getModeIcon = (mode: string) => {
+  const getModeTag = (mode: string) => {
     switch (mode) {
       case 'ranked_pvp':
-        return <Trophy className="w-4 h-4 text-amber-900" />;
+        return 'ranked';
       case 'casual_pvp':
-        return <Users className="w-4 h-4 text-blue-600" />;
+        return 'casual';
       case 'single':
-        return <User className="w-4 h-4 text-gray-600" />;
+        return 'single';
       default:
-        return <Code className="w-4 h-4 text-gray-600" />;
+        return mode;
+    }
+  };
+
+  const getModeColor = (mode: string): 'red' | 'blue' => {
+    switch (mode) {
+      case 'ranked_pvp':
+        return 'red';
+      case 'casual_pvp':
+      case 'single':
+        return 'blue';
+      default:
+        return 'blue';
     }
   };
 
@@ -52,15 +56,10 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
       : { name: game.playerA?.name || 'Unknown', id: game.playerA?.id };
   };
 
-  const getWinner = (game: GameHistoryItem): { name: string; id?: string } => {
-    return {
-      name: game.winner?.name || 'Unknown',
-      id: game.winner?.id,
-    };
+  const isWinner = (game: GameHistoryItem): boolean => {
+    if (!currentUserId || !game.winner) return false;
+    return game.winner.id === currentUserId;
   };
-
-  const formatEndedAgo = (endedAt?: string, fallback?: string) =>
-    formatTimeAgo(endedAt, fallback);
 
   return (
     <div className="bg-card rounded-lg border p-6">
@@ -73,79 +72,52 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
       )}
 
       <div className="space-y-3">
-        {items.slice(0, 5).map((game) => (
+        {items.slice(0, 5).map((game) => {
+          const won = game.mode !== 'single' && isWinner(game);
+          const lost = game.mode !== 'single' && game.winner && !isWinner(game);
+          
+          return (
           <Link
             key={game.id}
             href={ROUTES.GAME_ROOM(game.id)}
             className="block p-3 sm:p-4 rounded-lg border bg-[var(--color-panel)] transition-all duration-200 hover:bg-muted/50 hover:shadow-sm cursor-pointer"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-2 sm:mb-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex-shrink-0">
-                  {getModeIcon(game.mode)}
-                </div>
-                <span className="text-xs sm:text-sm font-semibold text-foreground">
-                  {game.mode.replace('_', ' ').toUpperCase()}
-                </span>
-                <DifficultyBadge difficulty={game.problem.difficulty} />
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground">
-                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                <span className="whitespace-nowrap">
-                  {game.endedAt ? formatEndedAgo(game.endedAt) : 'N/A'}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-              <h4 className="font-medium text-sm sm:text-base text-foreground line-clamp-2 leading-snug">
+            <div className="flex items-center gap-2 mb-2">
+              {won && (
+                <ThumbsUp className="w-4 h-4 text-green-500 flex-shrink-0" />
+              )}
+              {lost && (
+                <ThumbsDown className="w-4 h-4 text-red-500 flex-shrink-0" />
+              )}
+              <h4 className="font-medium text-sm sm:text-base text-foreground line-clamp-2">
                 {game.problem.title}
               </h4>
             </div>
-
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <Badge variant="outline" size="1" color={getModeColor(game.mode)}>
+                {getModeTag(game.mode)}
+              </Badge>
+              <DifficultyBadge difficulty={game.problem.difficulty} />
+            </div>
             {game.mode !== 'single' && (
-              <>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-muted-foreground">vs</span>
-                      {getOpponent(game).id ? (
-                        <Link
-                          href={ROUTES.USER_PROFILE(getOpponent(game).id!)}
-                          className="text-orange-500 hover:text-orange-400 hover:underline transition-colors"
-                        >
-                          {getOpponent(game).name}
-                        </Link>
-                      ) : (
-                        <span>{getOpponent(game).name}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {game.winner && (
-                  <div className="mt-2 flex items-center space-x-2">
-                    <Medal className="w-4 h-4 text-yellow-600" />
-                    <span className="text-sm font-medium">
-                      Winner:{' '}
-                      {getWinner(game).id ? (
-                        <Link
-                          href={ROUTES.USER_PROFILE(getWinner(game).id!)}
-                          className="text-orange-500 hover:text-orange-400 hover:underline transition-colors"
-                        >
-                          {getWinner(game).name}
-                        </Link>
-                      ) : (
-                        getWinner(game).name
-                      )}
-                    </span>
-                  </div>
+              <div className="text-xs text-muted-foreground">
+                vs{' '}
+                {getOpponent(game).id ? (
+                  <Link
+                    href={ROUTES.USER_PROFILE(getOpponent(game).id!)}
+                    className="font-bold hover:underline transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {getOpponent(game).name}
+                  </Link>
+                ) : (
+                  <span className="font-bold">{getOpponent(game).name}</span>
                 )}
-              </>
+              </div>
             )}
           </Link>
-        ))}
+          );
+        })}
       </div>
 
       {items.length > 5 && (

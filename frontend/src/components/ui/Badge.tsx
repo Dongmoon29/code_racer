@@ -28,7 +28,7 @@ const variantToColor: Record<NonNullable<BadgeProps['variant']>, BadgeProps['col
 };
 
 const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
-  ({ className, variant = 'default', color, size = '2', radius, children, ...props }, ref) => {
+  ({ className, variant = 'default', color, size = '2', radius = 'large', children, ...props }, ref) => {
     const radixVariant = variantMap[variant];
     const radixColor = color || variantToColor[variant];
 
