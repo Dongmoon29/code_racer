@@ -15,6 +15,7 @@ import {
   generateSoftwareApplicationStructuredData,
 } from '@/lib/json-ld-schemas';
 import { GitHubCommit } from '@/lib/github-api';
+import { ROUTES } from '@/lib/router';
 
 interface HomeProps {
   contributors: Contributor[];
@@ -22,7 +23,7 @@ interface HomeProps {
 }
 
 const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
-  const { isLoggedIn } = useAuthStore();
+  const { isLoggedIn, user } = useAuthStore();
 
   // Generate structured data
   const websiteStructuredData = generateWebsiteStructuredData({
@@ -99,8 +100,8 @@ const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 items-start">
-                  {isLoggedIn ? (
-                    <Link href="/dashboard" passHref>
+                  {isLoggedIn && user ? (
+                    <Link href={ROUTES.USER_PROFILE(user.id)} passHref>
                       <Button
                         size="lg"
                         className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 font-semibold text-lg"
@@ -124,31 +125,29 @@ const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
                       </Button>
                     </Link>
                   ) : (
-                    <>
-                      <Link href="/login" passHref>
-                        <Button
-                          size="lg"
-                          className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 font-semibold text-lg"
-                        >
-                          <span className="flex items-center gap-2">
-                            Start Racing
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5l7 7-7 7"
-                              />
-                            </svg>
-                          </span>
-                        </Button>
-                      </Link>
-                    </>
+                    <Link href={ROUTES.LOGIN} passHref>
+                      <Button
+                        size="lg"
+                        className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 font-semibold text-lg"
+                      >
+                        <span className="flex items-center gap-2">
+                          Start Racing
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </span>
+                      </Button>
+                    </Link>
                   )}
                 </div>
               </div>

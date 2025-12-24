@@ -8,6 +8,7 @@ import Logo from './Logo';
 import UserDropdown from '../ui/UserDropdown';
 import MobileMenu from './MobileMenu';
 import { useDropdown } from '@/hooks/useDropdown';
+import { ROUTES } from '@/lib/router';
 
 const Header: FC = () => {
   const { user, isLoggedIn, logout } = useAuthStore();
@@ -39,13 +40,7 @@ const Header: FC = () => {
   const isHomePage = router.pathname === '/';
 
   return (
-    <header
-      className={`${
-        isHomePage
-          ? 'bg-transparent border-none'
-          : 'border-b border-[var(--gray-6)] bg-[var(--color-panel)]'
-      } relative z-50`}
-    >
+    <header className="bg-transparent border-none relative z-50">
       <div className="px-4 md:px-8">
         <div className="flex justify-between items-stretch h-16">
           <div className="flex items-center gap-3">
@@ -99,16 +94,29 @@ const Header: FC = () => {
               Home
             </Link>
 
-            <Link
-              href="/leaderboard"
-              className={`text-sm font-medium transition-colors ${
-                isHomePage
-                  ? 'text-white'
-                  : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
-              }`}
-            >
-              Leaderboard
-            </Link>
+            {isLoggedIn && user ? (
+              <Link
+                href={ROUTES.USER_PROFILE(user.id)}
+                className={`text-sm font-medium transition-colors ${
+                  isHomePage
+                    ? 'text-white'
+                    : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
+                }`}
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                href={ROUTES.LOGIN}
+                className={`text-sm font-medium transition-colors ${
+                  isHomePage
+                    ? 'text-white'
+                    : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
+                }`}
+              >
+                Dashboard
+              </Link>
+            )}
 
             {isLoggedIn && user ? (
               <UserDropdown
@@ -125,8 +133,8 @@ const Header: FC = () => {
                 href="/register"
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   isHomePage
-                    ? 'bg-gray-800 hover:bg-gray-700 text-white'
-                    : 'bg-[var(--gray-3)] hover:bg-[var(--gray-4)] text-[var(--color-text)]'
+                    ? 'bg-transparent hover:bg-transparent text-white'
+                    : 'bg-transparent hover:bg-transparent text-[var(--color-text)]'
                 }`}
               >
                 Sign Up

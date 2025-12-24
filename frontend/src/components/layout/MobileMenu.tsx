@@ -3,6 +3,7 @@
 import React, { FC } from 'react';
 import Link from 'next/link';
 import { User } from '@/stores/authStore';
+import { ROUTES } from '@/lib/router';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ const MobileMenu: FC<MobileMenuProps> = ({
             <span className="font-medium">{user.email}</span>
           </div>
           <Link
-            href="/dashboard"
+            href={ROUTES.USER_PROFILE(user.id)}
             className="block px-2 py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
             onClick={onClose}
           >
