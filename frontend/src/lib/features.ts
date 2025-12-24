@@ -35,9 +35,9 @@ export const FEATURES: Feature[] = [
   },
   {
     id: 'multiplayer',
-    title: '🤝 Racing Teams',
+    title: '🤝 Open Source Project',
     description:
-      'Create private racing circuits with friends or join the global racing community. Team up or compete solo!',
+      'CodeRacer is an open-source project! Contribute to the codebase, suggest features, or help improve the platform. Join our community of developers building the future of competitive coding!',
     icon: Users,
     iconColor: 'text-green-600 dark:text-green-400',
   },
