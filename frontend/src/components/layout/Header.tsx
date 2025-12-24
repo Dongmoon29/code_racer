@@ -121,40 +121,16 @@ const Header: FC = () => {
                 onNavigateToProfile={handleNavigateToProfile}
               />
             ) : (
-              <>
-                <button
-                  className={`transition-colors ${
-                    isHomePage
-                      ? 'text-white hover:text-[var(--accent-9)]'
-                      : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
-                  }`}
-                  aria-label="Search"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </button>
-                <Link
-                  href="/register"
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isHomePage
-                      ? 'bg-gray-800 hover:bg-gray-700 text-white'
-                      : 'bg-[var(--gray-3)] hover:bg-[var(--gray-4)] text-[var(--color-text)]'
-                  }`}
-                >
-                  Sign Up
-                </Link>
-              </>
+              <Link
+                href="/register"
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isHomePage
+                    ? 'bg-gray-800 hover:bg-gray-700 text-white'
+                    : 'bg-[var(--gray-3)] hover:bg-[var(--gray-4)] text-[var(--color-text)]'
+                }`}
+              >
+                Sign Up
+              </Link>
             )}
           </nav>
         </div>
