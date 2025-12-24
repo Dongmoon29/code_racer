@@ -1,9 +1,20 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { userApi } from '@/lib/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { IconButton, TextField } from '@radix-ui/themes';
-import { Search, X } from 'lucide-react';
+import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
+
+type UserItem = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  oauth_provider?: string;
+  created_at?: string;
+  updated_at?: string;
+  last_login_at?: string;
+};
 
 export default function AdminUsersPage() {
   const PAGE_SIZE = 20;
@@ -11,10 +22,13 @@ export default function AdminUsersPage() {
   const [sort, setSort] = useState<string>('created_at:desc');
   const [search, setSearch] = useState<string>('');
   const [searchInput, setSearchInput] = useState<string>('');
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Helper function to handle sort toggle
-  const handleSortToggle = (field: 'created_at' | 'updated_at' | 'last_login_at') => {
+  const handleSortToggle = (
+    field: 'created_at' | 'updated_at' | 'last_login_at'
+  ) => {
     setPage(1); // Reset to first page when sorting changes
     const currentField = sort.split(':')[0];
     const currentDir = sort.split(':')[1] || 'desc';
@@ -43,7 +57,9 @@ export default function AdminUsersPage() {
   };
 
   // Helper function to get sort icon
-  const getSortIcon = (field: 'created_at' | 'updated_at' | 'last_login_at') => {
+  const getSortIcon = (
+    field: 'created_at' | 'updated_at' | 'last_login_at'
+  ) => {
     const currentField = sort.split(':')[0];
     const currentDir = sort.split(':')[1] || 'desc';
 
@@ -161,69 +177,212 @@ export default function AdminUsersPage() {
             {error instanceof Error ? error.message : 'Failed to load users'}
           </div>
         )}
-        <table className="min-w-full divide-y">
-          <thead>
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                ID
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                Email
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                Role
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                OAuth
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                <button
-                  className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
-                  onClick={() => handleSortToggle('created_at')}
-                  title="Sort by created date"
-                >
-                  Created
-                  <span>{getSortIcon('created_at')}</span>
-                </button>
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                <button
-                  className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
-                  onClick={() => handleSortToggle('updated_at')}
-                  title="Sort by updated date"
-                >
-                  Updated
-                  <span>{getSortIcon('updated_at')}</span>
-                </button>
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                <button
-                  className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
-                  onClick={() => handleSortToggle('last_login_at')}
-                  title="Sort by last login date"
-                >
-                  Last Login
-                  <span>{getSortIcon('last_login_at')}</span>
-                </button>
-              </th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {(data?.items || []).map(
-              (u: {
-                id: string;
-                name: string;
-                email: string;
-                role: string;
-                oauth_provider?: string;
-                created_at?: string;
-                updated_at?: string;
-                last_login_at?: string;
-              }) => (
+
+        {/* Mobile: Table with ID and Email only, expandable details */}
+        <div className="md:hidden overflow-x-auto">
+          <table className="min-w-full divide-y">
+            <thead>
+              <tr>
+                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider">
+                  ID
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="px-3 py-2 w-10"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {(!data?.items || data.items.length === 0) && !isFetching && (
+                <tr>
+                  <td
+                    colSpan={2}
+                    className="px-4 py-8 text-center text-sm text-muted-foreground"
+                  >
+                    {isError
+                      ? 'Failed to load users'
+                      : search
+                      ? 'No users found'
+                      : 'No users'}
+                  </td>
+                </tr>
+              )}
+              {(data?.items || []).map((u: UserItem) => {
+                const isExpanded = expandedUserId === u.id;
+                return (
+                  <React.Fragment key={u.id}>
+                    <tr
+                      onClick={() =>
+                        setExpandedUserId(isExpanded ? null : u.id)
+                      }
+                      className="cursor-pointer hover:bg-[var(--gray-4)] transition-colors"
+                    >
+                      <td className="px-3 py-3 text-xs font-mono truncate max-w-[120px]">
+                        {u.id}
+                      </td>
+                      <td className="px-3 py-3 text-sm truncate">{u.email}</td>
+                      <td className="px-3 py-3 text-center">
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={3} className="px-3 py-4">
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">
+                                Name
+                              </label>
+                              <p className="text-sm">
+                                <Link
+                                  href={`/users/${u.id}`}
+                                  className="text-[var(--accent-9)] hover:underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {u.name}
+                                </Link>
+                              </p>
+                            </div>
+
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">
+                                Role
+                              </label>
+                              <p>
+                                <span className="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-[var(--gray-3)]">
+                                  {u.role}
+                                </span>
+                              </p>
+                            </div>
+
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">
+                                OAuth Provider
+                              </label>
+                              <p className="text-sm">
+                                {u.oauth_provider ? u.oauth_provider : '-'}
+                              </p>
+                            </div>
+
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">
+                                Created
+                              </label>
+                              <p className="text-sm">
+                                {u.created_at
+                                  ? new Date(u.created_at).toLocaleDateString()
+                                  : '-'}
+                              </p>
+                            </div>
+
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">
+                                Updated
+                              </label>
+                              <p className="text-sm">
+                                {u.updated_at
+                                  ? new Date(u.updated_at).toLocaleDateString()
+                                  : '-'}
+                              </p>
+                            </div>
+
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">
+                                Last Login
+                              </label>
+                              <p className="text-sm">
+                                {u.last_login_at
+                                  ? new Date(
+                                      u.last_login_at
+                                    ).toLocaleDateString()
+                                  : '-'}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-2 border-t border-[var(--gray-6)]">
+                              <button
+                                className="text-xs text-[var(--accent-9)] hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="text-xs text-red-600 hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Desktop: Table Layout */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="min-w-full divide-y">
+            <thead>
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  ID
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Role
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  OAuth
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <button
+                    className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+                    onClick={() => handleSortToggle('created_at')}
+                    title="Sort by created date"
+                  >
+                    Created
+                    <span>{getSortIcon('created_at')}</span>
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <button
+                    className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+                    onClick={() => handleSortToggle('updated_at')}
+                    title="Sort by updated date"
+                  >
+                    Updated
+                    <span>{getSortIcon('updated_at')}</span>
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <button
+                    className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+                    onClick={() => handleSortToggle('last_login_at')}
+                    title="Sort by last login date"
+                  >
+                    Last Login
+                    <span>{getSortIcon('last_login_at')}</span>
+                  </button>
+                </th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {(data?.items || []).map((u: UserItem) => (
                 <tr key={u.id}>
                   <td className="px-4 py-3 text-xs font-mono">{u.id}</td>
                   <td className="px-4 py-3 text-sm">
@@ -265,10 +424,10 @@ export default function AdminUsersPage() {
                     </div>
                   </td>
                 </tr>
-              )
-            )}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="mt-6 flex items-center justify-center">
