@@ -48,19 +48,24 @@ export function DashboardSidebar({
       )}
     >
       {/* Header */}
-      <div className={cn(
-        "pt-3 pb-2 border-b border-[var(--gray-6)] flex items-center gap-2",
-        isCollapsed ? "px-3 justify-center" : "px-3 justify-between"
-      )}>
-        <Link
-          href="/"
-          aria-label="Go to home"
-          className="flex items-center gap-2 cursor-pointer rounded-md"
-        >
-          <div className="h-10 w-10 rounded-lg flex items-center justify-center">
-            <Logo />
-          </div>
-        </Link>
+      <div
+        className={cn(
+          'pt-3 pb-2 border-b border-[var(--gray-6)] flex items-center gap-2',
+          isCollapsed ? 'px-3 justify-center' : 'px-3 justify-between'
+        )}
+      >
+        {isMobile ||
+          (!isMobile && !isCollapsed && (
+            <Link
+              href="/"
+              aria-label="Go to home"
+              className="flex items-center gap-2 cursor-pointer rounded-md"
+            >
+              <div className="h-10 w-10 rounded-lg flex items-center justify-center">
+                <Logo />
+              </div>
+            </Link>
+          ))}
         {!isMobile && !isCollapsed && (
           <button
             onClick={onToggle}
@@ -74,7 +79,7 @@ export function DashboardSidebar({
         {!isMobile && isCollapsed && (
           <button
             onClick={onToggle}
-            className="absolute top-3 right-2 p-1.5 rounded-md text-[var(--gray-11)] shrink-0 cursor-pointer transition-all duration-150 hover:bg-[var(--gray-4)] hover:text-[var(--color-text)] hover:shadow-sm hover:scale-105"
+            className="p-1.5 rounded-md text-[var(--gray-11)] shrink-0 cursor-pointer transition-all duration-150 hover:bg-[var(--gray-4)] hover:text-[var(--color-text)] hover:shadow-sm hover:scale-105"
             aria-label="Expand sidebar"
             type="button"
           >

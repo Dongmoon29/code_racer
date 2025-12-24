@@ -21,15 +21,13 @@ export const ErrorCard: React.FC<{
   onBack: () => void;
 }> = ({ message, onRetry, onBack }) => (
   <div className="max-w-2xl mx-auto p-6">
-    <Card className="border-[var(--red-6)] bg-[var(--red-3)]">
+    <Card className="border-[var(--red-6)]">
       <CardContent className="p-8 text-center">
         <div className="text-4xl mb-4">❌</div>
         <h2 className="text-xl font-semibold text-[var(--red-11)] mb-4">
           Error occurred
         </h2>
-        {message && (
-          <p className="text-[var(--red-11)] mb-6">{message}</p>
-        )}
+        {message && <p className="text-[var(--red-11)] mb-6">{message}</p>}
         <div className="space-x-4">
           <button
             onClick={onRetry}
@@ -51,15 +49,12 @@ export const ErrorCard: React.FC<{
 
 export const FoundCard: React.FC = () => (
   <div className="max-w-2xl mx-auto p-6">
-    <Card className="border-[var(--green-6)] bg-[var(--green-3)]">
+    <Card>
       <CardContent className="p-8 text-center">
-        <div className="text-4xl mb-4">🎉</div>
         <h2 className="text-xl font-semibold text-[var(--green-11)] mb-2">
           Matching completed!
         </h2>
-        <p className="text-[var(--green-11)]">
-          Redirecting to game page...
-        </p>
+        <p className="text-[var(--green-11)]">Redirecting to game page...</p>
       </CardContent>
     </Card>
   </div>
