@@ -29,8 +29,8 @@ interface RecentGameSummary {
   mode: 'ranked_pvp' | 'casual_pvp' | 'single';
   status: 'waiting' | 'playing' | 'finished' | 'closed';
   problem: { id: string; title: string; difficulty: string };
-  player_a: { id: string; name: string };
-  player_b?: { id: string; name: string };
+  player_a: { id: string; name: string; profile_image?: string };
+  player_b?: { id: string; name: string; profile_image?: string };
   winner_id?: string;
   started_at?: string;
   ended_at?: string;

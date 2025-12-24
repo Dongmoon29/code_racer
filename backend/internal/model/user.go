@@ -99,12 +99,14 @@ type RecentGameSummary struct {
 		Difficulty string    `json:"difficulty"`
 	} `json:"problem"`
 	PlayerA struct {
-		ID   uuid.UUID `json:"id"`
-		Name string    `json:"name"`
+		ID           uuid.UUID `json:"id"`
+		Name         string    `json:"name"`
+		ProfileImage string    `json:"profile_image"`
 	} `json:"player_a"`
 	PlayerB *struct {
-		ID   uuid.UUID `json:"id"`
-		Name string    `json:"name"`
+		ID           uuid.UUID `json:"id"`
+		Name         string    `json:"name"`
+		ProfileImage string    `json:"profile_image"`
 	} `json:"player_b,omitempty"`
 	WinnerID  *uuid.UUID `json:"winner_id,omitempty"`
 	StartedAt *time.Time `json:"started_at,omitempty"`

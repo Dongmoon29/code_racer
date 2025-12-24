@@ -64,14 +64,16 @@ func (s *userService) GetRecentGames(userID uuid.UUID, limit int) ([]model.Recen
 	out := make([]model.RecentGameSummary, 0, len(matches))
 	for _, m := range matches {
 		var pb *struct {
-			ID   uuid.UUID `json:"id"`
-			Name string    `json:"name"`
+			ID           uuid.UUID `json:"id"`
+			Name         string    `json:"name"`
+			ProfileImage string    `json:"profile_image"`
 		}
 		if m.PlayerB != nil {
 			pb = &struct {
-				ID   uuid.UUID `json:"id"`
-				Name string    `json:"name"`
-			}{ID: m.PlayerB.ID, Name: m.PlayerB.Name}
+				ID           uuid.UUID `json:"id"`
+				Name         string    `json:"name"`
+				ProfileImage string    `json:"profile_image"`
+			}{ID: m.PlayerB.ID, Name: m.PlayerB.Name, ProfileImage: m.PlayerB.ProfileImage}
 		}
 		g := model.RecentGameSummary{
 			ID:        m.ID,
@@ -88,9 +90,10 @@ func (s *userService) GetRecentGames(userID uuid.UUID, limit int) ([]model.Recen
 			Difficulty string    `json:"difficulty"`
 		}{ID: m.Problem.ID, Title: m.Problem.Title, Difficulty: string(m.Problem.Difficulty)}
 		g.PlayerA = struct {
-			ID   uuid.UUID `json:"id"`
-			Name string    `json:"name"`
-		}{ID: m.PlayerA.ID, Name: m.PlayerA.Name}
+			ID           uuid.UUID `json:"id"`
+			Name         string    `json:"name"`
+			ProfileImage string    `json:"profile_image"`
+		}{ID: m.PlayerA.ID, Name: m.PlayerA.Name, ProfileImage: m.PlayerA.ProfileImage}
 		g.PlayerB = pb
 		out = append(out, g)
 	}

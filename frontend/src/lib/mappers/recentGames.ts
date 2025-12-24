@@ -5,8 +5,8 @@ export type GameHistoryItem = {
   id: string;
   mode: MatchMode;
   status: MatchStatus;
-  playerA: { id: string; name: string };
-  playerB?: { id: string; name: string };
+  playerA: { id: string; name: string; profile_image?: string };
+  playerB?: { id: string; name: string; profile_image?: string };
   problem: {
     id: string;
     title: string;
@@ -18,7 +18,7 @@ export type GameHistoryItem = {
   createdAt: string;
 };
 
-type ApiUserRef = { id?: string; name?: string } | undefined;
+type ApiUserRef = { id?: string; name?: string; profile_image?: string } | undefined;
 type ApiProblem =
   | { id?: string; title?: string; difficulty?: string }
   | undefined;
@@ -82,9 +82,19 @@ export function normalizeRecentGames(games: unknown[]): GameHistoryItem[] {
       mode: String(g.mode || '') as MatchMode,
       status: String(g.status || '') as MatchStatus,
       playerA: playerA
-        ? { id: playerA.id, name: playerA.name }
+        ? { 
+            id: playerA.id, 
+            name: playerA.name,
+            profile_image: playerA.profile_image
+          }
         : { id: '', name: 'Unknown' },
-      playerB: playerB ? { id: playerB.id, name: playerB.name } : undefined,
+      playerB: playerB 
+        ? { 
+            id: playerB.id, 
+            name: playerB.name,
+            profile_image: playerB.profile_image
+          } 
+        : undefined,
       problem: {
         id: problem?.id || '',
         title: problem?.title || 'Unknown problem',

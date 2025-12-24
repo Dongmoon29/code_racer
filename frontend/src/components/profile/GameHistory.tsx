@@ -1,5 +1,6 @@
 import React, { FC } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import {
   normalizeRecentGames,
@@ -44,16 +45,25 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
 
   const getOpponent = (
     game: GameHistoryItem
-  ): { name: string; id?: string } => {
+  ): { name: string; id?: string; profile_image?: string } => {
     if (!currentUserId) {
       return {
         name: game.playerB?.name || game.playerA?.name || 'Unknown',
         id: game.playerB?.id || game.playerA?.id,
+        profile_image: game.playerB?.profile_image || game.playerA?.profile_image,
       };
     }
     return game.playerA?.id === currentUserId
-      ? { name: game.playerB?.name || 'Unknown', id: game.playerB?.id }
-      : { name: game.playerA?.name || 'Unknown', id: game.playerA?.id };
+      ? { 
+          name: game.playerB?.name || 'Unknown', 
+          id: game.playerB?.id,
+          profile_image: game.playerB?.profile_image,
+        }
+      : { 
+          name: game.playerA?.name || 'Unknown', 
+          id: game.playerA?.id,
+          profile_image: game.playerA?.profile_image,
+        };
   };
 
   const isWinner = (game: GameHistoryItem): boolean => {
@@ -100,18 +110,38 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
               <DifficultyBadge difficulty={game.problem.difficulty} />
             </div>
             {game.mode !== 'single' && (
-              <div className="text-xs text-muted-foreground">
-                vs{' '}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>vs</span>
                 {getOpponent(game).id ? (
                   <Link
                     href={ROUTES.USER_PROFILE(getOpponent(game).id!)}
-                    className="font-bold hover:underline transition-colors"
+                    className="flex items-center gap-1.5 font-bold hover:underline transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {getOpponent(game).name}
+                    <div className="relative w-5 h-5 rounded-full overflow-hidden flex-shrink-0">
+                      <Image
+                        src={getOpponent(game).profile_image || '/default-avatar.svg'}
+                        alt={getOpponent(game).name}
+                        fill
+                        className="object-cover"
+                        sizes="20px"
+                      />
+                    </div>
+                    <span>{getOpponent(game).name}</span>
                   </Link>
                 ) : (
-                  <span className="font-bold">{getOpponent(game).name}</span>
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <div className="relative w-5 h-5 rounded-full overflow-hidden flex-shrink-0">
+                      <Image
+                        src={getOpponent(game).profile_image || '/default-avatar.svg'}
+                        alt={getOpponent(game).name}
+                        fill
+                        className="object-cover"
+                        sizes="20px"
+                      />
+                    </div>
+                    <span>{getOpponent(game).name}</span>
+                  </div>
                 )}
               </div>
             )}
