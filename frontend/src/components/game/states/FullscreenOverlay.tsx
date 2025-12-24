@@ -1,7 +1,8 @@
-import React, { FC, memo, useState } from 'react';
+import React, { FC, memo, useState, useRef, useCallback } from 'react';
 import { ProblemDetailsPane } from './ProblemDetailsPane';
 import { ProblemEditorSplit } from './CodeEditorSplitProps';
 import { SubmissionProgress } from '@/types/websocket';
+import { ResizeHandle } from '../ResizeHandle';
 
 interface IOSchema {
   param_types: string | string[]; // Can come as JSON string from backend
@@ -69,6 +70,9 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
   }) => {
     const [isResizing, setIsResizing] = useState(false);
     const [fsSplitSizes, setFsSplitSizes] = useState<number[]>([50, 50]);
+    const [problemPaneWidth, setProblemPaneWidth] = useState(25); // percentage
+    const [isProblemPaneResizing, setIsProblemPaneResizing] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const handleDragStart = () => {
       if (maximizedEditor) {
@@ -84,13 +88,40 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
       document.body.classList.remove('resizing');
     };
 
+    const handleProblemPaneResize = useCallback((deltaX: number) => {
+      if (!containerRef.current) return;
+
+      const containerWidth = containerRef.current.offsetWidth;
+      const deltaPercent = (deltaX / containerWidth) * 100;
+
+      setProblemPaneWidth((prevWidth) => {
+        const newWidth = prevWidth + deltaPercent;
+        // Min 15%, Max 40%
+        return Math.max(15, Math.min(40, newWidth));
+      });
+    }, []);
+
+    const handleProblemPaneResizeStart = useCallback(() => {
+      setIsProblemPaneResizing(true);
+      document.body.classList.add('resizing');
+    }, []);
+
+    const handleProblemPaneResizeEnd = useCallback(() => {
+      setIsProblemPaneResizing(false);
+      document.body.classList.remove('resizing');
+    }, []);
+
     return (
       <div className="fixed inset-0 z-[9999] flex flex-col">
-        <div className="flex-1 flex min-h-0">
+        <div ref={containerRef} className="flex-1 flex min-h-0">
           <div
-            className={`transition-all duration-300 ${
-              isDescriptionExpanded ? 'w-[25%]' : 'w-[40px]'
-            } h-full flex flex-col`}
+            className={`h-full flex flex-col ${
+              isDescriptionExpanded ? '' : 'w-[40px]'
+            }`}
+            style={{
+              width: isDescriptionExpanded ? `${problemPaneWidth}%` : undefined,
+              transition: isDescriptionExpanded ? 'none' : 'all 300ms',
+            }}
           >
             <div className="flex-1 min-h-0 overflow-hidden p-2">
               <ProblemDetailsPane
@@ -107,7 +138,18 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
             </div>
           </div>
 
-          <div className="flex-1 p-2 min-h-0 overflow-hidden">
+          {/* Resize Handle for Problem Pane */}
+          {isDescriptionExpanded && (
+            <div className="flex items-center">
+              <ResizeHandle
+                onResize={handleProblemPaneResize}
+                onResizeStart={handleProblemPaneResizeStart}
+                onResizeEnd={handleProblemPaneResizeEnd}
+              />
+            </div>
+          )}
+
+          <div className="flex-1 p-2 min-h-0 overflow-hidden relative">
             <ProblemEditorSplit
               myCode={myCode}
               opponentCode={isSinglePlayerMode ? '' : opponentCode}
@@ -127,6 +169,10 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
               onDragEnd={handleDragEnd}
               isSinglePlayerMode={isSinglePlayerMode}
             />
+            {/* Overlay during problem pane resize to prevent editor interference */}
+            {isProblemPaneResizing && (
+              <div className="absolute inset-0 bg-transparent pointer-events-none z-50" />
+            )}
           </div>
         </div>
       </div>

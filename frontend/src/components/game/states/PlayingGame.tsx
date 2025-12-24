@@ -1,4 +1,4 @@
-import { FC, memo, useCallback, useEffect, useState } from 'react';
+import { FC, memo, useCallback, useEffect, useState, useRef } from 'react';
 import { Game, SubmitResult } from '@/types';
 import { SubmissionProgress } from '@/types/websocket';
 import { useTheme } from 'next-themes';
@@ -8,6 +8,7 @@ import { ProblemEditorSplit } from './CodeEditorSplitProps';
 import { useFullscreen } from '@/contexts/FullscreenContext';
 import { useLofiPlayer } from '@/contexts/LofiPlayerContext';
 import { LofiPlayer } from '@/components/ui/LofiPlayer';
+import { ResizeHandle } from '../ResizeHandle';
 
 interface PlayingGameProps {
   game: Game;
@@ -47,6 +48,9 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
     const [isFullscreenMy, setIsFullscreenMy] = useState(false);
     const [sizesNormal, setSizesNormal] = useState<number[]>([50, 50]);
     const [isResizing, setIsResizing] = useState(false);
+    const [problemPaneWidth, setProblemPaneWidth] = useState(25); // percentage
+    const [isProblemPaneResizing, setIsProblemPaneResizing] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const isSinglePlayerMode = game.mode === 'single';
 
@@ -60,6 +64,29 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
 
     const handleToggleFullscreen = useCallback(() => {
       setIsFullscreenMy((prev) => !prev);
+    }, []);
+
+    const handleProblemPaneResize = useCallback((deltaX: number) => {
+      if (!containerRef.current) return;
+
+      const containerWidth = containerRef.current.offsetWidth;
+      const deltaPercent = (deltaX / containerWidth) * 100;
+
+      setProblemPaneWidth((prevWidth) => {
+        const newWidth = prevWidth + deltaPercent;
+        // Min 15%, Max 40%
+        return Math.max(15, Math.min(40, newWidth));
+      });
+    }, []);
+
+    const handleProblemPaneResizeStart = useCallback(() => {
+      setIsProblemPaneResizing(true);
+      document.body.classList.add('resizing');
+    }, []);
+
+    const handleProblemPaneResizeEnd = useCallback(() => {
+      setIsProblemPaneResizing(false);
+      document.body.classList.remove('resizing');
     }, []);
 
     // ESC to exit fullscreen
@@ -83,14 +110,19 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
       <div className="flex flex-col h-full min-h-screen ">
         {!isFullscreen ? (
           <div
+            ref={containerRef}
             className="flex-1 flex min-h-0 game-editor-container"
             style={{ width: '100%' }}
           >
             {/* Problem Description Pane */}
             <div
-              className={`transition-all duration-300 ${
-                isDescriptionExpanded ? 'w-[25%]' : 'w-[40px]'
-              } h-full flex flex-col`}
+              className={`h-full flex flex-col ${
+                isDescriptionExpanded ? '' : 'w-[40px]'
+              }`}
+              style={{
+                width: isDescriptionExpanded ? `${problemPaneWidth}%` : undefined,
+                transition: isDescriptionExpanded ? 'none' : 'all 300ms',
+              }}
             >
               <div className="flex-1 min-h-0 h-full">
                 <ProblemDetailsPane
@@ -107,8 +139,19 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
               </div>
             </div>
 
+            {/* Resize Handle for Problem Pane */}
+            {isDescriptionExpanded && (
+              <div className="flex items-center">
+                <ResizeHandle
+                  onResize={handleProblemPaneResize}
+                  onResizeStart={handleProblemPaneResizeStart}
+                  onResizeEnd={handleProblemPaneResizeEnd}
+                />
+              </div>
+            )}
+
             {/* Editor Panes */}
-            <div className="flex-1 ml-4">
+            <div className="flex-1 relative">
               <ProblemEditorSplit
                 myCode={myCode}
                 opponentCode={opponentCode}
@@ -135,6 +178,10 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                 }}
                 isSinglePlayerMode={isSinglePlayerMode}
               />
+              {/* Overlay during problem pane resize to prevent editor interference */}
+              {isProblemPaneResizing && (
+                <div className="absolute inset-0 bg-transparent pointer-events-none z-50" />
+              )}
             </div>
           </div>
         ) : (
