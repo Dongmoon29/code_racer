@@ -148,12 +148,6 @@ const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
                           </span>
                         </Button>
                       </Link>
-                      <Link
-                        href="/about"
-                        className="text-white hover:text-white/80 text-lg font-medium transition-colors underline-offset-4 hover:underline"
-                      >
-                        Learn more
-                      </Link>
                     </>
                   )}
                 </div>
