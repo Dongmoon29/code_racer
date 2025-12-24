@@ -77,25 +77,31 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
           <Link
             key={game.id}
             href={ROUTES.GAME_ROOM(game.id)}
-            className="block p-4 rounded-lg border transition-all duration-200 hover:bg-muted/50 hover:-translate-y-1 cursor-pointer"
+            className="block p-3 sm:p-4 rounded-lg border bg-[var(--color-panel)] transition-all duration-200 hover:bg-muted/50 hover:shadow-sm cursor-pointer"
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-2 font-bold">
-                {getModeIcon(game.mode)}
-                <span className="text-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-2 sm:mb-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex-shrink-0">
+                  {getModeIcon(game.mode)}
+                </div>
+                <span className="text-xs sm:text-sm font-semibold text-foreground">
                   {game.mode.replace('_', ' ').toUpperCase()}
                 </span>
                 <DifficultyBadge difficulty={game.problem.difficulty} />
               </div>
-              <div className="flex items-center space-x-2">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                {game.endedAt ? ` · ${formatEndedAgo(game.endedAt)}` : ''}
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground">
+                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">
+                  {game.endedAt ? formatEndedAgo(game.endedAt) : 'N/A'}
+                </span>
               </div>
             </div>
 
-            <div className="mb-2 flex gap-2 items-center ">
-              <Clock className="w-4 h-4" />
-              <h4 className="font-medium text-sm">{game.problem.title}</h4>
+            <div className="flex items-start gap-2">
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <h4 className="font-medium text-sm sm:text-base text-foreground line-clamp-2 leading-snug">
+                {game.problem.title}
+              </h4>
             </div>
 
             {game.mode !== 'single' && (

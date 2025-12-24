@@ -107,75 +107,20 @@ const LeaderboardPage = () => {
           </p>
         </div>
 
-        {/* Top 3 cards - Pyramid layout */}
+        {/* Top 3 cards - Vertical on mobile, Pyramid on desktop */}
         {topThree.length > 0 && (
-          <div className="flex flex-col items-center mb-10 gap-4 sm:gap-6">
-            {/* 1st Place - Top Center */}
-            {topThree[0] &&
-              (() => {
-                const user = topThree[0];
-                const styles = getCardStyles(0);
-                return (
-                  <div
-                    key={user.id}
-                    className={`relative rounded-3xl border px-6 py-8 sm:px-8 sm:py-10 flex flex-col items-center justify-between w-full max-w-md ${styles.wrapper}`}
-                  >
-                    {/* Rank badge */}
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                      <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold shadow-lg bg-[var(--color-panel)] border border-[var(--gray-7)]">
-                        <Crown className="w-3 h-3 text-amber-400" />
-                        <span>#1st</span>
-                      </div>
-                    </div>
-
-                    {/* Avatar circle */}
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden mb-4 border-2 border-[var(--gray-7)] dark:border-white/10 shadow-inner flex items-center justify-center bg-[var(--gray-9)] dark:bg-black/60">
-                      {user.profile_image ? (
-                        <Image
-                          src={user.profile_image}
-                          alt={user.name}
-                          width={96}
-                          height={96}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-3xl sm:text-4xl font-bold text-white">
-                          {user.name.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Name */}
-                    <Link
-                      href={ROUTES.USER_PROFILE(user.id)}
-                      className={`text-base sm:text-lg font-semibold mb-1 hover:underline ${styles.name}`}
-                    >
-                      {user.name}
-                    </Link>
-
-                    {/* Rating */}
-                    <div
-                      className={`text-2xl sm:text-3xl font-extrabold mb-1 ${styles.rating}`}
-                    >
-                      {user.rating.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-muted-foreground mb-4">
-                      rating
-                    </div>
-                  </div>
-                );
-              })()}
-
-            {/* 2nd and 3rd Place - Bottom Left and Right */}
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 w-full max-w-2xl">
-              {topThree.slice(1).map((user, index) => {
-                const styles = getCardStyles(index === 0 ? 1 : 2);
-                const positionLabel = user.rank === 2 ? '2nd' : '3rd';
+          <div className="flex flex-col md:flex-col items-center mb-10 gap-4 sm:gap-6">
+            {/* Mobile: All 3 cards in vertical stack */}
+            <div className="flex flex-col md:hidden gap-4 w-full max-w-md">
+              {topThree.map((user, index) => {
+                const styles = getCardStyles(index);
+                const positionLabel =
+                  index === 0 ? '1st' : index === 1 ? '2nd' : '3rd';
 
                 return (
                   <div
                     key={user.id}
-                    className={`relative rounded-3xl border px-4 py-6 sm:px-6 sm:py-8 flex flex-col items-center justify-between ${styles.wrapper}`}
+                    className={`relative rounded-3xl border px-6 py-8 flex flex-col items-center justify-between w-full ${styles.wrapper}`}
                   >
                     {/* Rank badge */}
                     <div className="absolute -top-4 left-1/2 -translate-x-1/2">
@@ -186,7 +131,7 @@ const LeaderboardPage = () => {
                     </div>
 
                     {/* Avatar circle */}
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden mb-3 border-2 border-[var(--gray-7)] dark:border-white/10 shadow-inner flex items-center justify-center bg-[var(--gray-9)] dark:bg-black/60">
+                    <div className="w-20 h-20 rounded-full overflow-hidden mb-4 border-2 border-[var(--gray-7)] dark:border-white/10 shadow-inner flex items-center justify-center bg-[var(--gray-9)] dark:bg-black/60">
                       {user.profile_image ? (
                         <Image
                           src={user.profile_image}
@@ -196,7 +141,7 @@ const LeaderboardPage = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span className="text-2xl sm:text-3xl font-bold text-white">
+                        <span className="text-3xl font-bold text-white">
                           {user.name.charAt(0).toUpperCase()}
                         </span>
                       )}
@@ -205,23 +150,140 @@ const LeaderboardPage = () => {
                     {/* Name */}
                     <Link
                       href={ROUTES.USER_PROFILE(user.id)}
-                      className={`text-sm sm:text-base font-semibold mb-1 hover:underline ${styles.name}`}
+                      className={`text-base font-semibold mb-1 hover:underline ${styles.name}`}
                     >
                       {user.name}
                     </Link>
 
                     {/* Rating */}
                     <div
-                      className={`text-xl sm:text-2xl font-extrabold mb-1 ${styles.rating}`}
+                      className={`text-2xl font-extrabold mb-1 ${styles.rating}`}
                     >
                       {user.rating.toLocaleString()}
                     </div>
-                    <div className="text-[10px] sm:text-xs text-muted-foreground mb-2">
+                    <div className="text-xs text-muted-foreground mb-4">
                       rating
                     </div>
                   </div>
                 );
               })}
+            </div>
+
+            {/* Desktop: Pyramid layout */}
+            <div className="hidden md:flex flex-col items-center gap-4 sm:gap-6 w-full">
+              {/* 1st Place - Top Center */}
+              {topThree[0] &&
+                (() => {
+                  const user = topThree[0];
+                  const styles = getCardStyles(0);
+                  return (
+                    <div
+                      key={user.id}
+                      className={`relative rounded-3xl border px-8 py-10 flex flex-col items-center justify-between w-full max-w-md ${styles.wrapper}`}
+                    >
+                      {/* Rank badge */}
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold shadow-lg bg-[var(--color-panel)] border border-[var(--gray-7)]">
+                          <Crown className="w-3 h-3 text-amber-400" />
+                          <span>#1st</span>
+                        </div>
+                      </div>
+
+                      {/* Avatar circle */}
+                      <div className="w-24 h-24 rounded-full overflow-hidden mb-4 border-2 border-[var(--gray-7)] dark:border-white/10 shadow-inner flex items-center justify-center bg-[var(--gray-9)] dark:bg-black/60">
+                        {user.profile_image ? (
+                          <Image
+                            src={user.profile_image}
+                            alt={user.name}
+                            width={96}
+                            height={96}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-4xl font-bold text-white">
+                            {user.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Name */}
+                      <Link
+                        href={ROUTES.USER_PROFILE(user.id)}
+                        className={`text-lg font-semibold mb-1 hover:underline ${styles.name}`}
+                      >
+                        {user.name}
+                      </Link>
+
+                      {/* Rating */}
+                      <div
+                        className={`text-3xl font-extrabold mb-1 ${styles.rating}`}
+                      >
+                        {user.rating.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-4">
+                        rating
+                      </div>
+                    </div>
+                  );
+                })()}
+
+              {/* 2nd and 3rd Place - Bottom Left and Right */}
+              <div className="grid grid-cols-2 gap-6 w-full max-w-2xl">
+                {topThree.slice(1).map((user, index) => {
+                  const styles = getCardStyles(index === 0 ? 1 : 2);
+                  const positionLabel = user.rank === 2 ? '2nd' : '3rd';
+
+                  return (
+                    <div
+                      key={user.id}
+                      className={`relative rounded-3xl border px-6 py-8 flex flex-col items-center justify-between ${styles.wrapper}`}
+                    >
+                      {/* Rank badge */}
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold shadow-lg bg-[var(--color-panel)] border border-[var(--gray-7)]">
+                          <Crown className="w-3 h-3 text-amber-400" />
+                          <span>#{positionLabel}</span>
+                        </div>
+                      </div>
+
+                      {/* Avatar circle */}
+                      <div className="w-20 h-20 rounded-full overflow-hidden mb-3 border-2 border-[var(--gray-7)] dark:border-white/10 shadow-inner flex items-center justify-center bg-[var(--gray-9)] dark:bg-black/60">
+                        {user.profile_image ? (
+                          <Image
+                            src={user.profile_image}
+                            alt={user.name}
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-3xl font-bold text-white">
+                            {user.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Name */}
+                      <Link
+                        href={ROUTES.USER_PROFILE(user.id)}
+                        className={`text-base font-semibold mb-1 hover:underline ${styles.name}`}
+                      >
+                        {user.name}
+                      </Link>
+
+                      {/* Rating */}
+                      <div
+                        className={`text-2xl font-extrabold mb-1 ${styles.rating}`}
+                      >
+                        {user.rating.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-2">
+                        rating
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

@@ -23,7 +23,7 @@ const sizeMap: Record<'default' | 'sm' | 'lg' | 'icon', '1' | '2' | '3'> = {
 
 // Keep buttonVariants for backward compatibility with custom styles
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none cursor-pointer",
   {
     variants: {
       variant: {
@@ -108,7 +108,7 @@ function Button({
     const radixColor = color || (variant === 'destructive' ? 'red' : undefined);
 
     const cursorClass =
-      cursor === 'defaultCursor' ? 'cursor-default' : 'cursor-pointer';
+      cursor === 'defaultCursor' ? '!cursor-default' : '!cursor-pointer';
 
     if (asChild) {
       return (
@@ -131,6 +131,7 @@ function Button({
         radius={radius}
         highContrast={highContrast}
         className={cn(cursorClass, className)}
+        style={{ cursor: 'pointer', ...props.style }}
         {...props}
       />
     );
