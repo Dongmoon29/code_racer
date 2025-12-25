@@ -27,6 +27,7 @@ import (
 func main() {
 	appLogger := logger.SetupGlobalLogger()
 
+	// Trigger CI/CD pipeline
 	cfg, oauthCfg, db, rdb := initializeApp(appLogger)
 
 	deps := initializeDependencies(db, rdb, cfg, oauthCfg, appLogger)
