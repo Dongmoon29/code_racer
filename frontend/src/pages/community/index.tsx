@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,6 +13,7 @@ import {
   Lightbulb,
   Loader2,
   MessageSquare,
+  Plus,
   Send,
   Sparkles,
   ThumbsDown,
@@ -155,10 +156,10 @@ const CommunityIndexPage = () => {
 
           <button
             onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 bg-[var(--accent-9)] text-white rounded-lg hover:bg-[var(--accent-10)] transition-colors flex items-center gap-2 shrink-0"
+            className="px-4 py-2 border cursor-pointer text-white rounded-lg hover:bg-[var(--accent-10)] transition-colors flex items-center gap-2 shrink-0"
           >
-            <MessageSquare className="w-4 h-4" />
-            New Post
+            <Plus className="w-4 h-4" />
+            Create a post
           </button>
         </div>
 
