@@ -31,8 +31,8 @@ export default function AppLayout({
   // 사이드바 상태 관리
   const { isCollapsed, toggleSidebar } = useSidebarState();
 
-  // 레이아웃 타입이 'none'이거나 fullscreen 모드인 경우 레이아웃 없이 렌더링
-  if (layoutType === 'none' || isFullscreen) {
+  // 레이아웃 타입이 'none'인 경우 레이아웃 없이 렌더링
+  if (layoutType === 'none') {
     return <>{children}</>;
   }
 
@@ -46,7 +46,7 @@ export default function AppLayout({
     return <Loader variant="fullscreen" />;
   }
 
-  // Public 레이아웃 (Header만 표시)
+  // Public 레이아웃 (Header만 표시, fullscreen 모드일 때는 Header 숨김)
   if (layoutType === 'public') {
     return (
       <div className="min-h-screen flex flex-col">

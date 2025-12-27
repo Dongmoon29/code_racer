@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, FC } from 'react';
+import { useState, FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuthStore } from '@/stores/authStore';
@@ -78,7 +78,11 @@ const Header: FC = () => {
             <div className="flex items-center gap-6">
               <Link
                 href="/"
-                className={cn(NAVIGATION_STYLES.LINK.BASE, NAVIGATION_STYLES.LINK.DEFAULT, NAVIGATION_STYLES.LINK.HOVER)}
+                className={cn(
+                  NAVIGATION_STYLES.LINK.BASE,
+                  NAVIGATION_STYLES.LINK.DEFAULT,
+                  NAVIGATION_STYLES.LINK.HOVER
+                )}
               >
                 Home
               </Link>
@@ -86,14 +90,22 @@ const Header: FC = () => {
               {isLoggedIn && user ? (
                 <Link
                   href={ROUTES.USER_PROFILE(user.id)}
-                  className={cn(NAVIGATION_STYLES.LINK.BASE, NAVIGATION_STYLES.LINK.DEFAULT, NAVIGATION_STYLES.LINK.HOVER)}
+                  className={cn(
+                    NAVIGATION_STYLES.LINK.BASE,
+                    NAVIGATION_STYLES.LINK.DEFAULT,
+                    NAVIGATION_STYLES.LINK.HOVER
+                  )}
                 >
                   Dashboard
                 </Link>
               ) : (
                 <Link
                   href={ROUTES.LOGIN}
-                  className={cn(NAVIGATION_STYLES.LINK.BASE, NAVIGATION_STYLES.LINK.DEFAULT, NAVIGATION_STYLES.LINK.HOVER)}
+                  className={cn(
+                    NAVIGATION_STYLES.LINK.BASE,
+                    NAVIGATION_STYLES.LINK.DEFAULT,
+                    NAVIGATION_STYLES.LINK.HOVER
+                  )}
                 >
                   Dashboard
                 </Link>
@@ -112,7 +124,11 @@ const Header: FC = () => {
               ) : (
                 <Link
                   href="/register"
-                  className={cn(NAVIGATION_STYLES.LINK.BASE, NAVIGATION_STYLES.LINK.DEFAULT, NAVIGATION_STYLES.LINK.HOVER)}
+                  className={cn(
+                    NAVIGATION_STYLES.LINK.BASE,
+                    NAVIGATION_STYLES.LINK.DEFAULT,
+                    NAVIGATION_STYLES.LINK.HOVER
+                  )}
                 >
                   Login
                 </Link>
