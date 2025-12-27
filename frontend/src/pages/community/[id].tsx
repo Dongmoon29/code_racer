@@ -105,9 +105,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
   toggleCollapse,
 }) => {
   const isNested = depth > 0;
-  const textSize = isNested ? 'text-sm' : 'text-base';
+  const textSize = 'text-sm';
   const iconSize = 'w-4 h-4';
-  const avatarSize = isNested ? 32 : 40;
+  const avatarSize = 32;
   const score = comment.score ?? 0;
   const myVote = comment.my_vote ?? 0;
   const canVote = !!currentUserId;
@@ -195,7 +195,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                       ? ROUTES.USER_PROFILE(comment.user.id)
                       : '#'
                   }
-                  className="font-semibold text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors"
+                  className="text-sm font-semibold text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors"
                 >
                   {comment.user?.name || 'Anonymous'}
                 </Link>
@@ -219,90 +219,97 @@ const CommentItem: React.FC<CommentItemProps> = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-6 mb-2">
-              <button
-                onClick={() => {
-                  const next: -1 | 0 | 1 = myVote === 1 ? 0 : 1;
-                  voteCommentMutation.mutate({
-                    commentId: comment.id,
-                    value: next,
-                  });
-                }}
-                className={`flex items-center gap-2 transition-colors ${
-                  myVote === 1
-                    ? 'text-[var(--accent-9)]'
-                    : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
-                }`}
-                title={canVote ? 'Like' : 'Login to like'}
-                disabled={!canVote || voteCommentMutation.isPending}
-              >
-                <ThumbsUp className={iconSize} />
-                <span className="text-sm font-medium">
-                  {score > 0 ? score : ''}
-                </span>
-              </button>
-              <button
-                onClick={() => {
-                  const next: -1 | 0 | 1 = myVote === -1 ? 0 : -1;
-                  voteCommentMutation.mutate({
-                    commentId: comment.id,
-                    value: next,
-                  });
-                }}
-                className={`flex items-center gap-2 transition-colors ${
-                  myVote === -1
-                    ? 'text-red-500'
-                    : 'text-[var(--gray-11)] hover:text-red-500'
-                }`}
-                title={canVote ? 'Dislike' : 'Login to dislike'}
-                disabled={!canVote || voteCommentMutation.isPending}
-              >
-                <ThumbsDown className={iconSize} />
-              </button>
-              <button
-                onClick={() =>
-                  setReplyingTo(replyingTo === comment.id ? null : comment.id)
-                }
-                className="flex items-center gap-2 text-[var(--gray-11)] hover:text-[var(--accent-9)] transition-colors"
-              >
-                <MessageSquare className={iconSize} />
-                <span className="text-sm font-medium">Reply</span>
-              </button>
+            <div className="flex items-center gap-8 mb-2">
+              {/* Vote Group */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const next: -1 | 0 | 1 = myVote === 1 ? 0 : 1;
+                    voteCommentMutation.mutate({
+                      commentId: comment.id,
+                      value: next,
+                    });
+                  }}
+                  className={`flex items-center gap-2 transition-colors ${
+                    myVote === 1
+                      ? 'text-[var(--accent-9)]'
+                      : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
+                  }`}
+                  title={canVote ? 'Like' : 'Login to like'}
+                  disabled={!canVote || voteCommentMutation.isPending}
+                >
+                  <ThumbsUp className={iconSize} />
+                  <span className="text-sm font-medium">
+                    {score > 0 ? score : ''}
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    const next: -1 | 0 | 1 = myVote === -1 ? 0 : -1;
+                    voteCommentMutation.mutate({
+                      commentId: comment.id,
+                      value: next,
+                    });
+                  }}
+                  className={`flex items-center gap-2 transition-colors ${
+                    myVote === -1
+                      ? 'text-red-500'
+                      : 'text-[var(--gray-11)] hover:text-red-500'
+                  }`}
+                  title={canVote ? 'Dislike' : 'Login to dislike'}
+                  disabled={!canVote || voteCommentMutation.isPending}
+                >
+                  <ThumbsDown className={iconSize} />
+                </button>
+              </div>
 
-              {currentUserId === comment.user_id && (
-                <>
-                  <button
-                    onClick={() => onCommentEdit(comment.id, comment.content)}
-                    className="flex items-center gap-1 hover:text-[var(--accent-9)] transition-colors"
-                    title="Edit"
-                  >
-                    <Edit2 className={iconSize} />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (
-                        confirm('Are you sure you want to delete this comment?')
-                      ) {
-                        deleteCommentMutation.mutate(comment.id);
-                      }
-                    }}
-                    className="flex items-center gap-1 hover:text-red-500 transition-colors"
-                    title="Delete"
-                    disabled={deleteCommentMutation.isPending}
-                  >
-                    <Trash2 className={iconSize} />
-                    Delete
-                  </button>
-                </>
-              )}
+              {/* Action Group */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() =>
+                    setReplyingTo(replyingTo === comment.id ? null : comment.id)
+                  }
+                  className="flex items-center text-[var(--gray-11)] hover:text-[var(--accent-9)] transition-colors"
+                  title="Reply"
+                >
+                  <MessageSquare className={iconSize} />
+                </button>
 
-              <button
-                className="ml-auto p-1 hover:bg-[var(--gray-4)] rounded transition-colors"
-                title="More options"
-              >
-                <MoreVertical className={iconSize} />
-              </button>
+                {currentUserId === comment.user_id && (
+                  <>
+                    <button
+                      onClick={() => onCommentEdit(comment.id, comment.content)}
+                      className="flex items-center hover:text-[var(--accent-9)] transition-colors"
+                      title="Edit"
+                    >
+                      <Edit2 className={iconSize} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (
+                          confirm(
+                            'Are you sure you want to delete this comment?'
+                          )
+                        ) {
+                          deleteCommentMutation.mutate(comment.id);
+                        }
+                      }}
+                      className="flex items-center hover:text-red-500 transition-colors"
+                      title="Delete"
+                      disabled={deleteCommentMutation.isPending}
+                    >
+                      <Trash2 className={iconSize} />
+                    </button>
+                  </>
+                )}
+
+                <button
+                  className="p-1 hover:bg-[var(--gray-4)] rounded transition-colors"
+                  title="More options"
+                >
+                  <MoreVertical className={iconSize} />
+                </button>
+              </div>
             </div>
 
             {replyingTo === comment.id && (
@@ -356,11 +363,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             {hasReplies && !isCollapsed && comment.replies && (
               <div className="mt-4 space-y-4">
                 {comment.replies.map((r) => (
-                  <div key={r.id} className="relative">
-                    {/* Vertical line for nested comments */}
-                    {isNested && (
-                      <div className="absolute left-[-4px] top-0 bottom-0 w-[2px] bg-[var(--gray-6)]" />
-                    )}
+                  <div key={r.id}>
                     <CommentItem
                       comment={r}
                       postId={postId}

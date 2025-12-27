@@ -349,10 +349,7 @@ const CommunityIndexPage = () => {
                         </div>
                       </div>
 
-                      <Link
-                        href={`/community/${post.id}`}
-                        className="block"
-                      >
+                      <Link href={`/community/${post.id}`} className="block">
                         <h3 className="text-lg font-semibold text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors line-clamp-2">
                           {post.title}
                         </h3>
@@ -365,7 +362,11 @@ const CommunityIndexPage = () => {
                       <div className="flex items-center gap-3 mt-3 text-xs text-[var(--gray-11)]">
                         <div className="flex items-center gap-2">
                           <Link
-                            href={post.user?.id ? ROUTES.USER_PROFILE(post.user.id) : '#'}
+                            href={
+                              post.user?.id
+                                ? ROUTES.USER_PROFILE(post.user.id)
+                                : '#'
+                            }
                             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                           >
                             {post.user?.profile_image ? (
@@ -415,5 +416,3 @@ const CommunityIndexPage = () => {
 };
 
 export default CommunityIndexPage;
-
-
