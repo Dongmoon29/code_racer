@@ -9,6 +9,8 @@ import { ROUTES } from '@/lib/router';
 import {
   ArrowDown,
   ArrowUp,
+  ChevronDown,
+  ChevronUp,
   Edit2,
   MessageSquare,
   MoreVertical,
@@ -115,9 +117,25 @@ const CommentItem: React.FC<CommentItemProps> = ({
   const hasReplies = comment.replies && comment.replies.length > 0;
 
   return (
-    <div className={`flex gap-3 ${isNested ? 'ml-1' : ''}`}>
+    <div className={`flex gap-3 ${isNested ? 'ml-10' : ''} relative`}>
+      {/* YouTube-style vertical line connector */}
+      {isNested && (
+        <div
+          className="absolute left-[-40px] top-0 bottom-0 w-10 pointer-events-none"
+          style={{ marginTop: '16px' }}
+        >
+          {/* Vertical line */}
+          <div className="absolute left-[20px] top-0 bottom-0 w-[1.5px] bg-[var(--gray-6)]" />
+          {/* Horizontal connector to avatar */}
+          <div
+            className="absolute top-0 left-[20px] w-[20px] h-[1.5px] bg-[var(--gray-6)]"
+            style={{ marginTop: '16px' }}
+          />
+        </div>
+      )}
+
       {/* Profile Image */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 relative z-10">
         <Link
           href={comment.user?.id ? ROUTES.USER_PROFILE(comment.user.id) : '#'}
           className="block"
@@ -360,44 +378,54 @@ const CommentItem: React.FC<CommentItemProps> = ({
             )}
 
             {/* Replies */}
-            {hasReplies && !isCollapsed && comment.replies && (
-              <div className="mt-4 space-y-4">
-                {comment.replies.map((r) => (
-                  <div key={r.id}>
-                    <CommentItem
-                      comment={r}
-                      postId={postId}
-                      currentUserId={currentUserId}
-                      replyingTo={replyingTo}
-                      setReplyingTo={setReplyingTo}
-                      replyInputs={replyInputs}
-                      setReplyInputs={setReplyInputs}
-                      editingComment={editingComment}
-                      editCommentContent={editCommentContent}
-                      setEditCommentContent={setEditCommentContent}
-                      setEditingComment={setEditingComment}
-                      onCommentEdit={onCommentEdit}
-                      voteCommentMutation={voteCommentMutation}
-                      updateCommentMutation={updateCommentMutation}
-                      deleteCommentMutation={deleteCommentMutation}
-                      createCommentMutation={createCommentMutation}
-                      depth={depth + 1}
-                      collapsedComments={collapsedComments}
-                      toggleCollapse={toggleCollapse}
-                    />
+            {hasReplies && comment.replies && (
+              <>
+                {!isCollapsed && (
+                  <div className="mt-4 space-y-4">
+                    {comment.replies.map((r) => (
+                      <div key={r.id}>
+                        <CommentItem
+                          comment={r}
+                          postId={postId}
+                          currentUserId={currentUserId}
+                          replyingTo={replyingTo}
+                          setReplyingTo={setReplyingTo}
+                          replyInputs={replyInputs}
+                          setReplyInputs={setReplyInputs}
+                          editingComment={editingComment}
+                          editCommentContent={editCommentContent}
+                          setEditCommentContent={setEditCommentContent}
+                          setEditingComment={setEditingComment}
+                          onCommentEdit={onCommentEdit}
+                          voteCommentMutation={voteCommentMutation}
+                          updateCommentMutation={updateCommentMutation}
+                          deleteCommentMutation={deleteCommentMutation}
+                          createCommentMutation={createCommentMutation}
+                          depth={depth + 1}
+                          collapsedComments={collapsedComments}
+                          toggleCollapse={toggleCollapse}
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-            {hasReplies && isCollapsed && comment.replies && (
-              <button
-                onClick={() => toggleCollapse(comment.id)}
-                className="mt-2 flex items-center gap-1 text-sm text-[var(--accent-9)] hover:text-[var(--accent-10)] transition-colors font-medium"
-              >
-                <MessageSquare className="w-4 h-4" />
-                {comment.replies.length}{' '}
-                {comment.replies.length === 1 ? 'reply' : 'replies'}
-              </button>
+                )}
+                <button
+                  onClick={() => toggleCollapse(comment.id)}
+                  className="mt-2 flex items-center gap-1 text-sm text-[var(--accent-9)] hover:text-[var(--accent-10)] hover:bg-[var(--gray-2)] transition-colors font-medium px-2 py-1 rounded cursor-pointer"
+                >
+                  {isCollapsed ? (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      <span>Show replies ({comment.replies.length})</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronUp className="w-4 h-4" />
+                      <span>Hide replies</span>
+                    </>
+                  )}
+                </button>
+              </>
             )}
           </>
         )}
