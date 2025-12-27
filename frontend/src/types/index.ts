@@ -1,33 +1,114 @@
-// Common API types
+// ============================================
+// Common API Response Types
+// ============================================
+
+/**
+ * 에러 응답 타입
+ * Backend에서 에러 발생 시 반환하는 표준 형식
+ */
 export interface ApiErrorResponse {
-  success: boolean;
+  success: false;
   message: string;
   error_type?: string;
 }
 
-export interface ApiSuccessResponse<T = unknown> {
-  success: boolean;
-  data?: T;
+/**
+ * 성공 응답 기본 타입
+ * 모든 성공 응답은 이 인터페이스를 확장
+ */
+export interface ApiSuccessResponse<T = void> {
+  success: true;
+  data: T;
+  message?: string;
 }
 
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  message?: string;
-  data?: T;
-  game?: {
-    id: string;
-    problem: {
-      id: string;
-      title: string;
-      difficulty: string;
-    };
-    status: 'waiting' | 'playing' | 'finished' | 'closed';
-    player_count: number;
-    is_full: boolean;
-    created_at: string;
-  };
-  is_winner?: boolean;
+/**
+ * API 응답의 Union 타입
+ * Success 또는 Error 중 하나
+ */
+export type ApiResponse<T = void> = ApiSuccessResponse<T> | ApiErrorResponse;
+
+/**
+ * API 응답 타입 가드
+ * 성공 응답인지 확인
+ */
+export function isApiSuccess<T>(
+  response: ApiResponse<T>
+): response is ApiSuccessResponse<T> {
+  return response.success === true;
 }
+
+/**
+ * API 응답 타입 가드
+ * 에러 응답인지 확인
+ */
+export function isApiError<T>(
+  response: ApiResponse<T>
+): response is ApiErrorResponse {
+  return response.success === false;
+}
+
+// ============================================
+// Auth API Response Types
+// ============================================
+
+export interface AuthTokenData {
+  token: string;
+  user: User;
+}
+
+export type LoginResponse = ApiResponse<AuthTokenData>;
+export type RegisterResponse = ApiResponse<AuthTokenData>;
+export type ExchangeTokenResponse = ApiResponse<AuthTokenData>;
+export type GetCurrentUserResponse = ApiResponse<User>;
+
+// ============================================
+// Match/Game API Response Types
+// ============================================
+
+export interface MatchResponse {
+  id: string;
+  player_a?: User & { rating?: number };
+  player_b?: User & { rating?: number };
+  winner?: User & { rating?: number };
+  winner_execution_time_seconds?: number;
+  winner_memory_usage_kb?: number;
+  winner_rating_delta?: number;
+  loser_rating_delta?: number;
+  problem: ProblemDetail;
+  status: 'waiting' | 'playing' | 'finished' | 'closed';
+  mode: 'ranked_pvp' | 'casual_pvp' | 'single';
+  started_at?: string;
+  ended_at?: string;
+  created_at: string;
+}
+
+export type GetMatchResponse = ApiResponse<MatchResponse>;
+
+export interface SubmitSolutionData {
+  success: boolean;
+  message: string;
+  is_winner: boolean;
+}
+
+export type SubmitSolutionResponse = ApiResponse<SubmitSolutionData>;
+
+// ============================================
+// Problem API Response Types
+// ============================================
+
+export type GetProblemResponse = ApiResponse<ProblemDetail>;
+export type ListProblemsResponse = ApiResponse<ProblemSummary[]>;
+export type CreateProblemResponse = ApiResponse<ProblemDetail>;
+export type UpdateProblemResponse = ApiResponse<ProblemDetail>;
+export type DeleteProblemResponse = ApiResponse<{ message: string }>;
+
+// ============================================
+// User Profile API Response Types
+// ============================================
+
+export type GetUserProfileResponse = ApiResponse<UserProfile>;
+export type UpdateUserProfileResponse = ApiResponse<UserProfile>;
 
 // Problem 관련 타입
 export interface Example {
@@ -161,6 +242,15 @@ export interface User {
   name: string;
   avatar?: string;
   rating?: number;
+  role?: string; // user role (e.g., 'admin', 'user')
+  profile_image?: string;
+  homepage?: string;
+  linkedin?: string;
+  oauthProvider?: string;
+  fav_language?: string;
+  github?: string;
+  company?: string;
+  job_title?: string;
   created_at: string;
 }
 

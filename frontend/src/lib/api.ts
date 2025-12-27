@@ -1,6 +1,24 @@
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
-import type { ProblemDetail, Game, UserProfile } from '@/types';
+import type {
+  ProblemDetail,
+  Game,
+  UserProfile,
+  LoginResponse,
+  RegisterResponse,
+  ExchangeTokenResponse,
+  GetCurrentUserResponse,
+  GetMatchResponse,
+  MatchResponse,
+  SubmitSolutionResponse,
+  GetProblemResponse,
+  ListProblemsResponse,
+  CreateProblemResponse,
+  UpdateProblemResponse,
+  DeleteProblemResponse,
+  GetUserProfileResponse,
+  UpdateUserProfileResponse,
+} from '@/types';
 import { createErrorHandler } from '@/lib/error-tracking';
 
 // API client basic configuration
@@ -61,8 +79,12 @@ api.interceptors.response.use(
 // Authentication related API
 export const authApi = {
   // User registration
-  register: async (email: string, password: string, name: string) => {
-    const response = await api.post('/auth/register', {
+  register: async (
+    email: string,
+    password: string,
+    name: string
+  ): Promise<RegisterResponse> => {
+    const response = await api.post<RegisterResponse>('/auth/register', {
       email,
       password,
       name,
@@ -71,26 +93,36 @@ export const authApi = {
   },
 
   // User login
-  login: async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
-    return response.data;
-  },
-
-  // Exchange OAuth code for token
-  exchangeToken: async (code: string, state: string, provider: string) => {
-    const response = await api.post('/auth/exchange-token', {
-      code,
-      state,
-      provider,
+  login: async (email: string, password: string): Promise<LoginResponse> => {
+    const response = await api.post<LoginResponse>('/auth/login', {
+      email,
+      password,
     });
     return response.data;
   },
 
+  // Exchange OAuth code for token
+  exchangeToken: async (
+    code: string,
+    state: string,
+    provider: string
+  ): Promise<ExchangeTokenResponse> => {
+    const response = await api.post<ExchangeTokenResponse>(
+      '/auth/exchange-token',
+      {
+        code,
+        state,
+        provider,
+      }
+    );
+    return response.data;
+  },
+
   // Get current user information
-  getCurrentUser: async () => {
+  getCurrentUser: async (): Promise<GetCurrentUserResponse> => {
     const errorHandler = createErrorHandler('authApi', 'getCurrentUser');
     try {
-      const response = await api.get('/users/me');
+      const response = await api.get<GetCurrentUserResponse>('/users/me');
       return response.data;
     } catch (error) {
       errorHandler(error, { endpoint: '/users/me' });
@@ -99,7 +131,7 @@ export const authApi = {
   },
 
   // User logout
-  logout: async () => {
+  logout: async (): Promise<void> => {
     await api.post('/auth/logout');
   },
 
@@ -122,12 +154,14 @@ export const authApi = {
 export const matchApi = {
   // Get game information (used during game play)
   getGame: async (matchId: string): Promise<{ game: Game | null }> => {
-    const response = await api.get(`/matches/${matchId}`);
+    const response = await api.get<GetMatchResponse>(`/matches/${matchId}`);
+
     // Backend: { success: true, data: MatchResponse }
-    const payload = response.data?.data;
-    if (!payload) {
+    if (!response.data.success) {
       return { game: null };
     }
+
+    const payload: MatchResponse = response.data.data;
     const mapped: Game = {
       id: payload.id,
       // Preferred fields
@@ -176,18 +210,53 @@ export const matchApi = {
     return { game: mapped };
   },
 
-  submitSolution: async (matchId: string, code: string, language: string) => {
-    const response = await api.post(`/matches/${matchId}/submit`, {
-      code,
-      language,
-    });
+  submitSolution: async (
+    matchId: string,
+    code: string,
+    language: string
+  ): Promise<SubmitSolutionResponse> => {
+    const response = await api.post<SubmitSolutionResponse>(
+      `/matches/${matchId}/submit`,
+      {
+        code,
+        language,
+      }
+    );
     return response.data;
   },
 };
 
 export const problemApi = {
-  listProblems: async () => {
-    const response = await api.get('/problems');
+  listProblems: async (): Promise<ListProblemsResponse> => {
+    const response = await api.get<ListProblemsResponse>('/problems');
+    return response.data;
+  },
+
+  getProblem: async (problemId: string): Promise<GetProblemResponse> => {
+    const response = await api.get<GetProblemResponse>(`/problems/${problemId}`);
+    return response.data;
+  },
+
+  createProblem: async (data: unknown): Promise<CreateProblemResponse> => {
+    const response = await api.post<CreateProblemResponse>('/problems', data);
+    return response.data;
+  },
+
+  updateProblem: async (
+    problemId: string,
+    data: unknown
+  ): Promise<UpdateProblemResponse> => {
+    const response = await api.put<UpdateProblemResponse>(
+      `/problems/${problemId}`,
+      data
+    );
+    return response.data;
+  },
+
+  deleteProblem: async (problemId: string): Promise<DeleteProblemResponse> => {
+    const response = await api.delete<DeleteProblemResponse>(
+      `/problems/${problemId}`
+    );
     return response.data;
   },
 };
@@ -256,13 +325,20 @@ export const userApi = {
       has_next: boolean;
     };
   },
-  updateProfile: async (profile: UserProfile) => {
-    const response = await api.put('/users/profile', profile);
+  updateProfile: async (
+    profile: UserProfile
+  ): Promise<UpdateUserProfileResponse> => {
+    const response = await api.put<UpdateUserProfileResponse>(
+      '/users/profile',
+      profile
+    );
     return response.data;
   },
 
-  getUserProfile: async (userId: string) => {
-    const response = await api.get(`/users/${userId}/profile`);
+  getUserProfile: async (userId: string): Promise<GetUserProfileResponse> => {
+    const response = await api.get<GetUserProfileResponse>(
+      `/users/${userId}/profile`
+    );
     return response.data;
   },
 
