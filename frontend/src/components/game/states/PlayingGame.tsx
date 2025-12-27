@@ -17,6 +17,7 @@ interface PlayingGameProps {
   opponentCode: string;
   opponentName?: string;
   selectedLanguage: 'python' | 'javascript' | 'go';
+  opponentLanguage: 'python' | 'javascript' | 'go';
   submitResult: SubmitResult | null;
   isSubmitting: boolean;
   submissionProgress: SubmissionProgress;
@@ -32,6 +33,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
     opponentCode,
     opponentName,
     selectedLanguage,
+    opponentLanguage,
     isSubmitting,
     submissionProgress,
     onCodeChange,
@@ -69,7 +71,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
 
       try {
         await toggleFullscreen(fullscreenContainerRef.current);
-      } catch (error) {
+      } catch {
         showToast({
           title: 'Fullscreen Error',
           message: 'Failed to toggle fullscreen mode',
@@ -160,6 +162,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                 opponentCode={opponentCode}
                 opponentName={opponentName}
                 selectedLanguage={selectedLanguage}
+                opponentLanguage={opponentLanguage}
                 theme={theme}
                 maximizedEditor={maximizedEditor}
                 isResizing={isResizing}
@@ -193,6 +196,9 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
             opponentCode={isSinglePlayerMode ? '' : opponentCode}
             opponentName={isSinglePlayerMode ? '' : opponentName}
             selectedLanguage={selectedLanguage}
+            opponentLanguage={
+              isSinglePlayerMode ? selectedLanguage : opponentLanguage
+            }
             theme={theme}
             maximizedEditor={isSinglePlayerMode ? null : maximizedEditor}
             isDescriptionExpanded={isDescriptionExpanded}

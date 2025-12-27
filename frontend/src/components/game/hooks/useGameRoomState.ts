@@ -48,6 +48,8 @@ interface UseGameRoomStateReturn {
   // Language and UI state
   selectedLanguage: SupportedLanguage;
   setSelectedLanguage: (language: SupportedLanguage) => void;
+  opponentLanguage: SupportedLanguage;
+  setOpponentLanguage: (language: SupportedLanguage) => void;
 
   // Template setup state
   isTemplateSet: React.MutableRefObject<boolean>;
@@ -100,6 +102,10 @@ export const useGameRoomState = ({
       const stored = storageManager.getItem(key) as SupportedLanguage;
       return stored || SUPPORTED_LANGUAGES.JAVASCRIPT;
     }
+  );
+
+  const [opponentLanguage, setOpponentLanguage] = useState<SupportedLanguage>(
+    SUPPORTED_LANGUAGES.JAVASCRIPT
   );
 
   // Template setup state
@@ -160,6 +166,8 @@ export const useGameRoomState = ({
     // Language and UI state
     selectedLanguage,
     setSelectedLanguage,
+    opponentLanguage,
+    setOpponentLanguage,
 
     // Template setup state
     isTemplateSet,

@@ -35,6 +35,8 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     setSubmissionProgress,
     selectedLanguage,
     setSelectedLanguage,
+    opponentLanguage,
+    setOpponentLanguage,
     isTemplateSet,
   } = useGameRoomState({ matchId });
 
@@ -51,6 +53,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       setSubmitResult,
       setIsSubmitting,
       setSelectedLanguage,
+      setOpponentLanguage,
       setSubmissionProgress,
       refetchGame,
     });
@@ -122,7 +125,9 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-[var(--red-11)] mb-2">Error</h2>
+          <h2 className="text-xl font-semibold text-[var(--red-11)] mb-2">
+            Error
+          </h2>
           <p className="text-[var(--gray-11)] mb-4">{gameError}</p>
           <button
             onClick={refetchGame}
@@ -140,7 +145,9 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2 text-[var(--color-text)]">Game Not Found</h2>
+          <h2 className="text-xl font-semibold mb-2 text-[var(--color-text)]">
+            Game Not Found
+          </h2>
           <p className="text-[var(--gray-11)]">
             The requested game could not be found.
           </p>
@@ -158,6 +165,9 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
         myCode={myCode}
         opponentCode={isSinglePlayerMode ? '' : opponentCode}
         selectedLanguage={selectedLanguage}
+        opponentLanguage={
+          isSinglePlayerMode ? selectedLanguage : opponentLanguage
+        }
         submitResult={submitResult}
         isSubmitting={isSubmitting}
         submissionProgress={submissionProgress}

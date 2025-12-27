@@ -38,6 +38,7 @@ interface UseGameRoomWebSocketProps {
   setSubmitResult: (result: SubmitResult | null) => void;
   setIsSubmitting: (isSubmitting: boolean) => void;
   setSelectedLanguage: (language: SupportedLanguage) => void;
+  setOpponentLanguage: (language: SupportedLanguage) => void;
   setSubmissionProgress: React.Dispatch<
     React.SetStateAction<SubmissionProgress>
   >;
@@ -55,6 +56,7 @@ export const useGameRoomWebSocket = ({
   setSubmitResult,
   setIsSubmitting,
   setSelectedLanguage,
+  setOpponentLanguage,
   setSubmissionProgress,
   refetchGame,
 }: UseGameRoomWebSocketProps) => {
@@ -75,14 +77,25 @@ export const useGameRoomWebSocket = ({
   // Message type handlers
   const handleCodeUpdate = useCallback(
     (message: CodeUpdateMessage) => {
-      if (message.code !== undefined) {
+      // Handle both direct code field and data.code field
+      const code = message.code || message.data?.code;
+      if (code !== undefined) {
         // Only update opponent code if the message is from a different user
         if (message.user_id !== currentUser?.id) {
-          setOpponentCode(message.code);
+          setOpponentCode(code);
+          // Update opponent language if provided
+          const language = message.language || message.data?.language;
+          if (language && language.trim() !== '') {
+            // Normalize language value (lowercase)
+            const normalizedLanguage = language.toLowerCase().trim();
+            if (['python', 'javascript', 'go'].includes(normalizedLanguage)) {
+              setOpponentLanguage(normalizedLanguage as SupportedLanguage);
+            }
+          }
         }
       }
     },
-    [currentUser?.id, setOpponentCode]
+    [currentUser?.id, setOpponentCode, setOpponentLanguage]
   );
 
   const handleSubmissionStarted = useCallback(
@@ -260,13 +273,16 @@ export const useGameRoomWebSocket = ({
     [setSubmitResult, refetchGame]
   );
 
-  const handleError = useCallback((errorMessage?: string) => {
-    setSubmitResult({
-      success: false,
-      message: errorMessage || 'An error occurred during the game.',
-      is_winner: false,
-    });
-  }, [setSubmitResult]);
+  const handleError = useCallback(
+    (errorMessage?: string) => {
+      setSubmitResult({
+        success: false,
+        message: errorMessage || 'An error occurred during the game.',
+        is_winner: false,
+      });
+    },
+    [setSubmitResult]
+  );
 
   // WebSocket message handler with type guards
   const handleWebSocketMessage = useCallback(
@@ -391,10 +407,10 @@ export const useGameRoomWebSocket = ({
       setMyCode(newCode);
 
       if (wsRef.current) {
-        wsRef.current.sendCodeUpdate(newCode);
+        wsRef.current.sendCodeUpdate(newCode, selectedLanguage);
       }
     },
-    [setMyCode]
+    [setMyCode, selectedLanguage]
   );
 
   // Language change handler
@@ -409,7 +425,7 @@ export const useGameRoomWebSocket = ({
         setMyCode(template);
 
         if (wsRef.current) {
-          wsRef.current.sendCodeUpdate(template);
+          wsRef.current.sendCodeUpdate(template, newLanguage);
         }
       }
     },

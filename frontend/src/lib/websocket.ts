@@ -30,7 +30,8 @@ export interface PongMessage extends BaseWebSocketMessage {
 export interface CodeUpdateMessage extends BaseWebSocketMessage {
   type: 'code_update';
   code: string;
-  data?: { code: string };
+  language?: string;
+  data?: { code: string; language?: string };
   user_id?: string;
 }
 
@@ -215,10 +216,10 @@ export class WebSocketClient extends BaseWebSocketClient {
   }
 
   // Send code update message
-  sendCodeUpdate(code: string) {
+  sendCodeUpdate(code: string, language?: string) {
     this.sendMessage({
       type: 'code_update',
-      data: { code },
+      data: { code, language },
     });
   }
 

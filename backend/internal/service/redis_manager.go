@@ -25,9 +25,10 @@ const (
 
 // Redis key patterns
 const (
-	MatchDataKey   = "match:%s:data"   // Hash: match metadata
-	MatchUsersKey  = "match:%s:users"  // Set: participant user IDs
-	MatchCodesKey  = "match:%s:codes"  // Hash: user_id -> code
+	MatchDataKey      = "match:%s:data"      // Hash: match metadata
+	MatchUsersKey     = "match:%s:users"     // Set: participant user IDs
+	MatchCodesKey     = "match:%s:codes"     // Hash: user_id -> code
+	MatchLanguagesKey = "match:%s:languages" // Hash: user_id -> language
 	MatchStatusKey = "match:%s:status" // String: current status
 	MatchExpiryKey = "match:%s:expiry" // String: expiration timestamp
 )
@@ -206,6 +207,47 @@ func (rm *RedisManager) GetAllUserCodes(matchID uuid.UUID) (map[string]string, e
 	}
 
 	return codes, nil
+}
+
+// UpdateUserLanguage updates a user's language in the match
+func (rm *RedisManager) UpdateUserLanguage(matchID, userID uuid.UUID, language string) error {
+	ctx := context.Background()
+	matchLanguagesKey := fmt.Sprintf(MatchLanguagesKey, matchID.String())
+
+	err := rm.rdb.HSet(ctx, matchLanguagesKey, userID.String(), language).Err()
+	if err != nil {
+		rm.logger.Error().Err(err).
+			Str("matchID", matchID.String()).
+			Str("userID", userID.String()).
+			Str("language", language).
+			Msg("Failed to update user language")
+		return fmt.Errorf("failed to update user language: %w", err)
+	}
+
+	// Set expiration for the languages hash
+	rm.rdb.Expire(ctx, matchLanguagesKey, matchUsersExpirationHours*time.Hour)
+
+	return nil
+}
+
+// GetUserLanguage retrieves a user's language from the match
+func (rm *RedisManager) GetUserLanguage(matchID, userID uuid.UUID) (string, error) {
+	ctx := context.Background()
+	matchLanguagesKey := fmt.Sprintf(MatchLanguagesKey, matchID.String())
+
+	language, err := rm.rdb.HGet(ctx, matchLanguagesKey, userID.String()).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return "", nil // Language not found
+		}
+		rm.logger.Error().Err(err).
+			Str("matchID", matchID.String()).
+			Str("userID", userID.String()).
+			Msg("Failed to get user language")
+		return "", fmt.Errorf("failed to get user language: %w", err)
+	}
+
+	return language, nil
 }
 
 // GetMatchUsers retrieves all users in a match

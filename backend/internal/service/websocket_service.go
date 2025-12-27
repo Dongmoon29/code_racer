@@ -104,10 +104,11 @@ type MatchMessage struct {
 
 // CodeUpdateMessage represents a code update message
 type CodeUpdateMessage struct {
-	Type    string `json:"type"`
-	MatchID string `json:"match_id"`
-	UserID  string `json:"user_id"`
-	Code    string `json:"code"`
+	Type     string `json:"type"`
+	MatchID  string `json:"match_id"`
+	UserID   string `json:"user_id"`
+	Code     string `json:"code"`
+	Language string `json:"language,omitempty"` // Optional: language for syntax highlighting
 }
 
 // NEW: Matchmaking message types
@@ -915,8 +916,8 @@ func (s *webSocketService) HandleConnection(conn *websocket.Conn, userID uuid.UU
 
 	client := s.createWebSocketClient(conn, userID, matchID)
 	s.registerClientWithHub(client)
-	s.loadExistingCodeForClient(client, matchID, userID)
 	s.addUserToMatchParticipants(matchID, userID)
+	s.loadExistingCodeForClient(client, matchID, userID)
 	s.startClientGoroutines(client)
 
 	s.logger.Info().
@@ -951,17 +952,48 @@ func (s *webSocketService) loadExistingCodeForClient(client *Client, matchID uui
 		return
 	}
 
+	// Load and send own code
 	existingCode, err := s.redisManager.GetUserCode(matchID, userID)
 	if err == nil && existingCode != "" {
+		existingLanguage, _ := s.redisManager.GetUserLanguage(matchID, userID)
 		codeUpdateMsg := CodeUpdateMessage{
-			Type:    constants.CodeUpdate,
-			MatchID: matchID.String(),
-			UserID:  userID.String(),
-			Code:    existingCode,
+			Type:     constants.CodeUpdate,
+			MatchID:   matchID.String(),
+			UserID:    userID.String(),
+			Code:      existingCode,
+			Language:  existingLanguage,
 		}
 		msgBytes, _ := json.Marshal(codeUpdateMsg)
 		client.send <- msgBytes
 	}
+
+	// Load and send opponent's code and language to this client
+	s.hub.mu.RLock()
+	matchIDStr := matchID.String()
+	matchClients, exists := s.hub.matchClients[matchIDStr]
+	if exists {
+		for otherClient := range matchClients {
+			// Skip self
+			if otherClient.userID == userID {
+				continue
+			}
+			// Load opponent's code and language
+			opponentCode, err := s.redisManager.GetUserCode(matchID, otherClient.userID)
+			if err == nil && opponentCode != "" {
+				opponentLanguage, _ := s.redisManager.GetUserLanguage(matchID, otherClient.userID)
+				codeUpdateMsg := CodeUpdateMessage{
+					Type:     constants.CodeUpdate,
+					MatchID:   matchID.String(),
+					UserID:    otherClient.userID.String(),
+					Code:      opponentCode,
+					Language:  opponentLanguage,
+				}
+				msgBytes, _ := json.Marshal(codeUpdateMsg)
+				client.send <- msgBytes
+			}
+		}
+	}
+	s.hub.mu.RUnlock()
 }
 
 // addUserToMatchParticipants adds user to the match participants list
@@ -1247,9 +1279,22 @@ func (c *Client) handleCancelMatchingMessage() {
 // handleCodeUpdateMessage processes code update messages
 func (c *Client) handleCodeUpdateMessage(msg map[string]interface{}, wsService *webSocketService) {
 	if data, ok := msg["data"].(map[string]interface{}); ok {
-		if code, ok := data["code"].(string); ok {
+		var code string
+		var language string
+		
+		if c, ok := data["code"].(string); ok {
+			code = c
+		}
+		if l, ok := data["language"].(string); ok {
+			language = l
+		}
+		
+		if code != "" {
 			c.storeCodeInRedis(code, wsService)
-			c.broadcastCodeUpdate(code, wsService)
+			c.broadcastCodeUpdate(code, language, wsService)
+		}
+		if language != "" {
+			c.storeLanguageInRedis(language, wsService)
 		}
 	}
 }
@@ -1273,13 +1318,31 @@ func (c *Client) storeCodeInRedis(code string, wsService *webSocketService) {
 	}
 }
 
+// storeLanguageInRedis stores the user's language in Redis
+func (c *Client) storeLanguageInRedis(language string, wsService *webSocketService) {
+	// Skip storing language if this is a matchmaking session (nil UUID)
+	if c.matchID == uuid.Nil {
+		return
+	}
+
+	err := wsService.redisManager.UpdateUserLanguage(c.matchID, c.userID, language)
+	if err != nil {
+		wsService.logger.Error().Err(err).
+			Str("matchID", c.matchID.String()).
+			Str("userID", c.userID.String()).
+			Str("language", language).
+			Msg("Failed to store language in Redis")
+	}
+}
+
 // broadcastCodeUpdate broadcasts code update to other clients (excluding sender)
-func (c *Client) broadcastCodeUpdate(code string, wsService *webSocketService) {
+func (c *Client) broadcastCodeUpdate(code string, language string, wsService *webSocketService) {
 	codeUpdateMsg := CodeUpdateMessage{
-		Type:    constants.CodeUpdate,
-		MatchID: c.matchID.String(),
-		UserID:  c.userID.String(),
-		Code:    code,
+		Type:     constants.CodeUpdate,
+		MatchID:   c.matchID.String(),
+		UserID:    c.userID.String(),
+		Code:      code,
+		Language:  language,
 	}
 
 	msgBytes, _ := json.Marshal(codeUpdateMsg)

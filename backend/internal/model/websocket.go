@@ -41,10 +41,11 @@ type TestCaseDetailMessage struct {
 
 // CodeUpdateMessage code update message
 type CodeUpdateMessage struct {
-	Type    string `json:"type"`
-	MatchID string `json:"match_id"`
-	UserID  string `json:"user_id"`
-	Code    string `json:"code"`
+	Type     string `json:"type"`
+	MatchID  string `json:"match_id"`
+	UserID   string `json:"user_id"`
+	Code     string `json:"code"`
+	Language string `json:"language,omitempty"` // Optional: language for syntax highlighting
 }
 
 // MatchEndMessage 매치 종료 메시지

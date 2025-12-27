@@ -8,6 +8,7 @@ interface CodeEditorSplitProps {
   opponentCode: string;
   opponentName?: string;
   selectedLanguage: 'python' | 'javascript' | 'go';
+  opponentLanguage: 'python' | 'javascript' | 'go';
   theme?: string;
   maximizedEditor: 'my' | 'opponent' | null;
   isResizing: boolean;
@@ -29,6 +30,7 @@ export const ProblemEditorSplit: FC<CodeEditorSplitProps> = memo(
     opponentCode,
     opponentName,
     selectedLanguage,
+    opponentLanguage,
     theme,
     maximizedEditor,
     isResizing,
@@ -113,7 +115,7 @@ export const ProblemEditorSplit: FC<CodeEditorSplitProps> = memo(
           <EditorPane
             title={opponentName ?? ''}
             code={opponentCode}
-            language={selectedLanguage}
+            language={opponentLanguage}
             theme={theme}
             readOnly={true}
             isMinimized={false}
@@ -164,7 +166,7 @@ export const ProblemEditorSplit: FC<CodeEditorSplitProps> = memo(
             <EditorPane
               title={opponentName ?? ''}
               code={opponentCode}
-              language={selectedLanguage}
+              language={opponentLanguage}
               theme={theme}
               readOnly={true}
               isMinimized={false}

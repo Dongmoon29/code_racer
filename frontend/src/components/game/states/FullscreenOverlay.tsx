@@ -14,6 +14,7 @@ interface FullscreenOverlayProps {
   opponentCode: string;
   opponentName?: string;
   selectedLanguage: 'python' | 'javascript' | 'go';
+  opponentLanguage: 'python' | 'javascript' | 'go';
   theme?: string;
   maximizedEditor: 'my' | 'opponent' | null;
   isDescriptionExpanded: boolean;
@@ -49,6 +50,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
     opponentCode,
     opponentName,
     selectedLanguage,
+    opponentLanguage,
     theme,
     maximizedEditor,
     isDescriptionExpanded,
@@ -155,6 +157,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
               opponentCode={isSinglePlayerMode ? '' : opponentCode}
               opponentName={isSinglePlayerMode ? '' : opponentName}
               selectedLanguage={selectedLanguage}
+              opponentLanguage={isSinglePlayerMode ? selectedLanguage : opponentLanguage}
               theme={theme}
               maximizedEditor={isSinglePlayerMode ? null : maximizedEditor}
               isResizing={isResizing}
