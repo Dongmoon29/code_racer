@@ -3,7 +3,6 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { communityApi } from '@/lib/api';
 import {
   ArrowDown,
@@ -140,7 +139,7 @@ const CommunityIndexPage = () => {
   );
 
   return (
-    <DashboardLayout>
+    <>
       <Head>
         <title>Community - CodeRacer</title>
       </Head>
@@ -405,7 +404,7 @@ const CommunityIndexPage = () => {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

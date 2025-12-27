@@ -4,7 +4,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { communityApi, communityCommentApi } from '@/lib/api';
 import {
   ArrowDown,
@@ -431,7 +430,7 @@ const CommunityPostPage = () => {
   const score = post?.score ?? 0;
 
   return (
-    <DashboardLayout>
+    <>
       <Head>
         <title>{post?.title ? `${post.title} - Community` : 'Community Post'}</title>
       </Head>
@@ -596,7 +595,7 @@ const CommunityPostPage = () => {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

@@ -3,7 +3,6 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Crown } from 'lucide-react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { userApi } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { ROUTES } from '@/lib/router';
@@ -85,7 +84,7 @@ const LeaderboardPage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <Head>
         <title>Leaderboard - CodeRacer</title>
         <meta
@@ -342,7 +341,7 @@ const LeaderboardPage = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

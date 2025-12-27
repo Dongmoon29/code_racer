@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
@@ -70,39 +69,33 @@ const UserProfilePage = () => {
   // Wait for router to be ready
   if (!router.isReady || !userId) {
     return (
-      <DashboardLayout>
-        <div className="py-8">
-          <div className="flex items-center justify-center">
-            <Loader variant="spinner" size="lg" />
-          </div>
+      <div className="py-8">
+        <div className="flex items-center justify-center">
+          <Loader variant="spinner" size="lg" />
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="py-8">
-          <div className="flex items-center justify-center">
-            <Loader variant="spinner" size="lg" />
-          </div>
+      <div className="py-8">
+        <div className="flex items-center justify-center">
+          <Loader variant="spinner" size="lg" />
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <DashboardLayout>
-        <div className="py-8">
-          <div className="flex items-center justify-center">
-            <div className="text-lg text-red-600">
-              Failed to load user profile
-            </div>
+      <div className="py-8">
+        <div className="flex items-center justify-center">
+          <div className="text-lg text-red-600">
+            Failed to load user profile
           </div>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
@@ -115,7 +108,7 @@ const UserProfilePage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <Head>
         <title>{user?.name}&apos;s Profile - CodeRacer</title>
         <meta
@@ -164,7 +157,7 @@ const UserProfilePage = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

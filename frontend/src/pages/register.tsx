@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
-import Layout from '../components/layout/Layout';
 import { RegisterForm } from '../components/dynamic';
 import Image from 'next/image';
 import { useAuthStore } from '@/stores/authStore';
@@ -18,10 +18,11 @@ const RegisterPage: React.FC = () => {
   }, [isLoggedIn, router]);
 
   return (
-    <Layout
-      title="Register | Code Racer"
-      description="Create a new account for Code Racer"
-    >
+    <>
+      <Head>
+        <title>Register | Code Racer</title>
+        <meta name="description" content="Create a new account for Code Racer" />
+      </Head>
       <div className="flex w-full min-h-[calc(100vh-80px)]">
         {/* Left Column - Form */}
         <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col items-center justify-center">
@@ -67,7 +68,7 @@ const RegisterPage: React.FC = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 

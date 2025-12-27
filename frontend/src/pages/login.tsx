@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
-import Layout from '../components/layout/Layout';
 import { LoginForm } from '../components/dynamic';
 import Image from 'next/image';
 import { Alert } from '@/components/ui/alert';
@@ -34,22 +34,30 @@ const LoginPage: React.FC = () => {
   // Show loading while checking auth status
   if (isLoading) {
     return (
-      <Layout
-        title="Login | CodeRacer"
-        description="Login to CodeRacer to start competing in real-time coding challenges"
-      >
+      <>
+        <Head>
+          <title>Login | CodeRacer</title>
+          <meta
+            name="description"
+            content="Login to CodeRacer to start competing in real-time coding challenges"
+          />
+        </Head>
         <div className="flex w-full min-h-[calc(100vh-80px)] items-center justify-center">
           <Loader variant="spinner" size="lg" />
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout
-      title="Login | CodeRacer"
-      description="Login to CodeRacer to start competing in real-time coding challenges"
-    >
+    <>
+      <Head>
+        <title>Login | CodeRacer</title>
+        <meta
+          name="description"
+          content="Login to CodeRacer to start competing in real-time coding challenges"
+        />
+      </Head>
       <div className="flex w-full min-h-[calc(100vh-80px)]">
         {/* Left Column - Form */}
         <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col items-center justify-center">
@@ -99,7 +107,7 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 

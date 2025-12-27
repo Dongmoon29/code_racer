@@ -1,6 +1,6 @@
 import React from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
-import Layout from '../../components/layout/Layout';
 import { GameRoom } from '../../components/dynamic';
 import { Loader } from '../../components/ui/Loader';
 import { Button } from '@/components/ui/Button';
@@ -18,11 +18,15 @@ const GamePage: React.FC = () => {
   // 인증 로딩 중이거나 게임 ID가 로드되지 않은 경우
   if (isAuthLoading || !id) {
     return (
-      <Layout title="Loading... | Code Racer" description="Loading game...">
+      <>
+        <Head>
+          <title>Loading... | Code Racer</title>
+          <meta name="description" content="Loading game..." />
+        </Head>
         <div className="flex justify-center items-center h-64 text-[var(--color-text)]">
           <Loader variant="spinner" size="lg" />
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -32,7 +36,11 @@ const GamePage: React.FC = () => {
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   ) {
     return (
-      <Layout title="Invalid Game | Code Racer" description="Invalid game ID">
+      <>
+        <Head>
+          <title>Invalid Game | Code Racer</title>
+          <meta name="description" content="Invalid game ID" />
+        </Head>
         <div className="max-w-2xl mx-auto p-6">
           <Alert variant="error">
             <AlertTitle className="text-lg font-semibold text-[var(--color-text)]">
@@ -50,21 +58,22 @@ const GamePage: React.FC = () => {
             </AlertDescription>
           </Alert>
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout
-      title="Game Room | Code Racer"
-      description="Compete in real-time coding challenge"
-    >
+    <>
+      <Head>
+        <title>Game Room | Code Racer</title>
+        <meta name="description" content="Compete in real-time coding challenge" />
+      </Head>
       <div className="w-full min-h-screen bg-[var(--color-background)] text-[var(--color-text)]">
         <div className="mx-auto px-4 py-6">
           <GameRoom gameId={id} />
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 

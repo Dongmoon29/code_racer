@@ -3,7 +3,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
-import Layout from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '@/stores/authStore';
 import { GetServerSideProps } from 'next';
@@ -99,11 +98,6 @@ const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
         keywords="coding competition, programming practice, real-time coding, algorithm challenges, coding skills, programming race"
         structuredData={[websiteStructuredData, softwareAppStructuredData]}
       />
-      <Layout
-        title="Code Racer - Real-time Coding Competitions"
-        description="Improve your coding skills by competing with friends in real-time"
-        contributors={contributors}
-      >
         {/* Full Page Container with Fixed Background */}
         <div className="relative w-full min-h-screen">
           {/* Fixed Background Image */}
@@ -299,7 +293,6 @@ const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
             </section>
           </div>
         </div>
-      </Layout>
     </>
   );
 };

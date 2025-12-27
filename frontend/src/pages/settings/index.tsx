@@ -1,11 +1,10 @@
 import React from 'react';
 import Head from 'next/head';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const SettingsPage: React.FC = () => {
   return (
-    <DashboardLayout>
+    <>
       <Head>
         <title>Settings - CodeRacer</title>
         <meta
@@ -43,7 +42,7 @@ const SettingsPage: React.FC = () => {
           </section>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

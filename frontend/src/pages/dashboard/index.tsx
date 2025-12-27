@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { ProfileSidebar, GameHistory } from '@/components/profile';
@@ -65,34 +64,30 @@ const DashboardIndex = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="py-8">
-          <div className="flex items-center justify-center">
-            <Loader variant="spinner" />
-          </div>
+      <div className="py-8">
+        <div className="flex items-center justify-center">
+          <Loader variant="spinner" />
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <DashboardLayout>
-        <div className="py-8">
-          <div className="flex items-center justify-center">
-            <div className="text-lg text-red-600">
-              Failed to load user information
-            </div>
+      <div className="py-8">
+        <div className="flex items-center justify-center">
+          <div className="text-lg text-[var(--red-9)]">
+            Failed to load user information
           </div>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   const recentGames = user?.recent_games;
 
   return (
-    <DashboardLayout>
+    <>
       <Head>
         <title>My Profile - CodeRacer</title>
         <meta
@@ -116,7 +111,7 @@ const DashboardIndex = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 
