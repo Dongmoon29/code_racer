@@ -37,15 +37,15 @@ export const Loader: React.FC<LoaderProps> = ({
   const renderSpinner = () => {
     const colorClass =
       spinnerColor ||
-      (variant === 'fullscreen'
-        ? 'border-orange-500'
-        : 'border-t-blue-500 border-b-blue-500 border-r-transparent border-l-transparent');
+      'border-t-blue-500 border-b-blue-500 border-r-transparent border-l-transparent';
 
     if (variant === 'inline') {
       // SVG spinner for inline use
       return (
         <svg
-          className={`animate-spin ${config.spinner.replace('border-2', 'w-4 h-4').replace('border-3', 'w-6 h-6')} ${className}`}
+          className={`animate-spin ${config.spinner
+            .replace('border-2', 'w-4 h-4')
+            .replace('border-3', 'w-6 h-6')} ${className}`}
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -103,4 +103,3 @@ export const Loader: React.FC<LoaderProps> = ({
 };
 
 export default Loader;
-
