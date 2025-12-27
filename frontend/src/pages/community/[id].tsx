@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { communityApi, communityCommentApi } from '@/lib/api';
+import { ROUTES } from '@/lib/router';
 import {
   ArrowDown,
   ArrowUp,
@@ -12,6 +13,8 @@ import {
   MessageSquare,
   MoreVertical,
   Send,
+  ThumbsDown,
+  ThumbsUp,
   Trash2,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
@@ -76,6 +79,8 @@ interface CommentItemProps {
   deleteCommentMutation: ReturnType<typeof useMutation>;
   createCommentMutation: ReturnType<typeof useMutation>;
   depth: number;
+  collapsedComments: Set<string>;
+  toggleCollapse: (commentId: string) => void;
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({
@@ -96,52 +101,49 @@ const CommentItem: React.FC<CommentItemProps> = ({
   deleteCommentMutation,
   createCommentMutation,
   depth,
+  collapsedComments,
+  toggleCollapse,
 }) => {
   const isNested = depth > 0;
-  const textSize = isNested ? 'text-xs' : 'text-sm';
-  const iconSize = isNested ? 'w-3 h-3' : 'w-3.5 h-3.5';
-  const avatarSize = isNested ? 18 : 20;
+  const textSize = isNested ? 'text-sm' : 'text-base';
+  const iconSize = 'w-4 h-4';
+  const avatarSize = isNested ? 32 : 40;
   const score = comment.score ?? 0;
   const myVote = comment.my_vote ?? 0;
   const canVote = !!currentUserId;
+  const isCollapsed = collapsedComments.has(comment.id);
+  const hasReplies = comment.replies && comment.replies.length > 0;
 
   return (
-    <div className="flex gap-2 hover:bg-[var(--gray-2)] rounded-md p-1 -ml-1">
-      {/* Vote Column */}
-      <div className="flex flex-col items-center gap-1 pt-1">
-        <button
-          className={`p-1 rounded transition-colors ${
-            myVote === 1
-              ? 'text-[var(--accent-9)]'
-              : 'text-[var(--gray-11)] hover:text-[var(--accent-9)] hover:bg-[var(--gray-4)]'
-          }`}
-          title={canVote ? 'Upvote' : 'Login to vote'}
-          disabled={!canVote || voteCommentMutation.isPending}
-          onClick={() => {
-            const next: -1 | 0 | 1 = myVote === 1 ? 0 : 1;
-            voteCommentMutation.mutate({ commentId: comment.id, value: next });
-          }}
+    <div className={`flex gap-3 ${isNested ? 'ml-1' : ''}`}>
+      {/* Profile Image */}
+      <div className="flex-shrink-0">
+        <Link
+          href={comment.user?.id ? ROUTES.USER_PROFILE(comment.user.id) : '#'}
+          className="block"
         >
-          <ArrowUp className={iconSize} />
-        </button>
-        <span className="text-xs font-medium text-[var(--color-text)] min-w-[16px] text-center">
-          {score}
-        </span>
-        <button
-          className={`p-1 rounded transition-colors ${
-            myVote === -1
-              ? 'text-red-500'
-              : 'text-[var(--gray-11)] hover:text-red-500 hover:bg-[var(--gray-4)]'
-          }`}
-          title={canVote ? 'Downvote' : 'Login to vote'}
-          disabled={!canVote || voteCommentMutation.isPending}
-          onClick={() => {
-            const next: -1 | 0 | 1 = myVote === -1 ? 0 : -1;
-            voteCommentMutation.mutate({ commentId: comment.id, value: next });
-          }}
-        >
-          <ArrowDown className={iconSize} />
-        </button>
+          {comment.user?.profile_image ? (
+            <Image
+              src={comment.user.profile_image}
+              alt={comment.user.name}
+              width={avatarSize}
+              height={avatarSize}
+              className="rounded-full"
+              unoptimized
+            />
+          ) : (
+            <div
+              className="rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white font-semibold"
+              style={{
+                width: avatarSize,
+                height: avatarSize,
+                fontSize: avatarSize * 0.4,
+              }}
+            >
+              {comment.user?.name?.[0] || 'U'}
+            </div>
+          )}
+        </Link>
       </div>
 
       <div className="flex-1 min-w-0">
@@ -173,7 +175,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
                     });
                   }
                 }}
-                disabled={!editCommentContent.trim() || updateCommentMutation.isPending}
+                disabled={
+                  !editCommentContent.trim() || updateCommentMutation.isPending
+                }
                 className="px-3 py-1 text-sm bg-[var(--accent-9)] text-white rounded-md hover:bg-[var(--accent-10)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {updateCommentMutation.isPending ? 'Updating...' : 'Update'}
@@ -182,48 +186,87 @@ const CommentItem: React.FC<CommentItemProps> = ({
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-2 mb-1">
-              {comment.user?.profile_image ? (
-                <Image
-                  src={comment.user.profile_image}
-                  alt={comment.user.name}
-                  width={avatarSize}
-                  height={avatarSize}
-                  className="rounded-full"
-                  unoptimized
-                />
-              ) : (
-                <div
-                  className="rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-xs"
-                  style={{ width: avatarSize, height: avatarSize }}
+            {/* User Info and Comment Content */}
+            <div className="mb-2">
+              <div className="flex items-center gap-2 mb-1">
+                <Link
+                  href={
+                    comment.user?.id
+                      ? ROUTES.USER_PROFILE(comment.user.id)
+                      : '#'
+                  }
+                  className="font-semibold text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors"
                 >
-                  {comment.user?.name?.[0] || 'U'}
-                </div>
-              )}
-              <span className={`font-medium ${isNested ? 'text-xs' : 'text-sm'} text-[var(--color-text)]`}>
-                {comment.user?.name || 'Anonymous'}
-              </span>
-              <span className="text-xs text-[var(--gray-11)]">
-                {new Date(comment.created_at).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </span>
+                  {comment.user?.name || 'Anonymous'}
+                </Link>
+                <span className="text-sm text-[var(--gray-11)]">
+                  {new Date(comment.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year:
+                      new Date(comment.created_at).getFullYear() !==
+                      new Date().getFullYear()
+                        ? 'numeric'
+                        : undefined,
+                  })}
+                </span>
+              </div>
+              <p
+                className={`${textSize} text-[var(--color-text)] whitespace-pre-wrap`}
+              >
+                {comment.content}
+              </p>
             </div>
 
-            <p className={`${textSize} text-[var(--color-text)] whitespace-pre-wrap mb-2`}>
-              {comment.content}
-            </p>
-
-            <div className="flex items-center gap-4 text-xs text-[var(--gray-11)]">
+            {/* Action Buttons */}
+            <div className="flex items-center gap-6 mb-2">
+              <button
+                onClick={() => {
+                  const next: -1 | 0 | 1 = myVote === 1 ? 0 : 1;
+                  voteCommentMutation.mutate({
+                    commentId: comment.id,
+                    value: next,
+                  });
+                }}
+                className={`flex items-center gap-2 transition-colors ${
+                  myVote === 1
+                    ? 'text-[var(--accent-9)]'
+                    : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
+                }`}
+                title={canVote ? 'Like' : 'Login to like'}
+                disabled={!canVote || voteCommentMutation.isPending}
+              >
+                <ThumbsUp className={iconSize} />
+                <span className="text-sm font-medium">
+                  {score > 0 ? score : ''}
+                </span>
+              </button>
+              <button
+                onClick={() => {
+                  const next: -1 | 0 | 1 = myVote === -1 ? 0 : -1;
+                  voteCommentMutation.mutate({
+                    commentId: comment.id,
+                    value: next,
+                  });
+                }}
+                className={`flex items-center gap-2 transition-colors ${
+                  myVote === -1
+                    ? 'text-red-500'
+                    : 'text-[var(--gray-11)] hover:text-red-500'
+                }`}
+                title={canVote ? 'Dislike' : 'Login to dislike'}
+                disabled={!canVote || voteCommentMutation.isPending}
+              >
+                <ThumbsDown className={iconSize} />
+              </button>
               <button
                 onClick={() =>
                   setReplyingTo(replyingTo === comment.id ? null : comment.id)
                 }
-                className="flex items-center gap-1 hover:text-[var(--accent-9)] transition-colors font-medium"
+                className="flex items-center gap-2 text-[var(--gray-11)] hover:text-[var(--accent-9)] transition-colors"
               >
                 <MessageSquare className={iconSize} />
-                Reply
+                <span className="text-sm font-medium">Reply</span>
               </button>
 
               {currentUserId === comment.user_id && (
@@ -238,7 +281,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   </button>
                   <button
                     onClick={() => {
-                      if (confirm('Are you sure you want to delete this comment?')) {
+                      if (
+                        confirm('Are you sure you want to delete this comment?')
+                      ) {
                         deleteCommentMutation.mutate(comment.id);
                       }
                     }}
@@ -295,7 +340,10 @@ const CommentItem: React.FC<CommentItemProps> = ({
                         });
                       }
                     }}
-                    disabled={!replyInputs[comment.id]?.trim() || createCommentMutation.isPending}
+                    disabled={
+                      !replyInputs[comment.id]?.trim() ||
+                      createCommentMutation.isPending
+                    }
                     className="px-3 py-1 text-sm bg-[var(--accent-9)] text-white rounded-md hover:bg-[var(--accent-10)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {createCommentMutation.isPending ? 'Replying...' : 'Reply'}
@@ -304,31 +352,49 @@ const CommentItem: React.FC<CommentItemProps> = ({
               </div>
             )}
 
-            {comment.replies && comment.replies.length > 0 && (
-              <div className="ml-4 mt-2 border-l border-[var(--gray-6)] pl-3 space-y-1">
+            {/* Replies */}
+            {hasReplies && !isCollapsed && comment.replies && (
+              <div className="mt-4 space-y-4">
                 {comment.replies.map((r) => (
-                  <CommentItem
-                    key={r.id}
-                    comment={r}
-                    postId={postId}
-                    currentUserId={currentUserId}
-                    replyingTo={replyingTo}
-                    setReplyingTo={setReplyingTo}
-                    replyInputs={replyInputs}
-                    setReplyInputs={setReplyInputs}
-                    editingComment={editingComment}
-                    editCommentContent={editCommentContent}
-                    setEditCommentContent={setEditCommentContent}
-                    setEditingComment={setEditingComment}
-                    onCommentEdit={onCommentEdit}
-                    voteCommentMutation={voteCommentMutation}
-                    updateCommentMutation={updateCommentMutation}
-                    deleteCommentMutation={deleteCommentMutation}
-                    createCommentMutation={createCommentMutation}
-                    depth={depth + 1}
-                  />
+                  <div key={r.id} className="relative">
+                    {/* Vertical line for nested comments */}
+                    {isNested && (
+                      <div className="absolute left-[-4px] top-0 bottom-0 w-[2px] bg-[var(--gray-6)]" />
+                    )}
+                    <CommentItem
+                      comment={r}
+                      postId={postId}
+                      currentUserId={currentUserId}
+                      replyingTo={replyingTo}
+                      setReplyingTo={setReplyingTo}
+                      replyInputs={replyInputs}
+                      setReplyInputs={setReplyInputs}
+                      editingComment={editingComment}
+                      editCommentContent={editCommentContent}
+                      setEditCommentContent={setEditCommentContent}
+                      setEditingComment={setEditingComment}
+                      onCommentEdit={onCommentEdit}
+                      voteCommentMutation={voteCommentMutation}
+                      updateCommentMutation={updateCommentMutation}
+                      deleteCommentMutation={deleteCommentMutation}
+                      createCommentMutation={createCommentMutation}
+                      depth={depth + 1}
+                      collapsedComments={collapsedComments}
+                      toggleCollapse={toggleCollapse}
+                    />
+                  </div>
                 ))}
               </div>
+            )}
+            {hasReplies && isCollapsed && comment.replies && (
+              <button
+                onClick={() => toggleCollapse(comment.id)}
+                className="mt-2 flex items-center gap-1 text-sm text-[var(--accent-9)] hover:text-[var(--accent-10)] transition-colors font-medium"
+              >
+                <MessageSquare className="w-4 h-4" />
+                {comment.replies.length}{' '}
+                {comment.replies.length === 1 ? 'reply' : 'replies'}
+              </button>
             )}
           </>
         )}
@@ -374,12 +440,37 @@ const CommunityPostPage = () => {
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editCommentContent, setEditCommentContent] = useState('');
+  const [collapsedComments, setCollapsedComments] = useState<Set<string>>(
+    new Set()
+  );
+
+  const toggleCollapse = (commentId: string) => {
+    setCollapsedComments((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(commentId)) {
+        newSet.delete(commentId);
+      } else {
+        newSet.add(commentId);
+      }
+      return newSet;
+    });
+  };
 
   const createCommentMutation = useMutation({
-    mutationFn: (payload: { postId: string; content: string; parentId?: string }) =>
-      communityCommentApi.create(payload.postId, payload.content, payload.parentId),
+    mutationFn: (payload: {
+      postId: string;
+      content: string;
+      parentId?: string;
+    }) =>
+      communityCommentApi.create(
+        payload.postId,
+        payload.content,
+        payload.parentId
+      ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['communityComments', postId] });
+      queryClient.invalidateQueries({
+        queryKey: ['communityComments', postId],
+      });
       queryClient.invalidateQueries({ queryKey: ['communityPost', postId] });
       setCommentInput('');
       setReplyingTo(null);
@@ -390,7 +481,9 @@ const CommunityPostPage = () => {
     mutationFn: (payload: { commentId: string; value: -1 | 0 | 1 }) =>
       communityCommentApi.vote(payload.commentId, payload.value),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['communityComments', postId] });
+      queryClient.invalidateQueries({
+        queryKey: ['communityComments', postId],
+      });
     },
   });
 
@@ -398,7 +491,9 @@ const CommunityPostPage = () => {
     mutationFn: (payload: { commentId: string; content: string }) =>
       communityCommentApi.update(payload.commentId, payload.content),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['communityComments', postId] });
+      queryClient.invalidateQueries({
+        queryKey: ['communityComments', postId],
+      });
       setEditingComment(null);
       setEditCommentContent('');
     },
@@ -407,7 +502,9 @@ const CommunityPostPage = () => {
   const deleteCommentMutation = useMutation({
     mutationFn: (commentId: string) => communityCommentApi.delete(commentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['communityComments', postId] });
+      queryClient.invalidateQueries({
+        queryKey: ['communityComments', postId],
+      });
       queryClient.invalidateQueries({ queryKey: ['communityPost', postId] });
     },
   });
@@ -432,16 +529,22 @@ const CommunityPostPage = () => {
   return (
     <>
       <Head>
-        <title>{post?.title ? `${post.title} - Community` : 'Community Post'}</title>
+        <title>
+          {post?.title ? `${post.title} - Community` : 'Community Post'}
+        </title>
       </Head>
 
       <div className="max-w-4xl mx-auto py-8">
         {breadcrumbs}
 
         {postLoading ? (
-          <div className="text-center py-10 text-[var(--gray-11)]">Loading...</div>
+          <div className="text-center py-10 text-[var(--gray-11)]">
+            Loading...
+          </div>
         ) : !post ? (
-          <div className="text-center py-10 text-[var(--gray-11)]">Post not found.</div>
+          <div className="text-center py-10 text-[var(--gray-11)]">
+            Post not found.
+          </div>
         ) : (
           <>
             <div className="bg-[var(--color-panel)] border border-[var(--gray-6)] rounded-lg p-5">
@@ -488,23 +591,30 @@ const CommunityPostPage = () => {
                     {post.title}
                   </h1>
                   <div className="flex items-center gap-2 text-sm text-[var(--gray-11)] mb-4">
-                    {post.user?.profile_image ? (
-                      <Image
-                        src={post.user.profile_image}
-                        alt={post.user.name}
-                        width={20}
-                        height={20}
-                        className="w-5 h-5 rounded-full"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-xs">
-                        {post.user?.name?.[0] || 'U'}
-                      </div>
-                    )}
-                    <span className="font-medium text-[var(--color-text)]">
-                      {post.user?.name || 'Anonymous'}
-                    </span>
+                    <Link
+                      href={
+                        post.user?.id ? ROUTES.USER_PROFILE(post.user.id) : '#'
+                      }
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    >
+                      {post.user?.profile_image ? (
+                        <Image
+                          src={post.user.profile_image}
+                          alt={post.user.name}
+                          width={20}
+                          height={20}
+                          className="w-5 h-5 rounded-full"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-xs">
+                          {post.user?.name?.[0] || 'U'}
+                        </div>
+                      )}
+                      <span className="font-medium text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors">
+                        {post.user?.name || 'Anonymous'}
+                      </span>
+                    </Link>
                     <span>•</span>
                     <span>
                       {new Date(post.created_at).toLocaleDateString('en-US', {
@@ -512,6 +622,11 @@ const CommunityPostPage = () => {
                         day: 'numeric',
                         year: 'numeric',
                       })}
+                    </span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <ThumbsUp className="w-3.5 h-3.5" />
+                      {score}
                     </span>
                     <span>•</span>
                     <span>{post.comment_count} comments</span>
@@ -544,11 +659,15 @@ const CommunityPostPage = () => {
                       createCommentMutation.mutate({ postId, content });
                     }
                   }}
-                  disabled={!commentInput.trim() || createCommentMutation.isPending}
+                  disabled={
+                    !commentInput.trim() || createCommentMutation.isPending
+                  }
                   className="px-4 py-2 bg-[var(--accent-9)] text-white rounded-md hover:bg-[var(--accent-10)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
                   <Send className="w-4 h-4" />
-                  {createCommentMutation.isPending ? 'Posting...' : 'Post Comment'}
+                  {createCommentMutation.isPending
+                    ? 'Posting...'
+                    : 'Post Comment'}
                 </button>
               </div>
             </div>
@@ -559,9 +678,13 @@ const CommunityPostPage = () => {
                 Thread
               </h2>
               {commentsLoading ? (
-                <div className="text-center py-6 text-[var(--gray-11)]">Loading...</div>
+                <div className="text-center py-6 text-[var(--gray-11)]">
+                  Loading...
+                </div>
               ) : comments.length === 0 ? (
-                <div className="text-center py-6 text-[var(--gray-11)]">No comments yet.</div>
+                <div className="text-center py-6 text-[var(--gray-11)]">
+                  No comments yet.
+                </div>
               ) : (
                 <div className="space-y-2">
                   {comments.map((comment) => (
@@ -587,6 +710,8 @@ const CommunityPostPage = () => {
                       deleteCommentMutation={deleteCommentMutation}
                       createCommentMutation={createCommentMutation}
                       depth={0}
+                      collapsedComments={collapsedComments}
+                      toggleCollapse={toggleCollapse}
                     />
                   ))}
                 </div>
@@ -600,5 +725,3 @@ const CommunityPostPage = () => {
 };
 
 export default CommunityPostPage;
-
-

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { communityApi } from '@/lib/api';
+import { ROUTES } from '@/lib/router';
 import {
   ArrowDown,
   ArrowUp,
@@ -363,23 +364,28 @@ const CommunityIndexPage = () => {
 
                       <div className="flex items-center gap-3 mt-3 text-xs text-[var(--gray-11)]">
                         <div className="flex items-center gap-2">
-                          {post.user?.profile_image ? (
-                            <Image
-                              src={post.user.profile_image}
-                              alt={post.user.name}
-                              width={18}
-                              height={18}
-                              className="w-[18px] h-[18px] rounded-full"
-                              unoptimized
-                            />
-                          ) : (
-                            <div className="w-[18px] h-[18px] rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-[10px]">
-                              {post.user?.name?.[0] || 'U'}
-                            </div>
-                          )}
-                          <span className="font-medium text-[var(--color-text)]">
-                            {post.user?.name || 'Anonymous'}
-                          </span>
+                          <Link
+                            href={post.user?.id ? ROUTES.USER_PROFILE(post.user.id) : '#'}
+                            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                          >
+                            {post.user?.profile_image ? (
+                              <Image
+                                src={post.user.profile_image}
+                                alt={post.user.name}
+                                width={18}
+                                height={18}
+                                className="w-[18px] h-[18px] rounded-full"
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="w-[18px] h-[18px] rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-[10px]">
+                                {post.user?.name?.[0] || 'U'}
+                              </div>
+                            )}
+                            <span className="font-medium text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors">
+                              {post.user?.name || 'Anonymous'}
+                            </span>
+                          </Link>
                           <span>
                             {new Date(post.created_at).toLocaleDateString(
                               'en-US',
