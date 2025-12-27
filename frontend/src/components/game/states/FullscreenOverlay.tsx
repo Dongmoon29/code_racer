@@ -123,7 +123,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
               transition: isDescriptionExpanded ? 'none' : 'all 300ms',
             }}
           >
-            <div className="flex-1 min-h-0 overflow-hidden p-2">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <ProblemDetailsPane
                 isExpanded={isDescriptionExpanded}
                 title={problemTitle}
@@ -149,7 +149,7 @@ export const FullscreenOverlay: FC<FullscreenOverlayProps> = memo(
             </div>
           )}
 
-          <div className="flex-1 p-2 min-h-0 overflow-hidden relative">
+          <div className="flex-1 min-h-0 overflow-hidden relative">
             <ProblemEditorSplit
               myCode={myCode}
               opponentCode={isSinglePlayerMode ? '' : opponentCode}
