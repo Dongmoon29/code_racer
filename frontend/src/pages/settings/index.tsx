@@ -18,13 +18,9 @@ const SettingsPage: React.FC = () => {
       <div className={LAYOUT_PADDING.PAGE_VERTICAL}>
         <div className={cn(LAYOUT_WIDTH.CONTAINER_SMALL, 'space-y-6')}>
           <div>
-            <h1 className="text-2xl font-semibold text-[var(--color-text)]">
+            <h1 className="text-3xl font-bold text-[var(--color-text)] mb-2">
               Settings
             </h1>
-            <p className="mt-1 text-sm text-[var(--gray-11)]">
-              Personalize your experience. You can change the theme here and
-              more options will be added soon.
-            </p>
           </div>
 
           <section className="bg-card rounded-lg border p-6">
@@ -49,5 +45,3 @@ const SettingsPage: React.FC = () => {
 };
 
 export default SettingsPage;
-
-
