@@ -23,7 +23,7 @@ func NewCommunityController(communityService interfaces.CommunityService, logger
 }
 
 // CreatePost creates a new post
-// POST /api/feedback
+// POST /api/community
 func (c *CommunityController) CreatePost(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
@@ -47,7 +47,7 @@ func (c *CommunityController) CreatePost(ctx *gin.Context) {
 }
 
 // GetPost gets a post by ID
-// GET /api/feedback/:id
+// GET /api/community/:id
 func (c *CommunityController) GetPost(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
@@ -71,7 +71,7 @@ func (c *CommunityController) GetPost(ctx *gin.Context) {
 }
 
 // GetUserPosts gets all posts by the current user
-// GET /api/feedback/my
+// GET /api/community/my
 func (c *CommunityController) GetUserPosts(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
@@ -109,7 +109,7 @@ func (c *CommunityController) GetUserPosts(ctx *gin.Context) {
 }
 
 // ListPosts lists all posts
-// GET /api/feedback
+// GET /api/community
 func (c *CommunityController) ListPosts(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
@@ -165,7 +165,7 @@ func (c *CommunityController) ListPosts(ctx *gin.Context) {
 }
 
 // VotePost votes on a post: 1(upvote), -1(downvote), 0(remove)
-// POST /api/feedback/:id/vote
+// POST /api/community/:id/vote
 func (c *CommunityController) VotePost(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
@@ -195,7 +195,7 @@ func (c *CommunityController) VotePost(ctx *gin.Context) {
 }
 
 // UpdatePostStatus updates the status of a post (admin only)
-// PATCH /api/feedback/:id/status
+// PATCH /api/community/:id/status
 func (c *CommunityController) UpdatePostStatus(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
@@ -222,7 +222,7 @@ func (c *CommunityController) UpdatePostStatus(ctx *gin.Context) {
 }
 
 // DeletePost deletes a post (admin only)
-// DELETE /api/feedback/:id
+// DELETE /api/community/:id
 func (c *CommunityController) DeletePost(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {

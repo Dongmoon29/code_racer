@@ -428,7 +428,7 @@ export const communityApi = {
     title: string,
     content: string
   ) => {
-    const response = await api.post('/feedback', {
+    const response = await api.post('/community', {
       type,
       title,
       content,
@@ -459,7 +459,7 @@ export const communityApi = {
     if (status) params.status = status;
     if (type) params.type = type;
 
-    const response = await api.get('/feedback', { params });
+    const response = await api.get('/community', { params });
     return response.data as {
       success: boolean;
       data: {
@@ -490,7 +490,7 @@ export const communityApi = {
   },
 
   getMyPosts: async (limit = 20, offset = 0) => {
-    const response = await api.get('/feedback/my', {
+    const response = await api.get('/community/my', {
       params: { limit, offset },
     });
     return response.data as {
@@ -514,7 +514,7 @@ export const communityApi = {
   },
 
   getPost: async (id: string) => {
-    const response = await api.get(`/feedback/${id}`);
+    const response = await api.get(`/community/${id}`);
     return response.data as {
       success: boolean;
       data: {
@@ -540,7 +540,7 @@ export const communityApi = {
   },
 
   vote: async (id: string, value: -1 | 0 | 1) => {
-    const response = await api.post(`/feedback/${id}/vote`, { value });
+    const response = await api.post(`/community/${id}/vote`, { value });
     return response.data as {
       success: boolean;
       data: {
@@ -572,7 +572,7 @@ export const communityCommentApi = {
     if (parentId) {
       body.parent_id = parentId;
     }
-    const response = await api.post(`/feedback/comments/${postId}`, body);
+    const response = await api.post(`/community/comments/${postId}`, body);
     return response.data as {
       success: boolean;
       data: {
@@ -602,7 +602,7 @@ export const communityCommentApi = {
     if (withReplies) {
       params.withReplies = 'true';
     }
-    const response = await api.get(`/feedback/comments/${postId}`, {
+    const response = await api.get(`/community/comments/${postId}`, {
       params,
     });
     return response.data as {
@@ -650,7 +650,7 @@ export const communityCommentApi = {
   },
 
   vote: async (commentId: string, value: -1 | 0 | 1) => {
-    const response = await api.post(`/feedback/comments/vote/${commentId}`, {
+    const response = await api.post(`/community/comments/vote/${commentId}`, {
       value,
     });
     return response.data as {
@@ -676,7 +676,7 @@ export const communityCommentApi = {
   },
 
   update: async (commentId: string, content: string) => {
-    const response = await api.put(`/feedback/comments/${commentId}`, {
+    const response = await api.put(`/community/comments/${commentId}`, {
       content,
     });
     return response.data as {
@@ -699,7 +699,7 @@ export const communityCommentApi = {
   },
 
   delete: async (commentId: string) => {
-    const response = await api.delete(`/feedback/comments/${commentId}`);
+    const response = await api.delete(`/community/comments/${commentId}`);
     return response.data as {
       success: boolean;
       message: string;

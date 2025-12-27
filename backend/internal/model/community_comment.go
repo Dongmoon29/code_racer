@@ -13,6 +13,9 @@ type PostComment struct {
 	UserID    uuid.UUID  `gorm:"type:uuid;not null" json:"user_id"`
 	ParentID  *uuid.UUID `gorm:"type:uuid" json:"parent_id,omitempty"`
 	Content   string     `gorm:"type:text;not null" json:"content"`
+	ThreadID  uuid.UUID  `gorm:"type:uuid;not null" json:"thread_id"`
+	Depth     int         `gorm:"type:integer;not null;default:0" json:"depth"`
+	Path      string      `gorm:"type:text" json:"path"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 
@@ -24,6 +27,7 @@ type PostComment struct {
 	Post    Post           `gorm:"foreignKey:PostID;references:ID" json:"post,omitempty"`
 	User    User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Parent  *PostComment   `gorm:"foreignKey:ParentID;references:ID" json:"parent,omitempty"`
+	Thread  *PostComment   `gorm:"foreignKey:ThreadID;references:ID" json:"thread,omitempty"`
 	Replies []*PostComment `gorm:"foreignKey:ParentID" json:"replies,omitempty"`
 }
 
@@ -51,6 +55,9 @@ type PostCommentResponse struct {
 	PostID    uuid.UUID              `json:"post_id"`
 	UserID    uuid.UUID              `json:"user_id"`
 	ParentID  *uuid.UUID             `json:"parent_id,omitempty"`
+	ThreadID  uuid.UUID              `json:"thread_id"`
+	Depth     int                    `json:"depth"`
+	Path      string                 `json:"path"`
 	User      *UserResponse          `json:"user,omitempty"`
 	Content   string                 `json:"content"`
 	Score     int64                  `json:"score"`
@@ -66,6 +73,9 @@ func (pc *PostComment) ToResponse() *PostCommentResponse {
 		PostID:    pc.PostID,
 		UserID:    pc.UserID,
 		ParentID:  pc.ParentID,
+		ThreadID:  pc.ThreadID,
+		Depth:     pc.Depth,
+		Path:      pc.Path,
 		Content:   pc.Content,
 		Score:     pc.Score,
 		MyVote:    pc.MyVote,

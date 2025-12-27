@@ -23,7 +23,7 @@ func NewPostCommentController(commentService interfaces.PostCommentService, logg
 }
 
 // CreateComment creates a new comment on a post
-// POST /api/feedback/comments/:feedbackId
+// POST /api/community/comments/:postId
 func (c *PostCommentController) CreateComment(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
@@ -31,7 +31,7 @@ func (c *PostCommentController) CreateComment(ctx *gin.Context) {
 		return
 	}
 
-	postID, err := uuid.Parse(ctx.Param("feedbackId"))
+	postID, err := uuid.Parse(ctx.Param("postId"))
 	if err != nil {
 		BadRequest(ctx, "Invalid post ID")
 		return
@@ -53,7 +53,7 @@ func (c *PostCommentController) CreateComment(ctx *gin.Context) {
 }
 
 // GetComments gets all comments for a post
-// GET /api/feedback/comments/:feedbackId
+// GET /api/community/comments/:postId
 func (c *PostCommentController) GetComments(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
@@ -61,7 +61,7 @@ func (c *PostCommentController) GetComments(ctx *gin.Context) {
 		return
 	}
 
-	postID, err := uuid.Parse(ctx.Param("feedbackId"))
+	postID, err := uuid.Parse(ctx.Param("postId"))
 	if err != nil {
 		BadRequest(ctx, "Invalid post ID")
 		return
@@ -111,7 +111,7 @@ func (c *PostCommentController) GetComments(ctx *gin.Context) {
 }
 
 // VoteComment votes on a comment: 1(upvote), -1(downvote), 0(remove)
-// POST /api/feedback/comments/:id/vote
+// POST /api/community/comments/vote/:id
 func (c *PostCommentController) VoteComment(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
@@ -141,7 +141,7 @@ func (c *PostCommentController) VoteComment(ctx *gin.Context) {
 }
 
 // UpdateComment updates a comment
-// PUT /api/feedback/comments/:id
+// PUT /api/community/comments/:id
 func (c *PostCommentController) UpdateComment(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
@@ -174,7 +174,7 @@ func (c *PostCommentController) UpdateComment(ctx *gin.Context) {
 }
 
 // DeleteComment deletes a comment
-// DELETE /api/feedback/comments/:id
+// DELETE /api/community/comments/:id
 func (c *PostCommentController) DeleteComment(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {

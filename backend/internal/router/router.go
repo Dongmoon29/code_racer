@@ -138,7 +138,7 @@ func Setup(
 			}
 
 			// Community routes (community board)
-			community := secured.Group("/feedback") // Keep API path as /feedback for backward compatibility
+			community := secured.Group("/community")
 			{
 				// Public routes - all authenticated users can view and create
 				community.POST("", communityController.CreatePost)
@@ -150,11 +150,14 @@ func Setup(
 				// Post comments routes (separate group to avoid wildcard conflict)
 				comments := community.Group("/comments")
 				{
-					comments.GET("/:feedbackId", postCommentController.GetComments)
-					comments.POST("/:feedbackId", postCommentController.CreateComment)
+					// More specific routes first
 					comments.POST("/vote/:id", postCommentController.VoteComment)
 					comments.PUT("/:id", postCommentController.UpdateComment)
 					comments.DELETE("/:id", postCommentController.DeleteComment)
+					
+					// Post-specific routes (must come after specific routes)
+					comments.GET("/:postId", postCommentController.GetComments)
+					comments.POST("/:postId", postCommentController.CreateComment)
 				}
 
 				// Admin-only routes

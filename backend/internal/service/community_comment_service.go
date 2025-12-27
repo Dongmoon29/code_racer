@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
@@ -31,8 +33,19 @@ func (s *postCommentService) CreateComment(userID, postID uuid.UUID, req *model.
 		ParentID: req.ParentID,
 	}
 
-	// If parent_id is provided, verify it exists and belongs to the same post
-	if req.ParentID != nil {
+	// Generate ID before calculating thread fields
+	if comment.ID == uuid.Nil {
+		comment.ID = uuid.New()
+	}
+
+	// Calculate thread_id, depth, and path
+	if req.ParentID == nil {
+		// Top-level comment: thread_id is its own ID, depth is 0, path is its ID
+		comment.ThreadID = comment.ID
+		comment.Depth = 0
+		comment.Path = comment.ID.String()
+	} else {
+		// Nested comment: get parent and calculate based on parent's values
 		parent, err := s.commentRepo.FindByID(*req.ParentID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -43,6 +56,16 @@ func (s *postCommentService) CreateComment(userID, postID uuid.UUID, req *model.
 		if parent.PostID != postID {
 			return nil, apperr.New(apperr.CodeBadRequest, "Parent comment must belong to the same post")
 		}
+
+		// Check for circular reference: if this comment's ID is already in parent's path
+		if strings.Contains(parent.Path, comment.ID.String()) {
+			return nil, apperr.New(apperr.CodeBadRequest, "Circular reference detected: cannot create comment that references itself in the chain")
+		}
+
+		// Set thread fields based on parent
+		comment.ThreadID = parent.ThreadID
+		comment.Depth = parent.Depth + 1
+		comment.Path = fmt.Sprintf("%s/%s", parent.Path, comment.ID.String())
 	}
 
 	if err := s.commentRepo.Create(comment); err != nil {

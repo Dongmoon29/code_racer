@@ -130,16 +130,20 @@ COALESCE((SELECT value FROM post_votes pv2 WHERE pv2.post_id = posts.id AND pv2.
 	case model.PostSortNew:
 		query = query.Order("posts.created_at DESC")
 	case model.PostSortTop:
-		query = query.Order("score DESC").Order("posts.created_at DESC")
+		// Use the full subquery for score in ORDER BY
+		query = query.Order("(SELECT COALESCE(SUM(value), 0) FROM post_votes pv WHERE pv.post_id = posts.id) DESC").Order("posts.created_at DESC")
 	case model.PostSortHot, "":
 		// Simple hot ranking: score / (ageHours + 2)^1.5
+		// Use the full subquery for score in ORDER BY
+		scoreSubquery := "(SELECT COALESCE(SUM(value), 0) FROM post_votes pv WHERE pv.post_id = posts.id)"
 		query = query.
-			Order("(score::float8 / pow((extract(epoch from (now() - posts.created_at)) / 3600) + 2, 1.5)) DESC").
+			Order("(" + scoreSubquery + "::float8 / pow((extract(epoch from (now() - posts.created_at)) / 3600) + 2, 1.5)) DESC").
 			Order("posts.created_at DESC")
 	default:
 		// Fallback to hot
+		scoreSubquery := "(SELECT COALESCE(SUM(value), 0) FROM post_votes pv WHERE pv.post_id = posts.id)"
 		query = query.
-			Order("(score::float8 / pow((extract(epoch from (now() - posts.created_at)) / 3600) + 2, 1.5)) DESC").
+			Order("(" + scoreSubquery + "::float8 / pow((extract(epoch from (now() - posts.created_at)) / 3600) + 2, 1.5)) DESC").
 			Order("posts.created_at DESC")
 	}
 

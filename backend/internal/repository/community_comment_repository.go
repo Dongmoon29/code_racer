@@ -87,7 +87,7 @@ COALESCE((SELECT value FROM post_comment_votes v2 WHERE v2.comment_id = post_com
 		Preload("User").
 		Select(selectSQL, args...).
 		Where("post_id = ?", postID).
-		Order("created_at ASC").
+		Order("path ASC"). // Use path for natural thread ordering
 		Find(&allComments).Error
 	if err != nil {
 		return nil, err
@@ -188,4 +188,37 @@ func (r *postCommentRepository) Update(comment *model.PostComment) error {
 
 func (r *postCommentRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&model.PostComment{}, "id = ?", id).Error
+}
+
+// FindByThreadID returns all comments in a specific thread (by thread_id)
+func (r *postCommentRepository) FindByThreadID(threadID uuid.UUID, viewerID *uuid.UUID) ([]*model.PostComment, error) {
+	var comments []*model.PostComment
+
+	selectSQL := `
+post_comments.*,
+COALESCE((SELECT SUM(value) FROM post_comment_votes v WHERE v.comment_id = post_comments.id), 0) AS score
+`
+	args := []any{}
+	if viewerID != nil {
+		selectSQL += `,
+COALESCE((SELECT value FROM post_comment_votes v2 WHERE v2.comment_id = post_comments.id AND v2.user_id = ?), 0) AS my_vote
+`
+		args = append(args, *viewerID)
+	} else {
+		selectSQL += `,
+0 AS my_vote
+`
+	}
+
+	err := r.db.Model(&model.PostComment{}).
+		Preload("User").
+		Select(selectSQL, args...).
+		Where("thread_id = ?", threadID).
+		Order("path ASC").
+		Find(&comments).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return buildPostCommentTree(comments), nil
 }
