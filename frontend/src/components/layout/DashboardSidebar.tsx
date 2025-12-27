@@ -54,18 +54,15 @@ export function DashboardSidebar({
           isCollapsed ? 'px-3 justify-center' : 'px-3 justify-between'
         )}
       >
-        {isMobile ||
-          (!isMobile && !isCollapsed && (
-            <Link
-              href="/"
-              aria-label="Go to home"
-              className="flex items-center gap-2 cursor-pointer rounded-md"
-            >
-              <div className="h-10 w-10 rounded-lg flex items-center justify-center">
-                <Logo />
-              </div>
-            </Link>
-          ))}
+        <Link
+          href="/"
+          aria-label="Go to home"
+          className="flex items-center gap-2 cursor-pointer rounded-md"
+        >
+          <div className="h-10 w-10 rounded-lg flex items-center justify-center">
+            <Logo />
+          </div>
+        </Link>
         {!isMobile && !isCollapsed && (
           <button
             onClick={onToggle}
