@@ -119,29 +119,37 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
                 </p>
               </div>
               <div>
-                <h3 className="text-lg font-medium mb-2">Examples</h3>
+                <h3 className="text-lg font-medium mb-3">Examples</h3>
                 {examples && examples.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {examples.map((example, index) => (
                       <div
                         key={example.id || index}
-                        className="p-3 rounded text-sm"
+                        className="bg-[var(--gray-2)] border border-[var(--gray-6)] p-4 rounded-md space-y-2"
                       >
-                        <div className="font-medium mb-1">
+                        <div className="font-semibold text-base mb-3">
                           Example {index + 1}:
                         </div>
-                        <div className="mb-1 font-light">
-                          <span className="font-medium">Input:</span>{' '}
-                          {example.input}
+                        <div>
+                          <span className="font-semibold text-sm">Input:</span>
+                          <div className="mt-1 p-2 bg-[var(--gray-3)] rounded border border-[var(--gray-6)] font-mono text-sm">
+                            {example.input}
+                          </div>
                         </div>
-                        <div className="mb-1 font-light">
-                          <span className="font-medium">Output:</span>{' '}
-                          {example.output}
+                        <div>
+                          <span className="font-semibold text-sm">Output:</span>
+                          <div className="mt-1 p-2 bg-[var(--gray-3)] rounded border border-[var(--gray-6)] font-mono text-sm">
+                            {example.output}
+                          </div>
                         </div>
                         {example.explanation && (
-                          <div className="font-light">
-                            <span className="font-medium">Explanation:</span>{' '}
-                            {example.explanation}
+                          <div>
+                            <span className="font-semibold text-sm">
+                              Explanation:
+                            </span>
+                            <div className="mt-1 text-sm text-[var(--gray-12)] leading-relaxed">
+                              {example.explanation}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -154,10 +162,12 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
                 )}
               </div>
               <div>
-                <h3 className="text-lg font-medium mb-2">Constraints</h3>
-                <pre className="p-3 rounded whitespace-pre-wrap text-sm font-light">
-                  {constraints}
-                </pre>
+                <h3 className="text-lg font-medium mb-3">Constraints</h3>
+                <div className="bg-[var(--gray-2)] border border-[var(--gray-6)] p-4 rounded-md">
+                  <pre className="whitespace-pre-wrap text-sm leading-relaxed font-mono">
+                    {constraints}
+                  </pre>
+                </div>
               </div>
             </div>
           ) : (

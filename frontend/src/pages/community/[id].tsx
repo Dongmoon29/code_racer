@@ -115,18 +115,18 @@ const CommentItem: React.FC<CommentItemProps> = ({
   const hasReplies = comment.replies && comment.replies.length > 0;
 
   return (
-    <div className={`flex gap-3 ${isNested ? 'ml-10' : ''} relative`}>
+    <div className={`flex gap-3 ${isNested ? 'ml-5' : ''} relative`}>
       {/* YouTube-style vertical line connector */}
       {isNested && (
         <div
-          className="absolute left-[-40px] top-0 bottom-0 w-10 pointer-events-none"
+          className="absolute left-[-20px] top-0 bottom-0 w-5 pointer-events-none"
           style={{ marginTop: '16px' }}
         >
           {/* Vertical line */}
-          <div className="absolute left-[20px] top-0 bottom-0 w-[1.5px] bg-[var(--gray-6)]" />
+          <div className="absolute left-[10px] top-0 bottom-0 w-[1.5px] bg-[var(--gray-6)]" />
           {/* Horizontal connector to avatar */}
           <div
-            className="absolute top-0 left-[20px] w-[20px] h-[1.5px] bg-[var(--gray-6)]"
+            className="absolute top-0 left-[10px] w-[10px] h-[1.5px] bg-[var(--gray-6)]"
             style={{ marginTop: '16px' }}
           />
         </div>
