@@ -1,8 +1,18 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import WebSocketClient, {
-  WebSocketMessage,
-  CodeUpdateMessage,
+  type WebSocketMessage,
+  type CodeUpdateMessage,
+  isCodeUpdateMessage,
+  isGameFinishedMessage,
+  isErrorMessage,
+  isSubmissionStartedMessage,
+  isSubmissionCompletedMessage,
+  isSubmissionFailedMessage,
+  isTestCaseRunningMessage,
+  isTestCaseCompletedMessage,
+  unwrapSubmissionMessage,
+  unwrapTestCaseMessage,
 } from '@/lib/websocket';
 import { Game, SubmitResult } from '@/types';
 import { getCodeTemplate, matchApi } from '@/lib/api';
@@ -33,12 +43,6 @@ interface UseGameRoomWebSocketProps {
   >;
   refetchGame: () => void;
 }
-
-// Helper function to unwrap WebSocket messages
-const unwrapMessage = <T>(message: WebSocketMessage): T => {
-  const raw = message as unknown as { data?: unknown; payload?: unknown };
-  return (raw.data || raw.payload || message) as T;
-};
 
 export const useGameRoomWebSocket = ({
   matchId,
@@ -97,9 +101,9 @@ export const useGameRoomWebSocket = ({
             message.total_test_cases || game?.problem?.test_cases?.length || 0,
         }).map((_, i) => ({
           index: i,
-          input: undefined,
-          expectedOutput: undefined,
-          status: 'pending',
+          input: '',
+          expectedOutput: '',
+          status: 'pending' as const,
         })),
         statusMessage: 'Evaluating Solution...',
       });
@@ -122,8 +126,8 @@ export const useGameRoomWebSocket = ({
         list[message.test_case_index] = {
           index: message.test_case_index,
           input: message.input,
-          expectedOutput: message.expected_output,
-          status: 'running',
+          expectedOutput: message.expected_output ?? '',
+          status: 'running' as const,
         };
         next.testCaseResults = list;
         return next;
@@ -142,15 +146,10 @@ export const useGameRoomWebSocket = ({
         list[message.test_case_index] = {
           index: message.test_case_index,
           input: message.input,
-          expectedOutput:
-            message.expected_output ||
-            (message as TestCaseDetailMessage & { expected?: unknown })
-              .expected,
-          actualOutput:
-            message.actual_output ||
-            (message as TestCaseDetailMessage & { actual?: unknown }).actual,
+          expectedOutput: message.expected_output ?? message.expected ?? '',
+          actualOutput: message.actual_output ?? message.actual,
           passed: message.passed,
-          status: 'completed',
+          status: 'completed' as const,
           executionTime: message.execution_time,
           memoryUsage: message.memory_usage,
         };
@@ -247,8 +246,8 @@ export const useGameRoomWebSocket = ({
   );
 
   const handleGameFinished = useCallback(
-    (message: WebSocketMessage) => {
-      if (message.winner_id) {
+    (winnerId?: string) => {
+      if (winnerId) {
         setSubmitResult({
           success: true,
           message: 'Game finished!',
@@ -261,78 +260,58 @@ export const useGameRoomWebSocket = ({
     [setSubmitResult, refetchGame]
   );
 
-  const handleError = useCallback(() => {
+  const handleError = useCallback((errorMessage?: string) => {
     setSubmitResult({
       success: false,
-      message: 'An error occurred during the game.',
+      message: errorMessage || 'An error occurred during the game.',
       is_winner: false,
     });
   }, [setSubmitResult]);
 
-  const handleJudge0TimeoutError = useCallback(
-    (message: WebSocketMessage) => {
-      setSubmitResult({
-        success: false,
-        message:
-          message.message ||
-          'Judge0 API is not responding. Please try again later.',
-        is_winner: false,
-      });
-    },
-    [setSubmitResult]
-  );
-
-  const handleJudge0QuotaError = useCallback(
-    (message: WebSocketMessage) => {
-      setSubmitResult({
-        success: false,
-        message:
-          message.message ||
-          'Judge0 API daily quota exceeded. Please try again tomorrow.',
-        is_winner: false,
-      });
-    },
-    [setSubmitResult]
-  );
-
-  // WebSocket message handler
+  // WebSocket message handler with type guards
   const handleWebSocketMessage = useCallback(
     (message: WebSocketMessage) => {
       switch (message.type) {
         case WEBSOCKET_MESSAGE_TYPES.CODE_UPDATE:
-          handleCodeUpdate(message as CodeUpdateMessage);
+          if (isCodeUpdateMessage(message)) {
+            handleCodeUpdate(message);
+          }
           break;
 
         case WEBSOCKET_MESSAGE_TYPES.SUBMISSION_STARTED:
-          handleSubmissionStarted(
-            unwrapMessage<SubmissionStatusMessage>(message)
-          );
+          if (isSubmissionStartedMessage(message)) {
+            handleSubmissionStarted(unwrapSubmissionMessage(message));
+          }
           break;
 
         case WEBSOCKET_MESSAGE_TYPES.TEST_CASE_RUNNING:
-          handleTestCaseRunning(unwrapMessage<TestCaseDetailMessage>(message));
+          if (isTestCaseRunningMessage(message)) {
+            handleTestCaseRunning(unwrapTestCaseMessage(message));
+          }
           break;
 
         case WEBSOCKET_MESSAGE_TYPES.TEST_CASE_COMPLETED:
-          handleTestCaseCompleted(
-            unwrapMessage<TestCaseDetailMessage>(message)
-          );
+          if (isTestCaseCompletedMessage(message)) {
+            handleTestCaseCompleted(unwrapTestCaseMessage(message));
+          }
           break;
 
         case WEBSOCKET_MESSAGE_TYPES.SUBMISSION_COMPLETED:
-          handleSubmissionCompleted(
-            unwrapMessage<SubmissionStatusMessage>(message)
-          );
+          if (isSubmissionCompletedMessage(message)) {
+            handleSubmissionCompleted(unwrapSubmissionMessage(message));
+          }
           break;
 
         case WEBSOCKET_MESSAGE_TYPES.SUBMISSION_FAILED:
-          handleSubmissionFailed(
-            unwrapMessage<SubmissionStatusMessage>(message)
-          );
+          if (isSubmissionFailedMessage(message)) {
+            handleSubmissionFailed(unwrapSubmissionMessage(message));
+          }
           break;
 
         case WEBSOCKET_MESSAGE_TYPES.GAME_FINISHED:
-          handleGameFinished(message);
+          if (isGameFinishedMessage(message)) {
+            handleGameFinished(message.winner_id);
+          }
           break;
 
         case WEBSOCKET_MESSAGE_TYPES.ERROR:
@@ -340,11 +319,10 @@ export const useGameRoomWebSocket = ({
           break;
 
         case WEBSOCKET_MESSAGE_TYPES.JUDGE0_TIMEOUT_ERROR:
-          handleJudge0TimeoutError(message);
-          break;
-
         case WEBSOCKET_MESSAGE_TYPES.JUDGE0_QUOTA_ERROR:
-          handleJudge0QuotaError(message);
+          if (isErrorMessage(message)) {
+            handleError(message.message);
+          }
           break;
 
         default:
@@ -362,8 +340,6 @@ export const useGameRoomWebSocket = ({
       handleSubmissionFailed,
       handleGameFinished,
       handleError,
-      handleJudge0TimeoutError,
-      handleJudge0QuotaError,
     ]
   );
 
@@ -463,10 +439,10 @@ export const useGameRoomWebSocket = ({
       if (result.success) {
         setSubmitResult({
           success: true,
-          message: result.is_winner
+          message: result.data.is_winner
             ? 'Congratulations! You won!'
             : 'Solution submitted successfully.',
-          is_winner: result.is_winner || false,
+          is_winner: result.data.is_winner || false,
         });
       } else {
         setSubmitResult({

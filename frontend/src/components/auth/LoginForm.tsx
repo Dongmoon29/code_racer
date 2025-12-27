@@ -47,15 +47,13 @@ const LoginForm: FC = () => {
         // Always sync authStore with fresh /users/me to avoid drift
         try {
           const meResponse = await authApi.getCurrentUser();
-          const user = meResponse?.data; // unified: { success, data: User }
-          if (user) {
-            useAuthStore.getState().login(user);
+          if (meResponse.success) {
+            useAuthStore.getState().login(meResponse.data);
           }
         } catch (e) {
           // If /users/me fails, fall back to login response user under data.user
-          const fallbackUser = response?.data?.user;
-          if (fallbackUser) {
-            useAuthStore.getState().login(fallbackUser);
+          if (response.success && response.data.user) {
+            useAuthStore.getState().login(response.data.user);
           }
           if (process.env.NODE_ENV === 'development') {
             console.error(e);

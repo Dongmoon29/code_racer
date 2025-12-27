@@ -11,7 +11,7 @@ export type User = {
   homepage?: string;
   linkedin?: string;
   oauthProvider?: string;
-  role: string;
+  role?: string;
   fav_language?: string;
   github?: string;
   company?: string;
@@ -72,9 +72,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Verify token is still valid by fetching user info
       const response = await authApi.getCurrentUser();
-      const user = response?.data;
-      if (user) {
-        set({ user, isLoggedIn: true });
+      if (response.success) {
+        set({ user: response.data, isLoggedIn: true });
       } else {
         // No user data - clear invalid token
         sessionStorage.removeItem('authToken');

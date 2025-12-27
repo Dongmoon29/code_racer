@@ -1,30 +1,143 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { WEBSOCKET_CONSTANTS } from '@/constants';
 import { BaseWebSocketClient } from './websocket/base';
+import type { SubmissionStatusMessage, TestCaseDetailMessage } from '@/types/websocket';
 
-// WebSocket related type definitions
-export interface WebSocketMessage {
+// WebSocket 기본 메시지 구조
+interface BaseWebSocketMessage {
   type: string;
-  game_id: string;
+  game_id?: string;
+  match_id?: string;
   user_id?: string;
-  code?: string;
+}
+
+// 각 메시지 타입을 명시적으로 정의 (Discriminated Union)
+export interface AuthMessage extends BaseWebSocketMessage {
+  type: 'auth';
+  data: { token: string };
+}
+
+export interface PingMessage extends BaseWebSocketMessage {
+  type: 'ping';
+  timestamp: number;
+}
+
+export interface PongMessage extends BaseWebSocketMessage {
+  type: 'pong';
+  timestamp?: number;
+}
+
+export interface CodeUpdateMessage extends BaseWebSocketMessage {
+  type: 'code_update';
+  code: string;
+  data?: { code: string };
+  user_id?: string;
+}
+
+export interface GameFinishedMessage extends BaseWebSocketMessage {
+  type: 'game_finished';
   winner_id?: string;
-  payload?: unknown;
+  message?: string;
+}
+
+export interface ErrorMessage extends BaseWebSocketMessage {
+  type: 'error' | 'judge0_timeout_error' | 'judge0_quota_error';
   message?: string;
   details?: string;
 }
 
-export interface CodeUpdateMessage extends WebSocketMessage {
-  type: 'code_update';
-  code: string;
-  user_id?: string; // Backend sends as 'user_id' in JSON
+// Submission 관련 메시지는 types/websocket.ts에서 임포트
+export interface SubmissionStartedMessage extends BaseWebSocketMessage {
+  type: 'submission_started';
+  data?: SubmissionStatusMessage;
+  payload?: SubmissionStatusMessage;
+}
+
+export interface SubmissionCompletedMessage extends BaseWebSocketMessage {
+  type: 'submission_completed';
+  data?: SubmissionStatusMessage;
+  payload?: SubmissionStatusMessage;
+}
+
+export interface SubmissionFailedMessage extends BaseWebSocketMessage {
+  type: 'submission_failed';
+  data?: SubmissionStatusMessage;
+  payload?: SubmissionStatusMessage;
+}
+
+export interface TestCaseRunningMessage extends BaseWebSocketMessage {
+  type: 'test_case_running';
+  data?: TestCaseDetailMessage;
+  payload?: TestCaseDetailMessage;
+}
+
+export interface TestCaseCompletedMessage extends BaseWebSocketMessage {
+  type: 'test_case_completed';
+  data?: TestCaseDetailMessage;
+  payload?: TestCaseDetailMessage;
+}
+
+// Discriminated Union: 모든 가능한 WebSocket 메시지 타입
+export type WebSocketMessage =
+  | AuthMessage
+  | PingMessage
+  | PongMessage
+  | CodeUpdateMessage
+  | GameFinishedMessage
+  | ErrorMessage
+  | SubmissionStartedMessage
+  | SubmissionCompletedMessage
+  | SubmissionFailedMessage
+  | TestCaseRunningMessage
+  | TestCaseCompletedMessage;
+
+// 타입 가드 함수들
+export function isCodeUpdateMessage(msg: WebSocketMessage): msg is CodeUpdateMessage {
+  return msg.type === 'code_update';
+}
+
+export function isGameFinishedMessage(msg: WebSocketMessage): msg is GameFinishedMessage {
+  return msg.type === 'game_finished';
+}
+
+export function isErrorMessage(msg: WebSocketMessage): msg is ErrorMessage {
+  return msg.type === 'error' || msg.type === 'judge0_timeout_error' || msg.type === 'judge0_quota_error';
+}
+
+export function isSubmissionStartedMessage(msg: WebSocketMessage): msg is SubmissionStartedMessage {
+  return msg.type === 'submission_started';
+}
+
+export function isSubmissionCompletedMessage(msg: WebSocketMessage): msg is SubmissionCompletedMessage {
+  return msg.type === 'submission_completed';
+}
+
+export function isSubmissionFailedMessage(msg: WebSocketMessage): msg is SubmissionFailedMessage {
+  return msg.type === 'submission_failed';
+}
+
+export function isTestCaseRunningMessage(msg: WebSocketMessage): msg is TestCaseRunningMessage {
+  return msg.type === 'test_case_running';
+}
+
+export function isTestCaseCompletedMessage(msg: WebSocketMessage): msg is TestCaseCompletedMessage {
+  return msg.type === 'test_case_completed';
+}
+
+// 타입 안전한 메시지 unwrap 헬퍼 함수
+export function unwrapSubmissionMessage(msg: SubmissionStartedMessage | SubmissionCompletedMessage | SubmissionFailedMessage): SubmissionStatusMessage {
+  // data 또는 payload에서 추출, 없으면 msg 자체를 사용
+  return (msg.data || msg.payload || msg) as SubmissionStatusMessage;
+}
+
+export function unwrapTestCaseMessage(msg: TestCaseRunningMessage | TestCaseCompletedMessage): TestCaseDetailMessage {
+  return (msg.data || msg.payload || msg) as TestCaseDetailMessage;
 }
 
 // WebSocket connection management class for game rooms
 export class WebSocketClient extends BaseWebSocketClient {
   private messageHandlers: ((message: WebSocketMessage) => void)[] = [];
   private pingInterval: NodeJS.Timeout | null = null;
-  private lastPingTime = 0;
 
   constructor(private gameId: string) {
     super(
@@ -81,7 +194,6 @@ export class WebSocketClient extends BaseWebSocketClient {
     this.pingInterval = setInterval(() => {
       if (this.isConnected()) {
         this.sendMessage({ type: 'ping', timestamp: Date.now() });
-        this.lastPingTime = Date.now();
       }
     }, WEBSOCKET_CONSTANTS.CONNECTION.PING_INTERVAL_MS);
   }

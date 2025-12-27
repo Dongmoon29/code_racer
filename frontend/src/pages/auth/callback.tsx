@@ -34,7 +34,7 @@ const AuthCallback: React.FC = () => {
 
         if (response.success) {
           // Store token in sessionStorage for all authentication (HTTP + WebSocket)
-          const token = response.token || response.data?.token;
+          const token = response.data.token;
           if (token) {
             sessionStorage.setItem('authToken', token);
           }
@@ -42,11 +42,10 @@ const AuthCallback: React.FC = () => {
           // Always fetch fresh user from /users/me to avoid drift
           try {
             const me = await authApi.getCurrentUser();
-            const user = me?.data; // unified: { success, data: User }
-            if (user) {
-              useAuthStore.getState().login(user);
+            if (me.success) {
+              useAuthStore.getState().login(me.data);
               // Navigate to user profile
-              router.push(ROUTES.USER_PROFILE(user.id));
+              router.push(ROUTES.USER_PROFILE(me.data.id));
             } else {
               // If user data is not available, redirect to login
               router.push(ROUTES.LOGIN);
