@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { ProfileSidebar, GameHistory } from '@/components/profile';
 import { Loader } from '@/components/ui/Loader';
 import { ROUTES } from '@/lib/router';
+import { LAYOUT_PADDING, LAYOUT_WIDTH } from '@/lib/styles';
 
 interface UserInfo {
   id: string;
@@ -64,7 +65,7 @@ const DashboardIndex = () => {
 
   if (isLoading) {
     return (
-      <div className="py-8">
+      <div className={LAYOUT_PADDING.SECTION}>
         <div className="flex items-center justify-center">
           <Loader variant="spinner" />
         </div>
@@ -74,7 +75,7 @@ const DashboardIndex = () => {
 
   if (error) {
     return (
-      <div className="py-8">
+      <div className={LAYOUT_PADDING.SECTION}>
         <div className="flex items-center justify-center">
           <div className="text-lg text-[var(--red-9)]">
             Failed to load user information
@@ -96,8 +97,8 @@ const DashboardIndex = () => {
         />
       </Head>
 
-      <div className="py-6">
-        <div className="max-w-7xl">
+      <div className={LAYOUT_PADDING.PAGE_VERTICAL}>
+        <div className={LAYOUT_WIDTH.CONTAINER}>
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="lg:w-80 flex-shrink-0">
               <ProfileSidebar user={user!} />

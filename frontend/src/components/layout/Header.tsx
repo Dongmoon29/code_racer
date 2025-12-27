@@ -9,6 +9,8 @@ import UserDropdown from '../ui/UserDropdown';
 import MobileMenu from './MobileMenu';
 import { useDropdown } from '@/hooks/useDropdown';
 import { ROUTES } from '@/lib/router';
+import { LAYOUT_PADDING, NAVIGATION_STYLES } from '@/lib/styles';
+import { cn } from '@/lib/utils';
 
 const Header: FC = () => {
   const { user, isLoggedIn, logout } = useAuthStore();
@@ -39,7 +41,7 @@ const Header: FC = () => {
 
   return (
     <header className="bg-transparent border-none relative z-50">
-      <div className="px-4 md:px-8">
+      <div className={LAYOUT_PADDING.PAGE_HORIZONTAL}>
         <div className="flex justify-between items-stretch h-16">
           <div className="flex items-center gap-3">
             <Link
@@ -76,7 +78,7 @@ const Header: FC = () => {
             <div className="flex items-center gap-6">
               <Link
                 href="/"
-                className="text-sm font-medium transition-colors text-[var(--gray-11)] hover:text-[var(--accent-9)]"
+                className={cn(NAVIGATION_STYLES.LINK.BASE, NAVIGATION_STYLES.LINK.DEFAULT, NAVIGATION_STYLES.LINK.HOVER)}
               >
                 Home
               </Link>
@@ -84,14 +86,14 @@ const Header: FC = () => {
               {isLoggedIn && user ? (
                 <Link
                   href={ROUTES.USER_PROFILE(user.id)}
-                  className="text-sm font-medium transition-colors text-[var(--gray-11)] hover:text-[var(--accent-9)]"
+                  className={cn(NAVIGATION_STYLES.LINK.BASE, NAVIGATION_STYLES.LINK.DEFAULT, NAVIGATION_STYLES.LINK.HOVER)}
                 >
                   Dashboard
                 </Link>
               ) : (
                 <Link
                   href={ROUTES.LOGIN}
-                  className="text-sm font-medium transition-colors text-[var(--gray-11)] hover:text-[var(--accent-9)]"
+                  className={cn(NAVIGATION_STYLES.LINK.BASE, NAVIGATION_STYLES.LINK.DEFAULT, NAVIGATION_STYLES.LINK.HOVER)}
                 >
                   Dashboard
                 </Link>
@@ -110,7 +112,7 @@ const Header: FC = () => {
               ) : (
                 <Link
                   href="/register"
-                  className="text-sm font-medium transition-colors text-[var(--gray-11)] hover:text-[var(--accent-9)]"
+                  className={cn(NAVIGATION_STYLES.LINK.BASE, NAVIGATION_STYLES.LINK.DEFAULT, NAVIGATION_STYLES.LINK.HOVER)}
                 >
                   Login
                 </Link>

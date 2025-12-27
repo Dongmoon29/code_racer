@@ -12,6 +12,7 @@ import { MatchingScreen } from '@/components/game/MatchingScreen';
 import { Loader } from '@/components/ui/Loader';
 import { useAuthStore } from '@/stores/authStore';
 import { FollowersList, FollowingList } from '@/components/profile/FollowLists';
+import { LAYOUT_PADDING, LAYOUT_WIDTH } from '@/lib/styles';
 
 interface UserInfo {
   id: string;
@@ -69,7 +70,7 @@ const UserProfilePage = () => {
   // Wait for router to be ready
   if (!router.isReady || !userId) {
     return (
-      <div className="py-8">
+      <div className={LAYOUT_PADDING.SECTION}>
         <div className="flex items-center justify-center">
           <Loader variant="spinner" size="lg" />
         </div>
@@ -79,7 +80,7 @@ const UserProfilePage = () => {
 
   if (isLoading) {
     return (
-      <div className="py-8">
+      <div className={LAYOUT_PADDING.SECTION}>
         <div className="flex items-center justify-center">
           <Loader variant="spinner" size="lg" />
         </div>
@@ -89,9 +90,9 @@ const UserProfilePage = () => {
 
   if (error) {
     return (
-      <div className="py-8">
+      <div className={LAYOUT_PADDING.SECTION}>
         <div className="flex items-center justify-center">
-          <div className="text-lg text-red-600">
+          <div className="text-lg text-[var(--red-9)]">
             Failed to load user profile
           </div>
         </div>
@@ -117,8 +118,8 @@ const UserProfilePage = () => {
         />
       </Head>
 
-      <div className="py-6">
-        <div className="max-w-7xl">
+      <div className={LAYOUT_PADDING.PAGE_VERTICAL}>
+        <div className={LAYOUT_WIDTH.CONTAINER}>
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="lg:w-80 flex-shrink-0">
               {isOwnProfile ? (

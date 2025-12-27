@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { ArrowRightToLine, ArrowLeftToLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { BUTTON_STYLES, SIDEBAR_STYLES } from '@/lib/styles';
 import Logo from './Logo';
 import { NavigationLink } from './NavigationLink';
 
@@ -68,7 +69,11 @@ export function DashboardSidebar({
         {!isMobile && (
           <button
             onClick={onToggle}
-            className="p-1.5 rounded-md text-[var(--gray-11)] shrink-0 cursor-pointer transition-all duration-150 hover:bg-[var(--gray-4)] hover:text-[var(--color-text)] hover:shadow-sm hover:scale-105"
+            className={cn(
+              BUTTON_STYLES.ICON_BUTTON.BASE,
+              BUTTON_STYLES.ICON_BUTTON.TEXT,
+              BUTTON_STYLES.ICON_BUTTON.HOVER
+            )}
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             type="button"
           >
@@ -82,7 +87,7 @@ export function DashboardSidebar({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-3 space-y-1 w-full">
+      <nav className={cn('flex-1 w-full', SIDEBAR_STYLES.NAV_PADDING, SIDEBAR_STYLES.NAV_GAP)}>
         {primaryItems.map((item) => {
           const isActive = item.pattern
             ? router.pathname.startsWith(item.pattern)
@@ -100,7 +105,7 @@ export function DashboardSidebar({
       </nav>
 
       {bottomItems.length > 0 && (
-        <nav className="px-2 py-3 space-y-1 w-full border-t border-[var(--gray-6)]">
+        <nav className={cn('w-full border-t border-[var(--gray-6)]', SIDEBAR_STYLES.NAV_PADDING, SIDEBAR_STYLES.NAV_GAP)}>
           {bottomItems.map((item) => {
             const isActive = item.pattern
               ? router.pathname.startsWith(item.pattern)

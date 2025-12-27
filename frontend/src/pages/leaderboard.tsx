@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Crown } from 'lucide-react';
 import { userApi } from '@/lib/api';
+import { LAYOUT_PADDING } from '@/lib/styles';
 import { useQuery } from '@tanstack/react-query';
 import { ROUTES } from '@/lib/router';
 
@@ -92,7 +93,7 @@ const LeaderboardPage = () => {
           content="Compete for the top spot in coding challenges"
         />
       </Head>
-      <div className="py-8">
+      <div className={LAYOUT_PADDING.SECTION}>
         {/* Header */}
         <div className="flex flex-col items-center mb-10 text-center">
           <div className="w-12 h-12 rounded-full bg-[var(--accent-9)] flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(129,140,248,0.6)]">

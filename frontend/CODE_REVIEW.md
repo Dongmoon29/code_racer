@@ -171,9 +171,16 @@ href: '/leaderboard',      // ROUTES.LEADERBOARD 사용 권장
 
 ### 중간 우선순위
 
-5. 레이아웃 패딩/마진 일관성
-6. 하드코딩된 경로를 ROUTES 상수로 변경
-7. 긴 className 문자열 리팩토링
+5. ✅ 레이아웃 패딩/마진 일관성
+   - 스타일 상수 파일 생성 (`lib/styles.ts`)
+   - 공통 패딩/마진 상수 정의 및 적용
+   - DashboardSidebar, Header, 페이지 컴포넌트에 적용
+6. ✅ 하드코딩된 경로를 ROUTES 상수로 변경
+   - layoutConfig.tsx의 하드코딩된 경로 수정 완료
+7. ✅ 긴 className 문자열 리팩토링
+   - DashboardSidebar 버튼 스타일 상수화
+   - Header 네비게이션 링크 스타일 상수화
+   - cn() 유틸리티 활용
 
 ### 낮은 우선순위
 

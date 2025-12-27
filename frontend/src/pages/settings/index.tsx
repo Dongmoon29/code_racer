@@ -1,6 +1,8 @@
 import React from 'react';
 import Head from 'next/head';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { LAYOUT_PADDING, LAYOUT_WIDTH } from '@/lib/styles';
+import { cn } from '@/lib/utils';
 
 const SettingsPage: React.FC = () => {
   return (
@@ -13,8 +15,8 @@ const SettingsPage: React.FC = () => {
         />
       </Head>
 
-      <div className="py-6">
-        <div className="max-w-3xl space-y-6">
+      <div className={LAYOUT_PADDING.PAGE_VERTICAL}>
+        <div className={cn(LAYOUT_WIDTH.CONTAINER_SMALL, 'space-y-6')}>
           <div>
             <h1 className="text-2xl font-semibold text-[var(--color-text)]">
               Settings
