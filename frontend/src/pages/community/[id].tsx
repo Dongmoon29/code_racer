@@ -7,8 +7,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { communityApi, communityCommentApi } from '@/lib/api';
 import { ROUTES } from '@/lib/router';
 import {
-  ArrowDown,
-  ArrowUp,
   ChevronDown,
   ChevronUp,
   Edit2,
@@ -579,93 +577,108 @@ const CommunityPostPage = () => {
         ) : (
           <>
             <div className="bg-[var(--color-panel)] border border-[var(--gray-6)] rounded-lg p-5">
-              <div className="flex gap-4">
-                {/* Vote Column */}
-                <div className="flex flex-col items-center gap-1 pt-1">
-                  <button
-                    className={`p-1 rounded transition-colors ${
-                      myVote === 1
-                        ? 'text-[var(--accent-9)]'
-                        : 'text-[var(--gray-11)] hover:text-[var(--accent-9)] hover:bg-[var(--gray-2)]'
-                    }`}
-                    title={canVote ? 'Upvote' : 'Login to vote'}
-                    disabled={!canVote || voteMutation.isPending}
-                    onClick={() => {
-                      const next: -1 | 0 | 1 = myVote === 1 ? 0 : 1;
-                      voteMutation.mutate({ value: next });
-                    }}
+              <div className="flex gap-3">
+                {/* Profile Image */}
+                <div className="flex-shrink-0">
+                  <Link
+                    href={
+                      post.user?.id ? ROUTES.USER_PROFILE(post.user.id) : '#'
+                    }
                   >
-                    <ArrowUp className="w-5 h-5" />
-                  </button>
-                  <div className="text-base font-semibold text-[var(--color-text)]">
-                    {score}
-                  </div>
-                  <button
-                    className={`p-1 rounded transition-colors ${
-                      myVote === -1
-                        ? 'text-red-500'
-                        : 'text-[var(--gray-11)] hover:text-red-500 hover:bg-[var(--gray-2)]'
-                    }`}
-                    title={canVote ? 'Downvote' : 'Login to vote'}
-                    disabled={!canVote || voteMutation.isPending}
-                    onClick={() => {
-                      const next: -1 | 0 | 1 = myVote === -1 ? 0 : -1;
-                      voteMutation.mutate({ value: next });
-                    }}
-                  >
-                    <ArrowDown className="w-5 h-5" />
-                  </button>
+                    {post.user?.profile_image ? (
+                      <Image
+                        src={post.user.profile_image}
+                        alt={post.user.name}
+                        width={40}
+                        height={40}
+                        className="rounded-full"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-base">
+                        {post.user?.name?.[0] || 'U'}
+                      </div>
+                    )}
+                  </Link>
                 </div>
 
+                {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl font-bold text-[var(--color-text)] mb-2">
-                    {post.title}
-                  </h1>
-                  <div className="flex items-center gap-2 text-sm text-[var(--gray-11)] mb-4">
+                  {/* User name and date */}
+                  <div className="flex items-center gap-2 mb-2">
                     <Link
                       href={
                         post.user?.id ? ROUTES.USER_PROFILE(post.user.id) : '#'
                       }
-                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                      className="text-sm font-semibold text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors"
                     >
-                      {post.user?.profile_image ? (
-                        <Image
-                          src={post.user.profile_image}
-                          alt={post.user.name}
-                          width={20}
-                          height={20}
-                          className="w-5 h-5 rounded-full"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="w-5 h-5 rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-xs">
-                          {post.user?.name?.[0] || 'U'}
-                        </div>
-                      )}
-                      <span className="font-medium text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors">
-                        {post.user?.name || 'Anonymous'}
-                      </span>
+                      {post.user?.name || 'Anonymous'}
                     </Link>
-                    <span>•</span>
-                    <span>
+                    <span className="text-sm text-[var(--gray-11)]">•</span>
+                    <span className="text-sm text-[var(--gray-11)]">
                       {new Date(post.created_at).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric',
                       })}
                     </span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <ThumbsUp className="w-3.5 h-3.5" />
-                      {score}
-                    </span>
-                    <span>•</span>
-                    <span>{post.comment_count} comments</span>
                   </div>
 
-                  <p className="text-[var(--color-text)] whitespace-pre-wrap">
+                  {/* Title */}
+                  <h1 className="text-2xl font-bold text-[var(--color-text)] mb-3">
+                    {post.title}
+                  </h1>
+
+                  {/* Content */}
+                  <p className="text-[var(--color-text)] whitespace-pre-wrap mb-3">
                     {post.content}
                   </p>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-6 text-sm">
+                    {/* Vote Group */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        className={`flex items-center gap-1 p-1 rounded transition-colors ${
+                          myVote === 1
+                            ? 'text-[var(--accent-9)]'
+                            : 'text-[var(--gray-11)] hover:text-[var(--accent-9)] hover:bg-[var(--gray-2)]'
+                        }`}
+                        title={canVote ? 'Upvote' : 'Login to vote'}
+                        disabled={!canVote || voteMutation.isPending}
+                        onClick={() => {
+                          const next: -1 | 0 | 1 = myVote === 1 ? 0 : 1;
+                          voteMutation.mutate({ value: next });
+                        }}
+                      >
+                        <ThumbsUp className="w-4 h-4" />
+                        <span className="font-semibold">
+                          {score > 0 ? score : ''}
+                        </span>
+                      </button>
+                      <button
+                        className={`flex items-center gap-1 p-1 rounded transition-colors ${
+                          myVote === -1
+                            ? 'text-red-500'
+                            : 'text-[var(--gray-11)] hover:text-red-500 hover:bg-[var(--gray-2)]'
+                        }`}
+                        title={canVote ? 'Downvote' : 'Login to vote'}
+                        disabled={!canVote || voteMutation.isPending}
+                        onClick={() => {
+                          const next: -1 | 0 | 1 = myVote === -1 ? 0 : -1;
+                          voteMutation.mutate({ value: next });
+                        }}
+                      >
+                        <ThumbsDown className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Comment count */}
+                    <div className="flex items-center gap-1 text-[var(--gray-11)]">
+                      <MessageSquare className="w-4 h-4" />
+                      <span>{post.comment_count}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

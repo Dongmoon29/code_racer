@@ -6,8 +6,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { communityApi } from '@/lib/api';
 import { ROUTES } from '@/lib/router';
 import {
-  ArrowDown,
-  ArrowUp,
   Bug,
   CheckCircle2,
   Clock,
@@ -17,6 +15,8 @@ import {
   MessageSquare,
   Send,
   Sparkles,
+  ThumbsDown,
+  ThumbsUp,
   XCircle,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
@@ -151,9 +151,6 @@ const CommunityIndexPage = () => {
             <h1 className="text-3xl font-bold text-[var(--color-text)] mb-2">
               Community
             </h1>
-            <p className="text-[var(--gray-11)]">
-              Share bugs, feature ideas, improvements, and discussions.
-            </p>
           </div>
 
           <button
@@ -298,110 +295,139 @@ const CommunityIndexPage = () => {
                   key={post.id}
                   className="bg-[var(--color-panel)] border border-[var(--gray-6)] rounded-lg p-4 hover:border-[var(--accent-7)] transition-colors"
                 >
-                  <div className="flex gap-4">
-                    {/* Vote Column */}
-                    <div className="flex flex-col items-center gap-1 pt-1">
-                      <button
-                        className={`p-1 rounded transition-colors ${
-                          myVote === 1
-                            ? 'text-[var(--accent-9)]'
-                            : 'text-[var(--gray-11)] hover:text-[var(--accent-9)] hover:bg-[var(--gray-2)]'
-                        }`}
-                        title={canVote ? 'Upvote' : 'Login to vote'}
-                        disabled={!canVote || voteMutation.isPending}
-                        onClick={() => {
-                          const next: -1 | 0 | 1 = myVote === 1 ? 0 : 1;
-                          voteMutation.mutate({ postId: post.id, value: next });
-                        }}
+                  <div className="flex gap-3">
+                    {/* Profile Image */}
+                    <div className="flex-shrink-0">
+                      <Link
+                        href={
+                          post.user?.id
+                            ? ROUTES.USER_PROFILE(post.user.id)
+                            : '#'
+                        }
+                        className="block"
                       >
-                        <ArrowUp className="w-4 h-4" />
-                      </button>
-                      <div className="text-sm font-semibold text-[var(--color-text)]">
-                        {score}
-                      </div>
-                      <button
-                        className={`p-1 rounded transition-colors ${
-                          myVote === -1
-                            ? 'text-red-500'
-                            : 'text-[var(--gray-11)] hover:text-red-500 hover:bg-[var(--gray-2)]'
-                        }`}
-                        title={canVote ? 'Downvote' : 'Login to vote'}
-                        disabled={!canVote || voteMutation.isPending}
-                        onClick={() => {
-                          const next: -1 | 0 | 1 = myVote === -1 ? 0 : -1;
-                          voteMutation.mutate({ postId: post.id, value: next });
-                        }}
-                      >
-                        <ArrowDown className="w-4 h-4" />
-                      </button>
+                        {post.user?.profile_image ? (
+                          <Image
+                            src={post.user.profile_image}
+                            alt={post.user.name}
+                            width={32}
+                            height={32}
+                            className="rounded-full"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-sm">
+                            {post.user?.name?.[0] || 'U'}
+                          </div>
+                        )}
+                      </Link>
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        {getTypeIcon(post.type)}
-                        <span className="text-sm font-medium text-[var(--gray-11)]">
-                          {getTypeLabel(post.type)}
+                        <Link
+                          href={
+                            post.user?.id
+                              ? ROUTES.USER_PROFILE(post.user.id)
+                              : '#'
+                          }
+                          className="text-sm font-semibold text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors"
+                        >
+                          {post.user?.name || 'Anonymous'}
+                        </Link>
+                        <span className="text-sm text-[var(--gray-11)]">
+                          {new Date(post.created_at).toLocaleDateString(
+                            'en-US',
+                            {
+                              month: 'short',
+                              day: 'numeric',
+                              year:
+                                new Date(post.created_at).getFullYear() !==
+                                new Date().getFullYear()
+                                  ? 'numeric'
+                                  : undefined,
+                            }
+                          )}
                         </span>
-                        <span className="text-sm text-[var(--gray-11)]">•</span>
-                        <div className="flex items-center gap-1">
-                          {getStatusIcon(post.status)}
-                        </div>
                       </div>
 
                       <Link href={`/community/${post.id}`} className="block">
-                        <h3 className="text-lg font-semibold text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors line-clamp-2">
+                        <h3 className="text-base font-semibold text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors line-clamp-2 mb-1">
                           {post.title}
                         </h3>
                       </Link>
 
-                      <p className="text-sm text-[var(--gray-11)] mt-1 line-clamp-2 whitespace-pre-wrap">
+                      <p className="text-sm text-[var(--gray-11)] line-clamp-2 whitespace-pre-wrap mb-2">
                         {post.content}
                       </p>
 
-                      <div className="flex items-center gap-3 mt-3 text-xs text-[var(--gray-11)]">
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-6">
+                        {/* Vote Group */}
                         <div className="flex items-center gap-2">
-                          <Link
-                            href={
-                              post.user?.id
-                                ? ROUTES.USER_PROFILE(post.user.id)
-                                : '#'
-                            }
-                            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                          <button
+                            onClick={() => {
+                              const next: -1 | 0 | 1 = myVote === 1 ? 0 : 1;
+                              voteMutation.mutate({
+                                postId: post.id,
+                                value: next,
+                              });
+                            }}
+                            className={`flex items-center gap-1 transition-colors text-sm ${
+                              myVote === 1
+                                ? 'text-[var(--accent-9)]'
+                                : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
+                            }`}
+                            title={canVote ? 'Like' : 'Login to like'}
+                            disabled={!canVote || voteMutation.isPending}
                           >
-                            {post.user?.profile_image ? (
-                              <Image
-                                src={post.user.profile_image}
-                                alt={post.user.name}
-                                width={18}
-                                height={18}
-                                className="w-[18px] h-[18px] rounded-full"
-                                unoptimized
-                              />
-                            ) : (
-                              <div className="w-[18px] h-[18px] rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-[10px]">
-                                {post.user?.name?.[0] || 'U'}
-                              </div>
-                            )}
-                            <span className="font-medium text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors">
-                              {post.user?.name || 'Anonymous'}
+                            <ThumbsUp className="w-4 h-4" />
+                            <span className="font-medium">
+                              {score > 0 ? score : ''}
                             </span>
-                          </Link>
-                          <span>
-                            {new Date(post.created_at).toLocaleDateString(
-                              'en-US',
-                              { month: 'short', day: 'numeric' }
-                            )}
+                          </button>
+                          <button
+                            onClick={() => {
+                              const next: -1 | 0 | 1 = myVote === -1 ? 0 : -1;
+                              voteMutation.mutate({
+                                postId: post.id,
+                                value: next,
+                              });
+                            }}
+                            className={`flex items-center gap-1 transition-colors text-sm ${
+                              myVote === -1
+                                ? 'text-red-500'
+                                : 'text-[var(--gray-11)] hover:text-red-500'
+                            }`}
+                            title={canVote ? 'Dislike' : 'Login to dislike'}
+                            disabled={!canVote || voteMutation.isPending}
+                          >
+                            <ThumbsDown className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Comment Count */}
+                        <Link
+                          href={`/community/${post.id}`}
+                          className="flex items-center gap-1 text-sm text-[var(--gray-11)] hover:text-[var(--accent-9)] transition-colors"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          <span>{commentCount}</span>
+                        </Link>
+
+                        {/* Type Badge */}
+                        <div className="flex items-center gap-1.5 text-sm">
+                          {getTypeIcon(post.type)}
+                          <span className="text-[var(--gray-11)]">
+                            {getTypeLabel(post.type)}
                           </span>
                         </div>
 
-                        <Link
-                          href={`/community/${post.id}`}
-                          className="flex items-center gap-1 hover:text-[var(--accent-9)] transition-colors"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          {commentCount} comments
-                        </Link>
+                        {/* Status Badge */}
+                        <div className="flex items-center gap-1">
+                          {getStatusIcon(post.status)}
+                        </div>
                       </div>
                     </div>
                   </div>
