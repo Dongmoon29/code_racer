@@ -43,7 +43,7 @@ export function DashboardSidebar({
   return (
     <div
       className={cn(
-        'bg-[var(--color-panel)] border-r border-[var(--gray-6)] h-screen sticky top-0 overflow-y-auto transition-all duration-300 flex flex-col',
+        'bg-[var(--color-panel)] border-r border-[var(--gray-6)] h-screen sticky top-0 overflow-y-auto transition-all duration-300 flex flex-col shrink-0 z-10',
         isCollapsed ? 'w-16' : 'w-64'
       )}
     >

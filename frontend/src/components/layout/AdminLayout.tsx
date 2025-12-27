@@ -54,7 +54,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         isCollapsed={isCollapsed}
         onToggle={toggleSidebar}
       />
-      <div className="flex-1 p-8">
+      <div className="flex-1 min-w-0 p-4 md:p-8">
         <div className="max-w-7xl mx-auto">{children}</div>
       </div>
     </div>
