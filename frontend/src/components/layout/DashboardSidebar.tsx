@@ -54,33 +54,29 @@ export function DashboardSidebar({
           isCollapsed ? 'px-3 justify-center' : 'px-3 justify-between'
         )}
       >
-        <Link
-          href="/"
-          aria-label="Go to home"
-          className="flex items-center gap-2 cursor-pointer rounded-md"
-        >
-          <div className="h-10 w-10 rounded-lg flex items-center justify-center">
-            <Logo />
-          </div>
-        </Link>
-        {!isMobile && !isCollapsed && (
-          <button
-            onClick={onToggle}
-            className="p-1.5 rounded-md text-[var(--gray-11)] shrink-0 cursor-pointer transition-all duration-150 hover:bg-[var(--gray-4)] hover:text-[var(--color-text)] hover:shadow-sm hover:scale-105"
-            aria-label="Collapse sidebar"
-            type="button"
+        {(isMobile || !isCollapsed) && (
+          <Link
+            href="/"
+            aria-label="Go to home"
+            className="flex items-center gap-2 cursor-pointer rounded-md"
           >
-            <ArrowLeftToLine className="w-6 h-6" />
-          </button>
+            <div className="h-10 w-10 rounded-lg flex items-center justify-center">
+              <Logo />
+            </div>
+          </Link>
         )}
-        {!isMobile && isCollapsed && (
+        {!isMobile && (
           <button
             onClick={onToggle}
             className="p-1.5 rounded-md text-[var(--gray-11)] shrink-0 cursor-pointer transition-all duration-150 hover:bg-[var(--gray-4)] hover:text-[var(--color-text)] hover:shadow-sm hover:scale-105"
-            aria-label="Expand sidebar"
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             type="button"
           >
-            <ArrowRightToLine className="w-6 h-6" />
+            {isCollapsed ? (
+              <ArrowRightToLine className="w-6 h-6" />
+            ) : (
+              <ArrowLeftToLine className="w-6 h-6" />
+            )}
           </button>
         )}
       </div>
