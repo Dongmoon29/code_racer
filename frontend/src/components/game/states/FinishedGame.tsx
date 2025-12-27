@@ -90,7 +90,7 @@ export const FinishedGame: React.FC<Props> = memo(
     const winnerBadge = winnerIsMe ? 'Victory' : 'Defeat';
 
     return (
-      <div className="p-6 max-w-5xl mx-auto rounded-lg shadow-md">
+      <div className="p-6 max-w-5xl mx-auto rounded-md shadow-md">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div>
             <h1 className="text-2xl font-bold">{game.problem.title}</h1>
@@ -130,11 +130,11 @@ export const FinishedGame: React.FC<Props> = memo(
 
             {/* Stats grid */}
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-[var(--gray-6)] bg-[var(--gray-3)] p-3">
+              <div className="rounded-md border border-[var(--gray-6)] bg-[var(--gray-3)] p-3">
                 <div className="text-xs text-[var(--gray-11)]">Execution time</div>
                 <div className="mt-1 font-semibold text-[var(--color-text)]">{execLabel ?? '-'}</div>
               </div>
-              <div className="rounded-lg border border-[var(--gray-6)] bg-[var(--gray-3)] p-3">
+              <div className="rounded-md border border-[var(--gray-6)] bg-[var(--gray-3)] p-3">
                 <div className="text-xs text-[var(--gray-11)]">Memory</div>
                 <div className="mt-1 font-semibold text-[var(--color-text)]">{memLabel ?? '-'}</div>
               </div>

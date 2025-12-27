@@ -60,7 +60,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
       return (
         <button
           onClick={onToggle}
-          className="w-full h-10 flex items-center justify-center text-[var(--gray-11)] rounded-lg hover:text-[var(--color-text)] hover:bg-[var(--gray-4)] hover:scale-110 transition-all duration-200"
+          className="w-full h-10 flex items-center justify-center text-[var(--gray-11)] rounded-md hover:text-[var(--color-text)] hover:bg-[var(--gray-4)] hover:scale-110 transition-all duration-200"
           title="Show Problem Details"
         >
           <FileText className="w-6 h-6" />
@@ -83,16 +83,16 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
     ];
 
     return (
-      <div className="border rounded-lg min-w-0 h-full flex flex-col">
+      <div className="border rounded-md min-w-0 h-full flex flex-col">
         {/* Header with title and minimize button */}
-        <div className="bg-[var(--gray-3)] px-4 py-2 flex items-center justify-between border-b border-[var(--gray-6)] rounded-t-lg shrink-0">
+        <div className="bg-[var(--gray-3)] px-4 py-2 flex items-center justify-between border-b border-[var(--gray-6)] rounded-t-md shrink-0">
           <span className="font-medium truncate text-[var(--color-text)]">
             {title}
           </span>
           <div className="flex items-center space-x-2">
             <button
               onClick={onToggle}
-              className="cursor-pointer p-1 text-[var(--gray-11)] hover:text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded-md transition-colors shrink-0"
+              className="cursor-pointer p-1 text-[var(--gray-11)] hover:text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded-sm transition-colors shrink-0"
               title="Minimize"
             >
               <Minimize2 className="w-4 h-4" />

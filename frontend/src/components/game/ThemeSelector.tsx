@@ -18,7 +18,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ disabled = false }) => {
         value={theme}
         onChange={(e) => setTheme(e.target.value)}
         disabled={disabled}
-        className="py-1 px-2 border border-[var(--gray-6)] rounded-md text-sm bg-[var(--color-panel)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-9)] focus:border-[var(--accent-9)] disabled:opacity-50 transition-colors"
+        className="py-1 px-2 border border-[var(--gray-6)] rounded-sm text-sm bg-[var(--color-panel)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-9)] focus:border-[var(--accent-9)] disabled:opacity-50 transition-colors"
       >
         <option value="light">Light</option>
         <option value="dark">Dark</option>

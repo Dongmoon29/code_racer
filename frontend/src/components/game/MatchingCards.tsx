@@ -31,13 +31,13 @@ export const ErrorCard: React.FC<{
         <div className="space-x-4">
           <button
             onClick={onRetry}
-            className="px-4 py-2 rounded-md border border-[var(--gray-6)] hover:bg-[var(--gray-4)] transition-colors text-[var(--color-text)]"
+            className="px-4 py-2 rounded-sm border border-[var(--gray-6)] hover:bg-[var(--gray-4)] transition-colors text-[var(--color-text)]"
           >
             Retry
           </button>
           <button
             onClick={onBack}
-            className="px-4 py-2 rounded-md hover:bg-[var(--gray-4)] transition-colors text-[var(--color-text)]"
+            className="px-4 py-2 rounded-sm hover:bg-[var(--gray-4)] transition-colors text-[var(--color-text)]"
           >
             Back to Dashboard
           </button>

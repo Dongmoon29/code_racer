@@ -186,7 +186,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
               <label className="text-xs font-medium text-[var(--gray-11)] mb-1.5 block">
                 {param.name} =
               </label>
-              <div className="px-3 py-2 rounded-md bg-[var(--gray-3)] border border-[var(--gray-6)] font-mono text-sm text-[var(--color-text)]">
+              <div className="px-3 py-2 rounded-sm bg-[var(--gray-3)] border border-[var(--gray-6)] font-mono text-sm text-[var(--color-text)]">
                 {param.value}
               </div>
             </div>
@@ -212,7 +212,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
               </label>
               <div
                 className={cn(
-                  'px-3 py-2 rounded-md border font-mono text-sm',
+                  'px-3 py-2 rounded-sm border font-mono text-sm',
                   testResult.passed
                     ? 'bg-[var(--green-3)] border-[var(--green-7)] text-[var(--green-11)]'
                     : 'bg-[var(--red-3)] border-[var(--red-7)] text-[var(--red-11)]'

@@ -223,7 +223,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
           />
         )}
         <div
-          className={`fixed top-16 right-4 z-50 bg-[var(--color-panel)] border border-[var(--gray-6)] rounded-lg shadow-lg w-64 transition-opacity overflow-hidden ${
+          className={`fixed top-16 right-4 z-50 bg-[var(--color-panel)] border border-[var(--gray-6)] rounded-md shadow-lg w-64 transition-opacity overflow-hidden ${
             showMusicPlayer ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
           onClick={(e) => e.stopPropagation()}
