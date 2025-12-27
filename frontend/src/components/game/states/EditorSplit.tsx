@@ -65,7 +65,7 @@ export const EditorSplit: FC<EditorSplitProps> = memo(
         ) : (
           // Multiplayer mode - show split editors
           <Split
-            className="flex w-full h-full"
+            className="flex w-full h-full min-h-0"
             direction="horizontal"
             {...splitConfig}
             onDragStart={onDragStart}

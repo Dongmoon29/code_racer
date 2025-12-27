@@ -47,7 +47,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     const [showSettings, setShowSettings] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
 
-    const headerClass = `bg-[var(--gray-3)] px-4 py-2 flex items-center border-b border-[var(--gray-6)] rounded-t-lg ${
+    const headerClass = `bg-[var(--gray-3)] px-4 py-2 flex items-center border-b border-[var(--gray-6)] rounded-t-md ${
       isMinimized ? 'justify-center' : 'justify-between'
     }`;
 
@@ -76,12 +76,12 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     // The outer container handles border radius and clipping so the inner editor
     // visuals match the rounded corners.
     const contentClass = `${
-      isMinimized ? 'h-0' : 'h-[calc(100%-40px)]'
-    } rounded-b-lg overflow-hidden`;
+      isMinimized ? 'h-0' : 'flex-1 min-h-0'
+    } rounded-b-md overflow-hidden`;
 
     return (
-      <div className="border rounded-lg min-w-0 h-full flex flex-col relative">
-        <div className={headerClass}>
+      <div className="border rounded-md min-w-0 h-full flex flex-col relative">
+        <div className={`${headerClass} shrink-0`}>
           <div className="flex items-center gap-3">
             <span
               className={`font-medium truncate ${isMinimized ? 'hidden' : ''}`}
@@ -100,7 +100,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
               <button
                 onClick={onRun}
                 disabled={runDisabled}
-                className={`cursor-pointer p-1 rounded-md transition-colors shrink-0 ${
+                className={`cursor-pointer p-1 rounded-sm transition-colors shrink-0 ${
                   runDisabled
                     ? 'opacity-50 cursor-not-allowed'
                     : 'hover:text-[var(--color-text)]'
@@ -117,7 +117,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
             {showMusicButton && (
               <button
                 onClick={() => setShowMusicPlayer(true)}
-                className="cursor-pointer p-1 hover:text-[var(--color-text)] rounded-md transition-colors shrink-0"
+                className="cursor-pointer p-1 hover:text-[var(--color-text)] rounded-sm transition-colors shrink-0"
                 title="Toggle Music Player"
               >
                 <Music
@@ -130,7 +130,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
             {showFullscreenButton && onFullscreenToggle && (
               <button
                 onClick={onFullscreenToggle}
-                className="cursor-pointer p-1 hover:text-[var(--color-text)] rounded-md transition-colors shrink-0"
+                className="cursor-pointer p-1 hover:text-[var(--color-text)] rounded-sm transition-colors shrink-0"
                 title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
               >
                 {isFullscreen ? (
@@ -144,13 +144,13 @@ export const EditorPane: FC<EditorPaneProps> = memo(
             <div className="relative" ref={settingsRef}>
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="cursor-pointer p-1 hover:text-[var(--color-text)] rounded-md transition-colors shrink-0"
+                className="cursor-pointer p-1 hover:text-[var(--color-text)] rounded-sm transition-colors shrink-0"
                 title="Settings"
               >
                 <Settings className="w-4 h-4" />
               </button>
               {showSettings && (
-                <div className="absolute right-0 top-full mt-2 bg-[var(--color-panel)] border border-[var(--gray-6)] rounded-lg shadow-lg px-2 py-0.5 z-50 min-w-[160px]">
+                <div className="absolute right-0 top-full mt-2 bg-[var(--color-panel)] border border-[var(--gray-6)] rounded-md shadow-lg px-2 py-0.5 z-50 min-w-[160px]">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-xs font-medium">Theme</span>
                     <ThemeToggle />

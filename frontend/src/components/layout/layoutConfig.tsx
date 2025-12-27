@@ -32,8 +32,9 @@ export function getLayoutType(pathname: string): LayoutType {
   }
 
   // Game routes - fullscreen 모드 지원
+  // 게임 페이지는 인증이 필요하고 Header를 표시해야 함
   if (pathname.startsWith('/game')) {
-    return 'none';
+    return 'public';
   }
 
   // Dashboard routes
@@ -77,9 +78,11 @@ export function getLayoutConfig(pathname: string): LayoutConfig {
       };
 
     case 'public':
+      // 게임 페이지는 인증이 필요함
+      const isGameRoute = pathname.startsWith('/game');
       return {
         layoutType: 'public',
-        requireAuth: false,
+        requireAuth: isGameRoute,
         requireAdmin: false,
         showSidebar: false,
         showHeader: true,

@@ -107,11 +107,11 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
     }, [isFullscreenMy, setIsFullscreen]);
 
     return (
-      <div className="flex flex-col h-full min-h-screen ">
+      <div className="flex flex-col h-full overflow-hidden">
         {!isFullscreen ? (
           <div
             ref={containerRef}
-            className="flex-1 flex min-h-0 game-editor-container"
+            className="flex-1 flex min-h-0 overflow-hidden game-editor-container"
             style={{ width: '100%' }}
           >
             {/* Problem Description Pane */}
@@ -120,11 +120,13 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                 isDescriptionExpanded ? '' : 'w-[40px]'
               }`}
               style={{
-                width: isDescriptionExpanded ? `${problemPaneWidth}%` : undefined,
+                width: isDescriptionExpanded
+                  ? `${problemPaneWidth}%`
+                  : undefined,
                 transition: isDescriptionExpanded ? 'none' : 'all 300ms',
               }}
             >
-              <div className="flex-1 min-h-0 h-full">
+              <div className="flex-1 min-h-0 h-full overflow-hidden">
                 <ProblemDetailsPane
                   isExpanded={isDescriptionExpanded}
                   title={game.problem.title}
@@ -151,7 +153,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
             )}
 
             {/* Editor Panes */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative min-h-0 overflow-hidden">
               <ProblemEditorSplit
                 myCode={myCode}
                 opponentCode={opponentCode}
@@ -221,7 +223,7 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
           />
         )}
         <div
-          className={`fixed top-16 right-4 z-50 bg-[var(--color-panel)] border border-[var(--gray-6)] rounded-lg shadow-lg w-64 transition-opacity overflow-hidden ${
+          className={`fixed top-16 right-4 z-50 bg-[var(--color-panel)] border border-[var(--gray-6)] rounded-md shadow-lg w-64 transition-opacity overflow-hidden ${
             showMusicPlayer ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
           onClick={(e) => e.stopPropagation()}

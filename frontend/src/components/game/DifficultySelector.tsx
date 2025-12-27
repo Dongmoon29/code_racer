@@ -51,7 +51,7 @@ export const DifficultySelector: FC<DifficultySelectorProps> = ({
             key={option.value}
             onClick={() => !disabled && onSelect(option.value)}
             className={
-              `rounded-2xl p-4 border w-full h-36 flex flex-col justify-center items-center cursor-pointer transition-colors ` +
+              `rounded-md p-4 border w-full h-36 flex flex-col justify-center items-center cursor-pointer transition-colors ` +
               `bg-[var(--color-panel)] border-[var(--gray-6)] ` +
               `${selected ? option.bgColor : ''} ` +
               getRingClasses(selected, option.value, 'difficulty')

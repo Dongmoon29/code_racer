@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useRouter } from 'next/router';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { Loader } from '@/components/ui/Loader';
 import { useSidebarState } from '@/hooks/useSidebarState';
@@ -21,6 +22,8 @@ export default function AppLayout({
   const { layoutType, requireAuth, requireAdmin, showSidebar, showHeader } =
     layoutConfig;
   const { isFullscreen } = useFullscreen();
+  const router = useRouter();
+  const isGamePage = router.pathname.startsWith('/game');
 
   // 인증 및 권한 체크
   const authGuard = useAuthGuard({
@@ -31,8 +34,8 @@ export default function AppLayout({
   // 사이드바 상태 관리
   const { isCollapsed, toggleSidebar } = useSidebarState();
 
-  // 레이아웃 타입이 'none'이거나 fullscreen 모드인 경우 레이아웃 없이 렌더링
-  if (layoutType === 'none' || isFullscreen) {
+  // 레이아웃 타입이 'none'인 경우 레이아웃 없이 렌더링
+  if (layoutType === 'none') {
     return <>{children}</>;
   }
 
@@ -46,8 +49,19 @@ export default function AppLayout({
     return <Loader variant="fullscreen" />;
   }
 
-  // Public 레이아웃 (Header만 표시)
+  // Public 레이아웃 (Header만 표시, fullscreen 모드일 때는 Header 숨김)
   if (layoutType === 'public') {
+    // 게임 페이지는 고정 높이 레이아웃 사용 (페이지 레벨 스크롤 방지)
+    if (isGamePage) {
+      return (
+        <div className="h-screen flex flex-col overflow-hidden">
+          {showHeader && !isFullscreen && <Header />}
+          <main className="flex-1 min-h-0 overflow-hidden">{children}</main>
+        </div>
+      );
+    }
+    
+    // 일반 public 페이지는 기존 방식 유지
     return (
       <div className="min-h-screen flex flex-col">
         {showHeader && !isFullscreen && <Header />}
