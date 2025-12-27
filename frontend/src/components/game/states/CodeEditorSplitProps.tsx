@@ -125,11 +125,11 @@ export const ProblemEditorSplit: FC<CodeEditorSplitProps> = memo(
       return (
         <div
           ref={containerRef}
-          className="flex w-full h-full relative"
+          className="flex w-full h-full relative min-h-0 overflow-hidden"
           style={{ willChange: isLocalResizing ? 'auto' : 'contents' }}
         >
           <div
-            className="flex flex-col h-full"
+            className="flex flex-col h-full min-h-0 overflow-hidden"
             style={{ width: `${sizes[0]}%` }}
           >
             <EditorPane
@@ -158,7 +158,7 @@ export const ProblemEditorSplit: FC<CodeEditorSplitProps> = memo(
           />
 
           <div
-            className="flex flex-col h-full"
+            className="flex flex-col h-full min-h-0 overflow-hidden"
             style={{ width: `${sizes[1]}%` }}
           >
             <EditorPane

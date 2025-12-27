@@ -106,7 +106,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
   // Loading state handling
   if (isAuthLoading || gameLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-full">
         <Loader variant="spinner" size="lg" />
       </div>
     );
@@ -120,7 +120,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
   // Error state handling
   if (gameError) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-[var(--red-11)] mb-2">Error</h2>
           <p className="text-[var(--gray-11)] mb-4">{gameError}</p>
@@ -138,7 +138,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
   // No game case
   if (!game) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2 text-[var(--color-text)]">Game Not Found</h2>
           <p className="text-[var(--gray-11)]">

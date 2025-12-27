@@ -76,12 +76,12 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     // The outer container handles border radius and clipping so the inner editor
     // visuals match the rounded corners.
     const contentClass = `${
-      isMinimized ? 'h-0' : 'h-[calc(100%-40px)]'
+      isMinimized ? 'h-0' : 'flex-1 min-h-0'
     } rounded-b-lg overflow-hidden`;
 
     return (
       <div className="border rounded-lg min-w-0 h-full flex flex-col relative">
-        <div className={headerClass}>
+        <div className={`${headerClass} shrink-0`}>
           <div className="flex items-center gap-3">
             <span
               className={`font-medium truncate ${isMinimized ? 'hidden' : ''}`}

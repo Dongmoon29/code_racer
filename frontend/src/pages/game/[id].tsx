@@ -68,10 +68,8 @@ const GamePage: React.FC = () => {
         <title>Game Room | Code Racer</title>
         <meta name="description" content="Compete in real-time coding challenge" />
       </Head>
-      <div className="w-full min-h-screen bg-[var(--color-background)] text-[var(--color-text)]">
-        <div className="mx-auto px-4 py-6">
-          <GameRoom gameId={id} />
-        </div>
+      <div className="w-full h-full bg-[var(--color-background)] text-[var(--color-text)]">
+        <GameRoom gameId={id} />
       </div>
     </>
   );

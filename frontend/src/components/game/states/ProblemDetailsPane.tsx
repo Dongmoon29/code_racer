@@ -109,7 +109,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
           }
         >
           {activeTab === 'description' ? (
-            <div className="p-4 space-y-4 h-full">
+            <div className="p-4 space-y-4">
               <div>
                 <h2 className="text-xl font-medium mb-2">
                   Problem Description
@@ -161,7 +161,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
               </div>
             </div>
           ) : (
-            <div className="p-4 h-full">
+            <div className="p-4">
               {submissionProgress && testCases ? (
                 <TestCaseDisplay
                   submissionProgress={submissionProgress}
