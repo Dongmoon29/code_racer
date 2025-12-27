@@ -1,4 +1,4 @@
-import { FC, memo, useCallback, useEffect, useState, useRef } from 'react';
+import { FC, memo, useCallback, useState, useRef } from 'react';
 import { Game, SubmitResult } from '@/types';
 import { SubmissionProgress } from '@/types/websocket';
 import { useTheme } from 'next-themes';
@@ -9,6 +9,7 @@ import { useFullscreen } from '@/contexts/FullscreenContext';
 import { useLofiPlayer } from '@/contexts/LofiPlayerContext';
 import { LofiPlayer } from '@/components/ui/LofiPlayer';
 import { ResizeHandle } from '../ResizeHandle';
+import { useToast } from '@/components/ui/Toast';
 
 interface PlayingGameProps {
   game: Game;
@@ -38,19 +39,20 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
     onSubmitCode,
   }) => {
     const { theme } = useTheme();
-    const { isFullscreen, setIsFullscreen } = useFullscreen();
+    const { isFullscreen, toggleFullscreen } = useFullscreen();
     const { showMusicPlayer, setShowMusicPlayer, setIsMusicPlaying } =
       useLofiPlayer();
+    const { showToast } = useToast();
     const [maximizedEditor, setMaximizedEditor] = useState<
       'my' | 'opponent' | null
     >(null);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
-    const [isFullscreenMy, setIsFullscreenMy] = useState(false);
     const [sizesNormal, setSizesNormal] = useState<number[]>([50, 50]);
     const [isResizing, setIsResizing] = useState(false);
     const [problemPaneWidth, setProblemPaneWidth] = useState(25); // percentage
     const [isProblemPaneResizing, setIsProblemPaneResizing] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const fullscreenContainerRef = useRef<HTMLDivElement>(null);
 
     const isSinglePlayerMode = game.mode === 'single';
 
@@ -62,9 +64,19 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
       setIsDescriptionExpanded((prev) => !prev);
     }, []);
 
-    const handleToggleFullscreen = useCallback(() => {
-      setIsFullscreenMy((prev) => !prev);
-    }, []);
+    const handleToggleFullscreen = useCallback(async () => {
+      if (!fullscreenContainerRef.current) return;
+
+      try {
+        await toggleFullscreen(fullscreenContainerRef.current);
+      } catch (error) {
+        showToast({
+          title: 'Fullscreen Error',
+          message: 'Failed to toggle fullscreen mode',
+          variant: 'error',
+        });
+      }
+    }, [toggleFullscreen, showToast]);
 
     const handleProblemPaneResize = useCallback((deltaX: number) => {
       if (!containerRef.current) return;
@@ -89,25 +101,14 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
       document.body.classList.remove('resizing');
     }, []);
 
-    // ESC to exit fullscreen
-    useEffect(() => {
-      const onKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          setIsFullscreenMy(false);
-        }
-      };
-      window.addEventListener('keydown', onKeyDown);
-      return () => window.removeEventListener('keydown', onKeyDown);
-    }, [setIsFullscreen]);
-
-    // Sync local fullscreen toggle with global context
-    useEffect(() => {
-      setIsFullscreen(isFullscreenMy);
-      return () => setIsFullscreen(false);
-    }, [isFullscreenMy, setIsFullscreen]);
+    // ESC key is handled automatically by browser fullscreen API
+    // No manual ESC handler needed
 
     return (
-      <div className="flex flex-col h-full overflow-hidden">
+      <div
+        ref={fullscreenContainerRef}
+        className="flex flex-col h-full overflow-hidden"
+      >
         {!isFullscreen ? (
           <div
             ref={containerRef}
