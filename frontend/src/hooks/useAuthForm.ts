@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import { useForm, UseFormReturn, FieldValues } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { extractErrorMessage } from '@/lib/error-utils';
 import type { AnyObjectSchema } from 'yup';
 
-interface UseAuthFormOptions<T> {
+interface UseAuthFormOptions<T extends FieldValues> {
   schema: AnyObjectSchema;
   onSubmit: (data: T) => Promise<void>;
   defaultErrorMessage?: string;
 }
 
-interface UseAuthFormReturn<T> {
+interface UseAuthFormReturn<T extends FieldValues> {
   form: UseFormReturn<T>;
   loading: boolean;
   error: string | null;
@@ -23,7 +23,7 @@ interface UseAuthFormReturn<T> {
  * Reusable hook for authentication forms (login, register, etc.)
  * Consolidates common form state management, validation, and error handling
  */
-export function useAuthForm<T>({
+export function useAuthForm<T extends FieldValues>({
   schema,
   onSubmit,
   defaultErrorMessage = 'Operation failed',
@@ -33,7 +33,7 @@ export function useAuthForm<T>({
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<T>({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(schema) as any,
     mode: 'onBlur',
   });
 

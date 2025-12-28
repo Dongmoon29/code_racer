@@ -57,7 +57,7 @@ export const useProblem = (id: string) => {
 export const useCreateProblem = () => {
   return useApiMutation<ProblemDetail, CreateProblemRequest>({
     mutationFn: (data) => createProblem(data),
-    invalidateKeys: [PROBLEM_QUERY_KEYS.lists()],
+    invalidateKeys: [PROBLEM_QUERY_KEYS.lists() as readonly unknown[]],
     errorContext: { component: 'useCreateProblem', action: 'createProblem' },
   });
 };
@@ -69,10 +69,10 @@ export const useUpdateProblem = () => {
     updateKeys: [
       {
         key: (variables: UpdateProblemVariables) => PROBLEM_QUERY_KEYS.detail(variables.id),
-        updater: (_oldData, newData) => newData,
-      } as any,
+        updater: (_oldData: unknown, newData: ProblemDetail) => newData,
+      },
     ],
-    invalidateKeys: [PROBLEM_QUERY_KEYS.lists()],
+    invalidateKeys: [PROBLEM_QUERY_KEYS.lists() as readonly unknown[]],
     errorContext: { component: 'useUpdateProblem', action: 'updateProblem' },
   });
 };
@@ -86,12 +86,12 @@ export const useDeleteProblem = () => {
       await deleteProblem(id);
       return id;
     },
-    invalidateKeys: [PROBLEM_QUERY_KEYS.lists()],
+    invalidateKeys: [PROBLEM_QUERY_KEYS.lists() as readonly unknown[]],
     errorContext: { component: 'useDeleteProblem', action: 'deleteProblem' },
-    onSuccess: (deletedId) => {
+    onSuccess: (deletedId: string) => {
       // Remove the problem from cache
       queryClient.removeQueries({
-        queryKey: PROBLEM_QUERY_KEYS.detail(deletedId),
+        queryKey: PROBLEM_QUERY_KEYS.detail(deletedId) as readonly unknown[] as unknown[],
       });
     },
   });

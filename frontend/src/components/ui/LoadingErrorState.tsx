@@ -8,7 +8,7 @@ interface LoadingErrorStateProps {
   emptyMessage?: string;
   errorMessage?: string;
   children: ReactNode;
-  loaderVariant?: 'spinner' | 'inline' | 'dots';
+  loaderVariant?: 'spinner' | 'fullscreen' | 'inline';
   loaderSize?: 'sm' | 'md' | 'lg';
 }
 

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useErrorHandler } from './useErrorHandler';
 
 /**
@@ -7,10 +7,14 @@ import { useErrorHandler } from './useErrorHandler';
  */
 export function useApiQuery<TData, TError = Error>(
   options: {
-    queryKey: unknown[];
+    queryKey: readonly unknown[];
     queryFn: () => Promise<TData>;
     errorContext?: { component: string; action: string; [key: string]: unknown };
-  } & Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+    enabled?: boolean;
+    staleTime?: number;
+    gcTime?: number;
+    retry?: number | boolean | ((failureCount: number, error: unknown) => boolean);
+  }
 ) {
   const { queryKey, queryFn, errorContext, ...queryOptions } = options;
   const errorHandler = useErrorHandler(
@@ -18,7 +22,7 @@ export function useApiQuery<TData, TError = Error>(
     errorContext?.action || 'fetch'
   );
 
-  return useQuery<TData, TError>({
+  return useQuery({
     queryKey,
     queryFn: async () => {
       try {
@@ -31,7 +35,7 @@ export function useApiQuery<TData, TError = Error>(
     staleTime: 5 * 60 * 1000, // 5 minutes default
     gcTime: 10 * 60 * 1000, // 10 minutes default (replaces cacheTime)
     ...queryOptions,
-  });
+  }) as any;
 }
 
 /**
@@ -41,10 +45,11 @@ export function useApiQuery<TData, TError = Error>(
 export function useApiMutation<TData, TVariables, TError = Error>(
   options: {
     mutationFn: (variables: TVariables) => Promise<TData>;
-    invalidateKeys?: unknown[][];
-    updateKeys?: Array<{ key: unknown[]; updater: (oldData: unknown, newData: TData) => unknown }>;
+    invalidateKeys?: (readonly unknown[])[];
+    updateKeys?: Array<{ key: readonly unknown[] | ((variables: TVariables) => readonly unknown[]); updater: (oldData: unknown, newData: TData) => unknown }>;
     errorContext?: { component: string; action: string; [key: string]: unknown };
-  } & Omit<UseMutationOptions<TData, TError, TVariables>, 'mutationFn'>
+    onSuccess?: (data: TData, variables: TVariables, context: unknown) => void;
+  }
 ) {
   const { mutationFn, invalidateKeys, updateKeys, errorContext, onSuccess, ...mutationOptions } = options;
   const queryClient = useQueryClient();
@@ -53,7 +58,7 @@ export function useApiMutation<TData, TVariables, TError = Error>(
     errorContext?.action || 'mutate'
   );
 
-  return useMutation<TData, TError, TVariables>({
+  return useMutation({
     mutationFn: async (variables: TVariables) => {
       try {
         return await mutationFn(variables);
@@ -62,18 +67,19 @@ export function useApiMutation<TData, TVariables, TError = Error>(
         throw error;
       }
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data: TData, variables: TVariables, context: unknown) => {
       // Update specific query keys with new data
       if (updateKeys) {
         updateKeys.forEach(({ key, updater }) => {
-          queryClient.setQueryData(key, (oldData: unknown) => updater(oldData, data));
+          const queryKey = typeof key === 'function' ? key(variables) : key;
+          queryClient.setQueryData(queryKey as unknown[], (oldData: unknown) => updater(oldData, data));
         });
       }
 
       // Invalidate related query keys to refetch
       if (invalidateKeys) {
         invalidateKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: key });
+          queryClient.invalidateQueries({ queryKey: key as unknown[] });
         });
       }
 
@@ -83,5 +89,5 @@ export function useApiMutation<TData, TVariables, TError = Error>(
       }
     },
     ...mutationOptions,
-  });
+  }) as any;
 }
