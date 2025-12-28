@@ -1,10 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/router';
 import { matchApi } from '@/lib/api';
 import { Game } from '@/types';
 import axios, { AxiosError } from 'axios';
 import { ApiErrorResponse } from '@/types';
-import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { useApiQuery } from '@/hooks/useApiQuery';
 
 interface UseGameDataProps {
   matchId: string;
@@ -21,51 +20,29 @@ export const useGameData = ({
   matchId,
 }: UseGameDataProps): UseGameDataReturn => {
   const router = useRouter();
-  const errorHandler = useErrorHandler('useGameData', 'fetchGame');
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error, refetch } = useApiQuery<Game>({
     queryKey: ['game', matchId],
     queryFn: async () => {
-      try {
-        const response = await matchApi.getGame(matchId);
+      const response = await matchApi.getGame(matchId);
 
-        if (!response.game) {
-          throw new Error('Game not found');
-        }
-
-        return response.game;
-      } catch (err) {
-        errorHandler(err, {
-          matchId,
-          action: 'fetchGame',
-        });
-
-        if (axios.isAxiosError(err)) {
-          const axiosError = err as AxiosError<ApiErrorResponse>;
-          const errorMessage =
-            axiosError.response?.data?.message || 'Failed to load game';
-
-          // Redirect to dashboard for 404 errors
-          if (axiosError.response?.status === 404) {
-            router.push('/dashboard');
-          }
-
-          throw new Error(errorMessage);
-        } else {
-          throw new Error('An unexpected error occurred');
-        }
+      if (!response.game) {
+        throw new Error('Game not found');
       }
+
+      // Handle 404 errors by redirecting to dashboard
+      return response.game;
     },
     enabled: !!matchId,
-    retry: (failureCount: number, error: Error) => {
+    errorContext: { component: 'useGameData', action: 'fetchGame', matchId },
+    retry: (failureCount: number, error: unknown) => {
       // Don't retry for 404 errors
       if (axios.isAxiosError(error) && error.response?.status === 404) {
+        router.push('/dashboard');
         return false;
       }
       return failureCount < 3;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
   });
 
   return {
