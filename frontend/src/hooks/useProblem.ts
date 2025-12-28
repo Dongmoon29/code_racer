@@ -1,5 +1,5 @@
 // React Query hooks for Problem operations
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   createProblem,
   updateProblem,
@@ -13,13 +13,13 @@ import {
   ProblemDetail,
   ProblemSummary,
 } from '@/types';
+import { useApiQuery, useApiMutation } from './useApiQuery';
 
 // Mutation variables types
 type UpdateProblemVariables = {
   id: string;
   data: UpdateProblemRequest;
 };
-import { createErrorHandler } from '@/lib/error-tracking';
 
 // Query keys
 export const PROBLEM_QUERY_KEYS = {
@@ -33,129 +33,66 @@ export const PROBLEM_QUERY_KEYS = {
 
 // Get all problems
 export const useProblems = () => {
-  const errorHandler = createErrorHandler('useProblems', 'getAllProblems');
-
-  return useQuery({
+  return useApiQuery<ProblemSummary[]>({
     queryKey: PROBLEM_QUERY_KEYS.lists(),
     queryFn: async () => {
-      try {
-        const response = await getAllProblems();
-        return response.data as ProblemSummary[];
-      } catch (error) {
-        errorHandler(error, { action: 'getAllProblems' });
-        throw error;
-      }
+      const response = await getAllProblems();
+      return response.data as ProblemSummary[];
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    errorContext: { component: 'useProblems', action: 'getAllProblems' },
   });
 };
 
 // Get single problem
 export const useProblem = (id: string) => {
-  const errorHandler = createErrorHandler('useProblem', 'getProblemById');
-
-  return useQuery({
+  return useApiQuery<ProblemDetail>({
     queryKey: PROBLEM_QUERY_KEYS.detail(id),
-    queryFn: async () => {
-      try {
-        return await getProblem(id);
-      } catch (error) {
-        errorHandler(error, {
-          action: 'getProblemById',
-          problemId: id,
-        });
-        throw error;
-      }
-    },
+    queryFn: () => getProblem(id),
     enabled: !!id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    errorContext: { component: 'useProblem', action: 'getProblemById', problemId: id },
   });
 };
 
 // Create problem mutation
 export const useCreateProblem = () => {
-  const queryClient = useQueryClient();
-  const errorHandler = createErrorHandler('useCreateProblem', 'createProblem');
-
-  return useMutation({
-    mutationFn: async (data: CreateProblemRequest) => {
-      try {
-        return await createProblem(data);
-      } catch (error) {
-        errorHandler(error, {
-          action: 'createProblem',
-          problemTitle: data.title,
-        });
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      // Invalidate and refetch problems list
-      queryClient.invalidateQueries({ queryKey: PROBLEM_QUERY_KEYS.lists() });
-    },
+  return useApiMutation<ProblemDetail, CreateProblemRequest>({
+    mutationFn: (data) => createProblem(data),
+    invalidateKeys: [PROBLEM_QUERY_KEYS.lists()],
+    errorContext: { component: 'useCreateProblem', action: 'createProblem' },
   });
 };
 
 // Update problem mutation
 export const useUpdateProblem = () => {
-  const queryClient = useQueryClient();
-  const errorHandler = createErrorHandler('useUpdateProblem', 'updateProblem');
-
-  return useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: UpdateProblemRequest;
-    }) => {
-      try {
-        return await updateProblem(id, data);
-      } catch (error) {
-        errorHandler(error, {
-          action: 'updateProblem',
-          problemId: id,
-          problemTitle: data.title,
-        });
-        throw error;
-      }
-    },
-    onSuccess: (data: ProblemDetail, variables: UpdateProblemVariables) => {
-      // Update the specific problem in cache
-      queryClient.setQueryData(PROBLEM_QUERY_KEYS.detail(variables.id), data);
-      // Invalidate and refetch problems list
-      queryClient.invalidateQueries({ queryKey: PROBLEM_QUERY_KEYS.lists() });
-    },
+  return useApiMutation<ProblemDetail, UpdateProblemVariables>({
+    mutationFn: ({ id, data }) => updateProblem(id, data),
+    updateKeys: [
+      {
+        key: (variables: UpdateProblemVariables) => PROBLEM_QUERY_KEYS.detail(variables.id),
+        updater: (_oldData, newData) => newData,
+      } as any,
+    ],
+    invalidateKeys: [PROBLEM_QUERY_KEYS.lists()],
+    errorContext: { component: 'useUpdateProblem', action: 'updateProblem' },
   });
 };
 
 // Delete problem mutation
 export const useDeleteProblem = () => {
   const queryClient = useQueryClient();
-  const errorHandler = createErrorHandler('useDeleteProblem', 'deleteProblem');
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      try {
-        await deleteProblem(id);
-        return id;
-      } catch (error) {
-        errorHandler(error, {
-          action: 'deleteProblem',
-          problemId: id,
-        });
-        throw error;
-      }
+  return useApiMutation<string, string>({
+    mutationFn: async (id) => {
+      await deleteProblem(id);
+      return id;
     },
-    onSuccess: (deletedId: string) => {
+    invalidateKeys: [PROBLEM_QUERY_KEYS.lists()],
+    errorContext: { component: 'useDeleteProblem', action: 'deleteProblem' },
+    onSuccess: (deletedId) => {
       // Remove the problem from cache
       queryClient.removeQueries({
         queryKey: PROBLEM_QUERY_KEYS.detail(deletedId),
       });
-      // Invalidate and refetch problems list
-      queryClient.invalidateQueries({ queryKey: PROBLEM_QUERY_KEYS.lists() });
     },
   });
 };
