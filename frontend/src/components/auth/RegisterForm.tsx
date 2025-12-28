@@ -1,9 +1,7 @@
-import React, { useState, FC } from 'react';
+import React, { FC } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, User } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
 import { authApi } from '@/lib/api';
 import { Loader } from '../ui/Loader';
 import { Alert } from '../ui/alert';
@@ -11,40 +9,32 @@ import { Button } from '../ui/Button';
 import { registerSchema, RegisterFormData } from '@/lib/validations/auth';
 import { OAuthButtons } from './OAuthButtons';
 import { FormField } from './FormField';
-import { extractErrorMessage } from '@/lib/error-utils';
+import { useAuthForm } from '@/hooks/useAuthForm';
 
 const RegisterForm: FC = () => {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RegisterFormData>({
-    resolver: yupResolver(registerSchema),
-    mode: 'onBlur',
-  });
 
   const onSubmit = async (data: RegisterFormData) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      await authApi.register(data.email, data.password, data.name);
-
-      router.push('/login?registered=true');
-    } catch (err: unknown) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Registration failed:', err);
-      }
-      setError(extractErrorMessage(err, 'Registration failed'));
-    } finally {
-      setLoading(false);
-    }
+    await authApi.register(data.email, data.password, data.name);
+    router.push('/login?registered=true');
   };
+
+  const {
+    form: {
+      register,
+      handleSubmit,
+      formState: { errors },
+    },
+    loading,
+    error,
+    showPassword,
+    setShowPassword,
+    handleFormSubmit,
+  } = useAuthForm<RegisterFormData>({
+    schema: registerSchema,
+    onSubmit,
+    defaultErrorMessage: 'Registration failed',
+  });
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -54,7 +44,7 @@ const RegisterForm: FC = () => {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
         <FormField
           id="name"
           label="Name"

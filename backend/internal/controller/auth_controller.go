@@ -37,21 +37,6 @@ func NewAuthController(authService interfaces.AuthService, logger logger.Logger,
 	}
 }
 
-func sendErrorResponse(ctx *gin.Context, statusCode int, message string) {
-	code := "internal_error"
-	switch statusCode {
-	case http.StatusBadRequest:
-		code = "bad_request"
-	case http.StatusUnauthorized:
-		code = "unauthorized"
-	case http.StatusForbidden:
-		code = "forbidden"
-	case http.StatusNotFound:
-		code = "not_found"
-	}
-	JSONError(ctx, statusCode, message, code)
-}
-
 // OAuthConfigProviderImpl implements OAuthConfigProvider using centralized config
 type OAuthConfigProviderImpl struct {
 	oauthConfig *config.OAuthConfig
@@ -94,7 +79,7 @@ func (p *OAuthConfigProviderImpl) GetGitHubConfig() *oauth2.Config {
 func (c *AuthController) Register(ctx *gin.Context) {
 	var req model.RegisterRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		sendErrorResponse(ctx, http.StatusBadRequest, "Invalid request: "+err.Error())
+		BadRequest(ctx, "Invalid request: "+err.Error())
 		return
 	}
 
@@ -121,7 +106,7 @@ func (c *AuthController) Register(ctx *gin.Context) {
 func (c *AuthController) Login(ctx *gin.Context) {
 	var req model.LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		sendErrorResponse(ctx, http.StatusBadRequest, "Invalid request: "+err.Error())
+		BadRequest(ctx, "Invalid request: "+err.Error())
 		return
 	}
 
@@ -155,7 +140,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 func (c *AuthController) GetCurrentUser(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
-		sendErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+		Unauthorized(ctx, "Unauthorized")
 		return
 	}
 
@@ -173,7 +158,7 @@ func (c *AuthController) GoogleAuthHandler(ctx *gin.Context) {
 
 	config := c.oauthConfigProvider.GetGoogleConfig()
 	if config == nil {
-		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get Google OAuth config")
+		InternalError(ctx, "Failed to get Google OAuth config")
 		return
 	}
 	// Add prompt=select_account to always show account selection page
@@ -189,14 +174,14 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	code := ctx.Query("code")
 	if code == "" {
 		c.logger.Error().Msg("Google OAuth callback: Authorization code not found")
-		sendErrorResponse(ctx, http.StatusBadRequest, "Authorization code not found")
+		BadRequest(ctx, "Authorization code not found")
 		return
 	}
 
 	state := ctx.Query("state")
 	if state == "" {
 		c.logger.Error().Msg("Google OAuth callback: State parameter not found")
-		sendErrorResponse(ctx, http.StatusBadRequest, "State parameter not found")
+		BadRequest(ctx, "State parameter not found")
 		return
 	}
 
@@ -220,7 +205,7 @@ func (c *AuthController) GitHubAuthHandler(ctx *gin.Context) {
 
 	config := c.oauthConfigProvider.GetGitHubConfig()
 	if config == nil {
-		sendErrorResponse(ctx, http.StatusInternalServerError, "Failed to get GitHub OAuth config")
+		InternalError(ctx, "Failed to get GitHub OAuth config")
 		return
 	}
 	url := config.AuthCodeURL(state)
@@ -233,14 +218,14 @@ func (c *AuthController) GitHubCallback(ctx *gin.Context) {
 	code := ctx.Query("code")
 	if code == "" {
 		c.logger.Error().Msg("GitHub OAuth callback: Authorization code not found")
-		sendErrorResponse(ctx, http.StatusBadRequest, "Authorization code not found")
+		BadRequest(ctx, "Authorization code not found")
 		return
 	}
 
 	state := ctx.Query("state")
 	if state == "" {
 		c.logger.Error().Msg("GitHub OAuth callback: State parameter not found")
-		sendErrorResponse(ctx, http.StatusBadRequest, "State parameter not found")
+		BadRequest(ctx, "State parameter not found")
 		return
 	}
 
@@ -261,7 +246,7 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		sendErrorResponse(ctx, http.StatusBadRequest, "Invalid request: "+err.Error())
+		BadRequest(ctx, "Invalid request: "+err.Error())
 		return
 	}
 
@@ -269,12 +254,12 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 
 	if !c.validateState(req.State) {
 		c.logger.Error().Msg("ExchangeToken: Invalid state parameter")
-		sendErrorResponse(ctx, http.StatusBadRequest, "Invalid state parameter")
+		BadRequest(ctx, "Invalid state parameter")
 		return
 	}
 
 	if req.Provider != "google" && req.Provider != "github" {
-		sendErrorResponse(ctx, http.StatusBadRequest, "Unsupported OAuth provider")
+		BadRequest(ctx, "Unsupported OAuth provider")
 		return
 	}
 
@@ -287,7 +272,7 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 	case "github":
 		response, err = c.authService.LoginWithGitHub(req.Code)
 	default:
-		sendErrorResponse(ctx, http.StatusBadRequest, "Unsupported OAuth provider")
+		BadRequest(ctx, "Unsupported OAuth provider")
 		return
 	}
 

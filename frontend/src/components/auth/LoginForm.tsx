@@ -1,9 +1,7 @@
-import React, { useState, FC } from 'react';
+import React, { FC } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
 import { authApi } from '../../lib/api';
 import { Loader } from '../ui/Loader';
 import { Button } from '../ui/Button';
@@ -13,71 +11,64 @@ import { useAuthStore } from '../../stores/authStore';
 import { loginSchema, LoginFormData } from '@/lib/validations/auth';
 import { OAuthButtons } from './OAuthButtons';
 import { FormField } from './FormField';
-import { extractErrorMessage } from '@/lib/error-utils';
+import { useAuthForm } from '@/hooks/useAuthForm';
 
 const LoginForm: FC = () => {
   const router = useRouter();
   const routerHelper = useRouterHelper(router);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: yupResolver(loginSchema),
-    mode: 'onBlur',
-  });
 
   const onSubmit = async (data: LoginFormData) => {
-    try {
-      setLoading(true);
-      setError(null);
+    const response = await authApi.login(data.email, data.password);
 
-      const response = await authApi.login(data.email, data.password);
+    if (response.success) {
+      // Store token in sessionStorage for all authentication (HTTP + WebSocket)
+      if (response.data?.token) {
+        sessionStorage.setItem('authToken', response.data.token);
+      }
 
-      if (response.success) {
-        // Store token in sessionStorage for all authentication (HTTP + WebSocket)
-        if (response.data?.token) {
-          sessionStorage.setItem('authToken', response.data.token);
+      // Always sync authStore with fresh /users/me to avoid drift
+      try {
+        const meResponse = await authApi.getCurrentUser();
+        if (meResponse.success) {
+          useAuthStore.getState().login(meResponse.data);
         }
-
-        // Always sync authStore with fresh /users/me to avoid drift
-        try {
-          const meResponse = await authApi.getCurrentUser();
-          if (meResponse.success) {
-            useAuthStore.getState().login(meResponse.data);
-          }
-        } catch (e) {
-          // If /users/me fails, fall back to login response user under data.user
-          if (response.success && response.data.user) {
-            useAuthStore.getState().login(response.data.user);
-          }
-          if (process.env.NODE_ENV === 'development') {
-            console.error(e);
-          }
+      } catch (e) {
+        // If /users/me fails, fall back to login response user under data.user
+        if (response.success && response.data.user) {
+          useAuthStore.getState().login(response.data.user);
         }
-
-        const redirect = router.query.redirect as string;
-        if (redirect) {
-          await routerHelper.push(redirect);
-        } else {
-          await routerHelper.goToDashboard();
+        if (process.env.NODE_ENV === 'development') {
+          console.error(e);
         }
+      }
+
+      const redirect = router.query.redirect as string;
+      if (redirect) {
+        await routerHelper.push(redirect);
       } else {
-        setError(response.message || 'Login failed');
+        await routerHelper.goToDashboard();
       }
-    } catch (err: unknown) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Login failed:', err);
-      }
-      setError(extractErrorMessage(err, 'Invalid email or password'));
-    } finally {
-      setLoading(false);
+    } else {
+      throw new Error(response.message || 'Login failed');
     }
   };
+
+  const {
+    form: {
+      register,
+      handleSubmit,
+      formState: { errors },
+    },
+    loading,
+    error,
+    showPassword,
+    setShowPassword,
+    handleFormSubmit,
+  } = useAuthForm<LoginFormData>({
+    schema: loginSchema,
+    onSubmit,
+    defaultErrorMessage: 'Invalid email or password',
+  });
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -87,7 +78,7 @@ const LoginForm: FC = () => {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
         <FormField
           id="email"
           label="Email"
