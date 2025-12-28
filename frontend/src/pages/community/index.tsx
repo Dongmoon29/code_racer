@@ -21,6 +21,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { useVoting } from '@/hooks/useVoting';
 
 type PostType = 'bug' | 'feature' | 'improvement' | 'other';
 type PostStatus = 'pending' | 'in_progress' | 'resolved' | 'closed';
@@ -81,12 +82,11 @@ const CommunityIndexPage = () => {
     },
   });
 
-  const voteMutation = useMutation({
-    mutationFn: (payload: { postId: string; value: -1 | 0 | 1 }) =>
-      communityApi.vote(payload.postId, payload.value),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['communityPosts'] });
-    },
+  const { handleUpvote, handleDownvote, isVoting } = useVoting({
+    entityType: 'post',
+    voteFn: (postId, value) => communityApi.vote(postId, value),
+    invalidateKeys: [['communityPosts']],
+    errorContext: { component: 'CommunityIndex' },
   });
 
   const getTypeIcon = (type: PostType) => {
@@ -368,20 +368,14 @@ const CommunityIndexPage = () => {
                         {/* Vote Group */}
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => {
-                              const next: -1 | 0 | 1 = myVote === 1 ? 0 : 1;
-                              voteMutation.mutate({
-                                postId: post.id,
-                                value: next,
-                              });
-                            }}
+                            onClick={() => handleUpvote(post.id, myVote as -1 | 0 | 1)}
                             className={`flex items-center gap-1 transition-colors text-sm ${
                               myVote === 1
                                 ? 'text-[var(--accent-9)]'
                                 : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
                             }`}
                             title={canVote ? 'Like' : 'Login to like'}
-                            disabled={!canVote || voteMutation.isPending}
+                            disabled={!canVote || isVoting}
                           >
                             <ThumbsUp className="w-4 h-4" />
                             <span className="font-medium">
@@ -389,20 +383,14 @@ const CommunityIndexPage = () => {
                             </span>
                           </button>
                           <button
-                            onClick={() => {
-                              const next: -1 | 0 | 1 = myVote === -1 ? 0 : -1;
-                              voteMutation.mutate({
-                                postId: post.id,
-                                value: next,
-                              });
-                            }}
+                            onClick={() => handleDownvote(post.id, myVote as -1 | 0 | 1)}
                             className={`flex items-center gap-1 transition-colors text-sm ${
                               myVote === -1
                                 ? 'text-red-500'
                                 : 'text-[var(--gray-11)] hover:text-red-500'
                             }`}
                             title={canVote ? 'Dislike' : 'Login to dislike'}
-                            disabled={!canVote || voteMutation.isPending}
+                            disabled={!canVote || isVoting}
                           >
                             <ThumbsDown className="w-4 h-4" />
                           </button>
