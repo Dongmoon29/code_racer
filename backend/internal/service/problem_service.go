@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/Dongmoon29/code_racer/internal/logger"
@@ -72,8 +73,13 @@ func (s *problemService) GetProblemByID(id uuid.UUID) (*model.ProblemDetail, err
 }
 
 func (s *problemService) CreateProblem(req *model.CreateProblemRequest) (*model.ProblemDetail, error) {
+	paramTypes, returnType, err := model.NormalizeFunctionContract(req.FunctionName, req.IOSchema.ParamTypes, req.IOSchema.ReturnType)
+	if err != nil {
+		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid function contract")
+	}
+	schema := model.CreateIOSchemaRequest{ParamTypes: paramTypes, ReturnType: returnType}
 	// Validate test cases
-	if err := s.ValidateTestCases(req.TestCases, req.IOSchema); err != nil {
+	if err := s.ValidateTestCases(req.TestCases, schema); err != nil {
 		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid test cases")
 	}
 
@@ -96,37 +102,19 @@ func (s *problemService) CreateProblem(req *model.CreateProblemRequest) (*model.
 		})
 	}
 
-	// Convert IOTemplates
-	var ioTemplates []model.IOTemplate
-	for _, tmpl := range req.IOTemplates {
-		ioTemplates = append(ioTemplates, model.IOTemplate{
-			Language: tmpl.Language,
-			Code:     tmpl.Code,
-		})
-	}
-
-	// Convert IOSchema
-	paramTypesJSON, err := json.Marshal(req.IOSchema.ParamTypes)
-	if err != nil {
-		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid IO schema")
-	}
-
 	problem := &model.Problem{
 		Title:        req.Title,
 		Description:  req.Description,
 		Constraints:  req.Constraints,
 		Difficulty:   model.Difficulty(req.Difficulty),
-		InputFormat:  req.InputFormat,
-		OutputFormat: req.OutputFormat,
 		FunctionName: req.FunctionName,
 		TimeLimit:    req.TimeLimit,
 		MemoryLimit:  req.MemoryLimit,
 		Examples:     examples,
 		TestCases:    testCases,
-		IOTemplates:  ioTemplates,
 		IOSchema: model.IOSchema{
-			ParamTypes: string(paramTypesJSON),
-			ReturnType: req.IOSchema.ReturnType,
+			ParamTypes: schema.ParamTypes,
+			ReturnType: schema.ReturnType,
 		},
 	}
 
@@ -150,8 +138,14 @@ func (s *problemService) UpdateProblem(id uuid.UUID, req *model.UpdateProblemReq
 		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load problem")
 	}
 
+	paramTypes, returnType, err := model.NormalizeFunctionContract(req.FunctionName, req.IOSchema.ParamTypes, req.IOSchema.ReturnType)
+	if err != nil {
+		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid function contract")
+	}
+	schema := model.CreateIOSchemaRequest{ParamTypes: paramTypes, ReturnType: returnType}
+
 	// Validate test cases
-	if err := s.ValidateTestCases(req.TestCases, req.IOSchema); err != nil {
+	if err := s.ValidateTestCases(req.TestCases, schema); err != nil {
 		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid test cases")
 	}
 
@@ -174,37 +168,19 @@ func (s *problemService) UpdateProblem(id uuid.UUID, req *model.UpdateProblemReq
 		})
 	}
 
-	// Convert IOTemplates
-	var ioTemplates []model.IOTemplate
-	for _, tmpl := range req.IOTemplates {
-		ioTemplates = append(ioTemplates, model.IOTemplate{
-			Language: tmpl.Language,
-			Code:     tmpl.Code,
-		})
-	}
-
-	// Convert IOSchema
-	paramTypesJSON, err := json.Marshal(req.IOSchema.ParamTypes)
-	if err != nil {
-		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid IO schema")
-	}
-
 	// Update fields
 	existingProblem.Title = req.Title
 	existingProblem.Description = req.Description
 	existingProblem.Constraints = req.Constraints
 	existingProblem.Difficulty = model.Difficulty(req.Difficulty)
-	existingProblem.InputFormat = req.InputFormat
-	existingProblem.OutputFormat = req.OutputFormat
 	existingProblem.FunctionName = req.FunctionName
 	existingProblem.TimeLimit = req.TimeLimit
 	existingProblem.MemoryLimit = req.MemoryLimit
 	existingProblem.Examples = examples
 	existingProblem.TestCases = testCases
-	existingProblem.IOTemplates = ioTemplates
 	existingProblem.IOSchema = model.IOSchema{
-		ParamTypes: string(paramTypesJSON),
-		ReturnType: req.IOSchema.ReturnType,
+		ParamTypes: schema.ParamTypes,
+		ReturnType: schema.ReturnType,
 	}
 
 	if err := s.problemRepo.Update(existingProblem); err != nil {
@@ -278,27 +254,25 @@ func (s *problemService) ValidateTestCases(testCases []model.CreateTestCaseReque
 	}
 
 	for i, testCase := range testCases {
-		// Validate input JSON format.
-		//
-		// Contract:
-		// - single param problems: input is a raw JSON value (e.g. 121, "()", [1,2,3])
-		// - multi param problems: input is a JSON array of args (e.g. [[1,2,3], 9])
-		if len(schema.ParamTypes) == 1 {
-			var v interface{}
-			if err := json.Unmarshal([]byte(testCase.Input), &v); err != nil {
-				return fmt.Errorf("test case %d: invalid input JSON format", i+1)
-			}
-		} else {
-			var args []interface{}
-			if err := json.Unmarshal([]byte(testCase.Input), &args); err != nil {
-				return fmt.Errorf("test case %d: invalid input JSON format", i+1)
-			}
-			if len(args) != len(schema.ParamTypes) {
-				return fmt.Errorf("test case %d: input length %d does not match schema length %d", i+1, len(args), len(schema.ParamTypes))
+		// Every test case uses one shape, including single-parameter problems:
+		// input is always a JSON array of function arguments.
+		var args []json.RawMessage
+		if err := json.Unmarshal([]byte(testCase.Input), &args); err != nil {
+			return fmt.Errorf("test case %d: input must be a JSON array of arguments", i+1)
+		}
+		if len(args) != len(schema.ParamTypes) {
+			return fmt.Errorf("test case %d: argument count %d does not match contract count %d", i+1, len(args), len(schema.ParamTypes))
+		}
+		for argIndex, arg := range args {
+			if err := model.ValidateJSONValue(arg, schema.ParamTypes[argIndex]); err != nil {
+				return fmt.Errorf("test case %d argument %d: %w", i+1, argIndex+1, err)
 			}
 		}
-		if testCase.ExpectedOutput == "" {
+		if strings.TrimSpace(testCase.ExpectedOutput) == "" {
 			return fmt.Errorf("test case %d: expected output cannot be empty", i+1)
+		}
+		if err := model.ValidateJSONValue(json.RawMessage(testCase.ExpectedOutput), schema.ReturnType); err != nil {
+			return fmt.Errorf("test case %d expected output: %w", i+1, err)
 		}
 	}
 	return nil

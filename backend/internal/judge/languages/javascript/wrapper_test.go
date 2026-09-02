@@ -1,6 +1,8 @@
 package javascript
 
 import (
+	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -12,10 +14,8 @@ func TestWrapper_WrapSingle_WithImports(t *testing.T) {
 
 	problem := &model.Problem{
 		FunctionName: "solution",
-		InputFormat:  "array",
-		OutputFormat: "array",
 		IOSchema: model.IOSchema{
-			ParamTypes: `["int[]"]`,
+			ParamTypes: []string{"int[]"},
 			ReturnType: "int[]",
 		},
 	}
@@ -33,7 +33,7 @@ func TestWrapper_WrapSingle_WithImports(t *testing.T) {
 function solution(nums) {
     return nums.sort((a, b) => a - b);
 }`,
-			testCase: "[3,1,4,1,5]",
+			testCase: "[[3,1,4,1,5]]",
 			expected: `// ===== User code (preserved as-is) =====
 const fs = require('fs');
 
@@ -47,8 +47,8 @@ function solution(nums) {
     try {
         const raw = require('fs').readFileSync(0, 'utf-8').trim();
         if (!raw) return;
-        const value = JSON.parse(raw);
-        const result = solution(value);
+        const args = JSON.parse(raw);
+        const result = solution(...args);
         const output = result === undefined ? 'null' : JSON.stringify(result);
         process.stdout.write(output);
     } catch (error) {
@@ -64,7 +64,7 @@ function solution(nums) {
 function solution(nums) {
     return nums.sort((a, b) => a - b);
 }`,
-			testCase: "[3,1,4,1,5]",
+			testCase: "[[3,1,4,1,5]]",
 			expected: `// ===== User code (preserved as-is) =====
 import { readFile } from 'fs';
 
@@ -78,8 +78,8 @@ function solution(nums) {
     try {
         const raw = require('fs').readFileSync(0, 'utf-8').trim();
         if (!raw) return;
-        const value = JSON.parse(raw);
-        const result = solution(value);
+        const args = JSON.parse(raw);
+        const result = solution(...args);
         const output = result === undefined ? 'null' : JSON.stringify(result);
         process.stdout.write(output);
     } catch (error) {
@@ -96,7 +96,7 @@ const path = require('path');
 function solution(nums) {
     return nums.sort((a, b) => a - b);
 }`,
-			testCase: "[3,1,4,1,5]",
+			testCase: "[[3,1,4,1,5]]",
 			expected: `// ===== User code (preserved as-is) =====
 const fs = require('fs');
 const path = require('path');
@@ -111,8 +111,8 @@ function solution(nums) {
     try {
         const raw = require('fs').readFileSync(0, 'utf-8').trim();
         if (!raw) return;
-        const value = JSON.parse(raw);
-        const result = solution(value);
+        const args = JSON.parse(raw);
+        const result = solution(...args);
         const output = result === undefined ? 'null' : JSON.stringify(result);
         process.stdout.write(output);
     } catch (error) {
@@ -126,7 +126,7 @@ function solution(nums) {
 			code: `function solution(nums) {
     return nums.sort((a, b) => a - b);
 }`,
-			testCase: "[3,1,4,1,5]",
+			testCase: "[[3,1,4,1,5]]",
 			expected: `// ===== User code (preserved as-is) =====
 function solution(nums) {
     return nums.sort((a, b) => a - b);
@@ -138,8 +138,8 @@ function solution(nums) {
     try {
         const raw = require('fs').readFileSync(0, 'utf-8').trim();
         if (!raw) return;
-        const value = JSON.parse(raw);
-        const result = solution(value);
+        const args = JSON.parse(raw);
+        const result = solution(...args);
         const output = result === undefined ? 'null' : JSON.stringify(result);
         process.stdout.write(output);
     } catch (error) {
@@ -157,4 +157,36 @@ function solution(nums) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestWrapper_WrapSingle_ExecutesArgumentArray(t *testing.T) {
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("node executable is unavailable")
+	}
+	wrapper := NewWrapper()
+	problem := &model.Problem{
+		FunctionName: "twoSum",
+		IOSchema: model.IOSchema{
+			ParamTypes: []string{"int[]", "int"},
+			ReturnType: "int[]",
+		},
+	}
+	code := `function twoSum(nums, target) {
+  const seen = new Map();
+  for (let index = 0; index < nums.length; index++) {
+    const complement = target - nums[index];
+    if (seen.has(complement)) return [seen.get(complement), index];
+    seen.set(nums[index], index);
+  }
+  return [];
+}`
+
+	wrapped, err := wrapper.WrapSingle(code, `[[2,7,11,15],9]`, problem)
+	assert.NoError(t, err)
+	cmd := exec.Command(node, "-e", wrapped)
+	cmd.Stdin = strings.NewReader(`[[2,7,11,15],9]`)
+	output, err := cmd.CombinedOutput()
+	assert.NoError(t, err, string(output))
+	assert.JSONEq(t, `[0,1]`, string(output))
 }

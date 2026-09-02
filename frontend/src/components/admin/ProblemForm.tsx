@@ -17,18 +17,18 @@ const defaultFormData: ProblemFormData = {
   examples: [],
   constraints: '',
   test_cases: [{ input: '', expected_output: '' }],
-  expected_outputs: [],
   difficulty: 'Easy',
-  input_format: '',
-  output_format: '',
   function_name: '',
-  io_templates: [],
   time_limit: 1000,
   memory_limit: 128,
   io_schema: { param_types: [], return_type: '' },
 };
 
-const difficultyOptions = ['Easy', 'Medium', 'Hard'];
+const difficultyOptions: ProblemFormData['difficulty'][] = [
+  'Easy',
+  'Medium',
+  'Hard',
+];
 
 export default function ProblemForm({
   initialData,
@@ -48,9 +48,9 @@ export default function ProblemForm({
     }
   }, [initialData]);
 
-  const handleInputChange = (
-    field: keyof ProblemFormData,
-    value: string | number
+  const handleInputChange = <K extends keyof ProblemFormData>(
+    field: K,
+    value: ProblemFormData[K]
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -144,7 +144,12 @@ export default function ProblemForm({
             </label>
             <select
               value={formData.difficulty}
-              onChange={(e) => handleInputChange('difficulty', e.target.value)}
+              onChange={(e) =>
+                handleInputChange(
+                  'difficulty',
+                  e.target.value as ProblemFormData['difficulty']
+                )
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
@@ -206,41 +211,6 @@ export default function ProblemForm({
           />
         </div>
 
-        {/* Input/Output Format */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium  mb-2">
-              Input Format *
-            </label>
-            <input
-              type="text"
-              value={formData.input_format}
-              onChange={(e) =>
-                handleInputChange('input_format', e.target.value)
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="array"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium  mb-2">
-              Output Format *
-            </label>
-            <input
-              type="text"
-              value={formData.output_format}
-              onChange={(e) =>
-                handleInputChange('output_format', e.target.value)
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="number"
-              required
-            />
-          </div>
-        </div>
-
         {/* IO Schema */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -267,9 +237,12 @@ export default function ProblemForm({
                 }))
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="number, number"
+              placeholder="int[], int"
               required
             />
+            <p className="mt-1 text-xs text-[var(--gray-10)]">
+              Supported: int, int64, float64, bool, string, and []/[][] arrays.
+            </p>
           </div>
 
           <div>
@@ -286,7 +259,7 @@ export default function ProblemForm({
                 }))
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="number"
+              placeholder="int[]"
               required
             />
           </div>
@@ -335,7 +308,7 @@ export default function ProblemForm({
                       handleTestCaseChange(index, 'input', e.target.value)
                     }
                     className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="1, 2, 3"
+                    placeholder='[[2,7,11,15], 9]'
                     required
                   />
                 </div>
@@ -368,53 +341,10 @@ export default function ProblemForm({
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Expected Output */}
-        <div>
-          <label className="block text-sm font-medium  mb-2">
-            Expected Output *
-          </label>
-          <input
-            type="text"
-            value={formData.expected_outputs}
-            onChange={(e) =>
-              handleInputChange('expected_outputs', e.target.value)
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="6"
-            required
-          />
-        </div>
-
-        {/* Code Templates */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-800">Code Templates</h3>
-
-          {['javascript', 'python', 'go', 'java', 'cpp'].map((lang) => (
-            <div key={lang}>
-              <label className="block text-sm font-medium  mb-2 capitalize">
-                {lang} Template *
-              </label>
-              <textarea
-                value={
-                  formData[
-                    `${lang}_template` as keyof ProblemFormData
-                  ] as string
-                }
-                onChange={(e) =>
-                  handleInputChange(
-                    `${lang}_template` as keyof ProblemFormData,
-                    e.target.value
-                  )
-                }
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                placeholder={`Enter ${lang} code template`}
-                required
-              />
-            </div>
-          ))}
+          <p className="mt-2 text-xs text-[var(--gray-10)]">
+            Input must always be a JSON array of function arguments. A
+            single-parameter case still uses an array, for example [121].
+          </p>
         </div>
 
         {/* Limits */}

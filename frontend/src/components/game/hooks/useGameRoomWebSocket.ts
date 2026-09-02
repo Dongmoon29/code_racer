@@ -69,8 +69,10 @@ export const useGameRoomWebSocket = ({
   useEffect(() => {
     if (game?.problem && !isTemplateSet.current && !myCode) {
       const template = getCodeTemplate(game.problem, selectedLanguage);
-      setMyCode(template);
-      isTemplateSet.current = true;
+      if (template.trim()) {
+        setMyCode(template);
+        isTemplateSet.current = true;
+      }
     }
   }, [game?.problem, isTemplateSet, myCode, selectedLanguage, setMyCode]);
 

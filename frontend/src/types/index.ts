@@ -132,20 +132,12 @@ export interface TestCase {
 }
 
 export interface IOSchema {
-  param_types: string | string[]; // Can come as JSON string from backend
+  param_types: string[];
   return_type: string;
 }
 
-export interface IOTemplate {
-  id: string;
-  problem_id: string;
-  language: string;
-  code: string;
-}
-
-// Create/Update payload shape (no DB identifiers)
-export interface IOTemplateRequest {
-  language: string;
+export interface StarterTemplate {
+  language: Language;
   code: string;
 }
 
@@ -155,15 +147,11 @@ export interface CreateProblemRequest {
   examples: ExampleRequest[];
   constraints: string;
   test_cases: TestCase[];
-  expected_outputs: string[];
   difficulty: 'Easy' | 'Medium' | 'Hard';
-  input_format: string;
-  output_format: string;
   function_name: string;
   io_schema: IOSchema;
-  io_templates: IOTemplateRequest[];
-  time_limit?: number;
-  memory_limit?: number;
+  time_limit: number;
+  memory_limit: number;
 }
 
 export interface UpdateProblemRequest extends Partial<CreateProblemRequest> {
@@ -183,12 +171,9 @@ export interface ProblemDetail extends ProblemSummary {
   examples: Example[];
   constraints: string;
   test_cases: TestCase[];
-  expected_outputs: string[];
-  input_format: string;
-  output_format: string;
   function_name: string;
   io_schema: IOSchema;
-  io_templates: IOTemplate[];
+  io_templates: StarterTemplate[];
   time_limit: number;
   memory_limit: number;
 }
@@ -200,13 +185,9 @@ export interface ProblemFormData {
   examples: ExampleRequest[];
   constraints: string;
   test_cases: TestCase[];
-  expected_outputs: string[];
   difficulty: 'Easy' | 'Medium' | 'Hard';
-  input_format: string;
-  output_format: string;
   function_name: string;
   io_schema: IOSchema;
-  io_templates: IOTemplateRequest[];
   time_limit: number;
   memory_limit: number;
   created_at?: string;
@@ -214,7 +195,7 @@ export interface ProblemFormData {
 }
 
 // 게임 관련 타입
-export type Language = 'javascript' | 'python' | 'go' | 'java' | 'cpp';
+export type Language = 'javascript' | 'python' | 'go';
 export type GameDifficulty = 'Easy' | 'Medium' | 'Hard';
 
 export interface Player {

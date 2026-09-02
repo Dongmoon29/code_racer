@@ -16,10 +16,8 @@ func TestWrapper_WrapSingle_WithImports(t *testing.T) {
 
 	problem := &model.Problem{
 		FunctionName: "solution",
-		InputFormat:  "array",
-		OutputFormat: "array",
 		IOSchema: model.IOSchema{
-			ParamTypes: `["int[]"]`,
+			ParamTypes: []string{"int[]"},
 			ReturnType: "int[]",
 		},
 	}
@@ -31,7 +29,7 @@ func solution(nums []int) []int {
     return nums
 }`
 
-	result, err := wrapper.WrapSingle(code, "[3,1,4,1,5]", problem)
+	result, err := wrapper.WrapSingle(code, "[[3,1,4,1,5]]", problem)
 	assert.NoError(t, err)
 	assert.Contains(t, result, "package main")
 	assert.Contains(t, result, "\"sort\"")
@@ -39,7 +37,7 @@ func solution(nums []int) []int {
 	assert.Contains(t, result, `"io/ioutil"`)
 	assert.NotContains(t, result, `"io"`)
 	assert.Contains(t, result, "var arg0 []int")
-	assert.Contains(t, result, "json.Unmarshal([]byte(raw), &arg0)")
+	assert.Contains(t, result, "json.Unmarshal(args[0], &arg0)")
 	assert.Contains(t, result, "result := solution(arg0)")
 	assert.NotContains(t, result, "testCaseJSON :=")
 }
@@ -82,7 +80,7 @@ func TestWrapper_WrapSingle_ExecutesFullGoSubmission(t *testing.T) {
 	problem := &model.Problem{
 		FunctionName: "twoSum",
 		IOSchema: model.IOSchema{
-			ParamTypes: `["int[]", "int"]`,
+			ParamTypes: []string{"int[]", "int"},
 			ReturnType: "int[]",
 		},
 	}

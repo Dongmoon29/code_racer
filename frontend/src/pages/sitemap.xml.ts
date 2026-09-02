@@ -33,7 +33,7 @@ function SiteMap() {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://coderacer.app';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://coderacer.codes';
   const currentDate = new Date().toISOString().split('T')[0];
 
   // Define all static pages

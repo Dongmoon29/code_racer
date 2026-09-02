@@ -48,21 +48,8 @@ func (s *judgeService) validateProblemIOSchema(problem *model.Problem) error {
 	if problem == nil {
 		return fmt.Errorf("problem is nil")
 	}
-	raw := strings.TrimSpace(problem.IOSchema.ParamTypes)
-	if raw == "" {
-		return fmt.Errorf("problem io_schema.param_types is missing")
-	}
-	var pts []string
-	if err := json.Unmarshal([]byte(raw), &pts); err != nil || len(pts) == 0 {
-		return fmt.Errorf("problem io_schema.param_types is invalid")
-	}
-	for i, pt := range pts {
-		if strings.TrimSpace(pt) == "" {
-			return fmt.Errorf("problem io_schema.param_types[%d] is empty", i)
-		}
-	}
-	if strings.TrimSpace(problem.IOSchema.ReturnType) == "" {
-		return fmt.Errorf("problem io_schema.return_type is missing")
+	if err := model.ValidateFunctionContract(problem.FunctionName, problem.IOSchema.ParamTypes, problem.IOSchema.ReturnType); err != nil {
+		return fmt.Errorf("problem function contract is invalid: %w", err)
 	}
 	if len(problem.TestCases) == 0 {
 		return fmt.Errorf("problem has no test cases")

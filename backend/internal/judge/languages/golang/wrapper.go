@@ -1,7 +1,6 @@
 package golang
 
 import (
-	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -35,8 +34,8 @@ func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.Proble
 
 	// Determine param types from IOSchema (required).
 	paramTypes := []string{}
-	if problem != nil && strings.TrimSpace(problem.IOSchema.ParamTypes) != "" {
-		_ = json.Unmarshal([]byte(problem.IOSchema.ParamTypes), &paramTypes)
+	if problem != nil {
+		paramTypes = problem.IOSchema.ParamTypes
 	}
 	if len(paramTypes) == 0 {
 		return "", fmt.Errorf("missing or invalid io_schema.param_types")
@@ -232,20 +231,6 @@ func buildGoArgUnmarshal(paramTypes []string, refs map[string]string) (decl stri
 	jsonRef := refs["encoding/json"]
 	fmtRef := refs["fmt"]
 	osRef := refs["os"]
-	// Single param: stdin is a JSON value
-	if len(paramTypes) == 1 {
-		goType, ok2 := goTypeFromSchema(paramTypes[0])
-		if !ok2 {
-			return "", "", false
-		}
-		decl += fmt.Sprintf("\tvar arg0 %s\n", goType)
-		decl += fmt.Sprintf("\tif err := %s.Unmarshal([]byte(raw), &arg0); err != nil {\n", jsonRef)
-		decl += fmt.Sprintf("\t\t%s.Fprint(%s.Stderr, \"invalid input\")\n", fmtRef, osRef)
-		decl += fmt.Sprintf("\t\t%s.Exit(1)\n", osRef)
-		decl += "\t}\n"
-		return decl, "arg0", true
-	}
-
 	decl += fmt.Sprintf("\tvar args []%s.RawMessage\n", jsonRef)
 	decl += fmt.Sprintf("\tif err := %s.Unmarshal([]byte(raw), &args); err != nil {\n", jsonRef)
 	decl += fmt.Sprintf("\t\t%s.Fprint(%s.Stderr, \"invalid input\")\n", fmtRef, osRef)
@@ -275,40 +260,4 @@ func buildGoArgUnmarshal(paramTypes []string, refs map[string]string) (decl stri
 		call += fmt.Sprintf("arg%d", i)
 	}
 	return decl, call, true
-}
-
-func goArgLines(varName string, paramTypes []string) (string, string) {
-	decl := ""
-	call := ""
-	for i, pt := range paramTypes {
-		idx := fmt.Sprintf("%s[%d]", varName, i)
-		arg := fmt.Sprintf("arg%d", i)
-		switch pt {
-		case "number", "int":
-			decl += fmt.Sprintf("    %s := toInt(%s)\n", arg, idx)
-			call += arg
-		case "float":
-			decl += fmt.Sprintf("    %s := toFloat(%s)\n", arg, idx)
-			call += arg
-		case "boolean", "bool":
-			decl += fmt.Sprintf("    %s := toBool(%s)\n", arg, idx)
-			call += arg
-		case "string":
-			decl += fmt.Sprintf("    %s := toString(%s)\n", arg, idx)
-			call += arg
-		case "array", "int[]", "[]int":
-			decl += fmt.Sprintf("    %s := toIntSlice(%s)\n", arg, idx)
-			call += arg
-		case "int[][]", "array[]":
-			decl += fmt.Sprintf("    %s := toIntSliceSlice(%s)\n", arg, idx)
-			call += arg
-		default:
-			decl += fmt.Sprintf("    %s := %s\n", arg, idx)
-			call += arg
-		}
-		if i < len(paramTypes)-1 {
-			call += ", "
-		}
-	}
-	return decl, call
 }

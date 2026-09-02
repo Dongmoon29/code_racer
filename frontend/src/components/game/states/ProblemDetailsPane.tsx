@@ -3,11 +3,7 @@ import { FileText, Minimize2, CheckCircle2, Loader2 } from 'lucide-react';
 import { ProblemDetailsTabs } from './ProblemDetailsTabs';
 import TestCaseDisplay from '../TestCaseDisplay';
 import { SubmissionProgress } from '@/types/websocket';
-
-interface IOSchema {
-  param_types: string | string[]; // Can come as JSON string from backend
-  return_type: string;
-}
+import { IOSchema } from '@/types';
 
 interface ProblemDetailsPaneProps {
   isExpanded: boolean;

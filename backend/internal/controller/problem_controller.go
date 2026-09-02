@@ -64,7 +64,6 @@ func (c *ProblemController) GetProblemByID(ctx *gin.Context) {
 	// Hidden judge cases are visible only in the admin problem editor.
 	if role, _ := ctx.Get("userRole"); role != "admin" && problem != nil {
 		problem.TestCases = []model.TestCase{}
-		problem.ExpectedOutputs = []string{}
 	}
 
 	// Log problem data as JSON for easy debugging

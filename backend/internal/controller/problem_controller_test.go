@@ -163,8 +163,6 @@ func TestProblemController_CreateProblem(t *testing.T) {
 		Description:  "Problem description",
 		Constraints:  "1 <= n <= 100",
 		Difficulty:   "Easy",
-		InputFormat:  "array",
-		OutputFormat: "number",
 		FunctionName: "solve",
 		TimeLimit:    1000,
 		MemoryLimit:  128,
@@ -179,12 +177,6 @@ func TestProblemController_CreateProblem(t *testing.T) {
 			{
 				Input:          `[1, 2, 3]`,
 				ExpectedOutput: "6",
-			},
-		},
-		IOTemplates: []model.CreateIOTemplateRequest{
-			{
-				Language: "javascript",
-				Code:     "function solve() {}",
 			},
 		},
 		IOSchema: model.CreateIOSchemaRequest{
@@ -236,8 +228,6 @@ func TestProblemController_CreateProblem_InvalidDifficulty(t *testing.T) {
 		Description:  "Problem description",
 		Constraints:  "1 <= n <= 100",
 		Difficulty:   "Invalid", // 잘못된 난이도
-		InputFormat:  "array",
-		OutputFormat: "number",
 		FunctionName: "solve",
 		TimeLimit:    1000,
 		MemoryLimit:  128,
@@ -252,12 +242,6 @@ func TestProblemController_CreateProblem_InvalidDifficulty(t *testing.T) {
 			{
 				Input:          `[1, 2, 3]`,
 				ExpectedOutput: "6",
-			},
-		},
-		IOTemplates: []model.CreateIOTemplateRequest{
-			{
-				Language: "javascript",
-				Code:     "function solve() {}",
 			},
 		},
 		IOSchema: model.CreateIOSchemaRequest{
@@ -297,8 +281,6 @@ func TestProblemController_UpdateProblem(t *testing.T) {
 		Description:  "Updated description",
 		Constraints:  "1 <= n <= 1000",
 		Difficulty:   "Medium",
-		InputFormat:  "array",
-		OutputFormat: "number",
 		FunctionName: "solve",
 		TimeLimit:    1000,
 		MemoryLimit:  128,
@@ -313,12 +295,6 @@ func TestProblemController_UpdateProblem(t *testing.T) {
 			{
 				Input:          `[1, 2, 3, 4]`,
 				ExpectedOutput: "10",
-			},
-		},
-		IOTemplates: []model.CreateIOTemplateRequest{
-			{
-				Language: "javascript",
-				Code:     "function solve() {}",
 			},
 		},
 		IOSchema: model.CreateIOSchemaRequest{

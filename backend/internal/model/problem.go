@@ -24,8 +24,6 @@ type Problem struct {
 	Description  string     `gorm:"type:text;not null" json:"description"`
 	Constraints  string     `gorm:"type:text;not null" json:"constraints"`
 	Difficulty   Difficulty `gorm:"type:varchar(20);not null" json:"difficulty"`
-	InputFormat  string     `gorm:"type:varchar(50);not null" json:"input_format"`
-	OutputFormat string     `gorm:"type:varchar(50);not null" json:"output_format"`
 	FunctionName string     `gorm:"type:varchar(50);not null" json:"function_name"`
 	TimeLimit    int        `gorm:"not null" json:"time_limit"`
 	MemoryLimit  int        `gorm:"not null" json:"memory_limit"`
@@ -33,10 +31,9 @@ type Problem struct {
 	UpdatedAt    time.Time  `json:"updated_at"`
 
 	// Relations
-	Examples    []Example    `gorm:"foreignKey:ProblemID;constraint:OnDelete:CASCADE" json:"examples"`
-	TestCases   []TestCase   `gorm:"foreignKey:ProblemID;constraint:OnDelete:CASCADE" json:"test_cases"`
-	IOTemplates []IOTemplate `gorm:"foreignKey:ProblemID;constraint:OnDelete:CASCADE" json:"io_templates"`
-	IOSchema    IOSchema     `gorm:"foreignKey:ProblemID;constraint:OnDelete:CASCADE" json:"io_schema"`
+	Examples  []Example  `gorm:"foreignKey:ProblemID;constraint:OnDelete:CASCADE" json:"examples"`
+	TestCases []TestCase `gorm:"foreignKey:ProblemID;constraint:OnDelete:CASCADE" json:"test_cases"`
+	IOSchema  IOSchema   `gorm:"foreignKey:ProblemID;constraint:OnDelete:CASCADE" json:"io_schema"`
 }
 
 // BeforeCreate sets UUID automatically
@@ -77,27 +74,12 @@ func (t *TestCase) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 // ========================
-// IOTemplate represents language-specific code templates
-// ========================
-type IOTemplate struct {
-	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
-	ProblemID uuid.UUID `gorm:"type:uuid;not null;index" json:"problem_id"`
-	Language  string    `gorm:"type:varchar(20)" json:"language"`
-	Code      string    `gorm:"type:text" json:"code"`
-}
-
-func (t *IOTemplate) BeforeCreate(tx *gorm.DB) (err error) {
-	t.ID = uuid.New()
-	return
-}
-
-// ========================
 // IOSchema represents input/output type schema
 // ========================
 type IOSchema struct {
 	ID         uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
 	ProblemID  uuid.UUID `gorm:"type:uuid;not null;index" json:"problem_id"`
-	ParamTypes string    `gorm:"type:text" json:"param_types"` // JSON string
+	ParamTypes []string  `gorm:"type:text;serializer:json" json:"param_types"`
 	ReturnType string    `gorm:"type:varchar(50)" json:"return_type"`
 }
 
@@ -132,60 +114,59 @@ func (p *Problem) ToSummaryResponse() *ProblemSummary {
 
 // ProblemDetail represents problem detail response DTO
 type ProblemDetail struct {
-	ID                 uuid.UUID  `json:"id"`
-	Title              string     `json:"title"`
-	Description        string     `json:"description"`
-	Examples           []Example  `json:"examples"`
-	Constraints        string     `json:"constraints"`
-	Difficulty         Difficulty `json:"difficulty"`
-	TestCases          []TestCase `json:"test_cases"`
-	ExpectedOutputs    []string   `json:"expected_outputs"`
-	InputFormat        string     `json:"input_format"`
-	OutputFormat       string     `json:"output_format"`
-	FunctionName       string     `json:"function_name"`
-	IOSchema           IOSchema   `json:"io_schema"`
-	JavaScriptTemplate string     `json:"javascript_template"`
-	PythonTemplate     string     `json:"python_template"`
-	GoTemplate         string     `json:"go_template"`
-	JavaTemplate       string     `json:"java_template"`
-	CPPTemplate        string     `json:"cpp_template"`
+	ID           uuid.UUID         `json:"id"`
+	Title        string            `json:"title"`
+	Description  string            `json:"description"`
+	Examples     []Example         `json:"examples"`
+	Constraints  string            `json:"constraints"`
+	Difficulty   Difficulty        `json:"difficulty"`
+	TestCases    []TestCase        `json:"test_cases"`
+	FunctionName string            `json:"function_name"`
+	IOSchema     IOSchemaResponse  `json:"io_schema"`
+	IOTemplates  []StarterTemplate `json:"io_templates"`
+	TimeLimit    int               `json:"time_limit"`
+	MemoryLimit  int               `json:"memory_limit"`
+}
+
+// IOSchemaResponse is the canonical public representation of a function
+// contract. ParamTypes is an array everywhere outside the persistence layer.
+type IOSchemaResponse struct {
+	ParamTypes []string `json:"param_types"`
+	ReturnType string   `json:"return_type"`
+}
+
+// StarterTemplate is generated from the function contract. It is not stored
+// per problem, preventing language templates from drifting out of sync.
+type StarterTemplate struct {
+	Language string `json:"language"`
+	Code     string `json:"code"`
 }
 
 // ToDetailResponse converts Problem model to ProblemDetail DTO
 func (p *Problem) ToDetailResponse() *ProblemDetail {
 
-	// Convert TestCases
-	var testCases []TestCase
-	var expectedOutputs []string
-	for _, tc := range p.TestCases {
-		testCases = append(testCases, tc)
-		expectedOutputs = append(expectedOutputs, tc.ExpectedOutput)
-	}
-
-	// Get language-specific templates
-	templates := make(map[string]string)
-	for _, template := range p.IOTemplates {
-		templates[template.Language] = template.Code
-	}
+	paramTypes, returnType, _ := NormalizeFunctionContract(
+		p.FunctionName,
+		p.IOSchema.ParamTypes,
+		p.IOSchema.ReturnType,
+	)
 
 	return &ProblemDetail{
-		ID:                 p.ID,
-		Title:              p.Title,
-		Description:        p.Description,
-		Examples:           p.Examples,
-		Constraints:        p.Constraints,
-		Difficulty:         p.Difficulty,
-		TestCases:          testCases,
-		ExpectedOutputs:    expectedOutputs,
-		InputFormat:        p.InputFormat,
-		OutputFormat:       p.OutputFormat,
-		FunctionName:       p.FunctionName,
-		IOSchema:           p.IOSchema,
-		JavaScriptTemplate: templates["javascript"],
-		PythonTemplate:     templates["python"],
-		GoTemplate:         templates["go"],
-		JavaTemplate:       templates["java"],
-		CPPTemplate:        templates["cpp"],
+		ID:           p.ID,
+		Title:        p.Title,
+		Description:  p.Description,
+		Examples:     p.Examples,
+		Constraints:  p.Constraints,
+		Difficulty:   p.Difficulty,
+		TestCases:    p.TestCases,
+		FunctionName: p.FunctionName,
+		IOSchema: IOSchemaResponse{
+			ParamTypes: paramTypes,
+			ReturnType: returnType,
+		},
+		IOTemplates: GenerateStarterTemplates(p.FunctionName, paramTypes, returnType),
+		TimeLimit:   p.TimeLimit,
+		MemoryLimit: p.MemoryLimit,
 	}
 }
 
@@ -194,7 +175,6 @@ func (p *Problem) ToDetailResponse() *ProblemDetail {
 func (p *Problem) ToPublicDetailResponse() *ProblemDetail {
 	detail := p.ToDetailResponse()
 	detail.TestCases = []TestCase{}
-	detail.ExpectedOutputs = []string{}
 	return detail
 }
 
@@ -204,19 +184,16 @@ func (p *Problem) ToPublicDetailResponse() *ProblemDetail {
 
 // CreateProblemRequest represents new normalized problem creation request DTO
 type CreateProblemRequest struct {
-	Title        string                    `json:"title" binding:"required"`
-	Description  string                    `json:"description" binding:"required"`
-	Constraints  string                    `json:"constraints" binding:"required"`
-	Difficulty   string                    `json:"difficulty" binding:"required,oneof=Easy Medium Hard"`
-	InputFormat  string                    `json:"input_format" binding:"required"`
-	OutputFormat string                    `json:"output_format" binding:"required"`
-	FunctionName string                    `json:"function_name" binding:"required"`
-	TimeLimit    int                       `json:"time_limit" binding:"required"`
-	MemoryLimit  int                       `json:"memory_limit" binding:"required"`
-	Examples     []CreateExampleRequest    `json:"examples" binding:"required"`
-	TestCases    []CreateTestCaseRequest   `json:"test_cases" binding:"required"`
-	IOTemplates  []CreateIOTemplateRequest `json:"io_templates" binding:"required"`
-	IOSchema     CreateIOSchemaRequest     `json:"io_schema" binding:"required"`
+	Title        string                  `json:"title" binding:"required"`
+	Description  string                  `json:"description" binding:"required"`
+	Constraints  string                  `json:"constraints" binding:"required"`
+	Difficulty   string                  `json:"difficulty" binding:"required,oneof=Easy Medium Hard"`
+	FunctionName string                  `json:"function_name" binding:"required"`
+	TimeLimit    int                     `json:"time_limit" binding:"required"`
+	MemoryLimit  int                     `json:"memory_limit" binding:"required"`
+	Examples     []CreateExampleRequest  `json:"examples" binding:"required"`
+	TestCases    []CreateTestCaseRequest `json:"test_cases" binding:"required"`
+	IOSchema     CreateIOSchemaRequest   `json:"io_schema" binding:"required"`
 }
 
 // CreateExampleRequest represents example creation request DTO
@@ -230,12 +207,6 @@ type CreateExampleRequest struct {
 type CreateTestCaseRequest struct {
 	Input          string `json:"input" binding:"required"`
 	ExpectedOutput string `json:"expected_output" binding:"required"`
-}
-
-// CreateIOTemplateRequest represents IO template creation request DTO
-type CreateIOTemplateRequest struct {
-	Language string `json:"language" binding:"required"`
-	Code     string `json:"code" binding:"required"`
 }
 
 // CreateIOSchemaRequest represents IO schema creation request DTO

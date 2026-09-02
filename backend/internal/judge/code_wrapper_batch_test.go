@@ -21,7 +21,7 @@ func TestWrapCodeBatch_Javascript(t *testing.T) {
 	problem := &model.Problem{
 		FunctionName: "twoSum",
 		IOSchema: model.IOSchema{
-			ParamTypes: `["int[]","int"]`,
+			ParamTypes: []string{"int[]", "int"},
 			ReturnType: "int[]",
 		},
 	}
@@ -53,7 +53,7 @@ func TestWrapCodeBatch_Go(t *testing.T) {
 	problem := &model.Problem{
 		FunctionName: "twoSum",
 		IOSchema: model.IOSchema{
-			ParamTypes: `["int[]","int"]`,
+			ParamTypes: []string{"int[]", "int"},
 			ReturnType: "int[]",
 		},
 	}

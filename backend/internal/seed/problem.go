@@ -32,8 +32,6 @@ func SeedProblems(db *gorm.DB) error {
 -10^9 <= target <= 10^9
 Only one valid answer exists.`,
 			Difficulty:   "Easy",
-			InputFormat:  "array,number",
-			OutputFormat: "array",
 			FunctionName: "twoSum",
 			TimeLimit:    1000,
 			MemoryLimit:  128,
@@ -68,44 +66,8 @@ Only one valid answer exists.`,
 					ExpectedOutput: `[0,1]`,
 				},
 			},
-			IOTemplates: []model.IOTemplate{
-				{
-					Language: "javascript",
-					Code: `/**
- * @param {number[]} nums
- * @param {number} target
- * @return {number[]}
- */
-function twoSum(nums, target) {
-    // Write your code here
-    
-}`,
-				},
-				{
-					Language: "python",
-					Code: `def twoSum(nums: List[int], target: int) -> List[int]:
-    # Write your code here
-    pass`,
-				},
-				{
-					Language: "go",
-					Code: `func twoSum(nums []int, target int) []int {
-    // Write your code here
-    
-}`,
-				},
-				{
-					Language: "java",
-					Code: `class Solution {
-    public int[] twoSum(int[] nums, int target) {
-        // Write your code here
-        
-    }
-}`,
-				},
-			},
 			IOSchema: model.IOSchema{
-				ParamTypes: `["int[]", "int"]`,
+				ParamTypes: []string{"int[]", "int"},
 				ReturnType: "int[]",
 			},
 		},
@@ -114,8 +76,6 @@ function twoSum(nums, target) {
 			Description:  "Given an integer x, return true if x is a palindrome, and false otherwise.",
 			Constraints:  `-2^31 <= x <= 2^31 - 1`,
 			Difficulty:   "Easy",
-			InputFormat:  "number",
-			OutputFormat: "boolean",
 			FunctionName: "isPalindrome",
 			TimeLimit:    1000,
 			MemoryLimit:  128,
@@ -138,56 +98,21 @@ function twoSum(nums, target) {
 			},
 			TestCases: []model.TestCase{
 				{
-					Input:          `121`,
+					Input:          `[121]`,
 					ExpectedOutput: `true`,
 				},
 				{
-					Input:          `-121`,
+					Input:          `[-121]`,
 					ExpectedOutput: `false`,
 				},
 				{
-					Input:          `10`,
+					Input:          `[10]`,
 					ExpectedOutput: `false`,
-				},
-			},
-			IOTemplates: []model.IOTemplate{
-				{
-					Language: "javascript",
-					Code: `/**
- * @param {number} x
- * @return {boolean}
- */
-function isPalindrome(x) {
-    // Write your code here
-    
-}`,
-				},
-				{
-					Language: "python",
-					Code: `def isPalindrome(x: int) -> bool:
-    # Write your code here
-    pass`,
-				},
-				{
-					Language: "go",
-					Code: `func isPalindrome(x int) bool {
-    // Write your code here
-    
-}`,
-				},
-				{
-					Language: "java",
-					Code: `class Solution {
-    public boolean isPalindrome(int x) {
-        // Write your code here
-        
-    }
-}`,
 				},
 			},
 			IOSchema: model.IOSchema{
-				ParamTypes: `["int"]`,
-				ReturnType: "boolean",
+				ParamTypes: []string{"int"},
+				ReturnType: "bool",
 			},
 		},
 		{
@@ -196,8 +121,6 @@ function isPalindrome(x) {
 			Constraints: `1 <= s.length <= 10^4
 s consists of parentheses only '()[]{}'`,
 			Difficulty:   "Easy",
-			InputFormat:  "string",
-			OutputFormat: "boolean",
 			FunctionName: "isValid",
 			TimeLimit:    1000,
 			MemoryLimit:  128,
@@ -220,56 +143,21 @@ s consists of parentheses only '()[]{}'`,
 			},
 			TestCases: []model.TestCase{
 				{
-					Input:          `"()"`,
+					Input:          `["()"]`,
 					ExpectedOutput: `true`,
 				},
 				{
-					Input:          `"()[]{}"`,
+					Input:          `["()[]{}"]`,
 					ExpectedOutput: `true`,
 				},
 				{
-					Input:          `"(]"`,
+					Input:          `["(]"]`,
 					ExpectedOutput: `false`,
 				},
 			},
-			IOTemplates: []model.IOTemplate{
-				{
-					Language: "javascript",
-					Code: `/**
- * @param {string} s
- * @return {boolean}
- */
-function isValid(s) {
-    // Write your code here
-    
-}`,
-				},
-				{
-					Language: "python",
-					Code: `def isValid(s: str) -> bool:
-    # Write your code here
-    pass`,
-				},
-				{
-					Language: "go",
-					Code: `func isValid(s string) bool {
-    // Write your code here
-    
-}`,
-				},
-				{
-					Language: "java",
-					Code: `class Solution {
-    public boolean isValid(String s) {
-        // Write your code here
-        
-    }
-}`,
-				},
-			},
 			IOSchema: model.IOSchema{
-				ParamTypes: `["string"]`,
-				ReturnType: "boolean",
+				ParamTypes: []string{"string"},
+				ReturnType: "bool",
 			},
 		},
 	}

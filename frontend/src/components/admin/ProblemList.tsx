@@ -22,23 +22,16 @@ const DEFAULT_PROBLEM_JSON = `{
   "description": "INSERT_DESCRIPTION_HERE",
   "constraints": "INSERT_CONSTRAINTS_HERE",
   "difficulty": "INSERT_DIFFICULTY_HERE",
-  "input_format": "INSERT_INPUT_FORMAT_HERE",
-  "output_format": "INSERT_OUTPUT_FORMAT_HERE",
   "function_name": "INSERT_FUNCTION_NAME_HERE",
-  "time_limit": 0,
-  "memory_limit": 0,
+  "time_limit": 1000,
+  "memory_limit": 128,
   "examples": [
     { "input": "INSERT_INPUT_HERE", "output": "INSERT_OUTPUT_HERE", "explanation": "INSERT_EXPLANATION_HERE" }
   ],
   "test_cases": [
-    { "input": "INSERT_INPUT_HERE", "expected_output": "INSERT_EXPECTED_OUTPUT_HERE" }
+    { "input": "[INSERT_ARGUMENTS_HERE]", "expected_output": "INSERT_EXPECTED_OUTPUT_HERE" }
   ],
-  "io_schema": { "param_types": ["INSERT_PARAM_TYPES_HERE"], "return_type": "INSERT_RETURN_TYPE_HERE" },
-  "io_templates": [
-    { "language": "javascript", "code": "INSERT_JAVASCRIPT_TEMPLATE_HERE" },
-    { "language": "python", "code": "INSERT_PYTHON_TEMPLATE_HERE" },
-    { "language": "go", "code": "INSERT_GO_TEMPLATE_HERE" }
-  ]
+  "io_schema": { "param_types": ["INSERT_PARAM_TYPES_HERE"], "return_type": "INSERT_RETURN_TYPE_HERE" }
 }`;
 
 export default function ProblemList() {
@@ -146,33 +139,12 @@ export default function ProblemList() {
     useMemo((): CreateProblemRequest | null => {
       if (!selectedProblem) return null;
 
-      const normalizeParamTypes = (value: unknown): string[] => {
-        if (Array.isArray(value)) return value.map(String);
-        if (typeof value === 'string') {
-          try {
-            const parsed = JSON.parse(value);
-            if (Array.isArray(parsed)) return parsed.map(String);
-          } catch {
-            // ignore
-          }
-        }
-        return [];
-      };
-
       const p = selectedProblem as ProblemDetail;
       return {
         title: p.title,
         description: p.description,
         constraints: p.constraints,
-        expected_outputs:
-          Array.isArray(p.expected_outputs) && p.expected_outputs.length > 0
-            ? p.expected_outputs.map(String)
-            : (p.test_cases || []).map((tc) =>
-                String(tc.expected_output ?? '')
-              ),
         difficulty: p.difficulty,
-        input_format: p.input_format,
-        output_format: p.output_format,
         function_name: p.function_name,
         time_limit: p.time_limit,
         memory_limit: p.memory_limit,
@@ -186,13 +158,9 @@ export default function ProblemList() {
           expected_output: tc.expected_output ?? '',
         })),
         io_schema: {
-          param_types: normalizeParamTypes(p.io_schema.param_types),
+          param_types: p.io_schema.param_types.map(String),
           return_type: p.io_schema.return_type ?? '',
         },
-        io_templates: (p.io_templates || []).map((t) => ({
-          language: t.language ?? '',
-          code: t.code ?? '',
-        })),
       };
     }, [selectedProblem]);
 
@@ -436,17 +404,7 @@ export default function ProblemList() {
                             title: updated.title,
                             description: updated.description,
                             constraints: updated.constraints,
-                            expected_outputs:
-                              Array.isArray(updated.expected_outputs) &&
-                              updated.expected_outputs.length > 0
-                                ? updated.expected_outputs.map(String)
-                                : (updated.test_cases || []).map(
-                                    (tc: { expected_output: string }) =>
-                                      String(tc.expected_output ?? '')
-                                  ),
                             difficulty: updated.difficulty,
-                            input_format: updated.input_format,
-                            output_format: updated.output_format,
                             function_name: updated.function_name,
                             time_limit: updated.time_limit,
                             memory_limit: updated.memory_limit,
@@ -471,33 +429,10 @@ export default function ProblemList() {
                               })
                             ),
                             io_schema: {
-                              param_types: Array.isArray(
-                                updated.io_schema?.param_types
-                              )
-                                ? updated.io_schema.param_types.map(String)
-                                : typeof updated.io_schema?.param_types ===
-                                  'string'
-                                ? (() => {
-                                    try {
-                                      const parsed = JSON.parse(
-                                        updated.io_schema.param_types
-                                      );
-                                      return Array.isArray(parsed)
-                                        ? parsed.map(String)
-                                        : [];
-                                    } catch {
-                                      return [];
-                                    }
-                                  })()
-                                : [],
+                              param_types:
+                                updated.io_schema?.param_types?.map(String) ?? [],
                               return_type: updated.io_schema?.return_type ?? '',
                             },
-                            io_templates: (updated.io_templates || []).map(
-                              (t: { language: string; code: string }) => ({
-                                language: t.language ?? '',
-                                code: t.code ?? '',
-                              })
-                            ),
                           },
                           null,
                           2

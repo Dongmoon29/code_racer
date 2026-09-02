@@ -14,10 +14,8 @@ func TestWrapper_WrapSingle_WithImports(t *testing.T) {
 
 	problem := &model.Problem{
 		FunctionName: "solution",
-		InputFormat:  "array",
-		OutputFormat: "array",
 		IOSchema: model.IOSchema{
-			ParamTypes: `["int[]"]`,
+			ParamTypes: []string{"int[]"},
 			ReturnType: "int[]",
 		},
 	}
@@ -35,7 +33,7 @@ func TestWrapper_WrapSingle_WithImports(t *testing.T) {
 def solution(nums):
     heapq.heapify(nums)
     return nums`,
-			testCase: "[3,1,4,1,5]",
+			testCase: "[[3,1,4,1,5]]",
 			expected: `from typing import *
 import json
 import sys
@@ -52,8 +50,8 @@ def solution(nums):
 if __name__ == "__main__":
     try:
         raw = sys.stdin.read().strip()
-        value = json.loads(raw)
-        result = solution(value)
+        args = json.loads(raw)
+        result = solution(*args)
         sys.stdout.write(json.dumps(result))
     except Exception as e:
         print(str(e), file=sys.stderr)
@@ -68,7 +66,7 @@ from collections import defaultdict
 def solution(nums):
     heapq.heapify(nums)
     return nums`,
-			testCase: "[3,1,4,1,5]",
+			testCase: "[[3,1,4,1,5]]",
 			expected: `from typing import *
 import json
 import sys
@@ -87,8 +85,8 @@ def solution(nums):
 if __name__ == "__main__":
     try:
         raw = sys.stdin.read().strip()
-        value = json.loads(raw)
-        result = solution(value)
+        args = json.loads(raw)
+        result = solution(*args)
         sys.stdout.write(json.dumps(result))
     except Exception as e:
         print(str(e), file=sys.stderr)
@@ -98,7 +96,7 @@ if __name__ == "__main__":
 			name: "no_imports",
 			code: `def solution(nums):
     return sorted(nums)`,
-			testCase: "[3,1,4,1,5]",
+			testCase: "[[3,1,4,1,5]]",
 			expected: `from typing import *
 import json
 import sys
@@ -112,8 +110,8 @@ def solution(nums):
 if __name__ == "__main__":
     try:
         raw = sys.stdin.read().strip()
-        value = json.loads(raw)
-        result = solution(value)
+        args = json.loads(raw)
+        result = solution(*args)
         sys.stdout.write(json.dumps(result))
     except Exception as e:
         print(str(e), file=sys.stderr)
@@ -135,10 +133,8 @@ func TestWrapper_WrapBatch_WithImports(t *testing.T) {
 
 	problem := &model.Problem{
 		FunctionName: "solution",
-		InputFormat:  "array",
-		OutputFormat: "array",
 		IOSchema: model.IOSchema{
-			ParamTypes: `["int[]"]`,
+			ParamTypes: []string{"int[]"},
 			ReturnType: "int[]",
 		},
 	}
@@ -156,7 +152,7 @@ func TestWrapper_WrapBatch_WithImports(t *testing.T) {
 def solution(nums):
     heapq.heapify(nums)
     return nums`,
-			testCasesJSON: "[[3,1,4,1,5], [1,2,3]]",
+			testCasesJSON: "[[[3,1,4,1,5]], [[1,2,3]]]",
 			expected: `from typing import *
 import json
 import sys
@@ -177,8 +173,8 @@ if __name__ == "__main__":
             sys.exit(0)
         test_cases = json.loads(raw)
         results = []
-        for value in test_cases:
-            results.append(solution(value))
+        for args in test_cases:
+            results.append(solution(*args))
         sys.stdout.write(json.dumps(results))
     except Exception as e:
         print(str(e), file=sys.stderr)
@@ -204,7 +200,7 @@ func TestWrapper_WrapSingle_ExecutesTypedPythonSubmission(t *testing.T) {
 	problem := &model.Problem{
 		FunctionName: "twoSum",
 		IOSchema: model.IOSchema{
-			ParamTypes: `["int[]", "int"]`,
+			ParamTypes: []string{"int[]", "int"},
 			ReturnType: "int[]",
 		},
 	}

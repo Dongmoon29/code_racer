@@ -12,14 +12,18 @@ func TestToPublicDetailResponse_HidesJudgeCases(t *testing.T) {
 		FunctionName: "solution",
 		Examples:     []Example{{Input: "1", Output: "2"}},
 		TestCases:    []TestCase{{Input: "secret", ExpectedOutput: "secret answer"}},
+		IOSchema: IOSchema{
+			ParamTypes: []string{"string"},
+			ReturnType: "string",
+		},
 	}
 
 	public := problem.ToPublicDetailResponse()
 	assert.Empty(t, public.TestCases)
-	assert.Empty(t, public.ExpectedOutputs)
 	assert.Len(t, public.Examples, 1)
+	assert.Len(t, public.IOTemplates, 3)
 
 	admin := problem.ToDetailResponse()
 	assert.Len(t, admin.TestCases, 1)
-	assert.Equal(t, "secret answer", admin.ExpectedOutputs[0])
+	assert.Equal(t, "secret answer", admin.TestCases[0].ExpectedOutput)
 }

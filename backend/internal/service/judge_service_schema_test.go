@@ -12,7 +12,7 @@ func TestJudgeService_validateProblemIOSchema_OK(t *testing.T) {
 	err := s.validateProblemIOSchema(&model.Problem{
 		FunctionName: "twoSum",
 		IOSchema: model.IOSchema{
-			ParamTypes: `["int[]","int"]`,
+			ParamTypes: []string{"int[]", "int"},
 			ReturnType: "int[]",
 		},
 		TestCases: []model.TestCase{{Input: "[]", ExpectedOutput: "[]"}},
@@ -25,7 +25,7 @@ func TestJudgeService_validateProblemIOSchema_MissingParamTypes(t *testing.T) {
 	err := s.validateProblemIOSchema(&model.Problem{
 		FunctionName: "twoSum",
 		IOSchema: model.IOSchema{
-			ParamTypes: "",
+			ParamTypes: nil,
 			ReturnType: "int[]",
 		},
 		TestCases: []model.TestCase{{Input: "[]", ExpectedOutput: "[]"}},
@@ -38,7 +38,7 @@ func TestJudgeService_validateProblemIOSchema_InvalidParamTypesJSON(t *testing.T
 	err := s.validateProblemIOSchema(&model.Problem{
 		FunctionName: "twoSum",
 		IOSchema: model.IOSchema{
-			ParamTypes: `not-json`,
+			ParamTypes: []string{"not-a-type"},
 			ReturnType: "int[]",
 		},
 		TestCases: []model.TestCase{{Input: "[]", ExpectedOutput: "[]"}},
@@ -51,7 +51,7 @@ func TestJudgeService_validateProblemIOSchema_MissingReturnType(t *testing.T) {
 	err := s.validateProblemIOSchema(&model.Problem{
 		FunctionName: "twoSum",
 		IOSchema: model.IOSchema{
-			ParamTypes: `["int[]","int"]`,
+			ParamTypes: []string{"int[]", "int"},
 			ReturnType: "",
 		},
 		TestCases: []model.TestCase{{Input: "[]", ExpectedOutput: "[]"}},
@@ -64,7 +64,7 @@ func TestJudgeService_validateProblemIOSchema_RequiresTestCases(t *testing.T) {
 	err := s.validateProblemIOSchema(&model.Problem{
 		FunctionName: "twoSum",
 		IOSchema: model.IOSchema{
-			ParamTypes: `["int[]","int"]`,
+			ParamTypes: []string{"int[]", "int"},
 			ReturnType: "int[]",
 		},
 	})

@@ -258,6 +258,13 @@ func TestWebSocketUpgrader(t *testing.T) {
 	})
 }
 
+func TestOriginChecker_UsesCurrentProductionDomain(t *testing.T) {
+	assert.True(t, isOriginAllowed("https://coderacer.codes", nil, "production"))
+	assert.True(t, isOriginAllowed("https://www.coderacer.codes", nil, "production"))
+	assert.False(t, isOriginAllowed("https://coderacer.pro", nil, "production"))
+	assert.False(t, isOriginAllowed("https://coderacer.codes.attacker.example", nil, "production"))
+}
+
 func TestNewWebSocketController(t *testing.T) {
 	mockService := new(MockWebSocketService)
 	mockLogger := new(MockLogger)

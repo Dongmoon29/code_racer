@@ -5,6 +5,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // ProblemRepository represents the new normalized problem repository interface
@@ -57,7 +58,6 @@ func (r *problemRepository) FindWithRelations(id uuid.UUID) (*model.Problem, err
 	var problem model.Problem
 	err := r.db.Preload("Examples").
 		Preload("TestCases").
-		Preload("IOTemplates").
 		Preload("IOSchema").
 		Where("id = ?", id).
 		First(&problem).Error
@@ -70,7 +70,7 @@ func (r *problemRepository) FindWithRelations(id uuid.UUID) (*model.Problem, err
 func (r *problemRepository) Create(problem *model.Problem) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// Create Problem
-		if err := tx.Create(problem).Error; err != nil {
+		if err := tx.Omit(clause.Associations).Create(problem).Error; err != nil {
 			return err
 		}
 
@@ -94,16 +94,6 @@ func (r *problemRepository) Create(problem *model.Problem) error {
 			}
 		}
 
-		// Create IOTemplates
-		for i := range problem.IOTemplates {
-			problem.IOTemplates[i].ProblemID = problem.ID
-		}
-		if len(problem.IOTemplates) > 0 {
-			if err := tx.Create(&problem.IOTemplates).Error; err != nil {
-				return err
-			}
-		}
-
 		// Create IOSchema
 		problem.IOSchema.ProblemID = problem.ID
 		if err := tx.Create(&problem.IOSchema).Error; err != nil {
@@ -117,7 +107,7 @@ func (r *problemRepository) Create(problem *model.Problem) error {
 func (r *problemRepository) Update(problem *model.Problem) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// Update Problem
-		if err := tx.Save(problem).Error; err != nil {
+		if err := tx.Omit(clause.Associations).Save(problem).Error; err != nil {
 			return err
 		}
 
@@ -126,9 +116,6 @@ func (r *problemRepository) Update(problem *model.Problem) error {
 			return err
 		}
 		if err := tx.Where("problem_id = ?", problem.ID).Delete(&model.TestCase{}).Error; err != nil {
-			return err
-		}
-		if err := tx.Where("problem_id = ?", problem.ID).Delete(&model.IOTemplate{}).Error; err != nil {
 			return err
 		}
 		if err := tx.Where("problem_id = ?", problem.ID).Delete(&model.IOSchema{}).Error; err != nil {
@@ -150,15 +137,6 @@ func (r *problemRepository) Update(problem *model.Problem) error {
 		}
 		if len(problem.TestCases) > 0 {
 			if err := tx.Create(&problem.TestCases).Error; err != nil {
-				return err
-			}
-		}
-
-		for i := range problem.IOTemplates {
-			problem.IOTemplates[i].ProblemID = problem.ID
-		}
-		if len(problem.IOTemplates) > 0 {
-			if err := tx.Create(&problem.IOTemplates).Error; err != nil {
 				return err
 			}
 		}

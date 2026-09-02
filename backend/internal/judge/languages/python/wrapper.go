@@ -1,7 +1,6 @@
 package python
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -31,56 +30,9 @@ func pythonPrelude(futureImports string) string {
 	return futureImports + "\nfrom typing import *\nimport json\nimport sys"
 }
 
-func schemaParamCount(problem *model.Problem) (int, error) {
-	if problem == nil {
-		return 0, fmt.Errorf("problem is nil")
-	}
-	raw := strings.TrimSpace(problem.IOSchema.ParamTypes)
-	if raw == "" {
-		return 0, fmt.Errorf("missing io_schema.param_types")
-	}
-	var pts []string
-	if err := json.Unmarshal([]byte(raw), &pts); err != nil || len(pts) == 0 {
-		return 0, fmt.Errorf("invalid io_schema.param_types")
-	}
-	return len(pts), nil
-}
-
 func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
 	futureImports, userCode := normalizePythonSubmission(code)
 	prelude := pythonPrelude(futureImports)
-
-	paramCount, err := schemaParamCount(problem)
-	if err != nil {
-		return "", err
-	}
-
-	// stdin is expected to be JSON array of test cases
-	// - paramCount == 1: each element is the single argument value (may itself be list/dict)
-	// - paramCount > 1: each element is a list of arguments
-	if paramCount == 1 {
-		template := `%s
-
-# ===== User code (preserved as-is) =====
-%s
-# ====================================
-
-# ===== Execution wrapper (auto-generated) =====
-if __name__ == "__main__":
-    try:
-        raw = sys.stdin.read().strip()
-        if not raw:
-            sys.exit(0)
-        test_cases = json.loads(raw)
-        results = []
-        for value in test_cases:
-            results.append(%s(value))
-        sys.stdout.write(json.dumps(results))
-    except Exception as e:
-        print(str(e), file=sys.stderr)
-        sys.exit(1)`
-		return fmt.Sprintf(template, prelude, userCode, problem.FunctionName), nil
-	}
 
 	template := `%s
 
@@ -106,33 +58,8 @@ if __name__ == "__main__":
 }
 
 func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) (string, error) {
-	paramCount, err := schemaParamCount(problem)
 	futureImports, userCode := normalizePythonSubmission(code)
 	prelude := pythonPrelude(futureImports)
-
-	if err != nil {
-		return "", err
-	}
-
-	if paramCount == 1 {
-		template := `%s
-
-# ===== User code (preserved as-is) =====
-%s
-# ====================================
-
-# ===== Execution wrapper (auto-generated) =====
-if __name__ == "__main__":
-    try:
-        raw = sys.stdin.read().strip()
-        value = json.loads(raw)
-        result = %s(value)
-        sys.stdout.write(json.dumps(result))
-    except Exception as e:
-        print(str(e), file=sys.stderr)
-        sys.exit(1)`
-		return fmt.Sprintf(template, prelude, userCode, problem.FunctionName), nil
-	}
 
 	template := `%s
 

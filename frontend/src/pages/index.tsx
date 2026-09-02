@@ -65,7 +65,7 @@ const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
   // Generate structured data
   const websiteStructuredData = generateWebsiteStructuredData({
     name: 'CodeRacer',
-    url: 'https://coderacer.app',
+    url: 'https://coderacer.codes',
     description:
       'Real-time coding competition platform for improving programming skills through fun, competitive challenges.',
   });
@@ -75,7 +75,7 @@ const HomePage: FC<HomeProps> = ({ contributors, commits }) => {
     name: 'CodeRacer',
     description:
       'Real-time coding competition platform where developers can improve their programming skills through competitive coding challenges.',
-    url: 'https://coderacer.app',
+    url: 'https://coderacer.codes',
     applicationCategory: 'GameApplication',
     operatingSystem: 'Web Browser',
     offers: {

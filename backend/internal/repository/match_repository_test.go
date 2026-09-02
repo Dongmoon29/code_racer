@@ -31,8 +31,6 @@ func TestMatchRepository_SetWinner_StoresWinnerMetrics(t *testing.T) {
 		Description:  "desc",
 		Constraints:  "constraints",
 		Difficulty:   model.DifficultyEasy,
-		InputFormat:  "array,number",
-		OutputFormat: "array",
 		FunctionName: "twoSum",
 		TimeLimit:    1000,
 		MemoryLimit:  128,
@@ -41,7 +39,7 @@ func TestMatchRepository_SetWinner_StoresWinnerMetrics(t *testing.T) {
 
 	schema := model.IOSchema{
 		ProblemID:  p.ID,
-		ParamTypes: `["int[]","int"]`,
+		ParamTypes: []string{"int[]", "int"},
 		ReturnType: "int[]",
 	}
 	assert.NoError(t, db.Create(&schema).Error)

@@ -20,7 +20,7 @@ const defaultSEO = {
   keywords:
     'coding, programming, algorithm, competition, race, real-time, coding challenge, programming practice, coding skills',
   image: '/code_racer_hero.webp',
-  url: 'https://coderacer.app',
+  url: 'https://coderacer.codes',
   type: 'website',
   author: 'CodeRacer Team',
 };

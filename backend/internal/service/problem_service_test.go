@@ -7,14 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProblemService_ValidateTestCases_SingleParam_AllowsRawJSONValue(t *testing.T) {
+func TestProblemService_ValidateTestCases_SingleParam_UsesArgumentArray(t *testing.T) {
 	s := &problemService{}
 
 	err := s.ValidateTestCases(
 		[]model.CreateTestCaseRequest{
-			{Input: `"()"`, ExpectedOutput: `true`},
-			{Input: `121`, ExpectedOutput: `true`},
-			{Input: `[1,2,3]`, ExpectedOutput: `true`},
+			{Input: `["()"]`, ExpectedOutput: `true`},
 		},
 		model.CreateIOSchemaRequest{
 			ParamTypes: []string{"string"},
@@ -22,6 +20,30 @@ func TestProblemService_ValidateTestCases_SingleParam_AllowsRawJSONValue(t *test
 		},
 	)
 	assert.NoError(t, err)
+}
+
+func TestProblemService_ValidateTestCases_SingleParam_RejectsRawValue(t *testing.T) {
+	s := &problemService{}
+	err := s.ValidateTestCases(
+		[]model.CreateTestCaseRequest{{Input: `121`, ExpectedOutput: `true`}},
+		model.CreateIOSchemaRequest{ParamTypes: []string{"int"}, ReturnType: "bool"},
+	)
+	assert.ErrorContains(t, err, "JSON array")
+}
+
+func TestProblemService_ValidateTestCases_ValidatesArgumentAndOutputTypes(t *testing.T) {
+	s := &problemService{}
+	err := s.ValidateTestCases(
+		[]model.CreateTestCaseRequest{{Input: `["not-an-int"]`, ExpectedOutput: `true`}},
+		model.CreateIOSchemaRequest{ParamTypes: []string{"int"}, ReturnType: "bool"},
+	)
+	assert.ErrorContains(t, err, "expected int")
+
+	err = s.ValidateTestCases(
+		[]model.CreateTestCaseRequest{{Input: `[1]`, ExpectedOutput: `"true"`}},
+		model.CreateIOSchemaRequest{ParamTypes: []string{"int"}, ReturnType: "bool"},
+	)
+	assert.ErrorContains(t, err, "expected bool")
 }
 
 func TestProblemService_ValidateTestCases_MultiParam_RequiresJSONArrayArgs(t *testing.T) {

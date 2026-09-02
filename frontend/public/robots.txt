@@ -13,7 +13,7 @@ Allow: /login
 Allow: /register
 
 # Sitemap location
-Sitemap: https://coderacer.app/sitemap.xml
+Sitemap: https://coderacer.codes/sitemap.xml
 
 # Crawl delay (optional)
 Crawl-delay: 1

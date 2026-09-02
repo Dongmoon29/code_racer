@@ -57,6 +57,8 @@ func isOriginAllowed(origin string, allowedOrigins []string, environment string)
 		"http://localhost:3001",
 		"https://localhost:3000",
 		"https://localhost:3001",
+		"https://coderacer.codes",
+		"https://www.coderacer.codes",
 	}
 
 	// Combine default and configured origins
@@ -76,11 +78,6 @@ func isOriginAllowed(origin string, allowedOrigins []string, environment string)
 
 	// Allow Cloud Run domain in production environment
 	if strings.Contains(origin, "asia-northeast3.run.app") {
-		return true
-	}
-
-	// Allow coderacer.pro domain
-	if strings.Contains(origin, "coderacer.pro") {
 		return true
 	}
 

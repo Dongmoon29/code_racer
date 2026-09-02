@@ -3,11 +3,7 @@ import { ProblemDetailsPane } from './ProblemDetailsPane';
 import { ProblemEditorSplit } from './CodeEditorSplitProps';
 import { SubmissionProgress } from '@/types/websocket';
 import { ResizeHandle } from '../ResizeHandle';
-
-interface IOSchema {
-  param_types: string | string[]; // Can come as JSON string from backend
-  return_type: string;
-}
+import { IOSchema } from '@/types';
 
 interface FullscreenOverlayProps {
   myCode: string;

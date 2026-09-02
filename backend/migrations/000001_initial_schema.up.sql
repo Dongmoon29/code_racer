@@ -44,8 +44,6 @@ CREATE TABLE IF NOT EXISTS problems (
   description   TEXT NOT NULL,
   constraints   TEXT NOT NULL,
   difficulty    VARCHAR(20) NOT NULL CHECK (difficulty IN ('Easy', 'Medium', 'Hard')),
-  input_format  VARCHAR(50) NOT NULL,
-  output_format VARCHAR(50) NOT NULL,
   function_name VARCHAR(50) NOT NULL,
   time_limit    INTEGER NOT NULL,
   memory_limit  INTEGER NOT NULL,
@@ -74,16 +72,6 @@ CREATE TABLE IF NOT EXISTS test_cases (
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- IO Templates table (language-specific templates)
-CREATE TABLE IF NOT EXISTS io_templates (
-  id        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  problem_id UUID NOT NULL REFERENCES problems(id) ON DELETE CASCADE,
-  language  VARCHAR(20) NOT NULL,
-  code      TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
 -- IO Schemas table
 CREATE TABLE IF NOT EXISTS io_schemas (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -97,8 +85,6 @@ CREATE TABLE IF NOT EXISTS io_schemas (
 -- Indexes for normalized tables
 CREATE INDEX IF NOT EXISTS idx_examples_problem_id ON examples(problem_id);
 CREATE INDEX IF NOT EXISTS idx_test_cases_problem_id ON test_cases(problem_id);
-CREATE INDEX IF NOT EXISTS idx_io_templates_problem_id ON io_templates(problem_id);
-CREATE INDEX IF NOT EXISTS idx_io_templates_language ON io_templates(language);
 CREATE INDEX IF NOT EXISTS idx_io_schemas_problem_id ON io_schemas(problem_id);
 
 -- Triggers for normalized tables
@@ -117,12 +103,6 @@ CREATE TRIGGER update_examples_updated_at
 DROP TRIGGER IF EXISTS update_test_cases_updated_at ON test_cases;
 CREATE TRIGGER update_test_cases_updated_at
   BEFORE UPDATE ON test_cases
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_io_templates_updated_at ON io_templates;
-CREATE TRIGGER update_io_templates_updated_at
-  BEFORE UPDATE ON io_templates
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
@@ -163,4 +143,3 @@ CREATE TRIGGER update_matches_updated_at
   BEFORE UPDATE ON matches
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-

@@ -71,8 +71,8 @@ export interface SoftwareApplication {
 // Default organization data
 export const defaultOrganization: Organization = {
   name: 'CodeRacer',
-  url: 'https://coderacer.app',
-  logo: 'https://coderacer.app/logo.png',
+  url: 'https://coderacer.codes',
+  logo: 'https://coderacer.codes/logo.png',
   description:
     'Real-time coding competition platform for improving programming skills',
 };
