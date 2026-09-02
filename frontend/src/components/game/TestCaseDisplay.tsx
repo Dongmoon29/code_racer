@@ -26,15 +26,23 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
 
   const [activeTestCaseIndex, setActiveTestCaseIndex] = useState(0);
 
-  // Judge cases are intentionally not sent to players. Build placeholder rows
-  // from progress messages so the UI can show status without exposing inputs.
+  const valueAsJSONText = (value: unknown): string => {
+    if (value === undefined || value === null) return '';
+    return typeof value === 'string' ? value : JSON.stringify(value);
+  };
+
+  // The problem response hides judge cases. Reveal each case only after its
+  // result event is delivered to the submitting player.
   const displayedTestCases: TestCase[] =
     testCases.length > 0
       ? testCases
-      : Array.from({ length: totalTestCases }, () => ({
-          input: '',
-          expected_output: '',
-        }));
+      : Array.from({ length: totalTestCases }, (_, index) => {
+          const result = testCaseResults.find((item) => item.index === index);
+          return {
+            input: valueAsJSONText(result?.input),
+            expected_output: valueAsJSONText(result?.expectedOutput),
+          };
+        });
 
   // Helper function to convert IOSchema param_types to array
   const parseParamTypes = (paramTypes: string | string[]): string[] => {
@@ -138,7 +146,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
 
       try {
         const parsed = JSON.parse(testCase.input);
-        if (Array.isArray(parsed) && paramTypes.length > 1) {
+        if (Array.isArray(parsed)) {
           return parsed.map((param, idx) => {
             const type = paramTypes[idx] || 'unknown';
             const formatted = formatTestCaseValue(JSON.stringify(param), type);

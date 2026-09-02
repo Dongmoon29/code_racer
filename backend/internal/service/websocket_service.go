@@ -241,15 +241,7 @@ func (s *webSocketService) subscribeToEvents() {
 		if !ok || evt == nil {
 			return
 		}
-		msg := map[string]interface{}{
-			"type":             constants.TestCaseRunning,
-			"match_id":         evt.MatchID,
-			"user_id":          evt.UserID,
-			"test_case_index":  evt.TestCaseIndex,
-			"total_test_cases": evt.Total,
-			"status":           "running",
-			"timestamp":        time.Now().Unix(),
-		}
+		msg := testCaseRunningMessage(evt)
 		s.sendToMatchUser(evt.MatchID, evt.UserID, msg)
 	})
 
@@ -258,17 +250,7 @@ func (s *webSocketService) subscribeToEvents() {
 		if !ok || evt == nil {
 			return
 		}
-		msg := map[string]interface{}{
-			"type":            constants.TestCaseCompleted,
-			"match_id":        evt.MatchID,
-			"user_id":         evt.UserID,
-			"test_case_index": evt.TestCaseIndex,
-			"status":          "completed",
-			"passed":          evt.Passed,
-			"execution_time":  evt.ExecutionTime,
-			"memory_usage":    evt.MemoryUsage,
-			"timestamp":       time.Now().Unix(),
-		}
+		msg := testCaseCompletedMessage(evt)
 		s.sendToMatchUser(evt.MatchID, evt.UserID, msg)
 	})
 
@@ -335,6 +317,37 @@ func (s *webSocketService) subscribeToEvents() {
 			s.hub.broadcastToAllClients(msgBytes)
 		}
 	})
+}
+
+func testCaseRunningMessage(evt *events.TestCaseRunningEvent) map[string]interface{} {
+	return map[string]interface{}{
+		"type":             constants.TestCaseRunning,
+		"match_id":         evt.MatchID,
+		"user_id":          evt.UserID,
+		"test_case_index":  evt.TestCaseIndex,
+		"total_test_cases": evt.Total,
+		"status":           "running",
+		"input":            evt.TestCase.Input,
+		"expected_output":  evt.TestCase.ExpectedOutput,
+		"timestamp":        time.Now().Unix(),
+	}
+}
+
+func testCaseCompletedMessage(evt *events.TestCaseCompletedEvent) map[string]interface{} {
+	return map[string]interface{}{
+		"type":            constants.TestCaseCompleted,
+		"match_id":        evt.MatchID,
+		"user_id":         evt.UserID,
+		"test_case_index": evt.TestCaseIndex,
+		"status":          "completed",
+		"input":           evt.Input,
+		"expected_output": evt.Expected,
+		"actual_output":   evt.Actual,
+		"passed":          evt.Passed,
+		"execution_time":  evt.ExecutionTime,
+		"memory_usage":    evt.MemoryUsage,
+		"timestamp":       time.Now().Unix(),
+	}
 }
 
 func (s *webSocketService) sendToMatchUser(matchIDValue, userIDValue string, message map[string]interface{}) {

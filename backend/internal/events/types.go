@@ -17,45 +17,45 @@ type GameFinishedEvent struct {
 
 // Realtime judge events
 type SubmissionStartedEvent struct {
-    MatchID        string
-    UserID         string
-    TotalTestCases int
+	MatchID        string
+	UserID         string
+	TotalTestCases int
 }
 
 type TestCaseRunningEvent struct {
-    MatchID       string
-    UserID        string
-    TestCaseIndex int
-    TestCase      interface{}
-    Total         int
+	MatchID       string
+	UserID        string
+	TestCaseIndex int
+	TestCase      model.TestCase
+	Total         int
 }
 
 type TestCaseCompletedEvent struct {
-    MatchID       string
-    UserID        string
-    TestCaseIndex int
-    Input         interface{}
-    Expected      interface{}
-    Actual        interface{}
-    Passed        bool
-    ExecutionTime float64
-    MemoryUsage   float64
+	MatchID       string
+	UserID        string
+	TestCaseIndex int
+	Input         string
+	Expected      string
+	Actual        interface{}
+	Passed        bool
+	ExecutionTime float64
+	MemoryUsage   float64
 }
 
 type SubmissionCompletedEvent struct {
-    MatchID       string
-    UserID        string
-    Passed        bool
-    PassedCount   int
-    TotalCount    int
-    ExecutionTime float64
-    MemoryUsage   float64
+	MatchID       string
+	UserID        string
+	Passed        bool
+	PassedCount   int
+	TotalCount    int
+	ExecutionTime float64
+	MemoryUsage   float64
 }
 
 type SubmissionFailedEvent struct {
-    MatchID string
-    UserID  string
-    Message string
+	MatchID string
+	UserID  string
+	Message string
 }
 
 type Judge0TimeoutEvent struct{}

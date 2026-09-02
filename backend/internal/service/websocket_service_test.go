@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/constants"
+	"github.com/Dongmoon29/code_racer/internal/events"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/testutil"
 	"github.com/go-redis/redis/v8"
@@ -11,6 +13,40 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+func TestTestCaseRunningMessageIncludesCaseDetails(t *testing.T) {
+	message := testCaseRunningMessage(&events.TestCaseRunningEvent{
+		MatchID:       "match-id",
+		UserID:        "user-id",
+		TestCaseIndex: 1,
+		Total:         3,
+		TestCase: model.TestCase{
+			Input:          `[121]`,
+			ExpectedOutput: `true`,
+		},
+	})
+
+	assert.Equal(t, constants.TestCaseRunning, message["type"])
+	assert.Equal(t, `[121]`, message["input"])
+	assert.Equal(t, `true`, message["expected_output"])
+}
+
+func TestTestCaseCompletedMessageIncludesAllOutputs(t *testing.T) {
+	message := testCaseCompletedMessage(&events.TestCaseCompletedEvent{
+		MatchID:       "match-id",
+		UserID:        "user-id",
+		TestCaseIndex: 1,
+		Input:         `[121]`,
+		Expected:      `true`,
+		Actual:        false,
+		Passed:        false,
+	})
+
+	assert.Equal(t, constants.TestCaseCompleted, message["type"])
+	assert.Equal(t, `[121]`, message["input"])
+	assert.Equal(t, `true`, message["expected_output"])
+	assert.Equal(t, false, message["actual_output"])
+}
 
 // MockMatchmakingService is a mock implementation of MatchmakingService
 type MockMatchmakingService struct {
