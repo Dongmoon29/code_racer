@@ -27,8 +27,10 @@ type Judge0Client struct {
 
 // RateLimiter manages API call rate limiting
 type RateLimiter struct {
-	tokens chan struct{}
-	ticker *time.Ticker
+	tokens    chan struct{}
+	ticker    *time.Ticker
+	done      chan struct{}
+	closeOnce sync.Once
 }
 
 // NewRateLimiter creates a new rate limiter
@@ -36,6 +38,7 @@ func NewRateLimiter(rate int, window time.Duration) *RateLimiter {
 	rl := &RateLimiter{
 		tokens: make(chan struct{}, rate),
 		ticker: time.NewTicker(window),
+		done:   make(chan struct{}),
 	}
 
 	// Fill initial tokens
@@ -45,10 +48,14 @@ func NewRateLimiter(rate int, window time.Duration) *RateLimiter {
 
 	// Refill tokens periodically
 	go func() {
-		for range rl.ticker.C {
+		for {
 			select {
-			case rl.tokens <- struct{}{}:
-			default:
+			case <-rl.ticker.C:
+				for len(rl.tokens) < cap(rl.tokens) {
+					rl.tokens <- struct{}{}
+				}
+			case <-rl.done:
+				return
 			}
 		}
 	}()
@@ -57,13 +64,21 @@ func NewRateLimiter(rate int, window time.Duration) *RateLimiter {
 }
 
 // Acquire acquires a token for API call
-func (rl *RateLimiter) Acquire() {
-	<-rl.tokens
+func (rl *RateLimiter) Acquire(ctx context.Context) error {
+	select {
+	case <-rl.tokens:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // Close stops the rate limiter
 func (rl *RateLimiter) Close() {
-	rl.ticker.Stop()
+	rl.closeOnce.Do(func() {
+		rl.ticker.Stop()
+		close(rl.done)
+	})
 }
 
 // Judge0Config holds Judge0 client configuration
@@ -121,7 +136,9 @@ func (c *Judge0Client) SubmitCode(ctx context.Context, req types.Judge0Request) 
 	defer c.mutex.RUnlock()
 
 	// Rate limiting
-	c.rateLimiter.Acquire()
+	if err := c.rateLimiter.Acquire(ctx); err != nil {
+		return nil, fmt.Errorf("waiting for judge rate limit: %w", err)
+	}
 
 	// Request validation
 	if err := c.validateRequest(req); err != nil {
@@ -182,14 +199,13 @@ func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Reque
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// Log Judge0 request with truncated source code
+	// Never log submitted source code or hidden test data. They may contain
+	// proprietary user code and judge-only inputs.
 	if c.logger != nil {
-		sourceCodeTrunc, _ := truncateForLog(req.SourceCode, 16_000)
 		c.logger.Info().
 			Int("languageID", req.LanguageID).
-			Str("sourceCode", sourceCodeTrunc).
-			Str("expectedOutput", req.ExpectedOutput).
-			Str("stdin", req.Stdin).
+			Int("sourceBytes", len(req.SourceCode)).
+			Int("stdinBytes", len(req.Stdin)).
 			Int("compileTimeout", req.CompileTimeout).
 			Int("runTimeout", req.RunTimeout).
 			Int("memoryLimit", req.MemoryLimit).
@@ -277,6 +293,7 @@ func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Reque
 // logJudge0Response logs the Judge0 response in a readable format
 func (c *Judge0Client) logJudge0Response(resp *types.Judge0Response, statusCode int) {
 	logger := c.logger.Info().Int("statusCode", statusCode)
+	logger = logger.Int("judgeStatusID", resp.Status.ID).Str("judgeStatus", resp.Status.Description)
 
 	// Log execution metrics
 	timeValue := getFloat64Time(resp.Time)

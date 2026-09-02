@@ -20,6 +20,13 @@ type Judge0Response struct {
 	CompileOutput string      `json:"compile_output"`
 	Time          interface{} `json:"time"`
 	Memory        float64     `json:"memory"`
+	Message       string      `json:"message"`
+	Status        JudgeStatus `json:"status"`
+}
+
+type JudgeStatus struct {
+	ID          int    `json:"id"`
+	Description string `json:"description"`
 }
 
 // ErrorType represents the type of error that occurred during code evaluation
@@ -45,12 +52,13 @@ type EvaluationResult struct {
 
 // TestCaseResult represents the result of an individual test case execution
 type TestCaseResult struct {
-	TestCaseIndex int     `json:"test_case_index"`
-	Passed        bool    `json:"passed"`
-	Input         string  `json:"input"`
-	Expected      string  `json:"expected"`
-	Actual        string  `json:"actual,omitempty"`
-	ErrorMessage  string  `json:"error_message,omitempty"`
-	ExecutionTime float64 `json:"execution_time,omitempty"`
-	MemoryUsage   float64 `json:"memory_usage,omitempty"`
+	TestCaseIndex int       `json:"test_case_index"`
+	Passed        bool      `json:"passed"`
+	Input         string    `json:"input"`
+	Expected      string    `json:"expected"`
+	Actual        string    `json:"actual,omitempty"`
+	ErrorMessage  string    `json:"error_message,omitempty"`
+	ExecutionTime float64   `json:"execution_time,omitempty"`
+	MemoryUsage   float64   `json:"memory_usage,omitempty"`
+	ErrorType     ErrorType `json:"error_type,omitempty"`
 }

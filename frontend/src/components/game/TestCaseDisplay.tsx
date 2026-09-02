@@ -26,6 +26,16 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
 
   const [activeTestCaseIndex, setActiveTestCaseIndex] = useState(0);
 
+  // Judge cases are intentionally not sent to players. Build placeholder rows
+  // from progress messages so the UI can show status without exposing inputs.
+  const displayedTestCases: TestCase[] =
+    testCases.length > 0
+      ? testCases
+      : Array.from({ length: totalTestCases }, () => ({
+          input: '',
+          expected_output: '',
+        }));
+
   // Helper function to convert IOSchema param_types to array
   const parseParamTypes = (paramTypes: string | string[]): string[] => {
     if (Array.isArray(paramTypes)) {
@@ -108,6 +118,7 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
     testCase: TestCase,
     index: number
   ) => {
+    const isHiddenCase = !testCase.input && !testCase.expected_output;
     // Set default values when execution result is not available
     const defaultResult: TestCaseResult = {
       index,
@@ -179,29 +190,38 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
 
     return (
       <div className="space-y-4">
+        {isHiddenCase && (
+          <div className="px-3 py-2 rounded-sm bg-[var(--gray-3)] border border-[var(--gray-6)] text-sm text-[var(--gray-11)]">
+            Hidden judge case — input and expected output are not disclosed.
+          </div>
+        )}
         {/* Input Parameters */}
-        <div className="space-y-3">
-          {inputParams.map((param, idx) => (
-            <div key={idx}>
-              <label className="text-xs font-medium text-[var(--gray-11)] mb-1.5 block">
-                {param.name} =
-              </label>
-              <div className="px-3 py-2 rounded-sm bg-[var(--gray-3)] border border-[var(--gray-6)] font-mono text-sm text-[var(--color-text)]">
-                {param.value}
+        {!isHiddenCase && (
+          <div className="space-y-3">
+            {inputParams.map((param, idx) => (
+              <div key={idx}>
+                <label className="text-xs font-medium text-[var(--gray-11)] mb-1.5 block">
+                  {param.name} =
+                </label>
+                <div className="px-3 py-2 rounded-sm bg-[var(--gray-3)] border border-[var(--gray-6)] font-mono text-sm text-[var(--color-text)]">
+                  {param.value}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Expected Output */}
-        <div>
-          <label className="text-xs font-medium text-[var(--gray-11)] mb-1.5 block">
-            Expected Output =
-          </label>
-          <div className="px-3 py-2 rounded-md bg-[var(--gray-3)] border border-[var(--gray-6)] font-mono text-sm text-[var(--color-text)]">
-            {expectedOutput}
+        {!isHiddenCase && (
+          <div>
+            <label className="text-xs font-medium text-[var(--gray-11)] mb-1.5 block">
+              Expected Output =
+            </label>
+            <div className="px-3 py-2 rounded-md bg-[var(--gray-3)] border border-[var(--gray-6)] font-mono text-sm text-[var(--color-text)]">
+              {expectedOutput}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Actual Output (if available) */}
         {testResult.status === 'completed' &&
@@ -228,7 +248,9 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
           <div className="flex items-center justify-between pt-2 border-t border-[var(--gray-6)]">
             <div className="flex items-center gap-2">
               {testResult.passed ? (
-                <span className="text-[var(--green-11)] font-bold">✓ Passed</span>
+                <span className="text-[var(--green-11)] font-bold">
+                  ✓ Passed
+                </span>
               ) : (
                 <span className="text-[var(--red-11)] font-bold">✗ Failed</span>
               )}
@@ -248,7 +270,11 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
 
         {testResult.status === 'running' && (
           <div className="flex items-center gap-2 pt-2 border-t border-[var(--gray-6)]">
-            <Loader variant="inline" size="sm" className="text-[var(--accent-9)]" />
+            <Loader
+              variant="inline"
+              size="sm"
+              className="text-[var(--accent-9)]"
+            />
             <span className="text-xs text-[var(--gray-11)]">Running...</span>
           </div>
         )}
@@ -263,7 +289,11 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {isSubmitting ? (
-              <Loader variant="inline" size="sm" className="text-[var(--accent-9)]" />
+              <Loader
+                variant="inline"
+                size="sm"
+                className="text-[var(--accent-9)]"
+              />
             ) : (
               <span className="text-[var(--green-11)] font-bold">✓</span>
             )}
@@ -305,12 +335,12 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
         )}
 
         {/* Test case results - render based on test cases */}
-        {testCases.length > 0 && (
+        {displayedTestCases.length > 0 && (
           <Card variant="ghost" className={cardPadding}>
             {/* Test Case Tabs */}
             <div className="mb-4 border-b border-[var(--gray-6)] pb-2">
               <div className="flex flex-wrap items-center justify-center gap-1">
-                {testCases.map((testCase, index) => {
+                {displayedTestCases.map((testCase, index) => {
                   const result = testCaseResults.find((r) => r.index === index);
                   const isActive = activeTestCaseIndex === index;
                   const isPassed =
@@ -363,10 +393,10 @@ export const TestCaseDisplay: FC<TestCaseDisplayProps> = ({
             </div>
 
             {/* Active Test Case Content */}
-            {testCases[activeTestCaseIndex] && (
+            {displayedTestCases[activeTestCaseIndex] && (
               <div>
                 {(() => {
-                  const testCase = testCases[activeTestCaseIndex];
+                  const testCase = displayedTestCases[activeTestCaseIndex];
                   const result = testCaseResults.find(
                     (r) => r.index === activeTestCaseIndex
                   );

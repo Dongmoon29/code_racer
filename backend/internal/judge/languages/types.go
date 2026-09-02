@@ -6,6 +6,6 @@ import (
 
 // LanguageWrapper defines per-language wrapping behavior
 type LanguageWrapper interface {
-	WrapSingle(code string, testCase string, problem *model.Problem) string
+	WrapSingle(code string, testCase string, problem *model.Problem) (string, error)
 	WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error)
 }

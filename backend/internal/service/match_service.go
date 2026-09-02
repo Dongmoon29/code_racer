@@ -90,6 +90,9 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 	if err != nil {
 		return nil, err
 	}
+	if err := validateSubmissionRequest(match, userID, req); err != nil {
+		return nil, err
+	}
 
 	result, err := s.evaluateCode(req, match, matchID, userID)
 	if err != nil {
@@ -101,6 +104,27 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 	}
 
 	return s.createFailureResponse(result), nil
+}
+
+const maxSubmissionCodeBytes = 100_000
+
+func validateSubmissionRequest(match *model.Match, userID uuid.UUID, req *model.SubmitSolutionRequest) error {
+	if match == nil || req == nil {
+		return apperr.New(apperr.CodeBadRequest, "Invalid submission")
+	}
+	isParticipant := match.PlayerAID == userID || (match.PlayerBID != nil && *match.PlayerBID == userID)
+	if !isParticipant {
+		return apperr.New(apperr.CodeForbidden, "You are not a participant in this match")
+	}
+	if len(req.Code) > maxSubmissionCodeBytes {
+		return apperr.New(apperr.CodeBadRequest, "Submitted code is too large")
+	}
+	switch strings.ToLower(strings.TrimSpace(req.Language)) {
+	case "javascript", "python", "go":
+		return nil
+	default:
+		return apperr.New(apperr.CodeBadRequest, "Unsupported programming language")
+	}
 }
 
 // fetchMatch retrieves the match from repository
@@ -119,7 +143,7 @@ func (s *matchService) fetchMatch(matchID uuid.UUID) (*model.Match, error) {
 // evaluateCode evaluates the submitted code via Judge service
 func (s *matchService) evaluateCode(req *model.SubmitSolutionRequest, match *model.Match, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
 	s.logger.Debug().
-		Str("code", req.Code).
+		Int("codeBytes", len(req.Code)).
 		Str("language", req.Language).
 		Msg("Evaluating submitted code")
 

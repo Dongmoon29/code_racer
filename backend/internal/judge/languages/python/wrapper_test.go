@@ -1,6 +1,8 @@
 package python
 
 import (
+	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -34,7 +36,8 @@ def solution(nums):
     heapq.heapify(nums)
     return nums`,
 			testCase: "[3,1,4,1,5]",
-			expected: `import json
+			expected: `from typing import *
+import json
 import sys
 
 # ===== User code (preserved as-is) =====
@@ -66,7 +69,8 @@ def solution(nums):
     heapq.heapify(nums)
     return nums`,
 			testCase: "[3,1,4,1,5]",
-			expected: `import json
+			expected: `from typing import *
+import json
 import sys
 
 # ===== User code (preserved as-is) =====
@@ -95,7 +99,8 @@ if __name__ == "__main__":
 			code: `def solution(nums):
     return sorted(nums)`,
 			testCase: "[3,1,4,1,5]",
-			expected: `import json
+			expected: `from typing import *
+import json
 import sys
 
 # ===== User code (preserved as-is) =====
@@ -118,7 +123,8 @@ if __name__ == "__main__":
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := wrapper.WrapSingle(tt.code, tt.testCase, problem)
+			result, err := wrapper.WrapSingle(tt.code, tt.testCase, problem)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -151,7 +157,8 @@ def solution(nums):
     heapq.heapify(nums)
     return nums`,
 			testCasesJSON: "[[3,1,4,1,5], [1,2,3]]",
-			expected: `import json
+			expected: `from typing import *
+import json
 import sys
 
 # ===== User code (preserved as-is) =====
@@ -188,4 +195,35 @@ if __name__ == "__main__":
 	}
 }
 
+func TestWrapper_WrapSingle_ExecutesTypedPythonSubmission(t *testing.T) {
+	python, err := exec.LookPath("python3")
+	if err != nil {
+		t.Skip("python3 executable is unavailable")
+	}
+	wrapper := NewWrapper()
+	problem := &model.Problem{
+		FunctionName: "twoSum",
+		IOSchema: model.IOSchema{
+			ParamTypes: `["int[]", "int"]`,
+			ReturnType: "int[]",
+		},
+	}
+	code := `def helper(value: int) -> int:
+    return value
 
+def twoSum(nums: List[int], target: int) -> List[int]:
+    seen = {}
+    for index, value in enumerate(nums):
+        if target - value in seen:
+            return [seen[target - value], index]
+        seen[helper(value)] = index
+    return []`
+
+	wrapped, err := wrapper.WrapSingle(code, `[[2,7,11,15],9]`, problem)
+	assert.NoError(t, err)
+	cmd := exec.Command(python, "-c", wrapped)
+	cmd.Stdin = strings.NewReader(`[[2,7,11,15],9]`)
+	output, err := cmd.CombinedOutput()
+	assert.NoError(t, err, string(output))
+	assert.JSONEq(t, `[0,1]`, string(output))
+}

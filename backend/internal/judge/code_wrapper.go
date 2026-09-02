@@ -97,7 +97,10 @@ func (w *CodeWrapper) WrapCode(code string, languageID int, testCase string, pro
 
 	// Execute language-specific wrapping
 	if impl, ok := w.langWrappers[languageID]; ok {
-		wrappedCode := impl.WrapSingle(code, testCase, problem)
+		wrappedCode, err := impl.WrapSingle(code, testCase, problem)
+		if err != nil {
+			return "", fmt.Errorf("failed to wrap code for language ID %d: %w", languageID, err)
+		}
 		if wrappedCode == "" {
 			return "", fmt.Errorf("failed to wrap code for language ID: %d", languageID)
 		}

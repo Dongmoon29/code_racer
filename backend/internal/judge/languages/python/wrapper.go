@@ -12,6 +12,25 @@ type Wrapper struct{}
 
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
+func normalizePythonSubmission(code string) (futureImports string, userCode string) {
+	var futures, rest []string
+	for _, line := range strings.Split(strings.TrimSpace(code), "\n") {
+		if strings.HasPrefix(line, "from __future__ import ") {
+			futures = append(futures, line)
+			continue
+		}
+		rest = append(rest, line)
+	}
+	return strings.Join(futures, "\n"), strings.TrimSpace(strings.Join(rest, "\n"))
+}
+
+func pythonPrelude(futureImports string) string {
+	if futureImports == "" {
+		return "from typing import *\nimport json\nimport sys"
+	}
+	return futureImports + "\nfrom typing import *\nimport json\nimport sys"
+}
+
 func schemaParamCount(problem *model.Problem) (int, error) {
 	if problem == nil {
 		return 0, fmt.Errorf("problem is nil")
@@ -28,16 +47,8 @@ func schemaParamCount(problem *model.Problem) (int, error) {
 }
 
 func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
-	// Clean user code - remove any existing wrapper functions
-	userCode := strings.TrimSpace(code)
-
-	// Remove common wrapper patterns
-	userCode = strings.ReplaceAll(userCode, "def run_all():", "")
-	userCode = strings.ReplaceAll(userCode, "def run_test():", "")
-	userCode = strings.ReplaceAll(userCode, "if __name__ == \"__main__\":", "")
-	userCode = strings.ReplaceAll(userCode, "    run_all()", "")
-	userCode = strings.ReplaceAll(userCode, "    run_test()", "")
-	userCode = strings.TrimSpace(userCode)
+	futureImports, userCode := normalizePythonSubmission(code)
+	prelude := pythonPrelude(futureImports)
 
 	paramCount, err := schemaParamCount(problem)
 	if err != nil {
@@ -48,8 +59,7 @@ func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Pr
 	// - paramCount == 1: each element is the single argument value (may itself be list/dict)
 	// - paramCount > 1: each element is a list of arguments
 	if paramCount == 1 {
-		template := `import json
-import sys
+		template := `%s
 
 # ===== User code (preserved as-is) =====
 %s
@@ -69,11 +79,10 @@ if __name__ == "__main__":
     except Exception as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)`
-		return fmt.Sprintf(template, userCode, problem.FunctionName), nil
+		return fmt.Sprintf(template, prelude, userCode, problem.FunctionName), nil
 	}
 
-	template := `import json
-import sys
+	template := `%s
 
 # ===== User code (preserved as-is) =====
 %s
@@ -93,30 +102,20 @@ if __name__ == "__main__":
     except Exception as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)`
-	return fmt.Sprintf(template, userCode, problem.FunctionName), nil
+	return fmt.Sprintf(template, prelude, userCode, problem.FunctionName), nil
 }
 
-func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
+func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) (string, error) {
 	paramCount, err := schemaParamCount(problem)
-
-	// Clean user code - remove any existing wrapper functions
-	userCode := strings.TrimSpace(code)
-
-	// Remove common wrapper patterns
-	userCode = strings.ReplaceAll(userCode, "def run_all():", "")
-	userCode = strings.ReplaceAll(userCode, "def run_test():", "")
-	userCode = strings.ReplaceAll(userCode, "if __name__ == \"__main__\":", "")
-	userCode = strings.ReplaceAll(userCode, "    run_all()", "")
-	userCode = strings.ReplaceAll(userCode, "    run_test()", "")
-	userCode = strings.TrimSpace(userCode)
+	futureImports, userCode := normalizePythonSubmission(code)
+	prelude := pythonPrelude(futureImports)
 
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	if paramCount == 1 {
-		template := `import json
-import sys
+		template := `%s
 
 # ===== User code (preserved as-is) =====
 %s
@@ -132,11 +131,10 @@ if __name__ == "__main__":
     except Exception as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)`
-		return fmt.Sprintf(template, userCode, problem.FunctionName)
+		return fmt.Sprintf(template, prelude, userCode, problem.FunctionName), nil
 	}
 
-	template := `import json
-import sys
+	template := `%s
 
 # ===== User code (preserved as-is) =====
 %s
@@ -152,5 +150,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)`
-	return fmt.Sprintf(template, userCode, problem.FunctionName)
+	return fmt.Sprintf(template, prelude, userCode, problem.FunctionName), nil
 }

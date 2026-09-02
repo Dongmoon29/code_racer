@@ -93,7 +93,7 @@ func (w *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Pr
 	return fmt.Sprintf(template, userCode, problem.FunctionName), nil
 }
 
-func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) string {
+func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) (string, error) {
 	paramCount, err := schemaParamCount(problem)
 
 	// Clean user code - remove any existing wrapper functions
@@ -107,7 +107,7 @@ func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Proble
 	userCode = strings.TrimSpace(userCode)
 
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	if paramCount == 1 {
@@ -129,7 +129,7 @@ func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Proble
         process.exit(1);
     }
 })();`
-		return fmt.Sprintf(template, userCode, problem.FunctionName)
+		return fmt.Sprintf(template, userCode, problem.FunctionName), nil
 	}
 
 	template := `// ===== User code (preserved as-is) =====
@@ -150,5 +150,5 @@ func (w *Wrapper) WrapSingle(code string, testCase string, problem *model.Proble
         process.exit(1);
     }
 })();`
-	return fmt.Sprintf(template, userCode, problem.FunctionName)
+	return fmt.Sprintf(template, userCode, problem.FunctionName), nil
 }

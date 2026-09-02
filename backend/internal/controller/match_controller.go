@@ -41,7 +41,7 @@ func (c *MatchController) GetMatch(ctx *gin.Context) {
 		return
 	}
 
-	OK(ctx, res)
+	OK(ctx, res.ToResponse())
 }
 
 func (c *MatchController) SubmitSolution(ctx *gin.Context) {
@@ -76,9 +76,12 @@ func (c *MatchController) SubmitSolution(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success":   true,
-		"is_winner": result.IsWinner,
-		"message":   result.Message,
+		"success": true,
+		"data": gin.H{
+			"success":   result.Success,
+			"is_winner": result.IsWinner,
+			"message":   result.Message,
+		},
 	})
 }
 

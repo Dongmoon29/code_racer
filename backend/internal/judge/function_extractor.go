@@ -2,6 +2,10 @@ package judge
 
 import (
 	"errors"
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"regexp"
 	"strings"
 
@@ -10,6 +14,56 @@ import (
 
 type FunctionExtractor struct {
 	logger logger.Logger
+}
+
+// ValidateExpectedFunction verifies that the requested entry function exists.
+// It deliberately does not assume that the first function in a submission is
+// the solution: users are allowed to define helpers before it.
+func (e *FunctionExtractor) ValidateExpectedFunction(code, language, expected string) error {
+	if strings.TrimSpace(expected) == "" {
+		return errors.New("expected function name is empty")
+	}
+	var found bool
+	switch strings.ToLower(language) {
+	case "go":
+		source := code
+		if !regexp.MustCompile(`(?m)^\s*package\s+\w+`).MatchString(source) {
+			source = "package main\n" + source
+		}
+		file, err := parser.ParseFile(token.NewFileSet(), "submission.go", source, 0)
+		if err != nil {
+			return fmt.Errorf("invalid Go source: %w", err)
+		}
+		for _, decl := range file.Decls {
+			if fn, ok := decl.(*ast.FuncDecl); ok && fn.Recv == nil && fn.Name.Name == expected {
+				found = true
+				break
+			}
+		}
+	case "python":
+		pattern := `(?m)^(?:async\s+)?def\s+` + regexp.QuoteMeta(expected) + `\s*\(`
+		found = regexp.MustCompile(pattern).MatchString(code)
+	case "javascript":
+		name := regexp.QuoteMeta(expected)
+		patterns := []string{
+			`(?m)\bfunction\s+` + name + `\s*\(`,
+			`(?m)\b(?:const|let|var)\s+` + name + `\s*=\s*(?:function\s*\(|(?:async\s*)?\([^)]*\)\s*=>|(?:async\s+)?[A-Za-z_$][\w$]*\s*=>)`,
+		}
+		for _, pattern := range patterns {
+			if regexp.MustCompile(pattern).MatchString(code) {
+				found = true
+				break
+			}
+		}
+	case "java", "cpp":
+		found = regexp.MustCompile(`\b` + regexp.QuoteMeta(expected) + `\s*\(`).MatchString(code)
+	default:
+		return fmt.Errorf("unsupported language: %s", language)
+	}
+	if !found {
+		return fmt.Errorf("required function %q was not found", expected)
+	}
+	return nil
 }
 
 func NewFunctionExtractor(logger logger.Logger) *FunctionExtractor {

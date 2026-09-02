@@ -189,6 +189,15 @@ func (p *Problem) ToDetailResponse() *ProblemDetail {
 	}
 }
 
+// ToPublicDetailResponse returns the problem statement and starter templates
+// without judge-only inputs or expected outputs.
+func (p *Problem) ToPublicDetailResponse() *ProblemDetail {
+	detail := p.ToDetailResponse()
+	detail.TestCases = []TestCase{}
+	detail.ExpectedOutputs = []string{}
+	return detail
+}
+
 // ========================
 // New normalized request DTOs
 // ========================

@@ -64,6 +64,9 @@ func (s *judgeService) validateProblemIOSchema(problem *model.Problem) error {
 	if strings.TrimSpace(problem.IOSchema.ReturnType) == "" {
 		return fmt.Errorf("problem io_schema.return_type is missing")
 	}
+	if len(problem.TestCases) == 0 {
+		return fmt.Errorf("problem has no test cases")
+	}
 	return nil
 }
 
@@ -131,14 +134,10 @@ func (s *judgeService) countPassedTests(testResults []types.TestCaseResult) int 
 
 // ensureFunctionNameMatches extracts and validates the function name (strict mode)
 func (s *judgeService) ensureFunctionNameMatches(code string, language string, expected string) error {
-	submittedFunctionName, err := s.functionExtractor.ExtractFunctionName(code, language)
-	if err != nil {
-		return fmt.Errorf("failed to extract function name: %w", err)
+	if err := s.functionExtractor.ValidateExpectedFunction(code, language, expected); err != nil {
+		return fmt.Errorf("invalid submission entry function: %w", err)
 	}
-	if submittedFunctionName != expected {
-		return fmt.Errorf("function name mismatch: submitted '%s', expected '%s'", submittedFunctionName, expected)
-	}
-	s.logger.Debug().Str("submittedFunctionName", submittedFunctionName).Str("problemFunctionName", expected)
+	s.logger.Debug().Str("problemFunctionName", expected).Msg("Submission entry function validated")
 	return nil
 }
 
@@ -197,14 +196,8 @@ func (s *judgeService) getLanguageID(language string) (int, error) {
 		return constants.LanguageIDJavaScript, nil
 	case "python":
 		return constants.LanguageIDPython, nil
-	case "java":
-		return constants.LanguageIDJava, nil
-	case "cpp":
-		return constants.LanguageIDCPP, nil
 	case "go":
 		return constants.LanguageIDGo, nil
-	case "rust":
-		return constants.LanguageIDRust, nil
 	default:
 		return 0, fmt.Errorf("unsupported programming language: %s", language)
 	}
@@ -256,16 +249,19 @@ func (s *judgeService) buildSingleWrappedCode(code string, languageID int, testC
 		s.logger.Error().Err(err).Msg("Failed to wrap code")
 		return "", "", &types.TestCaseResult{TestCaseIndex: index, Passed: false, ErrorMessage: fmt.Sprintf("Failed to wrap code: %v", err)}
 	}
-	s.logger.Debug().Int("testCaseIndex", index).Str("wrappedCode", wrappedCode).Msg("Code wrapped successfully")
+	s.logger.Debug().Int("testCaseIndex", index).Int("wrappedCodeBytes", len(wrappedCode)).Msg("Code wrapped successfully")
 	return wrappedCode, testCase.ExpectedOutput, nil
 }
 
 func (s *judgeService) submitSingle(ctx context.Context, wrappedCode string, languageID int, stdin string, expectedJSON string, index int, problem *model.Problem) (*types.Judge0Response, *types.TestCaseResult) {
 	compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
 	request := types.Judge0Request{
-		SourceCode:       wrappedCode,
-		LanguageID:       languageID,
-		ExpectedOutput:   expectedJSON,
+		SourceCode: wrappedCode,
+		LanguageID: languageID,
+		// Output comparison is performed by this service using JSON semantics.
+		// Passing expected_output to Judge0 would apply a second, raw-text
+		// comparison and can incorrectly reject equivalent JSON formatting.
+		ExpectedOutput:   "",
 		Stdin:            stdin,
 		CompileTimeout:   compileTimeout,
 		RunTimeout:       runTimeout,
@@ -273,13 +269,13 @@ func (s *judgeService) submitSingle(ctx context.Context, wrappedCode string, lan
 		EnableNetworking: false,
 	}
 
-	// Log the complete Judge0 request before submission
+	// Do not log source, stdin, or expected output: code is user-owned and test
+	// cases are judge-only data.
 	s.logger.Info().
 		Int("testCaseIndex", index).
 		Int("languageID", request.LanguageID).
-		Str("wrappedCode", request.SourceCode).
-		Str("expectedOutput", request.ExpectedOutput).
-		Str("stdin", request.Stdin).
+		Int("sourceBytes", len(request.SourceCode)).
+		Int("stdinBytes", len(request.Stdin)).
 		Int("compileTimeout", request.CompileTimeout).
 		Int("runTimeout", request.RunTimeout).
 		Int("memoryLimit", request.MemoryLimit).
@@ -312,9 +308,30 @@ func (s *judgeService) evaluateSingleResponse(response *types.Judge0Response, te
 		ExecutionTime: getFloat64Time(response.Time),
 		MemoryUsage:   response.Memory,
 	}
+	if response.Status.ID == 5 {
+		result.ErrorType = types.ErrorTypeTimeout
+		result.ErrorMessage = response.Status.Description
+		return result
+	}
+	if response.Status.ID == 6 {
+		result.ErrorType = types.ErrorTypeCompilation
+		result.ErrorMessage = firstNonEmpty(response.CompileOutput, response.CompileError, response.Status.Description)
+		return result
+	}
+	if response.Status.ID >= 7 && response.Status.ID <= 12 {
+		result.ErrorType = types.ErrorTypeRuntime
+		result.ErrorMessage = firstNonEmpty(response.Stderr, response.Message, response.Status.Description)
+		return result
+	}
+	if response.Status.ID >= 13 {
+		result.ErrorType = types.ErrorTypeRuntime
+		result.ErrorMessage = firstNonEmpty(response.Message, response.Stderr, response.Status.Description)
+		return result
+	}
 	if response.CompileError != "" {
 		s.logger.Error().Str("compileError", response.CompileError).Msg("Compilation error occurred")
 		result.Passed = false
+		result.ErrorType = types.ErrorTypeCompilation
 		result.ErrorMessage = response.CompileError // Return raw compile error
 		return result
 	}
@@ -328,6 +345,7 @@ func (s *judgeService) evaluateSingleResponse(response *types.Judge0Response, te
 		if noStdout && noStderr && noExec {
 			s.logger.Error().Str("compileError", response.CompileOutput).Msg("Compilation error occurred")
 			result.Passed = false
+			result.ErrorType = types.ErrorTypeCompilation
 			result.ErrorMessage = response.CompileOutput
 			return result
 		}
@@ -336,6 +354,7 @@ func (s *judgeService) evaluateSingleResponse(response *types.Judge0Response, te
 	if response.Stderr != "" {
 		s.logger.Error().Str("stderr", response.Stderr).Msg("Runtime error occurred")
 		result.Passed = false
+		result.ErrorType = types.ErrorTypeRuntime
 		result.ErrorMessage = response.Stderr // Return raw stderr
 		return result
 	}
@@ -343,6 +362,15 @@ func (s *judgeService) evaluateSingleResponse(response *types.Judge0Response, te
 	result.Passed = s.compareResults(result.Actual, result.Expected)
 	s.logger.Debug().Int("testCaseIndex", index).Bool("passed", result.Passed).Str("actual", result.Actual).Str("expected", result.Expected).Float64("executionTime", result.ExecutionTime).Float64("memoryUsage", result.MemoryUsage).Msg("Test case evaluation completed")
 	return result
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return "code execution failed"
 }
 
 // compareResults compares actual and expected results considering JSON types
@@ -602,55 +630,23 @@ func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int,
 		// Short-circuit on first failure to save Judge0 cost
 		if !testCaseResult.Passed {
 			allTestsPassed = false
-
-			// If compilation error occurred (check ErrorMessage for compile error indicators)
-			// Judge0 returns compile errors in ErrorMessage when CompileError field is set
-			if testCaseResult.ErrorMessage != "" {
-				// Check if it's a compilation error by looking at the error message
-				// Judge0 compile errors typically contain compilation-related keywords
-				errorLower := strings.ToLower(testCaseResult.ErrorMessage)
-				isCompilationError := strings.Contains(errorLower, "compilation") ||
-					strings.Contains(errorLower, "syntax error") ||
-					strings.Contains(errorLower, "compile") ||
-					strings.Contains(errorLower, "cannot find") ||
-					strings.Contains(errorLower, "undefined") ||
-					strings.Contains(errorLower, "expected") ||
-					strings.Contains(errorLower, "unexpected")
-
-				if isCompilationError {
-					s.logger.Debug().Msg("Compilation error detected, stopping evaluation")
-					s.notifySubmissionFailed(matchID, userID, testCaseResult.ErrorMessage)
-					processed := float64(len(testCaseResults))
-					if processed == 0 {
-						processed = 1
-					}
-					return &types.EvaluationResult{
-						Passed:        false,
-						ErrorType:     types.ErrorTypeCompilation,
-						ErrorMessage:  testCaseResult.ErrorMessage,
-						TestResults:   testCaseResults,
-						ExecutionTime: totalExecutionTime / processed,
-						MemoryUsage:   totalMemoryUsage / processed,
-					}, nil
-				}
+			errorMessage := testCaseResult.ErrorMessage
+			if errorMessage == "" {
+				errorMessage = fmt.Sprintf("test case %d failed", testCaseIndex+1)
 			}
-
-			s.logger.Debug().Str("Test case failed", fmt.Sprintf("Test case %d failed", testCaseIndex)).Msg("Test case failed")
-			s.notifySubmissionFailed(matchID, userID, fmt.Sprintf("Test case %d failed", testCaseIndex))
+			s.logger.Debug().Int("testCaseIndex", testCaseIndex).Str("errorType", string(testCaseResult.ErrorType)).Msg("Test case failed")
+			s.notifySubmissionFailed(matchID, userID, errorMessage)
 			processed := float64(len(testCaseResults))
-			if processed == 0 {
-				processed = 1
-			}
 			return &types.EvaluationResult{
 				Passed:        false,
+				ErrorType:     testCaseResult.ErrorType,
+				ErrorMessage:  errorMessage,
 				TestResults:   testCaseResults,
 				ExecutionTime: totalExecutionTime / processed,
 				MemoryUsage:   totalMemoryUsage / processed,
 			}, nil
 		}
 
-		// Small delay (to allow UI to see the process)
-		time.Sleep(100 * time.Millisecond)
 	}
 
 	testCaseCount := float64(len(problem.TestCases))

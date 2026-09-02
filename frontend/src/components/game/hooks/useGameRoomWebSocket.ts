@@ -138,7 +138,7 @@ export const useGameRoomWebSocket = ({
         const list = [...prev.testCaseResults];
         list[message.test_case_index] = {
           index: message.test_case_index,
-          input: message.input,
+          input: message.input ?? '',
           expectedOutput: message.expected_output ?? '',
           status: 'running' as const,
         };
@@ -158,7 +158,7 @@ export const useGameRoomWebSocket = ({
         const list = [...prev.testCaseResults];
         list[message.test_case_index] = {
           index: message.test_case_index,
-          input: message.input,
+          input: message.input ?? '',
           expectedOutput: message.expected_output ?? message.expected ?? '',
           actualOutput: message.actual_output ?? message.actual,
           passed: message.passed,
@@ -452,18 +452,27 @@ export const useGameRoomWebSocket = ({
         selectedLanguage
       );
 
-      if (result.success) {
+      if (!result.success) {
+        setSubmitResult({
+          success: false,
+          message: result.message || 'Submission failed.',
+          is_winner: false,
+        });
+      } else if (result.data.success) {
         setSubmitResult({
           success: true,
-          message: result.data.is_winner
-            ? 'Congratulations! You won!'
-            : 'Solution submitted successfully.',
+          message:
+            result.data.message ||
+            (result.data.is_winner
+              ? 'Congratulations! You won!'
+              : 'Solution submitted successfully.'),
           is_winner: result.data.is_winner || false,
         });
       } else {
         setSubmitResult({
           success: false,
-          message: result.message || 'Submission failed.',
+          message:
+            result.data.message || 'Solution did not pass the judge cases.',
           is_winner: false,
         });
       }

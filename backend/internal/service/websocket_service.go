@@ -40,6 +40,9 @@ type Hub struct {
 	// Channel for match-specific broadcast messages
 	matchBroadcast chan *MatchMessage
 
+	// Channel for private messages to one participant in a match
+	userMatchBroadcast chan *UserMatchMessage
+
 	// NEW: Matchmaking channels
 	startMatching  chan *MatchingRequest
 	cancelMatching chan *CancelRequest
@@ -100,6 +103,12 @@ type MatchMessage struct {
 
 	// Message content
 	data []byte
+}
+
+type UserMatchMessage struct {
+	matchID uuid.UUID
+	userID  uuid.UUID
+	data    []byte
 }
 
 // CodeUpdateMessage represents a code update message
@@ -224,11 +233,7 @@ func (s *webSocketService) subscribeToEvents() {
 			"message":          "Code submission started...",
 			"timestamp":        time.Now().Unix(),
 		}
-		if msgBytes, err := json.Marshal(msg); err == nil {
-			if matchID, err := uuid.Parse(evt.MatchID); err == nil {
-				s.hub.matchBroadcast <- &MatchMessage{matchID: matchID, data: msgBytes}
-			}
-		}
+		s.sendToMatchUser(evt.MatchID, evt.UserID, msg)
 	})
 
 	s.eventBus.Subscribe(events.TopicTestCaseRunning, func(payload interface{}) {
@@ -243,14 +248,9 @@ func (s *webSocketService) subscribeToEvents() {
 			"test_case_index":  evt.TestCaseIndex,
 			"total_test_cases": evt.Total,
 			"status":           "running",
-			"input":            evt.TestCase,
 			"timestamp":        time.Now().Unix(),
 		}
-		if msgBytes, err := json.Marshal(msg); err == nil {
-			if matchID, err := uuid.Parse(evt.MatchID); err == nil {
-				s.hub.matchBroadcast <- &MatchMessage{matchID: matchID, data: msgBytes}
-			}
-		}
+		s.sendToMatchUser(evt.MatchID, evt.UserID, msg)
 	})
 
 	s.eventBus.Subscribe(events.TopicTestCaseCompleted, func(payload interface{}) {
@@ -264,19 +264,12 @@ func (s *webSocketService) subscribeToEvents() {
 			"user_id":         evt.UserID,
 			"test_case_index": evt.TestCaseIndex,
 			"status":          "completed",
-			"input":           evt.Input,
-			"expected":        evt.Expected,
-			"actual":          evt.Actual,
 			"passed":          evt.Passed,
 			"execution_time":  evt.ExecutionTime,
 			"memory_usage":    evt.MemoryUsage,
 			"timestamp":       time.Now().Unix(),
 		}
-		if msgBytes, err := json.Marshal(msg); err == nil {
-			if matchID, err := uuid.Parse(evt.MatchID); err == nil {
-				s.hub.matchBroadcast <- &MatchMessage{matchID: matchID, data: msgBytes}
-			}
-		}
+		s.sendToMatchUser(evt.MatchID, evt.UserID, msg)
 	})
 
 	s.eventBus.Subscribe(events.TopicSubmissionCompleted, func(payload interface{}) {
@@ -302,11 +295,7 @@ func (s *webSocketService) subscribeToEvents() {
 			}(),
 			"timestamp": time.Now().Unix(),
 		}
-		if msgBytes, err := json.Marshal(msg); err == nil {
-			if matchID, err := uuid.Parse(evt.MatchID); err == nil {
-				s.hub.matchBroadcast <- &MatchMessage{matchID: matchID, data: msgBytes}
-			}
-		}
+		s.sendToMatchUser(evt.MatchID, evt.UserID, msg)
 	})
 
 	s.eventBus.Subscribe(events.TopicSubmissionFailed, func(payload interface{}) {
@@ -322,11 +311,7 @@ func (s *webSocketService) subscribeToEvents() {
 			"message":   evt.Message,
 			"timestamp": time.Now().Unix(),
 		}
-		if msgBytes, err := json.Marshal(msg); err == nil {
-			if matchID, err := uuid.Parse(evt.MatchID); err == nil {
-				s.hub.matchBroadcast <- &MatchMessage{matchID: matchID, data: msgBytes}
-			}
-		}
+		s.sendToMatchUser(evt.MatchID, evt.UserID, msg)
 	})
 
 	s.eventBus.Subscribe(events.TopicJudge0Timeout, func(payload interface{}) {
@@ -352,6 +337,26 @@ func (s *webSocketService) subscribeToEvents() {
 	})
 }
 
+func (s *webSocketService) sendToMatchUser(matchIDValue, userIDValue string, message map[string]interface{}) {
+	matchID, matchErr := uuid.Parse(matchIDValue)
+	userID, userErr := uuid.Parse(userIDValue)
+	data, marshalErr := json.Marshal(message)
+	if matchErr != nil || userErr != nil || marshalErr != nil {
+		s.logger.Warn().Err(firstError(matchErr, userErr, marshalErr)).Msg("Failed to prepare private WebSocket message")
+		return
+	}
+	s.hub.userMatchBroadcast <- &UserMatchMessage{matchID: matchID, userID: userID, data: data}
+}
+
+func firstError(errors ...error) error {
+	for _, err := range errors {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // InitHub initializes the WebSocket hub
 func (s *webSocketService) InitHub() *Hub {
 	s.hub = &Hub{
@@ -362,6 +367,7 @@ func (s *webSocketService) InitHub() *Hub {
 		unregister:         make(chan *Client),
 		broadcast:          make(chan *Message),
 		matchBroadcast:     make(chan *MatchMessage),
+		userMatchBroadcast: make(chan *UserMatchMessage),
 		startMatching:      make(chan *MatchingRequest),
 		cancelMatching:     make(chan *CancelRequest),
 		matchmakingService: s.matchmakingService,
@@ -865,6 +871,21 @@ func (h *Hub) broadcastToMatchClients(matchID uuid.UUID, data []byte) {
 	}
 }
 
+func (h *Hub) sendToMatchUser(matchID, userID uuid.UUID, data []byte) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for client := range h.matchClients[matchID.String()] {
+		if client.userID != userID {
+			continue
+		}
+		select {
+		case client.send <- data:
+		default:
+			h.logger.Warn().Str("userID", userID.String()).Msg("Private WebSocket message dropped: client buffer is full")
+		}
+	}
+}
+
 // Run starts the hub's main event loop
 func (h *Hub) Run() {
 	for {
@@ -880,6 +901,9 @@ func (h *Hub) Run() {
 
 		case matchMessage := <-h.matchBroadcast:
 			h.broadcastToMatchClients(matchMessage.matchID, matchMessage.data)
+
+		case userMessage := <-h.userMatchBroadcast:
+			h.sendToMatchUser(userMessage.matchID, userMessage.userID, userMessage.data)
 
 		case matchReq := <-h.startMatching:
 			h.handleStartMatching(matchReq)
@@ -958,10 +982,10 @@ func (s *webSocketService) loadExistingCodeForClient(client *Client, matchID uui
 		existingLanguage, _ := s.redisManager.GetUserLanguage(matchID, userID)
 		codeUpdateMsg := CodeUpdateMessage{
 			Type:     constants.CodeUpdate,
-			MatchID:   matchID.String(),
-			UserID:    userID.String(),
-			Code:      existingCode,
-			Language:  existingLanguage,
+			MatchID:  matchID.String(),
+			UserID:   userID.String(),
+			Code:     existingCode,
+			Language: existingLanguage,
 		}
 		msgBytes, _ := json.Marshal(codeUpdateMsg)
 		client.send <- msgBytes
@@ -983,10 +1007,10 @@ func (s *webSocketService) loadExistingCodeForClient(client *Client, matchID uui
 				opponentLanguage, _ := s.redisManager.GetUserLanguage(matchID, otherClient.userID)
 				codeUpdateMsg := CodeUpdateMessage{
 					Type:     constants.CodeUpdate,
-					MatchID:   matchID.String(),
-					UserID:    otherClient.userID.String(),
-					Code:      opponentCode,
-					Language:  opponentLanguage,
+					MatchID:  matchID.String(),
+					UserID:   otherClient.userID.String(),
+					Code:     opponentCode,
+					Language: opponentLanguage,
 				}
 				msgBytes, _ := json.Marshal(codeUpdateMsg)
 				client.send <- msgBytes
@@ -1281,14 +1305,14 @@ func (c *Client) handleCodeUpdateMessage(msg map[string]interface{}, wsService *
 	if data, ok := msg["data"].(map[string]interface{}); ok {
 		var code string
 		var language string
-		
+
 		if c, ok := data["code"].(string); ok {
 			code = c
 		}
 		if l, ok := data["language"].(string); ok {
 			language = l
 		}
-		
+
 		if code != "" {
 			c.storeCodeInRedis(code, wsService)
 			c.broadcastCodeUpdate(code, language, wsService)
@@ -1339,10 +1363,10 @@ func (c *Client) storeLanguageInRedis(language string, wsService *webSocketServi
 func (c *Client) broadcastCodeUpdate(code string, language string, wsService *webSocketService) {
 	codeUpdateMsg := CodeUpdateMessage{
 		Type:     constants.CodeUpdate,
-		MatchID:   c.matchID.String(),
-		UserID:    c.userID.String(),
-		Code:      code,
-		Language:  language,
+		MatchID:  c.matchID.String(),
+		UserID:   c.userID.String(),
+		Code:     code,
+		Language: language,
 	}
 
 	msgBytes, _ := json.Marshal(codeUpdateMsg)

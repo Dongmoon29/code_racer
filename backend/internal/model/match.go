@@ -73,11 +73,11 @@ type MatchResponse struct {
 	Status  MatchStatus    `json:"status"`
 	Winner  *UserResponse  `json:"winner,omitempty"`
 	// Winner metrics captured at match completion (if available)
-	WinnerExecutionTimeSeconds float64 `json:"winner_execution_time_seconds"`
-	WinnerMemoryUsageKB        float64 `json:"winner_memory_usage_kb"`
-	WinnerLanguage             string  `json:"winner_language,omitempty"`
-	WinnerRatingDelta          int     `json:"winner_rating_delta,omitempty"`
-	LoserRatingDelta           int     `json:"loser_rating_delta,omitempty"`
+	WinnerExecutionTimeSeconds float64    `json:"winner_execution_time_seconds"`
+	WinnerMemoryUsageKB        float64    `json:"winner_memory_usage_kb"`
+	WinnerLanguage             string     `json:"winner_language,omitempty"`
+	WinnerRatingDelta          int        `json:"winner_rating_delta,omitempty"`
+	LoserRatingDelta           int        `json:"loser_rating_delta,omitempty"`
 	StartedAt                  *time.Time `json:"started_at,omitempty"`
 	EndedAt                    *time.Time `json:"ended_at,omitempty"`
 	CreatedAt                  time.Time  `json:"created_at"`
@@ -99,7 +99,7 @@ func (m *Match) ToResponse() *MatchResponse {
 		winnerResp = m.Winner.ToResponse()
 	}
 
-	problemResp := m.Problem.ToDetailResponse()
+	problemResp := m.Problem.ToPublicDetailResponse()
 
 	return &MatchResponse{
 		ID:                         m.ID,

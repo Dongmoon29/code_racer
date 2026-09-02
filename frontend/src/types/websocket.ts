@@ -1,7 +1,13 @@
 // WebSocket 메시지 타입 정의
 
 // TestCase 입출력을 위한 타입 (JSON으로 직렬화 가능한 모든 값)
-export type TestCaseValue = string | number | boolean | null | TestCaseValue[] | { [key: string]: TestCaseValue };
+export type TestCaseValue =
+  | string
+  | number
+  | boolean
+  | null
+  | TestCaseValue[]
+  | { [key: string]: TestCaseValue };
 
 export interface SubmissionStatusMessage {
   type: 'submission_started' | 'submission_completed' | 'submission_failed';
@@ -24,7 +30,7 @@ export interface TestCaseDetailMessage {
   test_case_index: number;
   total_test_cases: number;
   status: 'running' | 'completed';
-  input: TestCaseValue;
+  input?: TestCaseValue;
   expected_output?: TestCaseValue;
   expected?: TestCaseValue; // Backend sends this field
   actual_output?: TestCaseValue;

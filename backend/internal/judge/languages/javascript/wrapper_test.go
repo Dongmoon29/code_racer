@@ -152,10 +152,9 @@ function solution(nums) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := wrapper.WrapSingle(tt.code, tt.testCase, problem)
+			result, err := wrapper.WrapSingle(tt.code, tt.testCase, problem)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
-
-
