@@ -58,8 +58,9 @@ func TestMatchRepository_SetWinner_StoresWinnerMetrics(t *testing.T) {
 	execTime := 0.123
 	memKB := 4567.333333333333
 	language := "python"
+	winnerCode := "def two_sum(nums, target):\n    return [0, 1]"
 
-	assert.NoError(t, repo.SetWinner(m.ID, u.ID, language, execTime, memKB))
+	assert.NoError(t, repo.SetWinner(m.ID, u.ID, winnerCode, language, execTime, memKB))
 
 	var got model.Match
 	assert.NoError(t, db.First(&got, "id = ?", m.ID).Error)
@@ -70,4 +71,6 @@ func TestMatchRepository_SetWinner_StoresWinnerMetrics(t *testing.T) {
 	assert.InDelta(t, execTime, got.WinnerExecutionTimeSeconds, 1e-9)
 	assert.Equal(t, 4567.0, got.WinnerMemoryUsageKB)
 	assert.Equal(t, language, got.WinnerLanguage)
+	assert.Equal(t, winnerCode, got.WinnerCode)
+	assert.Equal(t, winnerCode, got.ToResponse().WinnerCode)
 }

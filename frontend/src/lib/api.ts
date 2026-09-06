@@ -192,6 +192,8 @@ export const matchApi = {
       winner_execution_time_seconds:
         payload.winner_execution_time_seconds ?? undefined,
       winner_memory_usage_kb: payload.winner_memory_usage_kb ?? undefined,
+      winner_code: payload.winner_code || undefined,
+      winner_language: payload.winner_language || undefined,
       winner_rating_delta: payload.winner_rating_delta ?? undefined,
       loser_rating_delta: payload.loser_rating_delta ?? undefined,
       problem: payload.problem,

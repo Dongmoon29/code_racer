@@ -49,7 +49,14 @@ export const FinishedGame: React.FC<Props> = memo(
     const winnerId = game.winner?.id;
     const winnerIsMe = Boolean(winnerId && me?.id && winnerId === me.id);
     const isSingle = game.mode === "single";
-    const winnerCode = winnerIsMe || isSingle ? myCode : opponentCode || myCode;
+    // Finished matches use the durable server snapshot. The local fallback keeps
+    // result pages for matches completed before winner_code was introduced usable.
+    const localWinnerCode =
+      winnerIsMe || isSingle ? myCode : opponentCode || myCode;
+    const winnerCode = game.winner_code?.trim()
+      ? game.winner_code
+      : localWinnerCode;
+    const winnerLanguage = game.winner_language ?? selectedLanguage;
 
     const execSeconds = game.winner_execution_time_seconds;
     const memKB = game.winner_memory_usage_kb;
@@ -180,7 +187,7 @@ export const FinishedGame: React.FC<Props> = memo(
               </div>
             </div>
 
-            <SolutionPanel code={winnerCode} language={selectedLanguage} />
+            <SolutionPanel code={winnerCode} language={winnerLanguage} />
           </div>
         </main>
       </div>

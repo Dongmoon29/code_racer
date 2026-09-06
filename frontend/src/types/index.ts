@@ -73,6 +73,8 @@ export interface MatchResponse {
   winner?: User & { rating?: number };
   winner_execution_time_seconds?: number;
   winner_memory_usage_kb?: number;
+  winner_code?: string;
+  winner_language?: 'python' | 'javascript' | 'go';
   winner_rating_delta?: number;
   loser_rating_delta?: number;
   problem: ProblemDetail;
@@ -289,6 +291,8 @@ export interface Game {
   // Winner metrics captured at match completion (if available)
   winner_execution_time_seconds?: number;
   winner_memory_usage_kb?: number;
+  winner_code?: string;
+  winner_language?: 'python' | 'javascript' | 'go';
   winner_rating_delta?: number;
   loser_rating_delta?: number;
   problem: ProblemDetail;

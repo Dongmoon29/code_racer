@@ -100,7 +100,7 @@ func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *
 	}
 
 	if result.Passed {
-		return s.handleWinner(matchID, userID, req.Language, result)
+		return s.handleWinner(matchID, userID, req.Code, req.Language, result)
 	}
 
 	return s.createFailureResponse(result), nil
@@ -168,7 +168,7 @@ func (s *matchService) evaluateCode(req *model.SubmitSolutionRequest, match *mod
 }
 
 // handleWinner processes winner determination with distributed locking
-func (s *matchService) handleWinner(matchID uuid.UUID, userID uuid.UUID, language string, result *types.EvaluationResult) (*model.SubmitSolutionResponse, error) {
+func (s *matchService) handleWinner(matchID uuid.UUID, userID uuid.UUID, code, language string, result *types.EvaluationResult) (*model.SubmitSolutionResponse, error) {
 	s.logger.Debug().Msg("All test cases passed, setting winner")
 
 	ctx := context.Background()
@@ -187,7 +187,7 @@ func (s *matchService) handleWinner(matchID uuid.UUID, userID uuid.UUID, languag
 
 	defer s.releaseWinnerLock(ctx, lockKey)
 
-	if err := s.persistWinner(matchID, userID, language, result); err != nil {
+	if err := s.persistWinner(matchID, userID, code, language, result); err != nil {
 		return nil, err
 	}
 
@@ -215,8 +215,8 @@ func (s *matchService) releaseWinnerLock(ctx context.Context, lockKey string) {
 }
 
 // persistWinner saves winner information to database
-func (s *matchService) persistWinner(matchID uuid.UUID, userID uuid.UUID, language string, result *types.EvaluationResult) error {
-	if err := s.matchRepo.SetWinner(matchID, userID, language, result.ExecutionTime, result.MemoryUsage); err != nil {
+func (s *matchService) persistWinner(matchID uuid.UUID, userID uuid.UUID, code, language string, result *types.EvaluationResult) error {
+	if err := s.matchRepo.SetWinner(matchID, userID, code, language, result.ExecutionTime, result.MemoryUsage); err != nil {
 		s.logger.Error().Err(err).Msg("Failed to set winner")
 		return err
 	}

@@ -45,8 +45,11 @@ type Match struct {
 	WinnerExecutionTimeSeconds float64 `gorm:"type:double precision" json:"winner_execution_time_seconds"`
 	WinnerMemoryUsageKB        float64 `gorm:"type:double precision" json:"winner_memory_usage_kb"`
 	WinnerLanguage             string  `gorm:"type:varchar(20)" json:"winner_language,omitempty"`
-	WinnerRatingDelta          int     `gorm:"type:integer" json:"winner_rating_delta,omitempty"`
-	LoserRatingDelta           int     `gorm:"type:integer" json:"loser_rating_delta,omitempty"`
+	// WinnerCode is exposed only through MatchResponse so internal model logging
+	// does not accidentally write submitted source code to application logs.
+	WinnerCode        string `gorm:"type:text" json:"-"`
+	WinnerRatingDelta int    `gorm:"type:integer" json:"winner_rating_delta,omitempty"`
+	LoserRatingDelta  int    `gorm:"type:integer" json:"loser_rating_delta,omitempty"`
 
 	Mode   MatchMode   `gorm:"type:varchar(20);not null;default:'casual_pvp'" json:"mode"`
 	Status MatchStatus `gorm:"type:varchar(20);not null;default:'waiting';index" json:"status"`
@@ -76,6 +79,7 @@ type MatchResponse struct {
 	WinnerExecutionTimeSeconds float64    `json:"winner_execution_time_seconds"`
 	WinnerMemoryUsageKB        float64    `json:"winner_memory_usage_kb"`
 	WinnerLanguage             string     `json:"winner_language,omitempty"`
+	WinnerCode                 string     `json:"winner_code,omitempty"`
 	WinnerRatingDelta          int        `json:"winner_rating_delta,omitempty"`
 	LoserRatingDelta           int        `json:"loser_rating_delta,omitempty"`
 	StartedAt                  *time.Time `json:"started_at,omitempty"`
@@ -112,6 +116,7 @@ func (m *Match) ToResponse() *MatchResponse {
 		WinnerExecutionTimeSeconds: m.WinnerExecutionTimeSeconds,
 		WinnerMemoryUsageKB:        m.WinnerMemoryUsageKB,
 		WinnerLanguage:             m.WinnerLanguage,
+		WinnerCode:                 m.WinnerCode,
 		WinnerRatingDelta:          m.WinnerRatingDelta,
 		LoserRatingDelta:           m.LoserRatingDelta,
 		StartedAt:                  m.StartedAt,
