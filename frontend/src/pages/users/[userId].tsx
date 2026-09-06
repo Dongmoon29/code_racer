@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import Head from 'next/head';
-import { useRouter } from 'next/router';
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
+import React, { useState } from "react";
+import Head from "next/head";
+import { useRouter } from "next/router";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/api";
 import {
   GameHistory,
   ProfileSidebar,
   PublicProfileSidebar,
-} from '@/components/profile';
-import { MatchingScreen } from '@/components/game/MatchingScreen';
-import { Loader } from '@/components/ui/Loader';
-import { useAuthStore } from '@/stores/authStore';
-import { FollowersList, FollowingList } from '@/components/profile/FollowLists';
-import { LAYOUT_PADDING, LAYOUT_WIDTH } from '@/lib/styles';
+} from "@/components/profile";
+import { MatchingScreen } from "@/components/game/MatchingScreen";
+import { Loader } from "@/components/ui/Loader";
+import { useAuthStore } from "@/stores/authStore";
+import { FollowersList, FollowingList } from "@/components/profile/FollowLists";
+import { LAYOUT_PADDING, LAYOUT_WIDTH } from "@/lib/styles";
 
 interface UserInfo {
   id: string;
@@ -32,8 +32,8 @@ interface UserInfo {
 
 interface RecentGameSummary {
   id: string;
-  mode: 'ranked_pvp' | 'casual_pvp' | 'single';
-  status: 'waiting' | 'playing' | 'finished' | 'closed';
+  mode: "ranked_pvp" | "casual_pvp" | "single";
+  status: "waiting" | "playing" | "finished" | "closed";
   problem: { id: string; title: string; difficulty: string };
   player_a: { id: string; name: string; profile_image?: string };
   player_b?: { id: string; name: string; profile_image?: string };
@@ -47,16 +47,16 @@ interface UserProfileResponse extends UserInfo {
   recent_games: RecentGameSummary[];
 }
 
-type ProfileTab = 'games' | 'followers' | 'following';
+type ProfileTab = "games" | "followers" | "following";
 
 const UserProfilePage = () => {
   const router = useRouter();
   const { userId } = router.query;
-  const { user: currentUser } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<ProfileTab>('games');
+  const currentUser = useAuthStore((state) => state.user);
+  const [activeTab, setActiveTab] = useState<ProfileTab>("games");
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['userProfile', userId],
+    queryKey: ["userProfile", userId],
     queryFn: async () => {
       const response = await api.get(`/users/${userId}/profile`);
       return response.data as {
@@ -125,33 +125,33 @@ const UserProfilePage = () => {
               {isOwnProfile ? (
                 <ProfileSidebar
                   user={user!}
-                  onShowFollowers={() => setActiveTab('followers')}
-                  onShowFollowing={() => setActiveTab('following')}
+                  onShowFollowers={() => setActiveTab("followers")}
+                  onShowFollowing={() => setActiveTab("following")}
                 />
               ) : (
                 <PublicProfileSidebar
                   user={user!}
-                  onShowFollowers={() => setActiveTab('followers')}
-                  onShowFollowing={() => setActiveTab('following')}
+                  onShowFollowers={() => setActiveTab("followers")}
+                  onShowFollowing={() => setActiveTab("following")}
                 />
               )}
             </div>
 
             <div className="flex-1 min-w-0">
               <div className="space-y-6">
-                {isOwnProfile && activeTab === 'games' && (
+                {isOwnProfile && activeTab === "games" && (
                   <div className="bg-card rounded-lg border p-6">
                     <MatchingScreen onMatchFound={handleMatchFound} />
                   </div>
                 )}
-                {activeTab === 'games' && (
+                {activeTab === "games" && (
                   <GameHistory currentUserId={user?.id} games={recentGames} />
                 )}
-                {activeTab === 'followers' && (
-                  <FollowersList userId={user?.id || ''} />
+                {activeTab === "followers" && (
+                  <FollowersList userId={user?.id || ""} />
                 )}
-                {activeTab === 'following' && (
-                  <FollowingList userId={user?.id || ''} />
+                {activeTab === "following" && (
+                  <FollowingList userId={user?.id || ""} />
                 )}
               </div>
             </div>

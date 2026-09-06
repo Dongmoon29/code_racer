@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
-import Head from 'next/head';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { communityApi } from '@/lib/api';
-import { ROUTES } from '@/lib/router';
+import { useMemo, useState } from "react";
+import Head from "next/head";
+import Image from "next/image";
+import Link from "next/link";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { communityApi } from "@/lib/api";
+import { ROUTES } from "@/lib/router";
 import {
   Bug,
   CheckCircle2,
@@ -19,13 +19,13 @@ import {
   ThumbsDown,
   ThumbsUp,
   XCircle,
-} from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
-import { useVoting } from '@/hooks/useVoting';
+} from "lucide-react";
+import { useAuthStore } from "@/stores/authStore";
+import { useVoting } from "@/hooks/useVoting";
 
-type PostType = 'bug' | 'feature' | 'improvement' | 'other';
-type PostStatus = 'pending' | 'in_progress' | 'resolved' | 'closed';
-type PostSort = 'hot' | 'new' | 'top';
+type PostType = "bug" | "feature" | "improvement" | "other";
+type PostStatus = "pending" | "in_progress" | "resolved" | "closed";
+type PostSort = "hot" | "new" | "top";
 
 interface Post {
   id: string;
@@ -49,19 +49,19 @@ interface Post {
 
 const CommunityIndexPage = () => {
   const [showForm, setShowForm] = useState(false);
-  const [sort, setSort] = useState<PostSort>('hot');
+  const [sort, setSort] = useState<PostSort>("hot");
   const [formData, setFormData] = useState({
-    type: 'bug' as PostType,
-    title: '',
-    content: '',
+    type: "bug" as PostType,
+    title: "",
+    content: "",
   });
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
 
-  const { user } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
   const { data: postsData, isLoading: postsLoading } = useQuery({
-    queryKey: ['communityPosts', sort],
+    queryKey: ["communityPosts", sort],
     queryFn: () => communityApi.listPosts(50, 0, undefined, undefined, sort),
   });
 
@@ -71,31 +71,31 @@ const CommunityIndexPage = () => {
     mutationFn: (payload: { type: PostType; title: string; content: string }) =>
       communityApi.create(payload.type, payload.title, payload.content),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['communityPosts'] });
+      queryClient.invalidateQueries({ queryKey: ["communityPosts"] });
       setShowForm(false);
-      setFormData({ type: 'bug', title: '', content: '' });
-      setError('');
+      setFormData({ type: "bug", title: "", content: "" });
+      setError("");
     },
     onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : 'Failed to create post';
+      const msg = err instanceof Error ? err.message : "Failed to create post";
       setError(msg);
     },
   });
 
   const { handleUpvote, handleDownvote, isVoting } = useVoting({
-    entityType: 'post',
+    entityType: "post",
     voteFn: (postId, value) => communityApi.vote(postId, value),
-    invalidateKeys: [['communityPosts']],
-    errorContext: { component: 'CommunityIndex' },
+    invalidateKeys: [["communityPosts"]],
+    errorContext: { component: "CommunityIndex" },
   });
 
   const getTypeIcon = (type: PostType) => {
     switch (type) {
-      case 'bug':
+      case "bug":
         return <Bug className="w-4 h-4 text-red-500" />;
-      case 'feature':
+      case "feature":
         return <Sparkles className="w-4 h-4 text-purple-500" />;
-      case 'improvement':
+      case "improvement":
         return <Lightbulb className="w-4 h-4 text-yellow-500" />;
       default:
         return <FileText className="w-4 h-4 text-blue-500" />;
@@ -104,26 +104,26 @@ const CommunityIndexPage = () => {
 
   const getTypeLabel = (type: PostType) => {
     switch (type) {
-      case 'bug':
-        return 'Bug Report';
-      case 'feature':
-        return 'Feature Request';
-      case 'improvement':
-        return 'Improvement';
+      case "bug":
+        return "Bug Report";
+      case "feature":
+        return "Feature Request";
+      case "improvement":
+        return "Improvement";
       default:
-        return 'Other';
+        return "Other";
     }
   };
 
   const getStatusIcon = (status: PostStatus) => {
     switch (status) {
-      case 'pending':
+      case "pending":
         return <Clock className="w-4 h-4 text-gray-500" />;
-      case 'in_progress':
+      case "in_progress":
         return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
-      case 'resolved':
+      case "resolved":
         return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-      case 'closed':
+      case "closed":
         return <XCircle className="w-4 h-4 text-gray-400" />;
       default:
         return <Clock className="w-4 h-4 text-gray-500" />;
@@ -133,11 +133,11 @@ const CommunityIndexPage = () => {
   const sortTabs = useMemo(
     () =>
       [
-        { key: 'hot' as const, label: 'Hot' },
-        { key: 'new' as const, label: 'New' },
-        { key: 'top' as const, label: 'Top' },
+        { key: "hot" as const, label: "Hot" },
+        { key: "new" as const, label: "New" },
+        { key: "top" as const, label: "Top" },
       ] satisfies Array<{ key: PostSort; label: string }>,
-    []
+    [],
   );
 
   return (
@@ -171,8 +171,8 @@ const CommunityIndexPage = () => {
               onClick={() => setSort(t.key)}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 sort === t.key
-                  ? 'bg-[var(--gray-3)] text-[var(--color-text)]'
-                  : 'text-[var(--gray-11)] hover:bg-[var(--gray-2)]'
+                  ? "bg-[var(--gray-3)] text-[var(--color-text)]"
+                  : "text-[var(--gray-11)] hover:bg-[var(--gray-2)]"
               }`}
             >
               {t.label}
@@ -267,7 +267,7 @@ const CommunityIndexPage = () => {
                   className="px-4 py-2 bg-[var(--accent-9)] text-white rounded-md hover:bg-[var(--accent-10)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
                   <Send className="w-4 h-4" />
-                  {createPostMutation.isPending ? 'Posting...' : 'Post'}
+                  {createPostMutation.isPending ? "Posting..." : "Post"}
                 </button>
               </div>
             </form>
@@ -303,7 +303,7 @@ const CommunityIndexPage = () => {
                         href={
                           post.user?.id
                             ? ROUTES.USER_PROFILE(post.user.id)
-                            : '#'
+                            : "#"
                         }
                         className="block"
                       >
@@ -318,7 +318,7 @@ const CommunityIndexPage = () => {
                           />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-sm">
-                            {post.user?.name?.[0] || 'U'}
+                            {post.user?.name?.[0] || "U"}
                           </div>
                         )}
                       </Link>
@@ -331,24 +331,24 @@ const CommunityIndexPage = () => {
                           href={
                             post.user?.id
                               ? ROUTES.USER_PROFILE(post.user.id)
-                              : '#'
+                              : "#"
                           }
                           className="text-sm font-semibold text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors"
                         >
-                          {post.user?.name || 'Anonymous'}
+                          {post.user?.name || "Anonymous"}
                         </Link>
                         <span className="text-sm text-[var(--gray-11)]">
                           {new Date(post.created_at).toLocaleDateString(
-                            'en-US',
+                            "en-US",
                             {
-                              month: 'short',
-                              day: 'numeric',
+                              month: "short",
+                              day: "numeric",
                               year:
                                 new Date(post.created_at).getFullYear() !==
                                 new Date().getFullYear()
-                                  ? 'numeric'
+                                  ? "numeric"
                                   : undefined,
-                            }
+                            },
                           )}
                         </span>
                       </div>
@@ -368,28 +368,32 @@ const CommunityIndexPage = () => {
                         {/* Vote Group */}
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleUpvote(post.id, myVote as -1 | 0 | 1)}
+                            onClick={() =>
+                              handleUpvote(post.id, myVote as -1 | 0 | 1)
+                            }
                             className={`flex items-center gap-1 transition-colors text-sm ${
                               myVote === 1
-                                ? 'text-[var(--accent-9)]'
-                                : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
+                                ? "text-[var(--accent-9)]"
+                                : "text-[var(--gray-11)] hover:text-[var(--accent-9)]"
                             }`}
-                            title={canVote ? 'Like' : 'Login to like'}
+                            title={canVote ? "Like" : "Login to like"}
                             disabled={!canVote || isVoting}
                           >
                             <ThumbsUp className="w-4 h-4" />
                             <span className="font-medium">
-                              {score > 0 ? score : ''}
+                              {score > 0 ? score : ""}
                             </span>
                           </button>
                           <button
-                            onClick={() => handleDownvote(post.id, myVote as -1 | 0 | 1)}
+                            onClick={() =>
+                              handleDownvote(post.id, myVote as -1 | 0 | 1)
+                            }
                             className={`flex items-center gap-1 transition-colors text-sm ${
                               myVote === -1
-                                ? 'text-red-500'
-                                : 'text-[var(--gray-11)] hover:text-red-500'
+                                ? "text-red-500"
+                                : "text-[var(--gray-11)] hover:text-red-500"
                             }`}
-                            title={canVote ? 'Dislike' : 'Login to dislike'}
+                            title={canVote ? "Dislike" : "Login to dislike"}
                             disabled={!canVote || isVoting}
                           >
                             <ThumbsDown className="w-4 h-4" />

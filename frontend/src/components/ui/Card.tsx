@@ -1,15 +1,25 @@
-import React from 'react';
-import { Card as RadixCard, Heading, Text, Flex } from '@radix-ui/themes';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { Card as RadixCard, Heading, Text, Flex } from "@radix-ui/themes";
+import { cn } from "@/lib/utils";
 
 // 기본 Card Props
 export interface CardProps {
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
-  variant?: 'default' | 'elevated' | 'outline' | 'ghost';
-  size?: 'sm' | 'default' | 'lg' | 'xl';
+  variant?: "default" | "elevated" | "outline" | "ghost";
+  size?: "sm" | "default" | "lg" | "xl";
 }
+
+const cardSizeMap: Record<
+  NonNullable<CardProps["size"]>,
+  "1" | "2" | "3" | "4"
+> = {
+  sm: "1",
+  default: "2",
+  lg: "3",
+  xl: "4",
+};
 
 // Card 하위 컴포넌트 Props
 interface CardContentProps {
@@ -40,41 +50,42 @@ interface CardFooterProps {
 // 메인 Card 컴포넌트
 export const Card: React.FC<CardProps> = ({
   children,
-  className = '',
+  className = "",
   onClick,
-  variant = 'default',
-  size = 'default',
+  variant = "default",
+  size = "default",
 }) => {
   // Map variants to Radix Card props
   const variantProps: {
-    variant?: 'surface' | 'classic' | 'ghost';
+    variant?: "surface" | "classic" | "ghost";
     style?: React.CSSProperties;
   } = {};
 
-  if (variant === 'outline') {
-    variantProps.variant = 'classic';
-  } else if (variant === 'ghost') {
-    variantProps.variant = 'ghost';
+  if (variant === "outline") {
+    variantProps.variant = "classic";
+  } else if (variant === "ghost") {
+    variantProps.variant = "ghost";
   } else {
-    variantProps.variant = 'surface';
+    variantProps.variant = "surface";
   }
 
   // Add custom styles for elevated variant
   const customStyles =
-    variant === 'elevated'
-      ? { boxShadow: 'var(--shadow-4)' }
+    variant === "elevated"
+      ? { boxShadow: "var(--shadow-4)" }
       : onClick
-        ? { cursor: 'pointer' }
+        ? { cursor: "pointer" }
         : undefined;
 
   return (
     <RadixCard
       {...variantProps}
+      size={cardSizeMap[size]}
       style={customStyles}
       className={cn(
-        'transition-all duration-300 ease-in-out',
-        onClick && 'hover:scale-[1.02]',
-        className
+        "transition-all duration-300 ease-in-out",
+        onClick && "hover:scale-[1.02]",
+        className,
       )}
       onClick={onClick}
     >
@@ -86,10 +97,10 @@ export const Card: React.FC<CardProps> = ({
 // Card 하위 컴포넌트들
 export const CardHeader: React.FC<CardHeaderProps> = ({
   children,
-  className = '',
+  className = "",
 }) => {
   return (
-    <Flex direction="column" gap="2" className={cn('p-6 pb-0', className)}>
+    <Flex direction="column" gap="2" className={cn("p-6 pb-0", className)}>
       {children}
     </Flex>
   );
@@ -97,10 +108,10 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
 
 export const CardTitle: React.FC<CardTitleProps> = ({
   children,
-  className = '',
+  className = "",
 }) => {
   return (
-    <Heading size="6" className={cn('leading-none tracking-tight', className)}>
+    <Heading size="6" className={cn("leading-none tracking-tight", className)}>
       {children}
     </Heading>
   );
@@ -108,10 +119,10 @@ export const CardTitle: React.FC<CardTitleProps> = ({
 
 export const CardDescription: React.FC<CardDescriptionProps> = ({
   children,
-  className = '',
+  className = "",
 }) => {
   return (
-    <Text size="2" color="gray" className={cn('mt-1.5', className)}>
+    <Text size="2" color="gray" className={cn("mt-1.5", className)}>
       {children}
     </Text>
   );
@@ -119,17 +130,17 @@ export const CardDescription: React.FC<CardDescriptionProps> = ({
 
 export const CardContent: React.FC<CardContentProps> = ({
   children,
-  className = '',
+  className = "",
 }) => {
-  return <div className={cn('p-6', className)}>{children}</div>;
+  return <div className={cn("p-6", className)}>{children}</div>;
 };
 
 export const CardFooter: React.FC<CardFooterProps> = ({
   children,
-  className = '',
+  className = "",
 }) => {
   return (
-    <Flex align="center" className={cn('p-6 pt-0', className)}>
+    <Flex align="center" className={cn("p-6 pt-0", className)}>
       {children}
     </Flex>
   );

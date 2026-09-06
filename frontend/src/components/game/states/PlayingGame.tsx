@@ -1,28 +1,40 @@
-import { FC, memo, useCallback, useState, useRef } from 'react';
-import { Game, SubmitResult } from '@/types';
-import { SubmissionProgress } from '@/types/websocket';
-import { useTheme } from 'next-themes';
-import { ProblemDetailsPane } from './ProblemDetailsPane';
-import { FullscreenOverlay } from './FullscreenOverlay';
-import { ProblemEditorSplit } from './CodeEditorSplitProps';
-import { useFullscreen } from '@/contexts/FullscreenContext';
-import { useLofiPlayer } from '@/contexts/LofiPlayerContext';
-import { LofiPlayer } from '@/components/ui/LofiPlayer';
-import { ResizeHandle } from '../ResizeHandle';
-import { useToast } from '@/components/ui/Toast';
+import { FC, memo, useCallback, useState, useRef } from "react";
+import dynamic from "next/dynamic";
+import { Game } from "@/types";
+import { SubmissionProgress } from "@/types/websocket";
+import { useTheme } from "next-themes";
+import { ProblemDetailsPane } from "./ProblemDetailsPane";
+import { FullscreenOverlay } from "./FullscreenOverlay";
+import { ProblemEditorSplit } from "./CodeEditorSplitProps";
+import { useFullscreen } from "@/contexts/FullscreenContext";
+import { useLofiPlayer } from "@/contexts/LofiPlayerContext";
+import { ResizeHandle } from "../ResizeHandle";
+import { useToast } from "@/components/ui/Toast";
+
+const LofiPlayer = dynamic(
+  () =>
+    import("@/components/ui/LofiPlayer").then((module) => module.LofiPlayer),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-24 items-center justify-center text-sm text-[var(--gray-11)]">
+        Loading player…
+      </div>
+    ),
+  },
+);
 
 interface PlayingGameProps {
   game: Game;
   myCode: string;
   opponentCode: string;
   opponentName?: string;
-  selectedLanguage: 'python' | 'javascript' | 'go';
-  opponentLanguage: 'python' | 'javascript' | 'go';
-  submitResult: SubmitResult | null;
+  selectedLanguage: "python" | "javascript" | "go";
+  opponentLanguage: "python" | "javascript" | "go";
   isSubmitting: boolean;
   submissionProgress: SubmissionProgress;
   onCodeChange: (code: string) => void;
-  onLanguageChange: (language: 'python' | 'javascript' | 'go') => void;
+  onLanguageChange: (language: "python" | "javascript" | "go") => void;
   onSubmitCode: () => void;
 }
 
@@ -46,19 +58,24 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
       useLofiPlayer();
     const { showToast } = useToast();
     const [maximizedEditor, setMaximizedEditor] = useState<
-      'my' | 'opponent' | null
+      "my" | "opponent" | null
     >(null);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
     const [sizesNormal, setSizesNormal] = useState<number[]>([50, 50]);
     const [isResizing, setIsResizing] = useState(false);
     const [problemPaneWidth, setProblemPaneWidth] = useState(25); // percentage
     const [isProblemPaneResizing, setIsProblemPaneResizing] = useState(false);
+    const hasOpenedMusicPlayer = useRef(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const fullscreenContainerRef = useRef<HTMLDivElement>(null);
 
-    const isSinglePlayerMode = game.mode === 'single';
+    const isSinglePlayerMode = game.mode === "single";
 
-    const handleMaximizeToggle = useCallback((editor: 'my' | 'opponent') => {
+    if (showMusicPlayer) {
+      hasOpenedMusicPlayer.current = true;
+    }
+
+    const handleMaximizeToggle = useCallback((editor: "my" | "opponent") => {
       setMaximizedEditor((current) => (current === editor ? null : editor));
     }, []);
 
@@ -73,9 +90,9 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
         await toggleFullscreen(fullscreenContainerRef.current);
       } catch {
         showToast({
-          title: 'Fullscreen Error',
-          message: 'Failed to toggle fullscreen mode',
-          variant: 'error',
+          title: "Fullscreen Error",
+          message: "Failed to toggle fullscreen mode",
+          variant: "error",
         });
       }
     }, [toggleFullscreen, showToast]);
@@ -95,12 +112,12 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
 
     const handleProblemPaneResizeStart = useCallback(() => {
       setIsProblemPaneResizing(true);
-      document.body.classList.add('resizing');
+      document.body.classList.add("resizing");
     }, []);
 
     const handleProblemPaneResizeEnd = useCallback(() => {
       setIsProblemPaneResizing(false);
-      document.body.classList.remove('resizing');
+      document.body.classList.remove("resizing");
     }, []);
 
     // ESC key is handled automatically by browser fullscreen API
@@ -115,18 +132,18 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
           <div
             ref={containerRef}
             className="flex-1 flex min-h-0 overflow-hidden game-editor-container"
-            style={{ width: '100%' }}
+            style={{ width: "100%" }}
           >
             {/* Problem Description Pane */}
             <div
               className={`h-full flex flex-col ${
-                isDescriptionExpanded ? '' : 'w-[40px]'
+                isDescriptionExpanded ? "" : "w-[40px]"
               }`}
               style={{
                 width: isDescriptionExpanded
                   ? `${problemPaneWidth}%`
                   : undefined,
-                transition: isDescriptionExpanded ? 'none' : 'all 300ms',
+                transition: isDescriptionExpanded ? "none" : "all 300ms",
               }}
             >
               <div className="flex-1 min-h-0 h-full overflow-hidden">
@@ -175,12 +192,12 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
                 runDisabled={isSubmitting}
                 onDragStart={() => {
                   setIsResizing(true);
-                  document.body.classList.add('resizing');
+                  document.body.classList.add("resizing");
                 }}
                 onDragEnd={(sizes) => {
                   setIsResizing(false);
                   setSizesNormal(sizes);
-                  document.body.classList.remove('resizing');
+                  document.body.classList.remove("resizing");
                 }}
                 isSinglePlayerMode={isSinglePlayerMode}
               />
@@ -193,8 +210,8 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
         ) : (
           <FullscreenOverlay
             myCode={myCode}
-            opponentCode={isSinglePlayerMode ? '' : opponentCode}
-            opponentName={isSinglePlayerMode ? '' : opponentName}
+            opponentCode={isSinglePlayerMode ? "" : opponentCode}
+            opponentName={isSinglePlayerMode ? "" : opponentName}
             selectedLanguage={selectedLanguage}
             opponentLanguage={
               isSinglePlayerMode ? selectedLanguage : opponentLanguage
@@ -231,18 +248,20 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
         )}
         <div
           className={`fixed top-16 right-4 z-50 bg-[var(--color-panel)] border border-[var(--gray-6)] rounded-md shadow-lg w-64 transition-opacity overflow-hidden ${
-            showMusicPlayer ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            showMusicPlayer ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          <LofiPlayer
-            onPlayingChange={setIsMusicPlaying}
-            onClose={() => setShowMusicPlayer(false)}
-          />
+          {hasOpenedMusicPlayer.current && (
+            <LofiPlayer
+              onPlayingChange={setIsMusicPlaying}
+              onClose={() => setShowMusicPlayer(false)}
+            />
+          )}
         </div>
       </div>
     );
-  }
+  },
 );
 
-PlayingGame.displayName = 'PlayingGame';
+PlayingGame.displayName = "PlayingGame";

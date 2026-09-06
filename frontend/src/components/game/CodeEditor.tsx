@@ -1,33 +1,32 @@
-import React, { useRef, useEffect, useCallback } from 'react';
-import { EditorState, StateEffect } from '@codemirror/state';
+import React, { useRef, useEffect, useCallback } from "react";
+import { EditorState, StateEffect } from "@codemirror/state";
 import {
   EditorView,
   keymap,
   highlightActiveLine,
   lineNumbers,
   highlightActiveLineGutter,
-} from '@codemirror/view';
-import { defaultKeymap, indentWithTab } from '@codemirror/commands';
+} from "@codemirror/view";
+import { defaultKeymap, indentWithTab } from "@codemirror/commands";
 import {
   bracketMatching,
   indentOnInput,
   foldGutter,
   foldKeymap,
   syntaxHighlighting,
-} from '@codemirror/language';
+} from "@codemirror/language";
 import {
   vscodeDarkHighlightStyle,
   vscodeDarkTheme,
   vscodeLightHighlightStyle,
   vscodeLightTheme,
-} from '../../lib/editor-theme';
-import { getLanguageSupport } from '@/lib/language-support';
+} from "../../lib/editor-theme";
+import { getLanguageSupport } from "@/lib/language-support";
 import {
   autocompletion,
   completionKeymap,
   closeBrackets,
-} from '@codemirror/autocomplete';
-import { vim } from '@replit/codemirror-vim';
+} from "@codemirror/autocomplete";
 
 interface CodeEditorProps {
   value: string;
@@ -35,7 +34,6 @@ interface CodeEditorProps {
   language: string;
   theme?: string;
   readOnly?: boolean;
-  vimMode?: boolean;
   isResizing?: boolean;
 }
 
@@ -43,9 +41,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   value,
   onChange,
   language,
-  theme = 'dark',
+  theme = "dark",
   readOnly = false,
-  vimMode = false,
   isResizing = false,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -56,7 +53,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     (theme: string) => {
       const languageSupport = getLanguageSupport(language);
       const themeStyle =
-        theme === 'light'
+        theme === "light"
           ? [vscodeLightTheme, syntaxHighlighting(vscodeLightHighlightStyle)]
           : [vscodeDarkTheme, syntaxHighlighting(vscodeDarkHighlightStyle)];
 
@@ -73,37 +70,18 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         EditorState.readOnly.of(readOnly),
       ];
 
-      // Add Vim extension only when Vim mode is enabled and not read-only
-      if (vimMode && !readOnly) {
-        extensions.push(
-          vim({
-            status: false, // Disable default status bar (we implement custom one)
-          })
-        );
-      } else {
-        // Add autocompletion only in normal mode
+      if (!readOnly) {
         extensions.push(
           autocompletion({
             defaultKeymap: true,
             activateOnTyping: true,
             maxRenderedOptions: 10,
           }),
-          keymap.of([...completionKeymap])
+          keymap.of([...completionKeymap]),
+          keymap.of([indentWithTab, ...defaultKeymap]),
+          keymap.of(foldKeymap),
         );
-      }
-
-      if (!readOnly) {
-        // Add default keymaps only when Vim mode is disabled
-        if (!vimMode) {
-          extensions.push(
-            keymap.of([indentWithTab, ...defaultKeymap]),
-            keymap.of(foldKeymap)
-          );
-        } else {
-          // In Vim mode, only add Tab key (Vim handles other keymaps)
-          extensions.push(keymap.of([indentWithTab]));
-        }
-      } else if (!vimMode) {
+      } else {
         // Allow folding shortcuts even in read-only viewers (non-vim).
         extensions.push(keymap.of(foldKeymap));
       }
@@ -115,16 +93,16 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
               const newValue = update.state.doc.toString();
               onChange(newValue);
             }
-          })
+          }),
         );
       }
 
       return extensions;
     },
-    [language, readOnly, vimMode, onChange]
+    [language, readOnly, onChange],
   );
 
-  // Update all extensions when Vim mode or theme changes
+  // Update all extensions when editor configuration changes
   useEffect(() => {
     if (!viewRef.current) return;
 
@@ -157,11 +135,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       }
     };
 
-    editorElement.addEventListener('contextmenu', disableContextMenu);
+    editorElement.addEventListener("contextmenu", disableContextMenu);
 
     return () => {
       view.destroy();
-      editorElement.removeEventListener('contextmenu', disableContextMenu);
+      editorElement.removeEventListener("contextmenu", disableContextMenu);
     };
     // We intentionally exclude `theme` and `value` here because:
     // - theme changes are handled by the reconfiguration effect above
@@ -237,7 +215,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       <div
         ref={editorRef}
         className="flex-1 overflow-auto relative font-medium"
-        style={{ willChange: isResizing ? 'auto' : 'contents' }}
+        style={{ willChange: isResizing ? "auto" : "contents" }}
       />
     </div>
   );

@@ -1,14 +1,14 @@
-import React, { FC, memo } from 'react';
-import { useRouter } from 'next/router';
-import { Game, SubmitResult } from '@/types';
-import { SubmissionProgress } from '@/types/websocket';
-import { PlayingGame } from '../states/PlayingGame';
-import { FinishedGame } from '../states/FinishedGame';
-import { Button } from '../../ui/Button';
-import { Alert } from '../../ui/alert';
-import { GAME_ROOM_CONSTANTS } from '../constants/game-room-constants';
-import { useRouterHelper } from '@/lib/router';
-import { type SupportedLanguage } from '@/constants';
+import React, { FC, memo } from "react";
+import { useRouter } from "next/router";
+import { Game } from "@/types";
+import { SubmissionProgress } from "@/types/websocket";
+import { PlayingGame } from "../states/PlayingGame";
+import { FinishedGame } from "../states/FinishedGame";
+import { Button } from "../../ui/Button";
+import { Alert } from "../../ui/alert";
+import { GAME_ROOM_CONSTANTS } from "../constants/game-room-constants";
+import { useRouterHelper } from "@/lib/router";
+import { type SupportedLanguage } from "@/constants";
 
 interface GameStateRendererProps {
   game: Game;
@@ -17,14 +17,11 @@ interface GameStateRendererProps {
   opponentCode: string;
   selectedLanguage: SupportedLanguage;
   opponentLanguage: SupportedLanguage;
-  submitResult: SubmitResult | null;
   isSubmitting: boolean;
   submissionProgress: SubmissionProgress;
   onCodeChange: (code: string) => void;
   onLanguageChange: (language: SupportedLanguage) => void;
   onSubmitCode: () => void;
-  onToggleMyCode: () => void;
-  onToggleOpponentCode: () => void;
 }
 
 export const GameStateRenderer: FC<GameStateRendererProps> = memo(
@@ -35,7 +32,6 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
     opponentCode,
     selectedLanguage,
     opponentLanguage,
-    submitResult,
     isSubmitting,
     submissionProgress,
     onCodeChange,
@@ -61,9 +57,9 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
 
     const getOpponentName = (): string => {
       if (game.playerA?.id === currentUser.id) {
-        return game.playerB?.name ?? '';
+        return game.playerB?.name ?? "";
       }
-      return game.playerA?.name ?? '';
+      return game.playerA?.name ?? "";
     };
 
     switch (game.status) {
@@ -96,7 +92,6 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
             opponentName={getOpponentName()}
             selectedLanguage={selectedLanguage}
             opponentLanguage={opponentLanguage}
-            submitResult={submitResult}
             isSubmitting={isSubmitting}
             submissionProgress={submissionProgress}
             onCodeChange={onCodeChange}
@@ -127,7 +122,7 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
           </Alert>
         );
     }
-  }
+  },
 );
 
-GameStateRenderer.displayName = 'GameStateRenderer';
+GameStateRenderer.displayName = "GameStateRenderer";

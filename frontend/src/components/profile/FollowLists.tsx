@@ -1,10 +1,10 @@
-import React from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { userApi } from '@/lib/api';
-import { useAuthStore } from '@/stores/authStore';
-import { ROUTES } from '@/lib/router';
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { userApi } from "@/lib/api";
+import { useAuthStore } from "@/stores/authStore";
+import { ROUTES } from "@/lib/router";
 
 interface FollowListsProps {
   userId: string;
@@ -19,7 +19,7 @@ type FollowerUser = {
 
 export const FollowersList: React.FC<FollowListsProps> = ({ userId }) => {
   const { data, isLoading } = useQuery({
-    queryKey: ['followers', userId],
+    queryKey: ["followers", userId],
     queryFn: () => userApi.getFollowers(userId, 1, 50),
   });
 
@@ -46,7 +46,7 @@ export const FollowersList: React.FC<FollowListsProps> = ({ userId }) => {
 
 export const FollowingList: React.FC<FollowListsProps> = ({ userId }) => {
   const { data, isLoading } = useQuery({
-    queryKey: ['following', userId],
+    queryKey: ["following", userId],
     queryFn: () => userApi.getFollowing(userId, 1, 50),
   });
 
@@ -78,12 +78,12 @@ interface FollowerItemProps {
 }
 
 const FollowerItem: React.FC<FollowerItemProps> = ({ user }) => {
-  const { user: currentUser } = useAuthStore();
+  const currentUser = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
   // Get follow stats for this user
   const { data: followStats } = useQuery({
-    queryKey: ['followStats', user.id],
+    queryKey: ["followStats", user.id],
     queryFn: () => userApi.getFollowStats(user.id),
     enabled: !!currentUser && currentUser.id !== user.id,
   });
@@ -91,14 +91,14 @@ const FollowerItem: React.FC<FollowerItemProps> = ({ user }) => {
   const followMutation = useMutation({
     mutationFn: () => userApi.follow(user.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['followStats', user.id] });
+      queryClient.invalidateQueries({ queryKey: ["followStats", user.id] });
     },
   });
 
   const unfollowMutation = useMutation({
     mutationFn: () => userApi.unfollow(user.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['followStats', user.id] });
+      queryClient.invalidateQueries({ queryKey: ["followStats", user.id] });
     },
   });
 
@@ -121,7 +121,7 @@ const FollowerItem: React.FC<FollowerItemProps> = ({ user }) => {
         className="flex items-center gap-3 flex-1 min-w-0"
         onClick={(e) => {
           // Don't navigate if clicking on follow button
-          if ((e.target as HTMLElement).closest('button')) {
+          if ((e.target as HTMLElement).closest("button")) {
             e.preventDefault();
           }
         }}
@@ -142,7 +142,9 @@ const FollowerItem: React.FC<FollowerItemProps> = ({ user }) => {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-foreground truncate">{user.name}</div>
+          <div className="font-medium text-foreground truncate">
+            {user.name}
+          </div>
           <div className="text-sm text-muted-foreground truncate">
             {user.email}
           </div>
@@ -155,14 +157,13 @@ const FollowerItem: React.FC<FollowerItemProps> = ({ user }) => {
           disabled={isLoading}
           className={`ml-4 px-3 py-1.5 rounded-md font-medium text-xs transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
             isFollowing
-              ? 'bg-red-600 hover:bg-red-700 text-white dark:bg-red-600 dark:hover:bg-red-700'
-              : 'bg-[var(--green-9)] hover:bg-[var(--green-10)] text-white'
+              ? "bg-red-600 hover:bg-red-700 text-white dark:bg-red-600 dark:hover:bg-red-700"
+              : "bg-[var(--green-9)] hover:bg-[var(--green-10)] text-white"
           }`}
         >
-          {isFollowing ? 'Unfollow' : 'Follow'}
+          {isFollowing ? "Unfollow" : "Follow"}
         </button>
       )}
     </div>
   );
 };
-

@@ -1,8 +1,13 @@
-import { useState } from 'react';
-import { useForm, UseFormReturn, FieldValues } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { extractErrorMessage } from '@/lib/error-utils';
-import type { AnyObjectSchema } from 'yup';
+import { useState } from "react";
+import {
+  useForm,
+  UseFormReturn,
+  FieldValues,
+  type Resolver,
+} from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { extractErrorMessage } from "@/lib/error-utils";
+import type { AnyObjectSchema } from "yup";
 
 interface UseAuthFormOptions<T extends FieldValues> {
   schema: AnyObjectSchema;
@@ -26,15 +31,15 @@ interface UseAuthFormReturn<T extends FieldValues> {
 export function useAuthForm<T extends FieldValues>({
   schema,
   onSubmit,
-  defaultErrorMessage = 'Operation failed',
+  defaultErrorMessage = "Operation failed",
 }: UseAuthFormOptions<T>): UseAuthFormReturn<T> {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<T>({
-    resolver: yupResolver(schema) as any,
-    mode: 'onBlur',
+    resolver: yupResolver(schema) as Resolver<T>,
+    mode: "onBlur",
   });
 
   const handleFormSubmit = async (data: T) => {
@@ -43,8 +48,8 @@ export function useAuthForm<T extends FieldValues>({
       setError(null);
       await onSubmit(data);
     } catch (err: unknown) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Form submission failed:', err);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Form submission failed:", err);
       }
       setError(extractErrorMessage(err, defaultErrorMessage));
     } finally {

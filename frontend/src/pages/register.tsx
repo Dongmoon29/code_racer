@@ -1,19 +1,19 @@
-import React, { useEffect } from 'react';
-import Head from 'next/head';
-import { useRouter } from 'next/router';
-import { RegisterForm } from '../components/dynamic';
-import Image from 'next/image';
-import { useAuthStore } from '@/stores/authStore';
-import { motion } from 'framer-motion';
+import React, { useEffect } from "react";
+import Head from "next/head";
+import { useRouter } from "next/router";
+import { RegisterForm } from "../components/dynamic";
+import Image from "next/image";
+import { useAuthStore } from "@/stores/authStore";
+import { motion } from "framer-motion";
 
 const RegisterPage: React.FC = () => {
   const router = useRouter();
-  const { isLoggedIn } = useAuthStore();
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
   useEffect(() => {
     // Redirect logged-in users to dashboard when accessing registration page
     if (isLoggedIn) {
-      router.replace('/dashboard');
+      router.replace("/dashboard");
     }
   }, [isLoggedIn, router]);
 
@@ -21,7 +21,10 @@ const RegisterPage: React.FC = () => {
     <>
       <Head>
         <title>Register | Code Racer</title>
-        <meta name="description" content="Create a new account for Code Racer" />
+        <meta
+          name="description"
+          content="Create a new account for Code Racer"
+        />
       </Head>
       <div className="flex w-full min-h-[calc(100vh-80px)]">
         {/* Left Column - Form */}
@@ -49,14 +52,14 @@ const RegisterPage: React.FC = () => {
               transition={{
                 duration: 2,
                 repeat: Infinity,
-                ease: 'easeInOut',
+                ease: "easeInOut",
               }}
             >
               <Image
                 src="/code_racer_hero.webp"
                 alt="Code Racer illustration"
                 fill
-                style={{ objectFit: 'contain' }}
+                style={{ objectFit: "contain" }}
                 className="p-4"
                 priority
                 sizes="50vw"

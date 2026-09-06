@@ -1,25 +1,37 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useErrorHandler } from './useErrorHandler';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useErrorHandler } from "./useErrorHandler";
+
+interface ApiQueryOptions<TData> {
+  queryKey: readonly unknown[];
+  queryFn: () => Promise<TData>;
+  errorContext?: { component: string; action: string; [key: string]: unknown };
+  enabled?: boolean;
+  staleTime?: number;
+  gcTime?: number;
+  retry?:
+    number | boolean | ((failureCount: number, error: unknown) => boolean);
+}
+
+interface ApiMutationOptions<TData, TVariables> {
+  mutationFn: (variables: TVariables) => Promise<TData>;
+  invalidateKeys?: (readonly unknown[])[];
+  updateKeys?: Array<{
+    key: readonly unknown[] | ((variables: TVariables) => readonly unknown[]);
+    updater: (oldData: unknown, newData: TData) => unknown;
+  }>;
+  errorContext?: { component: string; action: string; [key: string]: unknown };
+  onSuccess?: (data: TData, variables: TVariables) => void;
+}
 
 /**
  * Generic wrapper for useQuery with standardized error handling
  * Eliminates the need for try-catch blocks in every query
  */
-export function useApiQuery<TData, TError = Error>(
-  options: {
-    queryKey: readonly unknown[];
-    queryFn: () => Promise<TData>;
-    errorContext?: { component: string; action: string; [key: string]: unknown };
-    enabled?: boolean;
-    staleTime?: number;
-    gcTime?: number;
-    retry?: number | boolean | ((failureCount: number, error: unknown) => boolean);
-  }
-) {
+export function useApiQuery<TData>(options: ApiQueryOptions<TData>) {
   const { queryKey, queryFn, errorContext, ...queryOptions } = options;
   const errorHandler = useErrorHandler(
-    errorContext?.component || 'useApiQuery',
-    errorContext?.action || 'fetch'
+    errorContext?.component || "useApiQuery",
+    errorContext?.action || "fetch",
   );
 
   return useQuery({
@@ -35,27 +47,28 @@ export function useApiQuery<TData, TError = Error>(
     staleTime: 5 * 60 * 1000, // 5 minutes default
     gcTime: 10 * 60 * 1000, // 10 minutes default (replaces cacheTime)
     ...queryOptions,
-  }) as any;
+  });
 }
 
 /**
  * Generic wrapper for useMutation with automatic query invalidation
  * Eliminates duplicate invalidation logic
  */
-export function useApiMutation<TData, TVariables, TError = Error>(
-  options: {
-    mutationFn: (variables: TVariables) => Promise<TData>;
-    invalidateKeys?: (readonly unknown[])[];
-    updateKeys?: Array<{ key: readonly unknown[] | ((variables: TVariables) => readonly unknown[]); updater: (oldData: unknown, newData: TData) => unknown }>;
-    errorContext?: { component: string; action: string; [key: string]: unknown };
-    onSuccess?: (data: TData, variables: TVariables, context: unknown) => void;
-  }
+export function useApiMutation<TData, TVariables>(
+  options: ApiMutationOptions<TData, TVariables>,
 ) {
-  const { mutationFn, invalidateKeys, updateKeys, errorContext, onSuccess, ...mutationOptions } = options;
+  const {
+    mutationFn,
+    invalidateKeys,
+    updateKeys,
+    errorContext,
+    onSuccess,
+    ...mutationOptions
+  } = options;
   const queryClient = useQueryClient();
   const errorHandler = useErrorHandler(
-    errorContext?.component || 'useApiMutation',
-    errorContext?.action || 'mutate'
+    errorContext?.component || "useApiMutation",
+    errorContext?.action || "mutate",
   );
 
   return useMutation({
@@ -67,27 +80,29 @@ export function useApiMutation<TData, TVariables, TError = Error>(
         throw error;
       }
     },
-    onSuccess: (data: TData, variables: TVariables, context: unknown) => {
+    onSuccess: (data: TData, variables: TVariables) => {
       // Update specific query keys with new data
       if (updateKeys) {
         updateKeys.forEach(({ key, updater }) => {
-          const queryKey = typeof key === 'function' ? key(variables) : key;
-          queryClient.setQueryData(queryKey as unknown[], (oldData: unknown) => updater(oldData, data));
+          const queryKey = typeof key === "function" ? key(variables) : key;
+          queryClient.setQueryData(queryKey, (oldData: unknown) =>
+            updater(oldData, data),
+          );
         });
       }
 
       // Invalidate related query keys to refetch
       if (invalidateKeys) {
         invalidateKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: key as unknown[] });
+          void queryClient.invalidateQueries({ queryKey: key });
         });
       }
 
       // Call custom onSuccess if provided
       if (onSuccess) {
-        onSuccess(data, variables, context);
+        onSuccess(data, variables);
       }
     },
     ...mutationOptions,
-  }) as any;
+  });
 }

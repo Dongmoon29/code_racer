@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import api, { authApi } from '@/lib/api';
-import { AxiosError } from 'axios';
-import { createErrorHandler } from '@/lib/error-tracking';
+import { create } from "zustand";
+import { authApi } from "@/lib/api";
+import { AxiosError } from "axios";
+import { createErrorHandler } from "@/lib/error-tracking";
 
 export type User = {
   id: string;
@@ -43,20 +43,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
-      await api.post('/auth/logout');
+      await authApi.logout();
     } catch (error) {
-      const errorHandler = createErrorHandler('authStore', 'logout');
+      const errorHandler = createErrorHandler("authStore", "logout");
       errorHandler(error, { userId: get().user?.id });
     } finally {
       // Clear token from sessionStorage (more secure than localStorage)
-      sessionStorage.removeItem('authToken');
+      sessionStorage.removeItem("authToken");
 
       set({
         user: null,
         isLoggedIn: false,
         isLoading: false,
       });
-      window.location.href = '/login';
+      window.location.href = "/login";
     }
   },
   initializeAuth: async () => {
@@ -64,7 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: true });
 
       // Check if token exists in sessionStorage
-      const token = sessionStorage.getItem('authToken');
+      const token = sessionStorage.getItem("authToken");
       if (!token) {
         set({ user: null, isLoggedIn: false });
         return;
@@ -76,18 +76,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ user: response.data, isLoggedIn: true });
       } else {
         // No user data - clear invalid token
-        sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem("authToken");
         set({ user: null, isLoggedIn: false });
       }
     } catch (error) {
-      const errorHandler = createErrorHandler('authStore', 'initializeAuth');
+      const errorHandler = createErrorHandler("authStore", "initializeAuth");
       if (error instanceof AxiosError && error.response?.status === 401) {
         // Token is invalid or expired - clear it
-        sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem("authToken");
         set({ user: null, isLoggedIn: false });
       } else {
         errorHandler(error, {
-          hasToken: !!sessionStorage.getItem('authToken'),
+          hasToken: !!sessionStorage.getItem("authToken"),
           userId: get().user?.id,
         });
         set({ user: null, isLoggedIn: false });

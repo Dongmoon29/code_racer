@@ -1,11 +1,11 @@
-import React, { useMemo, useState } from 'react';
-import Head from 'next/head';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { communityApi, communityCommentApi } from '@/lib/api';
-import { ROUTES } from '@/lib/router';
+import React, { useMemo, useState } from "react";
+import Head from "next/head";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { communityApi, communityCommentApi } from "@/lib/api";
+import { ROUTES } from "@/lib/router";
 import {
   ChevronDown,
   ChevronUp,
@@ -16,11 +16,11 @@ import {
   ThumbsDown,
   ThumbsUp,
   Trash2,
-} from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
+} from "lucide-react";
+import { useAuthStore } from "@/stores/authStore";
 
-type PostType = 'bug' | 'feature' | 'improvement' | 'other';
-type PostStatus = 'pending' | 'in_progress' | 'resolved' | 'closed';
+type PostType = "bug" | "feature" | "improvement" | "other";
+type PostStatus = "pending" | "in_progress" | "resolved" | "closed";
 
 interface Post {
   id: string;
@@ -105,8 +105,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
   toggleCollapse,
 }) => {
   const isNested = depth > 0;
-  const textSize = 'text-sm';
-  const iconSize = 'w-4 h-4';
+  const textSize = "text-sm";
+  const iconSize = "w-4 h-4";
   const avatarSize = 32;
   const score = comment.score ?? 0;
   const myVote = comment.my_vote ?? 0;
@@ -115,19 +115,19 @@ const CommentItem: React.FC<CommentItemProps> = ({
   const hasReplies = comment.replies && comment.replies.length > 0;
 
   return (
-    <div className={`flex gap-3 ${isNested ? 'ml-5' : ''} relative`}>
+    <div className={`flex gap-3 ${isNested ? "ml-5" : ""} relative`}>
       {/* YouTube-style vertical line connector */}
       {isNested && (
         <div
           className="absolute left-[-20px] top-0 bottom-0 w-5 pointer-events-none"
-          style={{ marginTop: '16px' }}
+          style={{ marginTop: "16px" }}
         >
           {/* Vertical line */}
           <div className="absolute left-[10px] top-0 bottom-0 w-[1.5px] bg-[var(--gray-6)]" />
           {/* Horizontal connector to avatar */}
           <div
             className="absolute top-0 left-[10px] w-[10px] h-[1.5px] bg-[var(--gray-6)]"
-            style={{ marginTop: '16px' }}
+            style={{ marginTop: "16px" }}
           />
         </div>
       )}
@@ -135,7 +135,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
       {/* Profile Image */}
       <div className="flex-shrink-0 relative z-10">
         <Link
-          href={comment.user?.id ? ROUTES.USER_PROFILE(comment.user.id) : '#'}
+          href={comment.user?.id ? ROUTES.USER_PROFILE(comment.user.id) : "#"}
           className="block"
         >
           {comment.user?.profile_image ? (
@@ -156,7 +156,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 fontSize: avatarSize * 0.4,
               }}
             >
-              {comment.user?.name?.[0] || 'U'}
+              {comment.user?.name?.[0] || "U"}
             </div>
           )}
         </Link>
@@ -175,7 +175,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
               <button
                 onClick={() => {
                   setEditingComment(null);
-                  setEditCommentContent('');
+                  setEditCommentContent("");
                 }}
                 className="px-3 py-1 text-sm border border-[var(--gray-6)] rounded-md text-[var(--color-text)] hover:bg-[var(--gray-4)] transition-colors"
               >
@@ -196,7 +196,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                 }
                 className="px-3 py-1 text-sm bg-[var(--accent-9)] text-white rounded-md hover:bg-[var(--accent-10)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {updateCommentMutation.isPending ? 'Updating...' : 'Update'}
+                {updateCommentMutation.isPending ? "Updating..." : "Update"}
               </button>
             </div>
           </div>
@@ -209,20 +209,20 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   href={
                     comment.user?.id
                       ? ROUTES.USER_PROFILE(comment.user.id)
-                      : '#'
+                      : "#"
                   }
                   className="text-sm font-semibold text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors"
                 >
-                  {comment.user?.name || 'Anonymous'}
+                  {comment.user?.name || "Anonymous"}
                 </Link>
                 <span className="text-sm text-[var(--gray-11)]">
-                  {new Date(comment.created_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
+                  {new Date(comment.created_at).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
                     year:
                       new Date(comment.created_at).getFullYear() !==
                       new Date().getFullYear()
-                        ? 'numeric'
+                        ? "numeric"
                         : undefined,
                   })}
                 </span>
@@ -248,15 +248,15 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   }}
                   className={`flex items-center gap-2 transition-colors ${
                     myVote === 1
-                      ? 'text-[var(--accent-9)]'
-                      : 'text-[var(--gray-11)] hover:text-[var(--accent-9)]'
+                      ? "text-[var(--accent-9)]"
+                      : "text-[var(--gray-11)] hover:text-[var(--accent-9)]"
                   }`}
-                  title={canVote ? 'Like' : 'Login to like'}
+                  title={canVote ? "Like" : "Login to like"}
                   disabled={!canVote || voteCommentMutation.isPending}
                 >
                   <ThumbsUp className={iconSize} />
                   <span className="text-sm font-medium">
-                    {score > 0 ? score : ''}
+                    {score > 0 ? score : ""}
                   </span>
                 </button>
                 <button
@@ -269,10 +269,10 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   }}
                   className={`flex items-center gap-2 transition-colors ${
                     myVote === -1
-                      ? 'text-red-500'
-                      : 'text-[var(--gray-11)] hover:text-red-500'
+                      ? "text-red-500"
+                      : "text-[var(--gray-11)] hover:text-red-500"
                   }`}
-                  title={canVote ? 'Dislike' : 'Login to dislike'}
+                  title={canVote ? "Dislike" : "Login to dislike"}
                   disabled={!canVote || voteCommentMutation.isPending}
                 >
                   <ThumbsDown className={iconSize} />
@@ -304,7 +304,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                       onClick={() => {
                         if (
                           confirm(
-                            'Are you sure you want to delete this comment?'
+                            "Are you sure you want to delete this comment?",
                           )
                         ) {
                           deleteCommentMutation.mutate(comment.id);
@@ -331,7 +331,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             {replyingTo === comment.id && (
               <div className="mt-3">
                 <textarea
-                  value={replyInputs[comment.id] || ''}
+                  value={replyInputs[comment.id] || ""}
                   onChange={(e) =>
                     setReplyInputs((prev) => ({
                       ...prev,
@@ -346,7 +346,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   <button
                     onClick={() => {
                       setReplyingTo(null);
-                      setReplyInputs((prev) => ({ ...prev, [comment.id]: '' }));
+                      setReplyInputs((prev) => ({ ...prev, [comment.id]: "" }));
                     }}
                     className="px-3 py-1 text-sm border border-[var(--gray-6)] rounded-md text-[var(--color-text)] hover:bg-[var(--gray-4)] transition-colors"
                   >
@@ -369,7 +369,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                     }
                     className="px-3 py-1 text-sm bg-[var(--accent-9)] text-white rounded-md hover:bg-[var(--accent-10)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {createCommentMutation.isPending ? 'Replying...' : 'Reply'}
+                    {createCommentMutation.isPending ? "Replying..." : "Reply"}
                   </button>
                 </div>
               </div>
@@ -435,12 +435,12 @@ const CommentItem: React.FC<CommentItemProps> = ({
 const CommunityPostPage = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
 
-  const postId = typeof router.query.id === 'string' ? router.query.id : '';
+  const postId = typeof router.query.id === "string" ? router.query.id : "";
 
   const { data: postData, isLoading: postLoading } = useQuery({
-    queryKey: ['communityPost', postId],
+    queryKey: ["communityPost", postId],
     queryFn: () => communityApi.getPost(postId),
     enabled: !!postId,
   });
@@ -451,26 +451,26 @@ const CommunityPostPage = () => {
     mutationFn: (payload: { value: -1 | 0 | 1 }) =>
       communityApi.vote(postId, payload.value),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['communityPost', postId] });
-      queryClient.invalidateQueries({ queryKey: ['communityPosts'] });
+      queryClient.invalidateQueries({ queryKey: ["communityPost", postId] });
+      queryClient.invalidateQueries({ queryKey: ["communityPosts"] });
     },
   });
 
   const { data: commentsData, isLoading: commentsLoading } = useQuery({
-    queryKey: ['communityComments', postId],
+    queryKey: ["communityComments", postId],
     queryFn: () => communityCommentApi.getComments(postId, 200, 0, true),
     enabled: !!postId,
   });
 
   const comments: Comment[] = commentsData?.data?.items || [];
 
-  const [commentInput, setCommentInput] = useState('');
+  const [commentInput, setCommentInput] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
   const [editingComment, setEditingComment] = useState<string | null>(null);
-  const [editCommentContent, setEditCommentContent] = useState('');
+  const [editCommentContent, setEditCommentContent] = useState("");
   const [collapsedComments, setCollapsedComments] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
 
   const toggleCollapse = (commentId: string) => {
@@ -494,14 +494,14 @@ const CommunityPostPage = () => {
       communityCommentApi.create(
         payload.postId,
         payload.content,
-        payload.parentId
+        payload.parentId,
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['communityComments', postId],
+        queryKey: ["communityComments", postId],
       });
-      queryClient.invalidateQueries({ queryKey: ['communityPost', postId] });
-      setCommentInput('');
+      queryClient.invalidateQueries({ queryKey: ["communityPost", postId] });
+      setCommentInput("");
       setReplyingTo(null);
     },
   });
@@ -511,7 +511,7 @@ const CommunityPostPage = () => {
       communityCommentApi.vote(payload.commentId, payload.value),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['communityComments', postId],
+        queryKey: ["communityComments", postId],
       });
     },
   });
@@ -521,10 +521,10 @@ const CommunityPostPage = () => {
       communityCommentApi.update(payload.commentId, payload.content),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['communityComments', postId],
+        queryKey: ["communityComments", postId],
       });
       setEditingComment(null);
-      setEditCommentContent('');
+      setEditCommentContent("");
     },
   });
 
@@ -532,9 +532,9 @@ const CommunityPostPage = () => {
     mutationFn: (commentId: string) => communityCommentApi.delete(commentId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['communityComments', postId],
+        queryKey: ["communityComments", postId],
       });
-      queryClient.invalidateQueries({ queryKey: ['communityPost', postId] });
+      queryClient.invalidateQueries({ queryKey: ["communityPost", postId] });
     },
   });
 
@@ -548,7 +548,7 @@ const CommunityPostPage = () => {
         <span>Post</span>
       </div>
     ),
-    []
+    [],
   );
 
   const canVote = !!user?.id;
@@ -559,7 +559,7 @@ const CommunityPostPage = () => {
     <>
       <Head>
         <title>
-          {post?.title ? `${post.title} - Community` : 'Community Post'}
+          {post?.title ? `${post.title} - Community` : "Community Post"}
         </title>
       </Head>
 
@@ -582,7 +582,7 @@ const CommunityPostPage = () => {
                 <div className="flex-shrink-0">
                   <Link
                     href={
-                      post.user?.id ? ROUTES.USER_PROFILE(post.user.id) : '#'
+                      post.user?.id ? ROUTES.USER_PROFILE(post.user.id) : "#"
                     }
                   >
                     {post.user?.profile_image ? (
@@ -596,7 +596,7 @@ const CommunityPostPage = () => {
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-[var(--accent-9)] flex items-center justify-center text-white text-base">
-                        {post.user?.name?.[0] || 'U'}
+                        {post.user?.name?.[0] || "U"}
                       </div>
                     )}
                   </Link>
@@ -608,18 +608,18 @@ const CommunityPostPage = () => {
                   <div className="flex items-center gap-2 mb-2">
                     <Link
                       href={
-                        post.user?.id ? ROUTES.USER_PROFILE(post.user.id) : '#'
+                        post.user?.id ? ROUTES.USER_PROFILE(post.user.id) : "#"
                       }
                       className="text-sm font-semibold text-[var(--color-text)] hover:text-[var(--accent-9)] transition-colors"
                     >
-                      {post.user?.name || 'Anonymous'}
+                      {post.user?.name || "Anonymous"}
                     </Link>
                     <span className="text-sm text-[var(--gray-11)]">•</span>
                     <span className="text-sm text-[var(--gray-11)]">
-                      {new Date(post.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
+                      {new Date(post.created_at).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
                       })}
                     </span>
                   </div>
@@ -641,10 +641,10 @@ const CommunityPostPage = () => {
                       <button
                         className={`flex items-center gap-1 p-1 rounded transition-colors ${
                           myVote === 1
-                            ? 'text-[var(--accent-9)]'
-                            : 'text-[var(--gray-11)] hover:text-[var(--accent-9)] hover:bg-[var(--gray-2)]'
+                            ? "text-[var(--accent-9)]"
+                            : "text-[var(--gray-11)] hover:text-[var(--accent-9)] hover:bg-[var(--gray-2)]"
                         }`}
-                        title={canVote ? 'Upvote' : 'Login to vote'}
+                        title={canVote ? "Upvote" : "Login to vote"}
                         disabled={!canVote || voteMutation.isPending}
                         onClick={() => {
                           const next: -1 | 0 | 1 = myVote === 1 ? 0 : 1;
@@ -653,16 +653,16 @@ const CommunityPostPage = () => {
                       >
                         <ThumbsUp className="w-4 h-4" />
                         <span className="font-semibold">
-                          {score > 0 ? score : ''}
+                          {score > 0 ? score : ""}
                         </span>
                       </button>
                       <button
                         className={`flex items-center gap-1 p-1 rounded transition-colors ${
                           myVote === -1
-                            ? 'text-red-500'
-                            : 'text-[var(--gray-11)] hover:text-red-500 hover:bg-[var(--gray-2)]'
+                            ? "text-red-500"
+                            : "text-[var(--gray-11)] hover:text-red-500 hover:bg-[var(--gray-2)]"
                         }`}
-                        title={canVote ? 'Downvote' : 'Login to vote'}
+                        title={canVote ? "Downvote" : "Login to vote"}
                         disabled={!canVote || voteMutation.isPending}
                         onClick={() => {
                           const next: -1 | 0 | 1 = myVote === -1 ? 0 : -1;
@@ -710,8 +710,8 @@ const CommunityPostPage = () => {
                 >
                   <Send className="w-4 h-4" />
                   {createCommentMutation.isPending
-                    ? 'Posting...'
-                    : 'Post Comment'}
+                    ? "Posting..."
+                    : "Post Comment"}
                 </button>
               </div>
             </div>

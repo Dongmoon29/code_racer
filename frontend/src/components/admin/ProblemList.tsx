@@ -1,21 +1,30 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import {
   useProblems,
   useProblem,
   useDeleteProblem,
   useCreateProblem,
   useUpdateProblem,
-} from '@/hooks/useProblem';
-import { CreateProblemRequest, ProblemDetail, ProblemSummary } from '@/types';
-import { Loader } from '@/components/ui/Loader';
-import CodeEditor from '@/components/game/CodeEditor';
-import { ProblemListHeader } from './ProblemListHeader';
-import { ProblemListFilters } from './ProblemListFilters';
-import { ProblemListTable } from './ProblemListTable';
-import { ProblemListStats } from './ProblemListStats';
-import { DIFFICULTY_CONFIG } from '@/constants';
+} from "@/hooks/useProblem";
+import { CreateProblemRequest, ProblemDetail, ProblemSummary } from "@/types";
+import { Loader } from "@/components/ui/Loader";
+import { ProblemListHeader } from "./ProblemListHeader";
+import { ProblemListFilters } from "./ProblemListFilters";
+import { ProblemListTable } from "./ProblemListTable";
+import { ProblemListStats } from "./ProblemListStats";
+import { DIFFICULTY_CONFIG } from "@/constants";
+
+const CodeEditor = dynamic(() => import("@/components/game/CodeEditor"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center">
+      <Loader variant="spinner" />
+    </div>
+  ),
+});
 
 const DEFAULT_PROBLEM_JSON = `{
   "title": "INSERT_TITLE_HERE",
@@ -35,19 +44,19 @@ const DEFAULT_PROBLEM_JSON = `{
 }`;
 
 export default function ProblemList() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
   const [jsonText, setJsonText] = useState(DEFAULT_PROBLEM_JSON);
-  const [jsonError, setJsonError] = useState<string>('');
+  const [jsonError, setJsonError] = useState<string>("");
 
   const [isViewJsonModalOpen, setIsViewJsonModalOpen] = useState(false);
   const [viewProblemId, setViewProblemId] = useState<string | null>(null);
-  const [viewJsonNotice, setViewJsonNotice] = useState<string>('');
-  const [viewJsonError, setViewJsonError] = useState<string>('');
+  const [viewJsonNotice, setViewJsonNotice] = useState<string>("");
+  const [viewJsonError, setViewJsonError] = useState<string>("");
   const [isViewJsonEditing, setIsViewJsonEditing] = useState(false);
-  const [viewJsonText, setViewJsonText] = useState<string>('');
-  const [viewJsonBaselineText, setViewJsonBaselineText] = useState<string>('');
+  const [viewJsonText, setViewJsonText] = useState<string>("");
+  const [viewJsonBaselineText, setViewJsonBaselineText] = useState<string>("");
 
   // Use React Query hooks
   const { data: problems = [], isLoading, error } = useProblems();
@@ -59,7 +68,7 @@ export default function ProblemList() {
     isLoading: isProblemLoading,
     isError: isProblemError,
     error: problemError,
-  } = useProblem(viewProblemId || '');
+  } = useProblem(viewProblemId || "");
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Are you sure you want to delete "${title}" problem?`)) {
@@ -69,21 +78,21 @@ export default function ProblemList() {
     try {
       await deleteProblemMutation.mutateAsync(id);
     } catch (err) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to delete problem:', err);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to delete problem:", err);
       }
       // Error is already handled by the mutation
     }
   };
 
   const handleCreateWithJSON = async () => {
-    setJsonError('');
+    setJsonError("");
     let payload: unknown;
     try {
       payload = JSON.parse(jsonText);
     } catch (e) {
       setJsonError(
-        e instanceof Error ? `Invalid JSON: ${e.message}` : 'Invalid JSON'
+        e instanceof Error ? `Invalid JSON: ${e.message}` : "Invalid JSON",
       );
       return;
     }
@@ -92,21 +101,21 @@ export default function ProblemList() {
       await createProblemMutation.mutateAsync(payload as CreateProblemRequest);
       // Reset editor to template after successful creation
       setJsonText(DEFAULT_PROBLEM_JSON);
-      setJsonError('');
+      setJsonError("");
       setIsJsonModalOpen(false);
     } catch (e) {
-      setJsonError(e instanceof Error ? e.message : 'Failed to create problem');
+      setJsonError(e instanceof Error ? e.message : "Failed to create problem");
     }
   };
 
   const handleFormatJSON = () => {
-    setJsonError('');
+    setJsonError("");
     try {
       const parsed = JSON.parse(jsonText);
       setJsonText(JSON.stringify(parsed, null, 2));
     } catch (e) {
       setJsonError(
-        e instanceof Error ? `Invalid JSON: ${e.message}` : 'Invalid JSON'
+        e instanceof Error ? `Invalid JSON: ${e.message}` : "Invalid JSON",
       );
     }
   };
@@ -114,13 +123,13 @@ export default function ProblemList() {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case DIFFICULTY_CONFIG.Easy.value:
-        return 'bg-green-100 text-green-800';
+        return "bg-green-100 text-green-800";
       case DIFFICULTY_CONFIG.Medium.value:
-        return 'bg-yellow-100 text-yellow-800';
+        return "bg-yellow-100 text-yellow-800";
       case DIFFICULTY_CONFIG.Hard.value:
-        return 'bg-red-100 text-red-800';
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -130,7 +139,7 @@ export default function ProblemList() {
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
       const matchesDifficulty =
-        difficultyFilter === 'all' || problem.difficulty === difficultyFilter;
+        difficultyFilter === "all" || problem.difficulty === difficultyFilter;
       return matchesSearch && matchesDifficulty;
     });
   }, [problems, searchTerm, difficultyFilter]);
@@ -149,23 +158,23 @@ export default function ProblemList() {
         time_limit: p.time_limit,
         memory_limit: p.memory_limit,
         examples: (p.examples || []).map((ex) => ({
-          input: ex.input ?? '',
-          output: ex.output ?? '',
-          explanation: ex.explanation ?? '',
+          input: ex.input ?? "",
+          output: ex.output ?? "",
+          explanation: ex.explanation ?? "",
         })),
         test_cases: (p.test_cases || []).map((tc) => ({
-          input: tc.input ?? '',
-          expected_output: tc.expected_output ?? '',
+          input: tc.input ?? "",
+          expected_output: tc.expected_output ?? "",
         })),
         io_schema: {
           param_types: p.io_schema.param_types.map(String),
-          return_type: p.io_schema.return_type ?? '',
+          return_type: p.io_schema.return_type ?? "",
         },
       };
     }, [selectedProblem]);
 
   const selectedProblemCreatePayloadJSON = useMemo(() => {
-    if (!selectedProblemCreatePayload) return '';
+    if (!selectedProblemCreatePayload) return "";
     return JSON.stringify(selectedProblemCreatePayload, null, 2);
   }, [selectedProblemCreatePayload]);
 
@@ -199,7 +208,7 @@ export default function ProblemList() {
         <div className="text-red-600 mb-4">
           {error instanceof Error
             ? error.message
-            : 'Failed to load problem list.'}
+            : "Failed to load problem list."}
         </div>
         <button
           onClick={() => window.location.reload()}
@@ -221,11 +230,11 @@ export default function ProblemList() {
               if (updateProblemMutation.isPending) return;
               setIsViewJsonModalOpen(false);
               setViewProblemId(null);
-              setViewJsonNotice('');
-              setViewJsonError('');
+              setViewJsonNotice("");
+              setViewJsonError("");
               setIsViewJsonEditing(false);
-              setViewJsonText('');
-              setViewJsonBaselineText('');
+              setViewJsonText("");
+              setViewJsonBaselineText("");
             }}
           />
           <div className="relative w-[min(1200px,calc(100vw-2rem))] max-h-[min(92vh,1100px)] overflow-auto rounded-lg border bg-[hsl(var(--card))] p-6 shadow-lg">
@@ -239,8 +248,8 @@ export default function ProblemList() {
                   onClick={() => {
                     if (isProblemLoading) return;
                     if (updateProblemMutation.isPending) return;
-                    setViewJsonError('');
-                    setViewJsonNotice('');
+                    setViewJsonError("");
+                    setViewJsonNotice("");
                     setIsViewJsonEditing((prev) => !prev);
                     // Ensure editor has latest JSON when entering edit mode.
                     if (
@@ -252,7 +261,7 @@ export default function ProblemList() {
                     }
                   }}
                 >
-                  {isViewJsonEditing ? 'View' : 'Edit'}
+                  {isViewJsonEditing ? "View" : "Edit"}
                 </button>
                 <button
                   type="button"
@@ -260,11 +269,11 @@ export default function ProblemList() {
                     if (updateProblemMutation.isPending) return;
                     setIsViewJsonModalOpen(false);
                     setViewProblemId(null);
-                    setViewJsonNotice('');
-                    setViewJsonError('');
+                    setViewJsonNotice("");
+                    setViewJsonError("");
                     setIsViewJsonEditing(false);
-                    setViewJsonText('');
-                    setViewJsonBaselineText('');
+                    setViewJsonText("");
+                    setViewJsonBaselineText("");
                   }}
                   className="px-3 py-1 rounded-md border"
                   disabled={updateProblemMutation.isPending}
@@ -295,7 +304,7 @@ export default function ProblemList() {
               <div className="mb-3 p-3 rounded-md border border-red-300 text-red-700">
                 {problemError instanceof Error
                   ? problemError.message
-                  : 'Failed to load problem'}
+                  : "Failed to load problem"}
               </div>
             )}
 
@@ -323,7 +332,7 @@ export default function ProblemList() {
                     className="px-4 py-2 rounded-md border"
                     disabled={updateProblemMutation.isPending}
                     onClick={() => {
-                      setViewJsonError('');
+                      setViewJsonError("");
                       try {
                         const parsed = JSON.parse(viewJsonText);
                         setViewJsonText(JSON.stringify(parsed, null, 2));
@@ -331,7 +340,7 @@ export default function ProblemList() {
                         setViewJsonError(
                           e instanceof Error
                             ? `Invalid JSON: ${e.message}`
-                            : 'Invalid JSON'
+                            : "Invalid JSON",
                         );
                       }
                     }}
@@ -347,8 +356,8 @@ export default function ProblemList() {
                       updateProblemMutation.isPending || !viewJsonBaselineText
                     }
                     onClick={() => {
-                      setViewJsonError('');
-                      setViewJsonNotice('');
+                      setViewJsonError("");
+                      setViewJsonNotice("");
                       setViewJsonText(viewJsonBaselineText);
                     }}
                   >
@@ -369,8 +378,8 @@ export default function ProblemList() {
                     }
                     onClick={async () => {
                       if (!viewProblemId) return;
-                      setViewJsonError('');
-                      setViewJsonNotice('');
+                      setViewJsonError("");
+                      setViewJsonNotice("");
 
                       let payload: unknown;
                       try {
@@ -379,13 +388,13 @@ export default function ProblemList() {
                         setViewJsonError(
                           e instanceof Error
                             ? `Invalid JSON: ${e.message}`
-                            : 'Invalid JSON'
+                            : "Invalid JSON",
                         );
                         return;
                       }
 
-                      if (typeof payload !== 'object' || payload === null) {
-                        setViewJsonError('JSON payload must be an object');
+                      if (typeof payload !== "object" || payload === null) {
+                        setViewJsonError("JSON payload must be an object");
                         return;
                       }
 
@@ -394,9 +403,9 @@ export default function ProblemList() {
                           {
                             id: viewProblemId,
                             data: { ...(payload as object), id: viewProblemId },
-                          }
+                          },
                         );
-                        setViewJsonNotice('Saved');
+                        setViewJsonNotice("Saved");
                         setIsViewJsonEditing(false);
                         // Refresh editor with normalized JSON from server response (and update reset-baseline)
                         const normalized = JSON.stringify(
@@ -414,40 +423,41 @@ export default function ProblemList() {
                                 output: string;
                                 explanation: string;
                               }) => ({
-                                input: ex.input ?? '',
-                                output: ex.output ?? '',
-                                explanation: ex.explanation ?? '',
-                              })
+                                input: ex.input ?? "",
+                                output: ex.output ?? "",
+                                explanation: ex.explanation ?? "",
+                              }),
                             ),
                             test_cases: (updated.test_cases || []).map(
                               (tc: {
                                 input: string;
                                 expected_output: string;
                               }) => ({
-                                input: tc.input ?? '',
-                                expected_output: tc.expected_output ?? '',
-                              })
+                                input: tc.input ?? "",
+                                expected_output: tc.expected_output ?? "",
+                              }),
                             ),
                             io_schema: {
                               param_types:
-                                updated.io_schema?.param_types?.map(String) ?? [],
-                              return_type: updated.io_schema?.return_type ?? '',
+                                updated.io_schema?.param_types?.map(String) ??
+                                [],
+                              return_type: updated.io_schema?.return_type ?? "",
                             },
                           },
                           null,
-                          2
+                          2,
                         );
                         setViewJsonText(normalized);
                         setViewJsonBaselineText(normalized);
-                        setTimeout(() => setViewJsonNotice(''), 1500);
+                        setTimeout(() => setViewJsonNotice(""), 1500);
                       } catch (e) {
                         setViewJsonError(
-                          e instanceof Error ? e.message : 'Save failed'
+                          e instanceof Error ? e.message : "Save failed",
                         );
                       }
                     }}
                   >
-                    {updateProblemMutation.isPending ? 'Saving...' : 'Save'}
+                    {updateProblemMutation.isPending ? "Saving..." : "Save"}
                   </button>
                 )}
                 <button
@@ -457,13 +467,13 @@ export default function ProblemList() {
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(
-                        viewJsonText || selectedProblemCreatePayloadJSON
+                        viewJsonText || selectedProblemCreatePayloadJSON,
                       );
-                      setViewJsonNotice('Copied to clipboard');
-                      setTimeout(() => setViewJsonNotice(''), 1500);
+                      setViewJsonNotice("Copied to clipboard");
+                      setTimeout(() => setViewJsonNotice(""), 1500);
                     } catch {
-                      setViewJsonNotice('Copy failed');
-                      setTimeout(() => setViewJsonNotice(''), 1500);
+                      setViewJsonNotice("Copy failed");
+                      setTimeout(() => setViewJsonNotice(""), 1500);
                     }
                   }}
                 >
@@ -528,7 +538,7 @@ export default function ProblemList() {
                   type="button"
                   onClick={() => {
                     setJsonText(DEFAULT_PROBLEM_JSON);
-                    setJsonError('');
+                    setJsonError("");
                   }}
                   className="px-4 py-2 rounded-md border"
                 >
@@ -561,7 +571,7 @@ export default function ProblemList() {
                   className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-50"
                   disabled={createProblemMutation.isPending}
                 >
-                  {createProblemMutation.isPending ? 'Creating...' : 'Create'}
+                  {createProblemMutation.isPending ? "Creating..." : "Create"}
                 </button>
               </div>
             </div>
@@ -571,7 +581,7 @@ export default function ProblemList() {
 
       <ProblemListHeader
         onOpenJsonModal={() => {
-          setJsonError('');
+          setJsonError("");
           setIsJsonModalOpen(true);
         }}
       />
@@ -588,11 +598,11 @@ export default function ProblemList() {
         onViewProblem={(id) => {
           setViewProblemId(id);
           setIsViewJsonModalOpen(true);
-          setViewJsonNotice('');
+          setViewJsonNotice("");
         }}
         onDeleteProblem={handleDelete}
         getDifficultyColor={getDifficultyColor}
-        hasFilters={!!(searchTerm || difficultyFilter !== 'all')}
+        hasFilters={!!(searchTerm || difficultyFilter !== "all")}
       />
 
       <ProblemListStats problems={problems} />

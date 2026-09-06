@@ -1,20 +1,20 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { useRouter } from 'next/router';
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useRouter } from "next/router";
 import MatchmakingWebSocketClient, {
   type MatchingStatusMessage,
   type MatchFoundMessage,
-} from '@/lib/matchmaking-websocket';
-import { useAuthStore } from '@/stores/authStore';
+} from "@/lib/matchmaking-websocket";
+import { useAuthStore } from "@/stores/authStore";
 import {
   MATCHING_STATE,
   MatchingState,
   TIMER_CONSTANTS,
   WEBSOCKET_CONSTANTS,
-} from '@/constants';
-import type { Difficulty } from '@/components/game/DifficultySelector';
-import { useRouterHelper } from '@/lib/router';
-import { createErrorHandler } from '@/lib/error-tracking';
-import { createSinglePlayerMatch } from '@/api/game';
+} from "@/constants";
+import type { Difficulty } from "@/components/game/DifficultySelector";
+import { useRouterHelper } from "@/lib/router";
+import { createErrorHandler } from "@/lib/error-tracking";
+import { createSinglePlayerMatch } from "@/api/game";
 
 export interface UseMatchmakingOptions {
   onMatchFound?: (gameId: string) => void;
@@ -26,10 +26,10 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
     options;
   const router = useRouter();
   const routerHelper = useRouterHelper(router);
-  const { user } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
 
   const [matchingState, setMatchingState] = useState<MatchingState>(
-    MATCHING_STATE.IDLE
+    MATCHING_STATE.IDLE,
   );
   const [selectedDifficulty, setSelectedDifficulty] =
     useState<Difficulty | null>(null);
@@ -78,14 +78,14 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
 
   const startMatching = async (
     difficulty: Difficulty,
-    mode: 'casual_pvp' | 'ranked_pvp' | 'single' = 'casual_pvp'
+    mode: "casual_pvp" | "ranked_pvp" | "single" = "casual_pvp",
   ) => {
     // Prevent duplicate start: ignore if in progress or existing socket
     if (matchingState !== MATCHING_STATE.IDLE || wsClientRef.current) {
       return;
     }
     if (!user) {
-      setError('Login is required');
+      setError("Login is required");
       return;
     }
 
@@ -95,7 +95,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
       setError(null);
 
       // Handle single player mode differently
-      if (mode === 'single') {
+      if (mode === "single") {
         const response = await createSinglePlayerMatch(difficulty);
         if (response.success && response.data?.id) {
           setMatchingState(MATCHING_STATE.FOUND);
@@ -108,7 +108,7 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
             }
           }, redirectDelayMs);
         } else {
-          setError('Failed to create single player match');
+          setError("Failed to create single player match");
           setMatchingState(MATCHING_STATE.ERROR);
         }
         return;
@@ -141,8 +141,8 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
         },
 
         onMatchFound: (message: MatchFoundMessage) => {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Match found:', message);
+          if (process.env.NODE_ENV === "development") {
+            console.log("Match found:", message);
           }
           setMatchingState(MATCHING_STATE.FOUND);
 
@@ -162,8 +162,8 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
 
         onMatchmakingDisconnect: () => {
           // Intentional disconnect after matchmaking completion - no error handling
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Matchmaking completed, disconnecting intentionally');
+          if (process.env.NODE_ENV === "development") {
+            console.log("Matchmaking completed, disconnecting intentionally");
           }
         },
 
@@ -174,21 +174,21 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
             matchingStateRef.current === MATCHING_STATE.CONNECTING ||
             matchingStateRef.current === MATCHING_STATE.SEARCHING
           ) {
-            setError('Connection lost. Please try again.');
+            setError("Connection lost. Please try again.");
             setMatchingState(MATCHING_STATE.ERROR);
           }
         },
 
         onError: (err) => {
           const errorHandler = createErrorHandler(
-            'useMatchmaking',
-            'websocket_error'
+            "useMatchmaking",
+            "websocket_error",
           );
           errorHandler(err, {
             matchingState,
             userId: user?.id,
           });
-          setError('Connection error occurred. Please try again.');
+          setError("Connection error occurred. Please try again.");
           setMatchingState(MATCHING_STATE.ERROR);
         },
       });
@@ -197,15 +197,15 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
       await wsClient.connect();
     } catch (err) {
       const errorHandler = createErrorHandler(
-        'useMatchmaking',
-        'startMatching'
+        "useMatchmaking",
+        "startMatching",
       );
       errorHandler(err, {
         difficulty,
         userId: user?.id,
         matchingState,
       });
-      setError('Matching failed. Please try again.');
+      setError("Matching failed. Please try again.");
       setMatchingState(MATCHING_STATE.ERROR);
     }
   };
@@ -215,9 +215,9 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
     const handleRouteStart = () => {
       cancelMatching();
     };
-    router.events.on('routeChangeStart', handleRouteStart);
+    router.events.on("routeChangeStart", handleRouteStart);
     return () => {
-      router.events.off('routeChangeStart', handleRouteStart);
+      router.events.off("routeChangeStart", handleRouteStart);
     };
   }, [cancelMatching, router.events]);
 
@@ -226,8 +226,8 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
     const onBeforeUnload = () => {
       cancelMatching();
     };
-    window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [cancelMatching]);
 
   // Auto-cancel when page is hidden (background switch) - re-enabled
@@ -237,8 +237,8 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
         cancelMatching();
       }
     };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [cancelMatching]);
 
   const retryMatching = useCallback(() => {

@@ -1,19 +1,21 @@
-'use client';
+"use client";
 
-import { useState, FC } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { useAuthStore } from '@/stores/authStore';
-import Logo from './Logo';
-import UserDropdown from '../ui/UserDropdown';
-import MobileMenu from './MobileMenu';
-import { useDropdown } from '@/hooks/useDropdown';
-import { ROUTES } from '@/lib/router';
-import { LAYOUT_PADDING, NAVIGATION_STYLES } from '@/lib/styles';
-import { cn } from '@/lib/utils';
+import { useState, FC } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useAuthStore } from "@/stores/authStore";
+import Logo from "./Logo";
+import UserDropdown from "../ui/UserDropdown";
+import MobileMenu from "./MobileMenu";
+import { useDropdown } from "@/hooks/useDropdown";
+import { ROUTES } from "@/lib/router";
+import { LAYOUT_PADDING, NAVIGATION_STYLES } from "@/lib/styles";
+import { cn } from "@/lib/utils";
 
 const Header: FC = () => {
-  const { user, isLoggedIn, logout } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const logout = useAuthStore((state) => state.logout);
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdown = useDropdown();
   const router = useRouter();
@@ -27,7 +29,7 @@ const Header: FC = () => {
     if (user?.id) {
       router.push(`/users/${user.id}`);
     } else {
-      router.push('/dashboard');
+      router.push("/dashboard");
     }
   };
 
@@ -81,7 +83,7 @@ const Header: FC = () => {
                 className={cn(
                   NAVIGATION_STYLES.LINK.BASE,
                   NAVIGATION_STYLES.LINK.DEFAULT,
-                  NAVIGATION_STYLES.LINK.HOVER
+                  NAVIGATION_STYLES.LINK.HOVER,
                 )}
               >
                 Home
@@ -93,7 +95,7 @@ const Header: FC = () => {
                   className={cn(
                     NAVIGATION_STYLES.LINK.BASE,
                     NAVIGATION_STYLES.LINK.DEFAULT,
-                    NAVIGATION_STYLES.LINK.HOVER
+                    NAVIGATION_STYLES.LINK.HOVER,
                   )}
                 >
                   Dashboard
@@ -104,7 +106,7 @@ const Header: FC = () => {
                   className={cn(
                     NAVIGATION_STYLES.LINK.BASE,
                     NAVIGATION_STYLES.LINK.DEFAULT,
-                    NAVIGATION_STYLES.LINK.HOVER
+                    NAVIGATION_STYLES.LINK.HOVER,
                   )}
                 >
                   Dashboard
@@ -127,7 +129,7 @@ const Header: FC = () => {
                   className={cn(
                     NAVIGATION_STYLES.LINK.BASE,
                     NAVIGATION_STYLES.LINK.DEFAULT,
-                    NAVIGATION_STYLES.LINK.HOVER
+                    NAVIGATION_STYLES.LINK.HOVER,
                   )}
                 >
                   Login

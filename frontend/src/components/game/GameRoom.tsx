@@ -1,17 +1,18 @@
-import React, { FC, useEffect, useMemo } from 'react';
-import { useAuthStore } from '@/stores/authStore';
-import { Loader } from '../ui/Loader';
-import { GameStateRenderer } from './components/GameStateRenderer';
-import { useGameRoomState } from './hooks/useGameRoomState';
-import { useGameRoomWebSocket } from './hooks/useGameRoomWebSocket';
-import { useGameData } from './hooks/useGameData';
+import React, { FC, useEffect } from "react";
+import { useAuthStore } from "@/stores/authStore";
+import { Loader } from "../ui/Loader";
+import { GameStateRenderer } from "./components/GameStateRenderer";
+import { useGameRoomState } from "./hooks/useGameRoomState";
+import { useGameRoomWebSocket } from "./hooks/useGameRoomWebSocket";
+import { useGameData } from "./hooks/useGameData";
 
 interface GameRoomProps {
   gameId: string;
 }
 
 const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
-  const { user: currentUser, isLoading: isAuthLoading } = useAuthStore();
+  const currentUser = useAuthStore((state) => state.user);
+  const isAuthLoading = useAuthStore((state) => state.isLoading);
 
   // Game data management
   const {
@@ -27,8 +28,6 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     setMyCode,
     opponentCode,
     setOpponentCode,
-    submitResult,
-    setSubmitResult,
     isSubmitting,
     setIsSubmitting,
     submissionProgress,
@@ -50,7 +49,6 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       isTemplateSet,
       setMyCode,
       setOpponentCode,
-      setSubmitResult,
       setIsSubmitting,
       setSelectedLanguage,
       setOpponentLanguage,
@@ -58,26 +56,9 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       refetchGame,
     });
 
-  // Memoized values for performance optimization
-  const isGameInProgress = useMemo(
-    () => game?.status === 'playing' || game?.status === 'waiting',
-    [game?.status]
-  );
-
-  const isSinglePlayerMode = useMemo(
-    () => game?.mode === 'single',
-    [game?.mode]
-  );
-
-  const sessionStorageKeys = useMemo(
-    () => ({
-      code: `match_${matchId}_code`,
-      language: `match_${matchId}_language`,
-      showMyCode: `match_${matchId}_showMyCode`,
-      showOpponentCode: `match_${matchId}_showOpponentCode`,
-    }),
-    [matchId]
-  );
+  const isGameInProgress =
+    game?.status === "playing" || game?.status === "waiting";
+  const isSinglePlayerMode = game?.mode === "single";
 
   // Warning and cache cleanup when leaving page
   useEffect(() => {
@@ -86,25 +67,16 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       if (isGameInProgress) {
         event.preventDefault();
         event.returnValue =
-          'Your written code will be lost if you leave this page.';
-        return 'Your written code will be lost if you leave this page.';
+          "Your written code will be lost if you leave this page.";
+        return "Your written code will be lost if you leave this page.";
       }
     };
 
     // Register browser default warning dialog
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
-    return () => {
-      // Clean up game-related cache when component unmounts
-      if (typeof window !== 'undefined') {
-        // Use the cleanup function from useGameRoomState
-        // This will be handled automatically by the hook
-      }
-
-      // Remove event listener
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [matchId, isGameInProgress, sessionStorageKeys]);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isGameInProgress]);
 
   // Loading state handling
   if (isAuthLoading || gameLoading) {
@@ -163,19 +135,16 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
         game={game}
         currentUser={currentUser}
         myCode={myCode}
-        opponentCode={isSinglePlayerMode ? '' : opponentCode}
+        opponentCode={isSinglePlayerMode ? "" : opponentCode}
         selectedLanguage={selectedLanguage}
         opponentLanguage={
           isSinglePlayerMode ? selectedLanguage : opponentLanguage
         }
-        submitResult={submitResult}
         isSubmitting={isSubmitting}
         submissionProgress={submissionProgress}
         onCodeChange={handleCodeChange}
         onLanguageChange={handleLanguageChange}
         onSubmitCode={handleSubmitCode}
-        onToggleMyCode={() => {}}
-        onToggleOpponentCode={() => {}}
       />
     </div>
   );

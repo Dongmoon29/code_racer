@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, {
   createContext,
@@ -6,9 +6,10 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   ReactNode,
   FC,
-} from 'react';
+} from "react";
 
 interface FullscreenContextType {
   isFullscreen: boolean;
@@ -18,8 +19,34 @@ interface FullscreenContextType {
   toggleFullscreen: (element: HTMLElement) => Promise<void>;
 }
 
+interface VendorFullscreenDocument extends Document {
+  webkitFullscreenElement?: Element | null;
+  mozFullScreenElement?: Element | null;
+  msFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void> | void;
+  mozCancelFullScreen?: () => Promise<void> | void;
+  msExitFullscreen?: () => Promise<void> | void;
+}
+
+interface VendorFullscreenElement extends HTMLElement {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+  mozRequestFullScreen?: () => Promise<void> | void;
+  msRequestFullscreen?: () => Promise<void> | void;
+}
+
+function getFullscreenElement(): Element | null {
+  const fullscreenDocument = document as VendorFullscreenDocument;
+  return (
+    document.fullscreenElement ??
+    fullscreenDocument.webkitFullscreenElement ??
+    fullscreenDocument.mozFullScreenElement ??
+    fullscreenDocument.msFullscreenElement ??
+    null
+  );
+}
+
 const FullscreenContext = createContext<FullscreenContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const FullscreenProvider: FC<{ children: ReactNode }> = ({
@@ -31,11 +58,7 @@ export const FullscreenProvider: FC<{ children: ReactNode }> = ({
   // 전체 화면 상태 변경 감지
   useEffect(() => {
     const handleFullscreenChange = () => {
-      const fullscreenElement =
-        document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).mozFullScreenElement ||
-        (document as any).msFullscreenElement;
+      const fullscreenElement = getFullscreenElement();
 
       setIsFullscreen(!!fullscreenElement);
 
@@ -45,24 +68,24 @@ export const FullscreenProvider: FC<{ children: ReactNode }> = ({
     };
 
     // 모든 브라우저 이벤트 리스너 등록
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
 
     return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
       document.removeEventListener(
-        'webkitfullscreenchange',
-        handleFullscreenChange
+        "webkitfullscreenchange",
+        handleFullscreenChange,
       );
       document.removeEventListener(
-        'mozfullscreenchange',
-        handleFullscreenChange
+        "mozfullscreenchange",
+        handleFullscreenChange,
       );
       document.removeEventListener(
-        'MSFullscreenChange',
-        handleFullscreenChange
+        "MSFullscreenChange",
+        handleFullscreenChange,
       );
     };
   }, []);
@@ -70,21 +93,21 @@ export const FullscreenProvider: FC<{ children: ReactNode }> = ({
   // 전체 화면 진입
   const enterFullscreen = useCallback(async (element: HTMLElement) => {
     try {
+      const fullscreenElement = element as VendorFullscreenElement;
       if (element.requestFullscreen) {
         await element.requestFullscreen();
-      } else if ((element as any).webkitRequestFullscreen) {
-        // Safari
-        await (element as any).webkitRequestFullscreen();
-      } else if ((element as any).mozRequestFullScreen) {
-        // Firefox
-        await (element as any).mozRequestFullScreen();
-      } else if ((element as any).msRequestFullscreen) {
-        // IE11
-        await (element as any).msRequestFullscreen();
+      } else if (fullscreenElement.webkitRequestFullscreen) {
+        await fullscreenElement.webkitRequestFullscreen();
+      } else if (fullscreenElement.mozRequestFullScreen) {
+        await fullscreenElement.mozRequestFullScreen();
+      } else if (fullscreenElement.msRequestFullscreen) {
+        await fullscreenElement.msRequestFullscreen();
+      } else {
+        throw new Error("Fullscreen API is not supported by this browser");
       }
       setTargetElement(element);
     } catch (err) {
-      console.error('전체 화면 진입 실패:', err);
+      console.error("전체 화면 진입 실패:", err);
       throw err;
     }
   }, []);
@@ -92,17 +115,18 @@ export const FullscreenProvider: FC<{ children: ReactNode }> = ({
   // 전체 화면 종료
   const exitFullscreen = useCallback(async () => {
     try {
+      const fullscreenDocument = document as VendorFullscreenDocument;
       if (document.exitFullscreen) {
         await document.exitFullscreen();
-      } else if ((document as any).webkitExitFullscreen) {
-        await (document as any).webkitExitFullscreen();
-      } else if ((document as any).mozCancelFullScreen) {
-        await (document as any).mozCancelFullScreen();
-      } else if ((document as any).msExitFullscreen) {
-        await (document as any).msExitFullscreen();
+      } else if (fullscreenDocument.webkitExitFullscreen) {
+        await fullscreenDocument.webkitExitFullscreen();
+      } else if (fullscreenDocument.mozCancelFullScreen) {
+        await fullscreenDocument.mozCancelFullScreen();
+      } else if (fullscreenDocument.msExitFullscreen) {
+        await fullscreenDocument.msExitFullscreen();
       }
     } catch (err) {
-      console.error('전체 화면 종료 실패:', err);
+      console.error("전체 화면 종료 실패:", err);
       throw err;
     }
   }, []);
@@ -116,19 +140,28 @@ export const FullscreenProvider: FC<{ children: ReactNode }> = ({
         await enterFullscreen(element);
       }
     },
-    [isFullscreen, enterFullscreen, exitFullscreen]
+    [isFullscreen, enterFullscreen, exitFullscreen],
+  );
+
+  const value = useMemo(
+    () => ({
+      isFullscreen,
+      targetElement,
+      enterFullscreen,
+      exitFullscreen,
+      toggleFullscreen,
+    }),
+    [
+      isFullscreen,
+      targetElement,
+      enterFullscreen,
+      exitFullscreen,
+      toggleFullscreen,
+    ],
   );
 
   return (
-    <FullscreenContext.Provider
-      value={{
-        isFullscreen,
-        targetElement,
-        enterFullscreen,
-        exitFullscreen,
-        toggleFullscreen,
-      }}
-    >
+    <FullscreenContext.Provider value={value}>
       {children}
     </FullscreenContext.Provider>
   );
@@ -137,7 +170,7 @@ export const FullscreenProvider: FC<{ children: ReactNode }> = ({
 export const useFullscreen = () => {
   const context = useContext(FullscreenContext);
   if (!context) {
-    throw new Error('useFullscreen must be used within FullscreenProvider');
+    throw new Error("useFullscreen must be used within FullscreenProvider");
   }
   return context;
 };

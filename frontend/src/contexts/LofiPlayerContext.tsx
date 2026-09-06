@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
 import React, {
   createContext,
   useContext,
+  useMemo,
   useState,
   ReactNode,
   FC,
-} from 'react';
+} from "react";
 
 interface LofiPlayerContextType {
   showMusicPlayer: boolean;
@@ -16,7 +17,7 @@ interface LofiPlayerContextType {
 }
 
 const LofiPlayerContext = createContext<LofiPlayerContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const LofiPlayerProvider: FC<{ children: ReactNode }> = ({
@@ -24,16 +25,18 @@ export const LofiPlayerProvider: FC<{ children: ReactNode }> = ({
 }) => {
   const [showMusicPlayer, setShowMusicPlayer] = useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const value = useMemo(
+    () => ({
+      showMusicPlayer,
+      setShowMusicPlayer,
+      isMusicPlaying,
+      setIsMusicPlaying,
+    }),
+    [showMusicPlayer, isMusicPlaying],
+  );
 
   return (
-    <LofiPlayerContext.Provider
-      value={{
-        showMusicPlayer,
-        setShowMusicPlayer,
-        isMusicPlaying,
-        setIsMusicPlaying,
-      }}
-    >
+    <LofiPlayerContext.Provider value={value}>
       {children}
     </LofiPlayerContext.Provider>
   );
@@ -42,8 +45,7 @@ export const LofiPlayerProvider: FC<{ children: ReactNode }> = ({
 export const useLofiPlayer = () => {
   const context = useContext(LofiPlayerContext);
   if (!context) {
-    throw new Error('useLofiPlayer must be used within LofiPlayerProvider');
+    throw new Error("useLofiPlayer must be used within LofiPlayerProvider");
   }
   return context;
 };
-

@@ -1,7 +1,5 @@
-import { useAuthStore } from '@/stores/authStore';
-import axios from 'axios';
+import axios from "axios";
 import type {
-  ProblemDetail,
   Game,
   UserProfile,
   LoginResponse,
@@ -11,21 +9,16 @@ import type {
   GetMatchResponse,
   MatchResponse,
   SubmitSolutionResponse,
-  GetProblemResponse,
-  ListProblemsResponse,
-  CreateProblemResponse,
-  UpdateProblemResponse,
-  DeleteProblemResponse,
   GetUserProfileResponse,
   UpdateUserProfileResponse,
-} from '@/types';
-import { createErrorHandler } from '@/lib/error-tracking';
+} from "@/types";
+import { createErrorHandler } from "@/lib/error-tracking";
 
 // API client basic configuration
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: "/api",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -34,7 +27,10 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Get token from sessionStorage for all requests
-    const token = sessionStorage.getItem('authToken');
+    const token =
+      typeof window !== "undefined"
+        ? window.sessionStorage.getItem("authToken")
+        : null;
 
     if (token) {
       // Add Authorization header with Bearer token
@@ -42,38 +38,38 @@ api.interceptors.request.use(
     }
 
     // Log request for debugging (remove in production)
-    if (process.env.NODE_ENV === 'development') {
-      console.debug('API Request:', config.method?.toUpperCase(), config.url);
+    if (process.env.NODE_ENV === "development") {
+      console.debug("API Request:", config.method?.toUpperCase(), config.url);
     }
     return config;
   },
   (error) => {
     // Error interceptor - errors are handled by response interceptor
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
+  (error) => {
     if (error.response?.status === 401) {
       // Don't redirect during login attempts or auth initialization
-      const url = error.config?.url || '';
+      const url = error.config?.url || "";
       const skipLogout =
-        url.includes('/auth/login') ||
-        url.includes('/users/me') ||
-        url.includes('/auth/exchange-token');
-      if (!skipLogout) {
-        // Only logout if not already logged out to prevent infinite loops
-        const authState = useAuthStore.getState();
-        if (authState.isLoggedIn) {
-          await authState.logout();
+        url.includes("/auth/login") ||
+        url.includes("/auth/logout") ||
+        url.includes("/users/me") ||
+        url.includes("/auth/exchange-token");
+      if (!skipLogout && typeof window !== "undefined") {
+        window.sessionStorage.removeItem("authToken");
+        if (window.location.pathname !== "/login") {
+          window.location.assign("/login");
         }
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // Authentication related API
@@ -82,9 +78,9 @@ export const authApi = {
   register: async (
     email: string,
     password: string,
-    name: string
+    name: string,
   ): Promise<RegisterResponse> => {
-    const response = await api.post<RegisterResponse>('/auth/register', {
+    const response = await api.post<RegisterResponse>("/auth/register", {
       email,
       password,
       name,
@@ -94,7 +90,7 @@ export const authApi = {
 
   // User login
   login: async (email: string, password: string): Promise<LoginResponse> => {
-    const response = await api.post<LoginResponse>('/auth/login', {
+    const response = await api.post<LoginResponse>("/auth/login", {
       email,
       password,
     });
@@ -105,47 +101,47 @@ export const authApi = {
   exchangeToken: async (
     code: string,
     state: string,
-    provider: string
+    provider: string,
   ): Promise<ExchangeTokenResponse> => {
     const response = await api.post<ExchangeTokenResponse>(
-      '/auth/exchange-token',
+      "/auth/exchange-token",
       {
         code,
         state,
         provider,
-      }
+      },
     );
     return response.data;
   },
 
   // Get current user information
   getCurrentUser: async (): Promise<GetCurrentUserResponse> => {
-    const errorHandler = createErrorHandler('authApi', 'getCurrentUser');
+    const errorHandler = createErrorHandler("authApi", "getCurrentUser");
     try {
-      const response = await api.get<GetCurrentUserResponse>('/users/me');
+      const response = await api.get<GetCurrentUserResponse>("/users/me");
       return response.data;
     } catch (error) {
-      errorHandler(error, { endpoint: '/users/me' });
+      errorHandler(error, { endpoint: "/users/me" });
       throw error;
     }
   },
 
   // User logout
   logout: async (): Promise<void> => {
-    await api.post('/auth/logout');
+    await api.post("/auth/logout");
   },
 
   // Google login
   loginWithGoogle: () => {
     const backendURL =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
     window.location.href = `${backendURL}/auth/google`;
   },
 
   // GitHub login
   loginWithGitHub: () => {
     const backendURL =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
     window.location.href = `${backendURL}/auth/github`;
   },
 };
@@ -200,7 +196,7 @@ export const matchApi = {
       loser_rating_delta: payload.loser_rating_delta ?? undefined,
       problem: payload.problem,
       status: payload.status,
-      mode: payload.mode || 'casual_pvp', // Add mode field mapping
+      mode: payload.mode || "casual_pvp", // Add mode field mapping
       started_at: payload.started_at,
       ended_at: payload.ended_at,
       created_at: payload.created_at,
@@ -213,84 +209,17 @@ export const matchApi = {
   submitSolution: async (
     matchId: string,
     code: string,
-    language: string
+    language: string,
   ): Promise<SubmitSolutionResponse> => {
     const response = await api.post<SubmitSolutionResponse>(
       `/matches/${matchId}/submit`,
       {
         code,
         language,
-      }
+      },
     );
     return response.data;
   },
-};
-
-export const problemApi = {
-  listProblems: async (): Promise<ListProblemsResponse> => {
-    const response = await api.get<ListProblemsResponse>('/problems');
-    return response.data;
-  },
-
-  getProblem: async (problemId: string): Promise<GetProblemResponse> => {
-    const response = await api.get<GetProblemResponse>(`/problems/${problemId}`);
-    return response.data;
-  },
-
-  createProblem: async (data: unknown): Promise<CreateProblemResponse> => {
-    const response = await api.post<CreateProblemResponse>('/problems', data);
-    return response.data;
-  },
-
-  updateProblem: async (
-    problemId: string,
-    data: unknown
-  ): Promise<UpdateProblemResponse> => {
-    const response = await api.put<UpdateProblemResponse>(
-      `/problems/${problemId}`,
-      data
-    );
-    return response.data;
-  },
-
-  deleteProblem: async (problemId: string): Promise<DeleteProblemResponse> => {
-    const response = await api.delete<DeleteProblemResponse>(
-      `/problems/${problemId}`
-    );
-    return response.data;
-  },
-};
-
-export const getCodeTemplate = (
-  problem: ProblemDetail,
-  language: string
-): string => {
-  if (!problem) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Problem is undefined');
-    }
-    return '';
-  }
-
-  if (!problem.io_templates || !Array.isArray(problem.io_templates)) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Problem io_templates is not available', problem);
-    }
-    return '';
-  }
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Available io_templates:', problem.io_templates);
-    console.log('Looking for language:', language);
-  }
-
-  const template = problem.io_templates.find((t) => t.language === language);
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Found template:', template);
-  }
-
-  return template ? template.code : '';
 };
 
 export const userApi = {
@@ -298,7 +227,7 @@ export const userApi = {
     page: number,
     limit = 20,
     sort?: string,
-    search?: string
+    search?: string,
   ) => {
     const response = await api.get(`/admin/users`, {
       params: {
@@ -326,24 +255,24 @@ export const userApi = {
     };
   },
   updateProfile: async (
-    profile: UserProfile
+    profile: UserProfile,
   ): Promise<UpdateUserProfileResponse> => {
     const response = await api.put<UpdateUserProfileResponse>(
-      '/users/profile',
-      profile
+      "/users/profile",
+      profile,
     );
     return response.data;
   },
 
   getUserProfile: async (userId: string): Promise<GetUserProfileResponse> => {
     const response = await api.get<GetUserProfileResponse>(
-      `/users/${userId}/profile`
+      `/users/${userId}/profile`,
     );
     return response.data;
   },
 
   getLeaderboard: async () => {
-    const response = await api.get('/users/leaderboard');
+    const response = await api.get("/users/leaderboard");
     return response.data as {
       success: boolean;
       users: Array<{
@@ -424,11 +353,11 @@ export const userApi = {
 
 export const communityApi = {
   create: async (
-    type: 'bug' | 'feature' | 'improvement' | 'other',
+    type: "bug" | "feature" | "improvement" | "other",
     title: string,
-    content: string
+    content: string,
   ) => {
-    const response = await api.post('/community', {
+    const response = await api.post("/community", {
       type,
       title,
       content,
@@ -453,13 +382,13 @@ export const communityApi = {
     offset = 0,
     status?: string,
     type?: string,
-    sort: 'hot' | 'new' | 'top' = 'hot'
+    sort: "hot" | "new" | "top" = "hot",
   ) => {
     const params: Record<string, string | number> = { limit, offset, sort };
     if (status) params.status = status;
     if (type) params.type = type;
 
-    const response = await api.get('/community', { params });
+    const response = await api.get("/community", { params });
     return response.data as {
       success: boolean;
       data: {
@@ -490,7 +419,7 @@ export const communityApi = {
   },
 
   getMyPosts: async (limit = 20, offset = 0) => {
-    const response = await api.get('/community/my', {
+    const response = await api.get("/community/my", {
       params: { limit, offset },
     });
     return response.data as {
@@ -596,11 +525,11 @@ export const communityCommentApi = {
     postId: string,
     limit = 50,
     offset = 0,
-    withReplies = false
+    withReplies = false,
   ) => {
     const params: Record<string, string | number> = { limit, offset };
     if (withReplies) {
-      params.withReplies = 'true';
+      params.withReplies = "true";
     }
     const response = await api.get(`/community/comments/${postId}`, {
       params,

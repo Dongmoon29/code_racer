@@ -1,5 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/router';
+import { useEffect, useRef, useCallback } from "react";
 import WebSocketClient, {
   type WebSocketMessage,
   type CodeUpdateMessage,
@@ -13,19 +12,20 @@ import WebSocketClient, {
   isTestCaseCompletedMessage,
   unwrapSubmissionMessage,
   unwrapTestCaseMessage,
-} from '@/lib/websocket';
-import { Game, SubmitResult } from '@/types';
-import { getCodeTemplate, matchApi } from '@/lib/api';
-import { useAuthStore } from '@/stores/authStore';
-import { type SupportedLanguage } from '@/constants';
+} from "@/lib/websocket";
+import { Game } from "@/types";
+import { matchApi } from "@/lib/api";
+import { getCodeTemplate } from "@/lib/code-template";
+import { useAuthStore } from "@/stores/authStore";
+import { type SupportedLanguage } from "@/constants";
 import {
   SubmissionProgress,
   TestCaseDetailMessage,
   SubmissionStatusMessage,
-} from '@/types/websocket';
-import { createErrorHandler } from '@/lib/error-tracking';
-import { WEBSOCKET_MESSAGE_TYPES } from '@/constants/websocket';
-import { useToast } from '@/components/ui/Toast';
+} from "@/types/websocket";
+import { createErrorHandler } from "@/lib/error-tracking";
+import { WEBSOCKET_MESSAGE_TYPES } from "@/constants/websocket";
+import { useToast } from "@/components/ui/Toast";
 
 interface UseGameRoomWebSocketProps {
   matchId: string;
@@ -35,7 +35,6 @@ interface UseGameRoomWebSocketProps {
   isTemplateSet: React.MutableRefObject<boolean>;
   setMyCode: (code: string) => void;
   setOpponentCode: (code: string) => void;
-  setSubmitResult: (result: SubmitResult | null) => void;
   setIsSubmitting: (isSubmitting: boolean) => void;
   setSelectedLanguage: (language: SupportedLanguage) => void;
   setOpponentLanguage: (language: SupportedLanguage) => void;
@@ -53,16 +52,17 @@ export const useGameRoomWebSocket = ({
   isTemplateSet,
   setMyCode,
   setOpponentCode,
-  setSubmitResult,
   setIsSubmitting,
   setSelectedLanguage,
   setOpponentLanguage,
   setSubmissionProgress,
   refetchGame,
 }: UseGameRoomWebSocketProps) => {
-  const router = useRouter();
   const wsRef = useRef<WebSocketClient | null>(null);
-  const { user: currentUser } = useAuthStore();
+  const codeBroadcastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const currentUser = useAuthStore((state) => state.user);
   const { showToast } = useToast();
 
   // Template setup
@@ -87,17 +87,17 @@ export const useGameRoomWebSocket = ({
           setOpponentCode(code);
           // Update opponent language if provided
           const language = message.language || message.data?.language;
-          if (language && language.trim() !== '') {
+          if (language && language.trim() !== "") {
             // Normalize language value (lowercase)
             const normalizedLanguage = language.toLowerCase().trim();
-            if (['python', 'javascript', 'go'].includes(normalizedLanguage)) {
+            if (["python", "javascript", "go"].includes(normalizedLanguage)) {
               setOpponentLanguage(normalizedLanguage as SupportedLanguage);
             }
           }
         }
       }
     },
-    [currentUser?.id, setOpponentCode, setOpponentLanguage]
+    [currentUser?.id, setOpponentCode, setOpponentLanguage],
   );
 
   const handleSubmissionStarted = useCallback(
@@ -116,11 +116,11 @@ export const useGameRoomWebSocket = ({
             message.total_test_cases || game?.problem?.test_cases?.length || 0,
         }).map((_, i) => ({
           index: i,
-          input: '',
-          expectedOutput: '',
-          status: 'pending' as const,
+          input: "",
+          expectedOutput: "",
+          status: "pending" as const,
         })),
-        statusMessage: 'Evaluating Solution...',
+        statusMessage: "Evaluating Solution...",
       });
     },
     [
@@ -128,7 +128,7 @@ export const useGameRoomWebSocket = ({
       setIsSubmitting,
       setSubmissionProgress,
       game?.problem?.test_cases?.length,
-    ]
+    ],
   );
 
   const handleTestCaseRunning = useCallback(
@@ -140,15 +140,15 @@ export const useGameRoomWebSocket = ({
         const list = [...prev.testCaseResults];
         list[message.test_case_index] = {
           index: message.test_case_index,
-          input: message.input ?? '',
-          expectedOutput: message.expected_output ?? '',
-          status: 'running' as const,
+          input: message.input ?? "",
+          expectedOutput: message.expected_output ?? "",
+          status: "running" as const,
         };
         next.testCaseResults = list;
         return next;
       });
     },
-    [currentUser?.id, setSubmissionProgress]
+    [currentUser?.id, setSubmissionProgress],
   );
 
   const handleTestCaseCompleted = useCallback(
@@ -160,23 +160,23 @@ export const useGameRoomWebSocket = ({
         const list = [...prev.testCaseResults];
         list[message.test_case_index] = {
           index: message.test_case_index,
-          input: message.input ?? '',
-          expectedOutput: message.expected_output ?? message.expected ?? '',
+          input: message.input ?? "",
+          expectedOutput: message.expected_output ?? message.expected ?? "",
           actualOutput: message.actual_output ?? message.actual,
           passed: message.passed,
-          status: 'completed' as const,
+          status: "completed" as const,
           executionTime: message.execution_time,
           memoryUsage: message.memory_usage,
         };
         next.testCaseResults = list;
         next.completedTestCases = Math.min(
           prev.completedTestCases + 1,
-          prev.totalTestCases
+          prev.totalTestCases,
         );
         return next;
       });
     },
-    [currentUser?.id, setSubmissionProgress]
+    [currentUser?.id, setSubmissionProgress],
   );
 
   const handleSubmissionCompleted = useCallback(
@@ -191,16 +191,16 @@ export const useGameRoomWebSocket = ({
         executionTime: message.execution_time,
         memoryUsage: message.memory_usage,
         statusMessage: message.passed
-          ? 'All test cases passed!'
-          : 'Test cases failed.',
+          ? "All test cases passed!"
+          : "Test cases failed.",
       }));
 
       // Toast notification for evaluation result
       if (message.passed) {
         showToast({
-          title: 'Evaluation Complete',
-          message: 'All test cases passed!',
-          variant: 'success',
+          title: "Evaluation Complete",
+          message: "All test cases passed!",
+          variant: "success",
         });
       } else {
         const passedCount =
@@ -213,9 +213,9 @@ export const useGameRoomWebSocket = ({
           0;
 
         showToast({
-          title: 'Evaluation Result',
+          title: "Evaluation Result",
           message: `${passedCount}/${totalCount} test cases passed`,
-          variant: 'error',
+          variant: "error",
         });
       }
 
@@ -223,7 +223,7 @@ export const useGameRoomWebSocket = ({
       if (message.passed) {
         setSubmitResult({
           success: true,
-          message: 'All test cases passed!',
+          message: "All test cases passed!",
           is_winner: true,
         });
         // Refresh game data to check if game status is 'finished'
@@ -238,7 +238,7 @@ export const useGameRoomWebSocket = ({
       refetchGame,
       game?.problem?.test_cases?.length,
       showToast,
-    ]
+    ],
   );
 
   const handleSubmissionFailed = useCallback(
@@ -249,15 +249,15 @@ export const useGameRoomWebSocket = ({
       setSubmissionProgress((prev: SubmissionProgress) => ({
         ...prev,
         isSubmitting: false,
-        statusMessage: 'Submission failed.',
+        statusMessage: "Submission failed.",
       }));
       setSubmitResult({
         success: false,
-        message: 'Submission failed.',
+        message: "Submission failed.",
         is_winner: false,
       });
     },
-    [currentUser?.id, setIsSubmitting, setSubmissionProgress, setSubmitResult]
+    [currentUser?.id, setIsSubmitting, setSubmissionProgress, setSubmitResult],
   );
 
   const handleGameFinished = useCallback(
@@ -265,25 +265,25 @@ export const useGameRoomWebSocket = ({
       if (winnerId) {
         setSubmitResult({
           success: true,
-          message: 'Game finished!',
+          message: "Game finished!",
           is_winner: false, // This will be determined by the actual game logic
         });
         // Refresh game data so status becomes 'finished' and UI renders FinishedGame
         refetchGame();
       }
     },
-    [setSubmitResult, refetchGame]
+    [setSubmitResult, refetchGame],
   );
 
   const handleError = useCallback(
     (errorMessage?: string) => {
       setSubmitResult({
         success: false,
-        message: errorMessage || 'An error occurred during the game.',
+        message: errorMessage || "An error occurred during the game.",
         is_winner: false,
       });
     },
-    [setSubmitResult]
+    [setSubmitResult],
   );
 
   // WebSocket message handler with type guards
@@ -344,8 +344,8 @@ export const useGameRoomWebSocket = ({
           break;
 
         default:
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Unknown message type:', message.type);
+          if (process.env.NODE_ENV === "development") {
+            console.log("Unknown message type:", message.type);
           }
       }
     },
@@ -358,33 +358,40 @@ export const useGameRoomWebSocket = ({
       handleSubmissionFailed,
       handleGameFinished,
       handleError,
-    ]
+    ],
   );
+
+  const messageHandlerRef = useRef(handleWebSocketMessage);
+  useEffect(() => {
+    messageHandlerRef.current = handleWebSocketMessage;
+  }, [handleWebSocketMessage]);
+
+  const canConnect = Boolean(game);
 
   // WebSocket connection setup
   useEffect(() => {
-    if (!game) return;
+    if (!canConnect) return;
 
     // Require auth token before opening WebSocket connection
     const token =
-      typeof window !== 'undefined'
-        ? sessionStorage.getItem('authToken')
+      typeof window !== "undefined"
+        ? sessionStorage.getItem("authToken")
         : null;
 
     if (!token) {
       // If token is missing, show a gentle notification and skip WS connection
       showToast({
-        title: 'Authentication Required',
+        title: "Authentication Required",
         message:
-          'Your session has expired or you are not logged in. Please log in again and try submitting.',
-        variant: 'error',
+          "Your session has expired or you are not logged in. Please log in again and try submitting.",
+        variant: "error",
       });
       return;
     }
 
     const wsClient = new WebSocketClient(matchId);
 
-    wsClient.addMessageHandler(handleWebSocketMessage);
+    wsClient.addMessageHandler((message) => messageHandlerRef.current(message));
 
     wsRef.current = wsClient;
 
@@ -394,25 +401,30 @@ export const useGameRoomWebSocket = ({
         wsRef.current = null;
       }
     };
-  }, [
-    game,
-    matchId,
-    router,
-    handleWebSocketMessage,
-    setSubmitResult,
-    showToast,
-  ]);
+  }, [canConnect, matchId, showToast]);
+
+  useEffect(() => {
+    return () => {
+      if (codeBroadcastTimerRef.current) {
+        clearTimeout(codeBroadcastTimerRef.current);
+        codeBroadcastTimerRef.current = null;
+      }
+    };
+  }, [matchId]);
 
   // Code change handler
   const handleCodeChange = useCallback(
     (newCode: string) => {
       setMyCode(newCode);
 
-      if (wsRef.current) {
-        wsRef.current.sendCodeUpdate(newCode, selectedLanguage);
+      if (codeBroadcastTimerRef.current) {
+        clearTimeout(codeBroadcastTimerRef.current);
       }
+      codeBroadcastTimerRef.current = setTimeout(() => {
+        wsRef.current?.sendCodeUpdate(newCode, selectedLanguage);
+      }, 75);
     },
-    [setMyCode, selectedLanguage]
+    [setMyCode, selectedLanguage],
   );
 
   // Language change handler
@@ -421,6 +433,11 @@ export const useGameRoomWebSocket = ({
       setIsSubmitting(false);
       setSubmitResult(null);
       setSelectedLanguage(newLanguage);
+
+      if (codeBroadcastTimerRef.current) {
+        clearTimeout(codeBroadcastTimerRef.current);
+        codeBroadcastTimerRef.current = null;
+      }
 
       if (game?.problem) {
         const template = getCodeTemplate(game.problem, newLanguage);
@@ -437,7 +454,7 @@ export const useGameRoomWebSocket = ({
       setIsSubmitting,
       setSubmitResult,
       setSelectedLanguage,
-    ]
+    ],
   );
 
   // Code submission handler
@@ -451,13 +468,13 @@ export const useGameRoomWebSocket = ({
       const result = await matchApi.submitSolution(
         matchId,
         myCode,
-        selectedLanguage
+        selectedLanguage,
       );
 
       if (!result.success) {
         setSubmitResult({
           success: false,
-          message: result.message || 'Submission failed.',
+          message: result.message || "Submission failed.",
           is_winner: false,
         });
       } else if (result.data.success) {
@@ -466,22 +483,22 @@ export const useGameRoomWebSocket = ({
           message:
             result.data.message ||
             (result.data.is_winner
-              ? 'Congratulations! You won!'
-              : 'Solution submitted successfully.'),
+              ? "Congratulations! You won!"
+              : "Solution submitted successfully."),
           is_winner: result.data.is_winner || false,
         });
       } else {
         setSubmitResult({
           success: false,
           message:
-            result.data.message || 'Solution did not pass the judge cases.',
+            result.data.message || "Solution did not pass the judge cases.",
           is_winner: false,
         });
       }
     } catch (error) {
       const errorHandler = createErrorHandler(
-        'useGameRoomWebSocket',
-        'submitSolution'
+        "useGameRoomWebSocket",
+        "submitSolution",
       );
       errorHandler(error, {
         matchId,
@@ -489,7 +506,7 @@ export const useGameRoomWebSocket = ({
       });
       setSubmitResult({
         success: false,
-        message: 'Network error occurred.',
+        message: "Network error occurred.",
         is_winner: false,
       });
     } finally {

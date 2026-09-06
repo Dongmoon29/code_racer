@@ -1,17 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import Head from 'next/head';
-import { useRouter } from 'next/router';
-import { LoginForm } from '../components/dynamic';
-import Image from 'next/image';
-import { Alert } from '@/components/ui/alert';
-import { useAuthStore } from '@/stores/authStore';
-import { motion } from 'framer-motion';
-import { Loader } from '@/components/ui/Loader';
+import React, { useEffect, useState } from "react";
+import Head from "next/head";
+import { useRouter } from "next/router";
+import { LoginForm } from "../components/dynamic";
+import Image from "next/image";
+import { Alert } from "@/components/ui/alert";
+import { useAuthStore } from "@/stores/authStore";
+import { motion } from "framer-motion";
+import { Loader } from "@/components/ui/Loader";
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
-  const { isLoggedIn, isLoading } = useAuthStore();
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isLoading = useAuthStore((state) => state.isLoading);
 
   useEffect(() => {
     // Only redirect if we're sure the user is logged in
@@ -19,14 +20,14 @@ const LoginPage: React.FC = () => {
     if (!isLoading && isLoggedIn) {
       // Check if there's a redirect URL
       const redirectUrl = router.query.redirect as string;
-      const destination = redirectUrl || '/dashboard';
+      const destination = redirectUrl || "/dashboard";
       router.replace(destination);
       return;
     }
 
-    if (router.query.registered === 'true') {
+    if (router.query.registered === "true") {
       setMessage(
-        'Registration successful! Please login with your new account.'
+        "Registration successful! Please login with your new account.",
       );
     }
   }, [isLoading, isLoggedIn, router.query, router]);
@@ -88,14 +89,14 @@ const LoginPage: React.FC = () => {
               transition={{
                 duration: 2,
                 repeat: Infinity,
-                ease: 'easeInOut',
+                ease: "easeInOut",
               }}
             >
               <Image
                 src="/code_racer_hero.webp"
                 alt="Code Racer illustration"
                 fill
-                style={{ objectFit: 'contain' }}
+                style={{ objectFit: "contain" }}
                 className="p-4"
                 priority
                 sizes="50vw"

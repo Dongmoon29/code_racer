@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { useAuthStore } from '@/stores/authStore';
+import { useEffect } from "react";
+import { useRouter } from "next/router";
+import { useAuthStore } from "@/stores/authStore";
 
 interface UseAuthGuardOptions {
   requireAuth?: boolean;
@@ -17,11 +17,13 @@ export const useAuthGuard = (options: UseAuthGuardOptions = {}) => {
   const {
     requireAuth = true,
     requireAdmin = false,
-    redirectTo = '/login',
+    redirectTo = "/login",
   } = options;
 
   const router = useRouter();
-  const { user, isLoggedIn, isLoading } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isLoading = useAuthStore((state) => state.isLoading);
 
   useEffect(() => {
     if (isLoading) return;
@@ -36,16 +38,24 @@ export const useAuthGuard = (options: UseAuthGuardOptions = {}) => {
     }
 
     // Check admin role requirement
-    if (requireAdmin && user?.role !== 'admin') {
-      router.push('/');
+    if (requireAdmin && user?.role !== "admin") {
+      router.push("/");
       return;
     }
-  }, [isLoggedIn, isLoading, user, router, requireAuth, requireAdmin, redirectTo]);
+  }, [
+    isLoggedIn,
+    isLoading,
+    user,
+    router,
+    requireAuth,
+    requireAdmin,
+    redirectTo,
+  ]);
 
   return {
     user,
     isLoggedIn,
     isLoading,
-    isAdmin: user?.role === 'admin',
+    isAdmin: user?.role === "admin",
   };
 };

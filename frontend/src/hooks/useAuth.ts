@@ -1,7 +1,9 @@
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from "@/stores/authStore";
 
 export const useAuth = () => {
-  const { user, isLoggedIn, isLoading } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isLoading = useAuthStore((state) => state.isLoading);
 
   // Auth initialization is handled in _app.tsx
   // This hook just provides the current auth state

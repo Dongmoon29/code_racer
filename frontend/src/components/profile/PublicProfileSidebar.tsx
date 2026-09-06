@@ -1,5 +1,5 @@
-import React from 'react';
-import Image from 'next/image';
+import React from "react";
+import Image from "next/image";
 import {
   MapPin,
   Calendar,
@@ -9,10 +9,10 @@ import {
   Linkedin,
   Globe,
   Users,
-} from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { userApi } from '@/lib/api';
-import { useAuthStore } from '@/stores/authStore';
+} from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { userApi } from "@/lib/api";
+import { useAuthStore } from "@/stores/authStore";
 
 interface UserInfo {
   id: string;
@@ -41,13 +41,13 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
   onShowFollowers,
   onShowFollowing,
 }) => {
-  const { user: currentUser } = useAuthStore();
+  const currentUser = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
   const isOwnProfile = currentUser?.id === user.id;
 
   // Get follow stats
   const { data: followStats, isLoading: statsLoading } = useQuery({
-    queryKey: ['followStats', user.id],
+    queryKey: ["followStats", user.id],
     queryFn: () => userApi.getFollowStats(user.id),
     enabled: !isOwnProfile && !!currentUser, // Only fetch if not own profile and user is authenticated
   });
@@ -56,7 +56,7 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
   const followMutation = useMutation({
     mutationFn: () => userApi.follow(user.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['followStats', user.id] });
+      queryClient.invalidateQueries({ queryKey: ["followStats", user.id] });
     },
   });
 
@@ -64,7 +64,7 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
   const unfollowMutation = useMutation({
     mutationFn: () => userApi.unfollow(user.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['followStats', user.id] });
+      queryClient.invalidateQueries({ queryKey: ["followStats", user.id] });
     },
   });
 
@@ -142,11 +142,11 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
               disabled={isLoading || statsLoading}
               className={`w-full rounded-lg font-semibold py-3 px-4 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
                 isFollowing
-                  ? 'bg-red-600 hover:bg-red-700 text-white dark:bg-red-600 dark:hover:bg-red-700'
-                  : 'bg-[var(--green-9)] hover:bg-[var(--green-10)] text-white'
+                  ? "bg-red-600 hover:bg-red-700 text-white dark:bg-red-600 dark:hover:bg-red-700"
+                  : "bg-[var(--green-9)] hover:bg-[var(--green-10)] text-white"
               }`}
             >
-              {isFollowing ? 'Unfollow' : 'Follow'}
+              {isFollowing ? "Unfollow" : "Follow"}
             </button>
           )}
         </div>
@@ -185,10 +185,10 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
           <Calendar className="w-4 h-4" />
           <span>
-            Joined{' '}
-            {new Date(user?.created_at || '').toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
+            Joined{" "}
+            {new Date(user?.created_at || "").toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
             })}
           </span>
         </div>
