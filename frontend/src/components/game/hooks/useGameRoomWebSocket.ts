@@ -221,11 +221,6 @@ export const useGameRoomWebSocket = ({
 
       // If all test cases passed, check if game is finished (for single player games)
       if (message.passed) {
-        setSubmitResult({
-          success: true,
-          message: "All test cases passed!",
-          is_winner: true,
-        });
         // Refresh game data to check if game status is 'finished'
         refetchGame();
       }
@@ -234,7 +229,6 @@ export const useGameRoomWebSocket = ({
       currentUser?.id,
       setIsSubmitting,
       setSubmissionProgress,
-      setSubmitResult,
       refetchGame,
       game?.problem?.test_cases?.length,
       showToast,
@@ -251,39 +245,34 @@ export const useGameRoomWebSocket = ({
         isSubmitting: false,
         statusMessage: "Submission failed.",
       }));
-      setSubmitResult({
-        success: false,
-        message: "Submission failed.",
-        is_winner: false,
+      showToast({
+        title: "Submission Failed",
+        message: "The solution could not be evaluated.",
+        variant: "error",
       });
     },
-    [currentUser?.id, setIsSubmitting, setSubmissionProgress, setSubmitResult],
+    [currentUser?.id, setIsSubmitting, setSubmissionProgress, showToast],
   );
 
   const handleGameFinished = useCallback(
     (winnerId?: string) => {
       if (winnerId) {
-        setSubmitResult({
-          success: true,
-          message: "Game finished!",
-          is_winner: false, // This will be determined by the actual game logic
-        });
         // Refresh game data so status becomes 'finished' and UI renders FinishedGame
         refetchGame();
       }
     },
-    [setSubmitResult, refetchGame],
+    [refetchGame],
   );
 
   const handleError = useCallback(
     (errorMessage?: string) => {
-      setSubmitResult({
-        success: false,
+      showToast({
+        title: "Game Error",
         message: errorMessage || "An error occurred during the game.",
-        is_winner: false,
+        variant: "error",
       });
     },
-    [setSubmitResult],
+    [showToast],
   );
 
   // WebSocket message handler with type guards
@@ -431,7 +420,6 @@ export const useGameRoomWebSocket = ({
   const handleLanguageChange = useCallback(
     (newLanguage: SupportedLanguage) => {
       setIsSubmitting(false);
-      setSubmitResult(null);
       setSelectedLanguage(newLanguage);
 
       if (codeBroadcastTimerRef.current) {
@@ -448,13 +436,7 @@ export const useGameRoomWebSocket = ({
         }
       }
     },
-    [
-      game?.problem,
-      setMyCode,
-      setIsSubmitting,
-      setSubmitResult,
-      setSelectedLanguage,
-    ],
+    [game?.problem, setMyCode, setIsSubmitting, setSelectedLanguage],
   );
 
   // Code submission handler
@@ -462,7 +444,6 @@ export const useGameRoomWebSocket = ({
     if (!game) return;
 
     setIsSubmitting(true);
-    setSubmitResult(null);
 
     try {
       const result = await matchApi.submitSolution(
@@ -472,27 +453,17 @@ export const useGameRoomWebSocket = ({
       );
 
       if (!result.success) {
-        setSubmitResult({
-          success: false,
+        showToast({
+          title: "Submission Failed",
           message: result.message || "Submission failed.",
-          is_winner: false,
+          variant: "error",
         });
-      } else if (result.data.success) {
-        setSubmitResult({
-          success: true,
-          message:
-            result.data.message ||
-            (result.data.is_winner
-              ? "Congratulations! You won!"
-              : "Solution submitted successfully."),
-          is_winner: result.data.is_winner || false,
-        });
-      } else {
-        setSubmitResult({
-          success: false,
+      } else if (!result.data.success) {
+        showToast({
+          title: "Evaluation Failed",
           message:
             result.data.message || "Solution did not pass the judge cases.",
-          is_winner: false,
+          variant: "error",
         });
       }
     } catch (error) {
@@ -504,22 +475,15 @@ export const useGameRoomWebSocket = ({
         matchId,
         language: selectedLanguage,
       });
-      setSubmitResult({
-        success: false,
+      showToast({
+        title: "Network Error",
         message: "Network error occurred.",
-        is_winner: false,
+        variant: "error",
       });
     } finally {
       setIsSubmitting(false);
     }
-  }, [
-    game,
-    matchId,
-    myCode,
-    selectedLanguage,
-    setIsSubmitting,
-    setSubmitResult,
-  ]);
+  }, [game, matchId, myCode, selectedLanguage, setIsSubmitting, showToast]);
 
   return {
     handleCodeChange,
