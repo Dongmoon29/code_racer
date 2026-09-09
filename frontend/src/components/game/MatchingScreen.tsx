@@ -1,293 +1,80 @@
-import React, { memo, useState, useRef, useEffect } from 'react';
+import React, { memo, useState } from 'react';
 import { useRouter } from 'next/router';
+import { ArrowRight, Users, Trophy, User } from 'lucide-react';
 import MatchingLoader from './MatchingLoader';
 import { ConnectingCard, ErrorCard, FoundCard } from './MatchingCards';
 import { MATCHING_STATE } from '@/constants';
 import { useMatchmaking } from '@/hooks/useMatchmaking';
 import { type Difficulty } from './DifficultySelector';
-import { Users, Trophy, User, ChevronDown, ChevronUp } from 'lucide-react';
+
+const modes = [
+  { value: 'casual_pvp', title: 'Casual race', description: 'Compete without affecting your rating.', icon: Users },
+  { value: 'ranked_pvp', title: 'Ranked race', description: 'Challenge a rival and climb the ladder.', icon: Trophy },
+  { value: 'single', title: 'Solo practice', description: 'Build confidence at your own pace.', icon: User },
+] as const;
+const difficulties: Difficulty[] = ['Easy', 'Medium', 'Hard'];
 
 interface MatchingScreenProps {
   onMatchFound?: (gameId: string) => void;
 }
 
-export const MatchingScreen: React.FC<MatchingScreenProps> = memo(
-  ({ onMatchFound }) => {
-    const router = useRouter();
-    const {
-      matchingState,
-      selectedDifficulty,
-      waitTimeSeconds,
-      error,
-      startMatching,
-      cancelMatching,
-      retryMatching,
-    } = useMatchmaking({ onMatchFound });
+export const MatchingScreen: React.FC<MatchingScreenProps> = memo(({ onMatchFound }) => {
+  const router = useRouter();
+  const { matchingState, selectedDifficulty, waitTimeSeconds, error, startMatching, cancelMatching, retryMatching } =
+    useMatchmaking({ onMatchFound });
+  const [mode, setMode] = useState<(typeof modes)[number]['value']>('casual_pvp');
+  const [difficulty, setDifficulty] = useState<Difficulty>('Easy');
 
-    // New controls: game mode and difficulty dropdowns
-    const [mode, setMode] = useState<'casual_pvp' | 'ranked_pvp' | 'single'>(
-      'casual_pvp'
-    );
-    const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>(
-      'Easy'
-    );
-    const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
-    const [isDifficultyDropdownOpen, setIsDifficultyDropdownOpen] =
-      useState(false);
-    const modeDropdownRef = useRef<HTMLDivElement>(null);
-    const difficultyDropdownRef = useRef<HTMLDivElement>(null);
+  if (matchingState === MATCHING_STATE.CONNECTING) return <ConnectingCard />;
+  if (matchingState === MATCHING_STATE.ERROR) {
+    return <ErrorCard message={error || undefined} onRetry={retryMatching} onBack={() => router.push('/dashboard')} />;
+  }
+  if (matchingState === MATCHING_STATE.FOUND) return <FoundCard />;
+  if (matchingState === MATCHING_STATE.SEARCHING && selectedDifficulty) {
+    return <MatchingLoader difficulty={selectedDifficulty} waitTimeSeconds={waitTimeSeconds} onCancel={cancelMatching} />;
+  }
 
-    // Close dropdowns when clicking outside
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (
-          modeDropdownRef.current &&
-          !modeDropdownRef.current.contains(event.target as Node)
-        ) {
-          setIsModeDropdownOpen(false);
-        }
-        if (
-          difficultyDropdownRef.current &&
-          !difficultyDropdownRef.current.contains(event.target as Node)
-        ) {
-          setIsDifficultyDropdownOpen(false);
-        }
-      };
-
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }, []);
-
-    // Connecting state
-    if (matchingState === MATCHING_STATE.CONNECTING) {
-      return <ConnectingCard />;
-    }
-
-    // Error state
-    if (matchingState === MATCHING_STATE.ERROR) {
-      return (
-        <ErrorCard
-          message={error || undefined}
-          onRetry={retryMatching}
-          onBack={() => router.push('/dashboard')}
-        />
-      );
-    }
-
-    // Found state (briefly show confirmation)
-    if (matchingState === MATCHING_STATE.FOUND) {
-      return <FoundCard />;
-    }
-
-    // Searching state
-    if (matchingState === MATCHING_STATE.SEARCHING && selectedDifficulty) {
-      return (
-        <MatchingLoader
-          difficulty={selectedDifficulty}
-          waitTimeSeconds={waitTimeSeconds}
-          onCancel={cancelMatching}
-        />
-      );
-    }
-
-    // Mode options with icons
-    const modeOptions: Array<{
-      value: typeof mode;
-      title: string;
-      subtitle: string;
-      icon: React.ReactNode;
-      color: string;
-    }> = [
-      {
-        value: 'casual_pvp',
-        title: 'Casual PvP',
-        subtitle: 'Friendly race, no rating',
-        icon: <Users className="w-5 h-5" />,
-        color: 'text-[var(--green-11)]',
-      },
-      {
-        value: 'ranked_pvp',
-        title: 'Ranked PvP',
-        subtitle: 'Climb the leaderboard',
-        icon: <Trophy className="w-5 h-5" />,
-        color: 'text-[var(--accent-11)]',
-      },
-      {
-        value: 'single',
-        title: 'Single',
-        subtitle: 'Solo time attack',
-        icon: <User className="w-5 h-5" />,
-        color: 'text-[var(--amber-11)]',
-      },
-    ];
-
-    // Difficulty options
-    const difficultyOptions: Array<{
-      value: Difficulty;
-      label: string;
-      color: string;
-    }> = [
-      {
-        value: 'Easy',
-        label: 'Easy',
-        color: 'text-[var(--green-11)]',
-      },
-      {
-        value: 'Medium',
-        label: 'Medium',
-        color: 'text-[var(--amber-11)]',
-      },
-      {
-        value: 'Hard',
-        label: 'Hard',
-        color: 'text-[var(--red-11)]',
-      },
-    ];
-
-    const selectedMode = modeOptions.find((m) => m.value === mode)!;
-    const selectedDifficultyOption = difficultyOptions.find(
-      (d) => d.value === difficulty
-    )!;
-
-    // Button styles (chess.com style)
-    const buttonBaseClass =
-      'cursor-pointer w-full rounded-md border bg-[var(--color-panel)] border-[var(--gray-6)] px-4 py-3 flex items-center justify-between text-[var(--color-text)] hover:bg-[var(--gray-4)] transition-colors';
-    const dropdownButtonClass =
-      'cursor-pointer w-full rounded-md border bg-[var(--color-panel)] border-[var(--gray-6)] px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--gray-4)] transition-colors text-left';
-    const selectedButtonClass = `${buttonBaseClass} border-[var(--green-6)]`;
-    const startGameButtonClass =
-      'cursor-pointer w-full rounded-md bg-[var(--green-9)] hover:bg-[var(--green-10)] text-white font-semibold py-3 px-4 transition-colors disabled:opacity-60 disabled:cursor-not-allowed';
-
-    return (
-      <div className="max-w-md mx-auto space-y-3">
-        {/* Mode Dropdown */}
-        <div ref={modeDropdownRef}>
-          <button
-            type="button"
-            onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
-            className={
-              isModeDropdownOpen ? selectedButtonClass : buttonBaseClass
-            }
-            disabled={matchingState !== MATCHING_STATE.IDLE}
-          >
-            <div className="flex items-center gap-3">
-              <div className={selectedMode.color}>{selectedMode.icon}</div>
-              <div className="text-left">
-                <div className="font-medium">{selectedMode.title}</div>
-                <div className="text-xs text-[var(--gray-11)]">
-                  {selectedMode.subtitle}
-                </div>
-              </div>
-            </div>
-            {isModeDropdownOpen ? (
-              <ChevronUp className="w-5 h-5 text-[var(--gray-11)]" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-[var(--gray-11)]" />
-            )}
-          </button>
-
-          {isModeDropdownOpen && (
-            <div className="mt-1 bg-[var(--color-panel)] rounded-md overflow-hidden space-y-2">
-              {modeOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    setMode(option.value);
-                    setIsModeDropdownOpen(false);
-                  }}
-                  className={`${dropdownButtonClass} ${
-                    mode === option.value
-                      ? 'bg-[var(--gray-4)] border-[var(--green-6)]'
-                      : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={option.color}>{option.icon}</div>
-                    <div className="text-left flex-1">
-                      <div className="font-medium">{option.title}</div>
-                      <div className="text-xs text-[var(--gray-11)]">
-                        {option.subtitle}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-11)]">Play your way</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-tight">Ready for your next challenge?</h2>
+        <p className="mt-2 text-sm font-normal text-[var(--gray-11)]">Choose a mode and difficulty to get started.</p>
+      </div>
+      <fieldset>
+        <legend className="mb-3 text-sm font-semibold">Game mode</legend>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {modes.map(({ value, title, description, icon: Icon }) => (
+            <label key={value} className="relative cursor-pointer">
+              <input type="radio" name="game-mode" value={value} checked={mode === value} onChange={() => setMode(value)} className="peer sr-only" />
+              <span className="flex h-full flex-col rounded-xl border border-[var(--gray-6)] p-4 transition-colors hover:bg-[var(--gray-3)] peer-checked:border-[var(--accent-8)] peer-checked:bg-[var(--accent-3)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--accent-9)]">
+                <Icon className="mb-4 h-5 w-5 text-[var(--accent-11)]" />
+                <span className="text-sm font-semibold">{title}</span>
+                <span className="mt-2 text-xs font-normal leading-5 text-[var(--gray-11)]">{description}</span>
+              </span>
+            </label>
+          ))}
         </div>
-
-        {/* Difficulty Dropdown */}
-        <div ref={difficultyDropdownRef}>
-          <button
-            type="button"
-            onClick={() =>
-              setIsDifficultyDropdownOpen(!isDifficultyDropdownOpen)
-            }
-            className={
-              isDifficultyDropdownOpen ? selectedButtonClass : buttonBaseClass
-            }
-            disabled={matchingState !== MATCHING_STATE.IDLE}
-          >
-            <div className="flex items-center gap-3">
-              <div className={selectedDifficultyOption.color}>
-                <div className="w-2 h-2 rounded-full bg-current"></div>
-              </div>
-              <div className="font-medium">
-                {selectedDifficultyOption.label}
-              </div>
-            </div>
-            {isDifficultyDropdownOpen ? (
-              <ChevronUp className="w-5 h-5 text-[var(--gray-11)]" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-[var(--gray-11)]" />
-            )}
-          </button>
-
-          {isDifficultyDropdownOpen && (
-            <div className="mt-1 bg-[var(--color-panel)] rounded-md overflow-hidden space-y-2">
-              {difficultyOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    setDifficulty(option.value);
-                    setIsDifficultyDropdownOpen(false);
-                  }}
-                  className={`${dropdownButtonClass} ${
-                    difficulty === option.value
-                      ? 'bg-[var(--gray-4)] border-[var(--green-6)]'
-                      : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={option.color}>
-                      <div className="w-2 h-2 rounded-full bg-current"></div>
-                    </div>
-                    <div className="font-medium">{option.label}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Start Game Button */}
-        <button
-          type="button"
-          className={startGameButtonClass}
-          disabled={matchingState !== MATCHING_STATE.IDLE}
-          onClick={() => startMatching(difficulty, mode)}
-        >
-          Start Game
+      </fieldset>
+      <div className="flex flex-col gap-5 border-t border-[var(--gray-6)] pt-5 xl:flex-row xl:items-end xl:justify-between">
+        <fieldset>
+          <legend className="mb-3 text-sm font-semibold">Difficulty</legend>
+          <div className="flex gap-2">
+            {difficulties.map((value) => (
+              <label key={value} className="flex-1 cursor-pointer">
+                <input type="radio" name="game-difficulty" value={value} checked={difficulty === value} onChange={() => setDifficulty(value)} className="peer sr-only" />
+                <span className="block rounded-lg border border-[var(--gray-6)] px-4 py-2.5 text-center text-sm transition-colors hover:bg-[var(--gray-3)] peer-checked:border-[var(--accent-8)] peer-checked:bg-[var(--accent-3)] peer-checked:text-[var(--accent-11)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--accent-9)]">{value}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <button type="button" onClick={() => startMatching(difficulty, mode)} disabled={matchingState !== MATCHING_STATE.IDLE} className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-3 rounded-xl bg-[var(--accent-9)] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-10)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-9)] disabled:cursor-not-allowed disabled:opacity-60">
+          {mode === 'single' ? 'Start practice' : 'Find a match'} <ArrowRight className="h-4 w-4" />
         </button>
       </div>
-    );
-  }
-);
+    </div>
+  );
+});
 
 MatchingScreen.displayName = 'MatchingScreen';
-
 export default MatchingScreen;
