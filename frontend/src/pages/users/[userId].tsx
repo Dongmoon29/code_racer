@@ -12,7 +12,7 @@ import { MatchingScreen } from "@/components/game/MatchingScreen";
 import { Loader } from "@/components/ui/Loader";
 import { useAuthStore } from "@/stores/authStore";
 import { FollowersList, FollowingList } from "@/components/profile/FollowLists";
-import { LAYOUT_PADDING, LAYOUT_WIDTH } from "@/lib/styles";
+import { LAYOUT_PADDING } from "@/lib/styles";
 
 interface UserInfo {
   id: string;
@@ -119,7 +119,7 @@ const UserProfilePage = () => {
       </Head>
 
       <div className="py-3 sm:py-6">
-        <div className={LAYOUT_WIDTH.CONTAINER}>
+        <div className="mx-auto w-full max-w-4xl">
           <div className="mb-8">
             {!isOwnProfile && (
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-11)]">Racer profile</p>
@@ -127,7 +127,7 @@ const UserProfilePage = () => {
             <h1 className="mt-2 break-words text-3xl font-bold tracking-tight">{isOwnProfile ? `Welcome back, ${user.name}.` : user.name}</h1>
             <p className="mt-2 text-sm font-normal text-[var(--gray-11)]">{isOwnProfile ? 'Pick your next challenge and revisit your recent races.' : 'Explore recent races and connect with this developer.'}</p>
           </div>
-          <div className="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)] xl:items-stretch">
+          <div className="grid gap-6 xl:grid-cols-2 xl:items-stretch">
             <div className="min-w-0">
               {isOwnProfile ? (
                 <ProfileSidebar

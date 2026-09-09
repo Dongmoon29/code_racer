@@ -43,20 +43,22 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(({ onMatchFoun
       </div>
       <fieldset>
         <legend className="mb-3 text-sm font-semibold">Game mode</legend>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3">
           {modes.map(({ value, title, description, icon: Icon }) => (
             <label key={value} className="relative cursor-pointer">
               <input type="radio" name="game-mode" value={value} checked={mode === value} onChange={() => setMode(value)} className="peer sr-only" />
-              <span className="flex h-full flex-col rounded-xl border border-[var(--gray-6)] p-4 transition-colors hover:bg-[var(--gray-3)] peer-checked:border-[var(--accent-8)] peer-checked:bg-[var(--accent-3)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--accent-9)]">
-                <Icon className="mb-4 h-5 w-5 text-[var(--accent-11)]" />
-                <span className="text-sm font-semibold">{title}</span>
-                <span className="mt-2 text-xs font-normal leading-5 text-[var(--gray-11)]">{description}</span>
+              <span className="flex h-full items-center gap-3 rounded-xl border border-[var(--gray-6)] p-4 transition-colors hover:bg-[var(--gray-3)] peer-checked:border-[var(--accent-8)] peer-checked:bg-[var(--accent-3)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--accent-9)]">
+                <Icon className="h-5 w-5 shrink-0 text-[var(--accent-11)]" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold">{title}</span>
+                  <span className="mt-1 block text-xs font-normal leading-5 text-[var(--gray-11)]">{description}</span>
+                </span>
               </span>
             </label>
           ))}
         </div>
       </fieldset>
-      <div className="mt-auto flex flex-col gap-5 border-t border-[var(--gray-6)] pt-5 xl:flex-row xl:items-end xl:justify-between">
+      <div className="mt-auto flex flex-col gap-5 border-t border-[var(--gray-6)] pt-5">
         <fieldset>
           <legend className="mb-3 text-sm font-semibold">Difficulty</legend>
           <div className="flex gap-2">
