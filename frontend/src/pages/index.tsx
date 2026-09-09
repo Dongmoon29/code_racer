@@ -16,7 +16,6 @@ import {
   Terminal,
   Trophy,
   Users,
-  Zap,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { FEATURES } from "@/lib/features";
@@ -114,11 +113,6 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
 
         <section className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-14 px-5 py-16 sm:px-8 lg:grid-cols-[1.02fr_0.98fr] lg:px-10 lg:py-20">
           <motion.div initial="hidden" animate="visible" variants={reveal}>
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
-              <Radio className="h-3.5 w-3.5" />
-              Real-time coding arena
-            </div>
-
             <h1 className="max-w-4xl text-5xl font-black leading-[0.95] tracking-[-0.055em] sm:text-6xl lg:text-7xl xl:text-[5.4rem]">
               Think fast.
               <span className="mt-2 block bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-400 bg-clip-text text-transparent">
@@ -168,77 +162,20 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
             initial={{ opacity: 0, scale: 0.96, y: 22 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
-            className="relative mx-auto w-full max-w-[610px]"
+            className="relative mx-auto aspect-square w-full max-w-[580px]"
           >
-            <div className="absolute -inset-8 -z-10 rounded-full bg-gradient-to-br from-cyan-400/10 to-violet-500/20 blur-3xl" />
-            <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#101318]/90 shadow-[0_35px_100px_rgba(0,0,0,0.55)] backdrop-blur-xl">
-              <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                <div className="flex items-center gap-2.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                </div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-                  <Radio className="h-3.5 w-3.5 text-emerald-400" /> MATCH LIVE
-                </div>
-              </div>
-
-              <div className="relative h-52 overflow-hidden border-b border-white/10 sm:h-64">
-                <Image
-                  src="/code_racer_hero2.webp"
-                  alt="CodeRacer robot driving a race car"
-                  fill
-                  priority
-                  className="object-contain object-center p-3"
-                  sizes="(max-width: 1024px) 90vw, 560px"
-                />
-                <div className="absolute left-4 top-4 rounded-full border border-violet-400/25 bg-violet-500/15 px-3 py-1 text-xs font-bold text-violet-200 backdrop-blur-md">
-                  Medium
-                </div>
-                <div className="absolute bottom-4 right-4 rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-right backdrop-blur-md">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Time left</p>
-                  <p className="font-mono text-lg font-bold text-white">08:42</p>
-                </div>
-              </div>
-
-              <div className="grid sm:grid-cols-[1fr_auto]">
-                <div className="border-b border-white/10 p-5 sm:border-b-0 sm:border-r">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Current challenge</p>
-                      <p className="mt-1 text-base font-bold">Valid Parentheses</p>
-                    </div>
-                    <Braces className="h-5 w-5 text-cyan-400" />
-                  </div>
-                  <div className="rounded-xl border border-white/[0.07] bg-[#090c10] p-4 font-mono text-xs leading-6 text-slate-400 sm:text-sm">
-                    <p><span className="text-violet-400">function</span>{" "}<span className="text-cyan-300">isValid</span>(input) {"{"}</p>
-                    <p className="pl-4 text-slate-500">
-                      {"// beat the clock..."}
-                    </p>
-                    <p>{"}"}</p>
-                  </div>
-                </div>
-
-                <div className="flex min-w-40 flex-row justify-around gap-5 p-5 sm:flex-col sm:justify-center">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">You</p>
-                    <p className="mt-1 flex items-center gap-2 text-sm font-bold"><span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]" />Compiling</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Opponent</p>
-                    <p className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-300"><span className="h-2 w-2 rounded-full bg-violet-400" />Coding</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute -bottom-5 -left-3 flex items-center gap-3 rounded-xl border border-emerald-400/20 bg-[#101914]/95 px-4 py-3 shadow-xl backdrop-blur-xl sm:-left-8">
-              <div className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-400/10"><Zap className="h-4 w-4 text-emerald-400" /></div>
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-emerald-300/70">Judge result</p>
-                <p className="text-sm font-bold text-emerald-300">3 / 3 passed</p>
-              </div>
-            </div>
+            <div
+              aria-hidden="true"
+              className="absolute inset-[12%] rounded-full bg-gradient-to-br from-orange-400/20 via-pink-500/20 to-violet-600/25 blur-3xl"
+            />
+            <Image
+              src="/code_racer_hero2.webp"
+              alt="CodeRacer robot driving a race car"
+              fill
+              priority
+              className="object-contain drop-shadow-[0_35px_60px_rgba(124,58,237,0.22)]"
+              sizes="(max-width: 1024px) 90vw, 580px"
+            />
           </motion.div>
         </section>
 
