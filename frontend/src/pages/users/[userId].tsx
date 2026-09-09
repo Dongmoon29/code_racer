@@ -121,12 +121,14 @@ const UserProfilePage = () => {
       <div className="py-3 sm:py-6">
         <div className={LAYOUT_WIDTH.CONTAINER}>
           <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-11)]">{isOwnProfile ? 'Your arena' : 'Racer profile'}</p>
+            {!isOwnProfile && (
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-11)]">Racer profile</p>
+            )}
             <h1 className="mt-2 break-words text-3xl font-bold tracking-tight">{isOwnProfile ? `Welcome back, ${user.name}.` : user.name}</h1>
             <p className="mt-2 text-sm font-normal text-[var(--gray-11)]">{isOwnProfile ? 'Pick your next challenge and revisit your recent races.' : 'Explore recent races and connect with this developer.'}</p>
           </div>
-          <div className="flex flex-col xl:flex-row gap-6">
-            <div className="xl:w-72 flex-shrink-0">
+          <div className="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)] xl:items-stretch">
+            <div className="min-w-0">
               {isOwnProfile ? (
                 <ProfileSidebar
                   user={user!}
@@ -142,13 +144,13 @@ const UserProfilePage = () => {
               )}
             </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="space-y-6">
-                {isOwnProfile && (
-                  <section className="rounded-2xl border border-[var(--gray-6)] bg-[var(--color-panel)] p-5 sm:p-6">
+            {isOwnProfile && (
+                  <section className="min-w-0 rounded-2xl border border-[var(--gray-6)] bg-[var(--color-panel)] p-5 sm:p-6 [&>div]:h-full">
                     <MatchingScreen onMatchFound={handleMatchFound} />
                   </section>
                 )}
+            <div className={`min-w-0 ${isOwnProfile ? "xl:col-start-2" : ""}`}>
+              <div className="space-y-6">
                 <nav aria-label="Profile sections" className="flex gap-1 overflow-x-auto border-b border-[var(--gray-6)]">
                   {(["games", "followers", "following"] as const).map((tab) => (
                     <button key={tab} type="button" aria-current={activeTab === tab ? "page" : undefined} onClick={() => setActiveTab(tab)} className={`shrink-0 cursor-pointer border-b-2 px-4 py-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent-9)] ${activeTab === tab ? "border-[var(--accent-9)] text-[var(--accent-11)]" : "border-transparent text-[var(--gray-11)] hover:text-[var(--gray-12)]"}`}>

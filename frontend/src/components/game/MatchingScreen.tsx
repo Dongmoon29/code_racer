@@ -35,7 +35,7 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(({ onMatchFoun
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-11)]">Play your way</p>
         <h2 className="mt-2 text-2xl font-bold tracking-tight">Ready for your next challenge?</h2>
@@ -56,7 +56,7 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(({ onMatchFoun
           ))}
         </div>
       </fieldset>
-      <div className="flex flex-col gap-5 border-t border-[var(--gray-6)] pt-5 xl:flex-row xl:items-end xl:justify-between">
+      <div className="mt-auto flex flex-col gap-5 border-t border-[var(--gray-6)] pt-5 xl:flex-row xl:items-end xl:justify-between">
         <fieldset>
           <legend className="mb-3 text-sm font-semibold">Difficulty</legend>
           <div className="flex gap-2">
