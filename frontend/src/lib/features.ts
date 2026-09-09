@@ -11,49 +11,49 @@ export interface Feature {
 export const FEATURES: Feature[] = [
   {
     id: 'real-time',
-    title: '🏎️ Real-time Racing',
+    title: 'Real-time racing',
     description:
-      'Race against friends or coders globally in lightning-fast coding sprints! Watch the competition unfold in real-time.',
+      'See your opponent progress live while every second raises the stakes.',
     icon: Clock,
     iconColor: 'text-blue-600 dark:text-blue-400',
   },
   {
     id: 'diverse-challenges',
-    title: '🎯 Challenging Tracks',
+    title: 'Focused challenges',
     description:
-      'Tackle diverse coding tracks from algorithms to data structures. Each problem is a new lap in your coding journey!',
+      'Practice algorithm and data-structure problems across three difficulty levels.',
     icon: Code,
     iconColor: 'text-indigo-600 dark:text-indigo-400',
   },
   {
     id: 'leaderboards',
-    title: '🏆 Championship Ladder',
+    title: 'Competitive ladder',
     description:
-      'Climb the championship ladder! Track your racing stats, earn victory points, and become the ultimate Code Racer.',
+      'Turn ranked wins into rating gains and track your place on the leaderboard.',
     icon: Trophy,
     iconColor: 'text-purple-600 dark:text-purple-400',
   },
   {
     id: 'multiplayer',
-    title: '🤝 Open Source Project',
+    title: 'Open source',
     description:
-      'CodeRacer is an open-source project! Contribute to the codebase, suggest features, or help improve the platform. Join our community of developers building the future of competitive coding!',
+      'Inspect the codebase, suggest an improvement, or help build the next feature.',
     icon: Users,
     iconColor: 'text-green-600 dark:text-green-400',
   },
   {
     id: 'skill-improvement',
-    title: '⚡ Speed Training',
+    title: 'Fast feedback',
     description:
-      'Boost your coding velocity through intense racing sessions. Fast feedback and competitive practice make you unstoppable!',
+      'Run against judge cases and get clear results without leaving the arena.',
     icon: Zap,
     iconColor: 'text-red-600 dark:text-red-400',
   },
   {
     id: 'multiple-languages',
-    title: '🌍 Multi-Language Circuit',
+    title: 'Your language, your pace',
     description:
-      'Choose your racing machine! Support for Python, JavaScript, Java, Go, and more. Race in your favorite language!',
+      'Solve every challenge in JavaScript, Python, or Go with tailored starter code.',
     icon: Code,
     iconColor: 'text-yellow-600 dark:text-yellow-400',
   },

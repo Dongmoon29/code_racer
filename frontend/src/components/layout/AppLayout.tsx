@@ -24,6 +24,7 @@ export default function AppLayout({
   const { isFullscreen } = useFullscreen();
   const router = useRouter();
   const isGamePage = router.pathname.startsWith('/game');
+  const isHomePage = router.pathname === '/';
 
   // 인증 및 권한 체크
   const authGuard = useAuthGuard({
@@ -63,7 +64,11 @@ export default function AppLayout({
     
     // 일반 public 페이지는 기존 방식 유지
     return (
-      <div className="min-h-screen flex flex-col">
+      <div
+        className={`min-h-screen flex flex-col ${
+          isHomePage ? 'dark bg-[#080a0d]' : ''
+        }`}
+      >
         {showHeader && !isFullscreen && <Header />}
         <main className="flex-grow">{children}</main>
       </div>
