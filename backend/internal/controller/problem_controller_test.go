@@ -26,6 +26,11 @@ func (m *MockProblemService) GetAllProblems() ([]*model.ProblemSummary, error) {
 	return args.Get(0).([]*model.ProblemSummary), args.Error(1)
 }
 
+func (m *MockProblemService) GetProblemsPage(page, limit int) ([]*model.ProblemSummary, int64, error) {
+	args := m.Called(page, limit)
+	return args.Get(0).([]*model.ProblemSummary), args.Get(1).(int64), args.Error(2)
+}
+
 func (m *MockProblemService) GetProblemByID(id uuid.UUID) (*model.ProblemDetail, error) {
 	args := m.Called(id)
 	return args.Get(0).(*model.ProblemDetail), args.Error(1)
@@ -465,7 +470,7 @@ func TestProblemController_GetProblemsWithPagination(t *testing.T) {
 	}
 
 	// 모의 서비스 설정
-	mockService.On("GetAllProblems").Return(problems, nil)
+	mockService.On("GetProblemsPage", 1, 10).Return(problems, int64(2), nil)
 
 	// 라우터 설정
 	router.GET("/problems/page", controller.GetProblemsWithPagination)
@@ -495,15 +500,15 @@ func TestProblemController_GetProblemsWithPagination(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
-func TestIsValidDifficulty(t *testing.T) {
+func TestDifficultyIsValid(t *testing.T) {
 	// 유효한 난이도 테스트
-	assert.True(t, isValidDifficulty("Easy"))
-	assert.True(t, isValidDifficulty("Medium"))
-	assert.True(t, isValidDifficulty("Hard"))
+	assert.True(t, model.Difficulty("Easy").IsValid())
+	assert.True(t, model.Difficulty("Medium").IsValid())
+	assert.True(t, model.Difficulty("Hard").IsValid())
 
 	// 유효하지 않은 난이도 테스트
-	assert.False(t, isValidDifficulty("easy"))
-	assert.False(t, isValidDifficulty("MEDIUM"))
-	assert.False(t, isValidDifficulty(""))
-	assert.False(t, isValidDifficulty("Invalid"))
+	assert.False(t, model.Difficulty("easy").IsValid())
+	assert.False(t, model.Difficulty("MEDIUM").IsValid())
+	assert.False(t, model.Difficulty("").IsValid())
+	assert.False(t, model.Difficulty("Invalid").IsValid())
 }

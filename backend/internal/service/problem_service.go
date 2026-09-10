@@ -17,6 +17,7 @@ import (
 // ProblemService represents the new normalized problem service interface
 type ProblemService interface {
 	GetAllProblems() ([]*model.ProblemSummary, error)
+	GetProblemsPage(page, limit int) ([]*model.ProblemSummary, int64, error)
 	GetProblemByID(id uuid.UUID) (*model.ProblemDetail, error)
 	CreateProblem(req *model.CreateProblemRequest) (*model.ProblemDetail, error)
 	UpdateProblem(id uuid.UUID, req *model.UpdateProblemRequest) (*model.ProblemDetail, error)
@@ -50,12 +51,17 @@ func (s *problemService) GetAllProblems() ([]*model.ProblemSummary, error) {
 		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to fetch problems")
 	}
 
-	var summaries []*model.ProblemSummary
-	for _, problem := range problems {
-		summaries = append(summaries, problem.ToSummaryResponse())
+	return toProblemSummaries(problems), nil
+}
+
+func (s *problemService) GetProblemsPage(page, limit int) ([]*model.ProblemSummary, int64, error) {
+	problems, total, err := s.problemRepo.FindPage((page-1)*limit, limit)
+	if err != nil {
+		s.logger.Error().Err(err).Int("page", page).Int("limit", limit).Msg("Failed to fetch problem page")
+		return nil, 0, apperr.Wrap(err, apperr.CodeInternal, "Failed to fetch problems")
 	}
 
-	return summaries, nil
+	return toProblemSummaries(problems), total, nil
 }
 
 func (s *problemService) GetProblemByID(id uuid.UUID) (*model.ProblemDetail, error) {
@@ -73,49 +79,9 @@ func (s *problemService) GetProblemByID(id uuid.UUID) (*model.ProblemDetail, err
 }
 
 func (s *problemService) CreateProblem(req *model.CreateProblemRequest) (*model.ProblemDetail, error) {
-	paramTypes, returnType, err := model.NormalizeFunctionContract(req.FunctionName, req.IOSchema.ParamTypes, req.IOSchema.ReturnType)
+	problem, err := s.problemFromRequest(req)
 	if err != nil {
-		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid function contract")
-	}
-	schema := model.CreateIOSchemaRequest{ParamTypes: paramTypes, ReturnType: returnType}
-	// Validate test cases
-	if err := s.ValidateTestCases(req.TestCases, schema); err != nil {
-		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid test cases")
-	}
-
-	// Convert Examples
-	var examples []model.Example
-	for _, ex := range req.Examples {
-		examples = append(examples, model.Example{
-			Input:       ex.Input,
-			Output:      ex.Output,
-			Explanation: ex.Explanation,
-		})
-	}
-
-	// Convert TestCases
-	var testCases []model.TestCase
-	for _, tc := range req.TestCases {
-		testCases = append(testCases, model.TestCase{
-			Input:          tc.Input,
-			ExpectedOutput: tc.ExpectedOutput,
-		})
-	}
-
-	problem := &model.Problem{
-		Title:        req.Title,
-		Description:  req.Description,
-		Constraints:  req.Constraints,
-		Difficulty:   model.Difficulty(req.Difficulty),
-		FunctionName: req.FunctionName,
-		TimeLimit:    req.TimeLimit,
-		MemoryLimit:  req.MemoryLimit,
-		Examples:     examples,
-		TestCases:    testCases,
-		IOSchema: model.IOSchema{
-			ParamTypes: schema.ParamTypes,
-			ReturnType: schema.ReturnType,
-		},
+		return nil, err
 	}
 
 	if err := s.problemRepo.Create(problem); err != nil {
@@ -138,50 +104,11 @@ func (s *problemService) UpdateProblem(id uuid.UUID, req *model.UpdateProblemReq
 		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load problem")
 	}
 
-	paramTypes, returnType, err := model.NormalizeFunctionContract(req.FunctionName, req.IOSchema.ParamTypes, req.IOSchema.ReturnType)
+	definition, err := s.problemFromRequest((*model.CreateProblemRequest)(req))
 	if err != nil {
-		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid function contract")
+		return nil, err
 	}
-	schema := model.CreateIOSchemaRequest{ParamTypes: paramTypes, ReturnType: returnType}
-
-	// Validate test cases
-	if err := s.ValidateTestCases(req.TestCases, schema); err != nil {
-		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid test cases")
-	}
-
-	// Convert Examples
-	var examples []model.Example
-	for _, ex := range req.Examples {
-		examples = append(examples, model.Example{
-			Input:       ex.Input,
-			Output:      ex.Output,
-			Explanation: ex.Explanation,
-		})
-	}
-
-	// Convert TestCases
-	var testCases []model.TestCase
-	for _, tc := range req.TestCases {
-		testCases = append(testCases, model.TestCase{
-			Input:          tc.Input,
-			ExpectedOutput: tc.ExpectedOutput,
-		})
-	}
-
-	// Update fields
-	existingProblem.Title = req.Title
-	existingProblem.Description = req.Description
-	existingProblem.Constraints = req.Constraints
-	existingProblem.Difficulty = model.Difficulty(req.Difficulty)
-	existingProblem.FunctionName = req.FunctionName
-	existingProblem.TimeLimit = req.TimeLimit
-	existingProblem.MemoryLimit = req.MemoryLimit
-	existingProblem.Examples = examples
-	existingProblem.TestCases = testCases
-	existingProblem.IOSchema = model.IOSchema{
-		ParamTypes: schema.ParamTypes,
-		ReturnType: schema.ReturnType,
-	}
+	applyProblemDefinition(existingProblem, definition)
 
 	if err := s.problemRepo.Update(existingProblem); err != nil {
 		s.logger.Error().Err(err).Str("problemID", id.String()).Msg("Failed to update problem")
@@ -219,12 +146,7 @@ func (s *problemService) GetProblemsByDifficulty(difficulty string) ([]*model.Pr
 		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to fetch problems")
 	}
 
-	var summaries []*model.ProblemSummary
-	for _, problem := range problems {
-		summaries = append(summaries, problem.ToSummaryResponse())
-	}
-
-	return summaries, nil
+	return toProblemSummaries(problems), nil
 }
 
 func (s *problemService) SearchProblems(query string) ([]*model.ProblemSummary, error) {
@@ -234,12 +156,72 @@ func (s *problemService) SearchProblems(query string) ([]*model.ProblemSummary, 
 		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to search problems")
 	}
 
-	var summaries []*model.ProblemSummary
-	for _, problem := range problems {
-		summaries = append(summaries, problem.ToSummaryResponse())
+	return toProblemSummaries(problems), nil
+}
+
+func (s *problemService) problemFromRequest(req *model.CreateProblemRequest) (*model.Problem, error) {
+	functionName := strings.TrimSpace(req.FunctionName)
+	paramTypes, returnType, err := model.NormalizeFunctionContract(functionName, req.IOSchema.ParamTypes, req.IOSchema.ReturnType)
+	if err != nil {
+		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid function contract")
+	}
+	schema := model.CreateIOSchemaRequest{ParamTypes: paramTypes, ReturnType: returnType}
+	if err := s.ValidateTestCases(req.TestCases, schema); err != nil {
+		return nil, apperr.Wrap(err, apperr.CodeBadRequest, "Invalid test cases")
 	}
 
-	return summaries, nil
+	examples := make([]model.Example, len(req.Examples))
+	for i, example := range req.Examples {
+		examples[i] = model.Example{
+			Input:       example.Input,
+			Output:      example.Output,
+			Explanation: example.Explanation,
+		}
+	}
+	testCases := make([]model.TestCase, len(req.TestCases))
+	for i, testCase := range req.TestCases {
+		testCases[i] = model.TestCase{
+			Input:          testCase.Input,
+			ExpectedOutput: testCase.ExpectedOutput,
+		}
+	}
+
+	return &model.Problem{
+		Title:        req.Title,
+		Description:  req.Description,
+		Constraints:  req.Constraints,
+		Difficulty:   model.Difficulty(req.Difficulty),
+		FunctionName: functionName,
+		TimeLimit:    req.TimeLimit,
+		MemoryLimit:  req.MemoryLimit,
+		Examples:     examples,
+		TestCases:    testCases,
+		IOSchema: model.IOSchema{
+			ParamTypes: paramTypes,
+			ReturnType: returnType,
+		},
+	}, nil
+}
+
+func applyProblemDefinition(problem, definition *model.Problem) {
+	problem.Title = definition.Title
+	problem.Description = definition.Description
+	problem.Constraints = definition.Constraints
+	problem.Difficulty = definition.Difficulty
+	problem.FunctionName = definition.FunctionName
+	problem.TimeLimit = definition.TimeLimit
+	problem.MemoryLimit = definition.MemoryLimit
+	problem.Examples = definition.Examples
+	problem.TestCases = definition.TestCases
+	problem.IOSchema = definition.IOSchema
+}
+
+func toProblemSummaries(problems []model.Problem) []*model.ProblemSummary {
+	summaries := make([]*model.ProblemSummary, len(problems))
+	for i := range problems {
+		summaries[i] = problems[i].ToSummaryResponse()
+	}
+	return summaries
 }
 
 func (s *problemService) ValidateTestCases(testCases []model.CreateTestCaseRequest, schema model.CreateIOSchemaRequest) error {

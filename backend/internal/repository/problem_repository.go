@@ -11,6 +11,7 @@ import (
 // ProblemRepository represents the new normalized problem repository interface
 type ProblemRepository interface {
 	FindAll() ([]model.Problem, error)
+	FindPage(offset, limit int) ([]model.Problem, int64, error)
 	FindByID(id uuid.UUID) (*model.Problem, error)
 	Create(problem *model.Problem) error
 	Update(problem *model.Problem) error
@@ -38,11 +39,31 @@ func NewProblemRepository(db *gorm.DB, logger logger.Logger) ProblemRepository {
 
 func (r *problemRepository) FindAll() ([]model.Problem, error) {
 	var problems []model.Problem
-	err := r.db.Order("created_at DESC").Find(&problems).Error
+	err := r.db.Order("created_at DESC").Order("id DESC").Find(&problems).Error
 	if err != nil {
 		return nil, err
 	}
 	return problems, nil
+}
+
+func (r *problemRepository) FindPage(offset, limit int) ([]model.Problem, int64, error) {
+	var (
+		problems []model.Problem
+		total    int64
+	)
+
+	if err := r.db.Model(&model.Problem{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := r.db.Order("created_at DESC").
+		Order("id DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&problems).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return problems, total, nil
 }
 
 func (r *problemRepository) FindByID(id uuid.UUID) (*model.Problem, error) {

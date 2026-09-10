@@ -5,7 +5,32 @@ import (
 
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestProblemService_ProblemFromRequestNormalizesContract(t *testing.T) {
+	s := &problemService{}
+	problem, err := s.problemFromRequest(&model.CreateProblemRequest{
+		Title:        "Example",
+		Description:  "description",
+		Constraints:  "constraints",
+		Difficulty:   "Easy",
+		FunctionName: " solve ",
+		TimeLimit:    1000,
+		MemoryLimit:  128,
+		Examples:     []model.CreateExampleRequest{{Input: "1", Output: "1"}},
+		TestCases:    []model.CreateTestCaseRequest{{Input: "[1]", ExpectedOutput: "1"}},
+		IOSchema: model.CreateIOSchemaRequest{
+			ParamTypes: []string{"number"},
+			ReturnType: "number",
+		},
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "solve", problem.FunctionName)
+	assert.Equal(t, []string{"int"}, problem.IOSchema.ParamTypes)
+	assert.Equal(t, "int", problem.IOSchema.ReturnType)
+}
 
 func TestProblemService_ValidateTestCases_SingleParam_UsesArgumentArray(t *testing.T) {
 	s := &problemService{}

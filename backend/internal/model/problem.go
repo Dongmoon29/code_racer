@@ -15,6 +15,18 @@ const (
 	DifficultyHard   Difficulty = "Hard"
 )
 
+// IsValid reports whether the difficulty is supported by matchmaking and the
+// problem API. Keeping this rule in the model prevents each transport from
+// maintaining its own list of accepted values.
+func (d Difficulty) IsValid() bool {
+	switch d {
+	case DifficultyEasy, DifficultyMedium, DifficultyHard:
+		return true
+	default:
+		return false
+	}
+}
+
 // ========================
 // Problem represents the main problem table
 // ========================

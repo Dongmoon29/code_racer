@@ -1282,7 +1282,7 @@ func (c *Client) handleStartMatchingMessage(msg map[string]interface{}) {
 		}
 		c.hub.logger.Info().Str("difficulty", difficulty).Str("userID", c.userID.String()).Msg("Extracted difficulty from message")
 
-		if c.isValidDifficulty(difficulty) {
+		if model.Difficulty(difficulty).IsValid() {
 			c.hub.logger.Info().Str("userID", c.userID.String()).Str("difficulty", difficulty).Msg("Creating match request")
 			matchReq := &MatchingRequest{
 				Client:     c,
@@ -1297,11 +1297,6 @@ func (c *Client) handleStartMatchingMessage(msg map[string]interface{}) {
 	} else {
 		c.hub.logger.Error().Interface("message", msg).Str("userID", c.userID.String()).Msg("Failed to extract difficulty from message")
 	}
-}
-
-// isValidDifficulty checks if the difficulty is valid
-func (c *Client) isValidDifficulty(difficulty string) bool {
-	return difficulty == "Easy" || difficulty == "Medium" || difficulty == "Hard"
 }
 
 // handleCancelMatchingMessage processes cancel matching messages

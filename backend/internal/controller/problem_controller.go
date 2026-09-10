@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -21,15 +20,6 @@ func NewProblemController(problemService service.ProblemService, logger logger.L
 	return &ProblemController{
 		problemService: problemService,
 		logger:         logger,
-	}
-}
-
-// logJSON logs any struct as JSON for debugging
-func (c *ProblemController) logJSON(data interface{}, msg string) {
-	if jsonData, err := json.MarshalIndent(data, "", "  "); err != nil {
-		c.logger.Error().Err(err).Msg("Failed to marshal data to JSON")
-	} else {
-		c.logger.Debug().RawJSON("data", jsonData).Msg(msg)
 	}
 }
 
@@ -66,12 +56,7 @@ func (c *ProblemController) GetProblemByID(ctx *gin.Context) {
 		problem.TestCases = []model.TestCase{}
 	}
 
-	// Log problem data as JSON for easy debugging
-	if problem != nil {
-		c.logJSON(problem, "Problem data loaded successfully")
-	} else {
-		c.logger.Warn().Str("problemID", id.String()).Msg("Problem is nil")
-	}
+	c.logger.Debug().Str("problemID", id.String()).Msg("Problem loaded successfully")
 
 	OK(ctx, problem)
 }
@@ -83,7 +68,7 @@ func (c *ProblemController) CreateProblem(ctx *gin.Context) {
 		return
 	}
 
-	if !isValidDifficulty(req.Difficulty) {
+	if !model.Difficulty(req.Difficulty).IsValid() {
 		BadRequest(ctx, "Invalid difficulty level. Must be one of: Easy, Medium, Hard")
 		return
 	}
@@ -119,7 +104,7 @@ func (c *ProblemController) UpdateProblem(ctx *gin.Context) {
 		return
 	}
 
-	if !isValidDifficulty(req.Difficulty) {
+	if !model.Difficulty(req.Difficulty).IsValid() {
 		BadRequest(ctx, "Invalid difficulty level. Must be one of: Easy, Medium, Hard")
 		return
 	}
@@ -163,7 +148,7 @@ func (c *ProblemController) GetProblemsByDifficulty(ctx *gin.Context) {
 		return
 	}
 
-	if !isValidDifficulty(difficulty) {
+	if !model.Difficulty(difficulty).IsValid() {
 		BadRequest(ctx, "Invalid difficulty level. Must be one of: Easy, Medium, Hard")
 		return
 	}
@@ -214,60 +199,21 @@ func (c *ProblemController) GetProblemsWithPagination(ctx *gin.Context) {
 		limit = 10
 	}
 
-	// Note: Currently using in-memory pagination for simplicity
-	// In production, pagination should be implemented at the database level
-	// for better performance with large datasets
-	problems, err := c.problemService.GetAllProblems()
+	problems, total, err := c.problemService.GetProblemsPage(page, limit)
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to get problems with pagination")
 		InternalError(ctx, "Failed to fetch problems")
 		return
 	}
 
-	// Simple pagination (should be handled at database level in practice)
-	total := len(problems)
-	start := (page - 1) * limit
-	end := start + limit
-
-	if start >= total {
-		ctx.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"data":    []interface{}{},
-			"pagination": gin.H{
-				"page":       page,
-				"limit":      limit,
-				"total":      total,
-				"totalPages": (total + limit - 1) / limit,
-			},
-		})
-		return
-	}
-
-	if end > total {
-		end = total
-	}
-
-	paginatedProblems := problems[start:end]
-
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    paginatedProblems,
+		"data":    problems,
 		"pagination": gin.H{
 			"page":       page,
 			"limit":      limit,
 			"total":      total,
-			"totalPages": (total + limit - 1) / limit,
+			"totalPages": (total + int64(limit) - 1) / int64(limit),
 		},
 	})
-}
-
-// isValidDifficulty checks if the difficulty value is valid
-func isValidDifficulty(difficulty string) bool {
-	validDifficulties := []string{"Easy", "Medium", "Hard"}
-	for _, valid := range validDifficulties {
-		if difficulty == valid {
-			return true
-		}
-	}
-	return false
 }
