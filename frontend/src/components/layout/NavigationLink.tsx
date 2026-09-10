@@ -17,18 +17,20 @@ interface NavigationLinkProps {
 
 export function NavigationLink({ item, isActive, isCollapsed }: NavigationLinkProps) {
   const linkClasses = cn(
-    'group flex items-center rounded-md text-sm font-medium w-full overflow-hidden transition-all duration-150',
-    isCollapsed ? 'justify-center px-2 py-2' : 'px-3 py-2',
+    'group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors duration-200 md:w-full md:flex-none md:text-sm',
+    isCollapsed
+      ? 'md:flex-row md:px-2 md:py-2.5'
+      : 'md:flex-row md:justify-start md:gap-3 md:px-3 md:py-2.5',
     isActive
-      ? 'bg-[var(--accent-3)] text-[var(--accent-11)] shadow-sm'
-      : 'text-[var(--gray-11)] hover:bg-[var(--gray-4)] hover:text-[var(--color-text)] hover:translate-x-1 hover:shadow-sm'
+      ? 'bg-[var(--accent-3)] text-[var(--accent-11)]'
+      : 'text-[var(--gray-11)] hover:bg-[var(--gray-3)] hover:text-[var(--color-text)]'
   );
 
   const iconWrapperClasses = cn(
-    'flex h-8 w-8 items-center justify-center rounded-md border border-transparent',
+    'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors md:h-9 md:w-9',
     isActive
-      ? 'bg-[var(--accent-4)] border-[var(--accent-7)] text-[var(--accent-11)]'
-      : 'bg-transparent group-hover:bg-[var(--gray-4)] group-hover:border-[var(--gray-6)]'
+      ? 'bg-[var(--accent-4)] text-[var(--accent-11)]'
+      : 'text-[var(--gray-10)] group-hover:text-[var(--color-text)]'
   );
 
   return (
@@ -36,11 +38,15 @@ export function NavigationLink({ item, isActive, isCollapsed }: NavigationLinkPr
       href={item.href}
       className={linkClasses}
       title={isCollapsed ? item.label : undefined}
+      aria-current={isActive ? 'page' : undefined}
     >
-      <span className={cn('flex items-center justify-center', !isCollapsed && 'mr-3')}>
-        <span className={iconWrapperClasses}>{item.icon}</span>
+      <span className={iconWrapperClasses}>{item.icon}</span>
+      <span className="max-w-full truncate md:hidden">
+        {item.label}
       </span>
-      {!isCollapsed && <span className="truncate">{item.label}</span>}
+      {!isCollapsed && (
+        <span className="hidden truncate md:block">{item.label}</span>
+      )}
     </Link>
   );
 }
