@@ -1,5 +1,5 @@
 # 빌더 스테이지
-FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS builder
 # 빌드 인자 설정
 ARG TARGETARCH
 ARG TARGETOS

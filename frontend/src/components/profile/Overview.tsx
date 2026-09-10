@@ -5,10 +5,9 @@ import {
   Briefcase,
   Code,
   Globe,
-  Github,
-  Linkedin,
   Star,
 } from 'lucide-react';
+import { GitHubIcon, LinkedInIcon } from '@/components/icons/BrandIcons';
 
 interface UserInfo {
   id: string;
@@ -125,7 +124,7 @@ const Overview: FC<OverviewProps> = ({ user }) => {
                   rel="noopener noreferrer"
                   className="flex items-center space-x-2 text-sm text-blue-600 hover:underline"
                 >
-                  <Github className="w-4 h-4" />
+                  <GitHubIcon className="w-4 h-4" />
                   <span>GitHub</span>
                 </a>
               )}
@@ -136,7 +135,7 @@ const Overview: FC<OverviewProps> = ({ user }) => {
                   rel="noopener noreferrer"
                   className="flex items-center space-x-2 text-sm text-blue-600 hover:underline"
                 >
-                  <Linkedin className="w-4 h-4" />
+                  <LinkedInIcon className="w-4 h-4" />
                   <span>LinkedIn</span>
                 </a>
               )}

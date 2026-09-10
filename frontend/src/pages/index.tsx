@@ -8,7 +8,6 @@ import {
   Braces,
   CheckCircle2,
   ChevronRight,
-  Github,
   Play,
   Radio,
   Sparkles,
@@ -17,6 +16,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
+import { GitHubIcon } from "@/components/icons/BrandIcons";
 import { useAuthStore } from "@/stores/authStore";
 import { FEATURES } from "@/lib/features";
 import { GitHubCommit } from "@/lib/github-api";
@@ -140,7 +140,7 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
                 rel="noopener noreferrer"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-6 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.08]"
               >
-                <Github className="h-4 w-4" />
+                <GitHubIcon className="h-4 w-4" />
                 View on GitHub
               </Link>
             </div>

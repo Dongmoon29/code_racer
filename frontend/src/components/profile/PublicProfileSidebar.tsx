@@ -5,11 +5,10 @@ import {
   Calendar,
   Star,
   Code,
-  Github,
-  Linkedin,
   Globe,
   Users,
 } from "lucide-react";
+import { GitHubIcon, LinkedInIcon } from "@/components/icons/BrandIcons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
@@ -201,7 +200,7 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
             rel="noopener noreferrer"
             className="flex items-center space-x-2 text-sm hover:underline break-all"
           >
-            <Github className="w-4 h-4" />
+            <GitHubIcon className="w-4 h-4" />
             <span>{user.github}</span>
           </a>
         )}
@@ -212,7 +211,7 @@ const PublicProfileSidebar: React.FC<PublicProfileSidebarProps> = ({
             rel="noopener noreferrer"
             className="flex items-center space-x-2 text-sm hover:underline break-all"
           >
-            <Linkedin className="w-4 h-4" />
+            <LinkedInIcon className="w-4 h-4" />
             <span>{user.linkedin}</span>
           </a>
         )}

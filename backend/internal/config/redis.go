@@ -8,7 +8,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/util"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 func InitRedis(cfg *Config, appLogger logger.Logger) (*redis.Client, error) {

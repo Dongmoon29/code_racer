@@ -1,6 +1,6 @@
 import React from 'react';
 import { Contributor, Contributors } from './Contributors';
-import { Github } from 'lucide-react';
+import { GitHubIcon } from '@/components/icons/BrandIcons';
 
 interface FooterProps {
   contributors: Contributor[];
@@ -20,7 +20,7 @@ export const Footer: React.FC<FooterProps> = ({ contributors }) => {
                 rel="noopener noreferrer"
                 className="flex items-center hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
               >
-                <Github className="w-4 h-4 mr-2" />
+                <GitHubIcon className="w-4 h-4 mr-2" />
                 View on GitHub
               </a>
             </div>

@@ -21,7 +21,7 @@ Real-time competitive coding platform where developers race to solve programming
 
 **Frontend**: Next.js 16 • React 19 • TypeScript • Tailwind CSS v4 • CodeMirror 6 • Zustand • TanStack Query
 
-**Backend**: Go 1.25 • Gin • PostgreSQL • Redis • GORM • JWT • OAuth2 • WebSocket
+**Backend**: Go 1.27 • Gin • PostgreSQL • Redis • GORM • JWT • OAuth2 • WebSocket
 
 **Infrastructure**: Docker • GCP Cloud Run • Cloud SQL • Terraform
 
@@ -29,7 +29,7 @@ Real-time competitive coding platform where developers race to solve programming
 
 ### Prerequisites
 
-- Go 1.25.0+
+- Go 1.27.1+
 - Node.js 20+
 - PostgreSQL 14+
 - Redis 7+

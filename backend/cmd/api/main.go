@@ -19,7 +19,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/router"
 	"github.com/Dongmoon29/code_racer/internal/service"
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )

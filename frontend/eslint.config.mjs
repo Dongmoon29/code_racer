@@ -1,31 +1,27 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypeScript from "eslint-config-next/typescript";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+export default defineConfig([
+  ...nextCoreWebVitals,
+  ...nextTypeScript,
   {
     rules: {
-      // TypeScript 타입 안전성 강화
-      "@typescript-eslint/no-explicit-any": "warn", // any 사용 시 경고
-      "@typescript-eslint/no-unsafe-assignment": "off", // 너무 엄격하므로 off
-      "@typescript-eslint/no-unsafe-member-access": "off", // 너무 엄격하므로 off
-      "@typescript-eslint/no-unsafe-call": "off", // 너무 엄격하므로 off
-
-      // 명시적 함수 반환 타입 (선택적)
-      // "@typescript-eslint/explicit-function-return-type": "warn",
-
-      // unknown 타입 체크는 허용 (error handling에 필요)
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
       "@typescript-eslint/no-redundant-type-constituents": "off",
+      // Authentication requires full-page redirects to the external OAuth
+      // backend, which this Next.js rule cannot distinguish statically.
+      "@next/next/no-location-assign-relative-destination": "off",
+      // These React Compiler rules are intentionally deferred until the app
+      // opts into compiler-driven memoization and effect constraints.
+      "react-hooks/immutability": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
     },
   },
-];
-
-export default eslintConfig;
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+]);
