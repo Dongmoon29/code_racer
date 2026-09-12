@@ -117,17 +117,18 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 
 func initializeRepositories(db *gorm.DB, appLogger logger.Logger) *repositories {
 	return &repositories{
-		userRepository:        repository.NewUserRepository(db, appLogger),
-		matchRepository:       repository.NewMatchRepository(db, appLogger),
-		problemRepo:           repository.NewProblemRepository(db, appLogger),
-		followRepository:      repository.NewFollowRepository(db, appLogger),
-		communityRepository:   repository.NewCommunityRepository(db, appLogger),
-		postCommentRepository: repository.NewPostCommentRepository(db, appLogger),
+		userRepository:         repository.NewUserRepository(db, appLogger),
+		refreshTokenRepository: repository.NewRefreshTokenRepository(db),
+		matchRepository:        repository.NewMatchRepository(db, appLogger),
+		problemRepo:            repository.NewProblemRepository(db, appLogger),
+		followRepository:       repository.NewFollowRepository(db, appLogger),
+		communityRepository:    repository.NewCommunityRepository(db, appLogger),
+		postCommentRepository:  repository.NewPostCommentRepository(db, appLogger),
 	}
 }
 
 func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Config, oauthCfg *config.OAuthConfig, appLogger logger.Logger) (*services, *service.Hub) {
-	authService := service.NewAuthService(repos.userRepository, cfg.JWTSecret, oauthCfg, appLogger)
+	authService := service.NewAuthService(repos.userRepository, repos.refreshTokenRepository, cfg.JWTSecret, oauthCfg, appLogger)
 	userService := service.NewUserService(repos.userRepository, repos.matchRepository, appLogger)
 
 	// Initialize EventBus
@@ -228,12 +229,13 @@ func initializeMiddleware(services *services, repos *repositories, appLogger log
 }
 
 type repositories struct {
-	userRepository        interfaces.UserRepository
-	matchRepository       repository.MatchRepository
-	problemRepo           repository.ProblemRepository
-	followRepository      interfaces.FollowRepository
-	communityRepository   interfaces.CommunityRepository
-	postCommentRepository interfaces.PostCommentRepository
+	userRepository         interfaces.UserRepository
+	refreshTokenRepository interfaces.RefreshTokenRepository
+	matchRepository        repository.MatchRepository
+	problemRepo            repository.ProblemRepository
+	followRepository       interfaces.FollowRepository
+	communityRepository    interfaces.CommunityRepository
+	postCommentRepository  interfaces.PostCommentRepository
 }
 
 type services struct {

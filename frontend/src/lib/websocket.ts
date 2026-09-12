@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { WEBSOCKET_CONSTANTS } from '@/constants';
+import { getAccessToken } from '@/lib/access-token';
+import { authApi } from '@/lib/api';
 import { BaseWebSocketClient } from './websocket/base';
 import type { SubmissionStatusMessage, TestCaseDetailMessage } from '@/types/websocket';
 
@@ -147,18 +149,19 @@ export class WebSocketClient extends BaseWebSocketClient {
       WEBSOCKET_CONSTANTS.CONNECTION.RECONNECT_BASE_DELAY_MS,
       WEBSOCKET_CONSTANTS.CONNECTION.MAX_RECONNECT_DELAY_MS
     );
-    this.connect();
+    void this.connect();
   }
 
-  private connect() {
+  private async connect() {
     try {
+      await authApi.ensureAccessToken();
       const wsUrl = this.buildWebSocketUrl(this.gameId);
       this.ws = new WebSocket(wsUrl);
 
       this.setupEventHandlers(
         () => {
           this.startPingInterval();
-          const token = sessionStorage.getItem('authToken');
+          const token = getAccessToken();
           if (token) {
             this.sendAuthMessage(token);
           }

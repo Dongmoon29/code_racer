@@ -1,6 +1,7 @@
 import { WEBSOCKET_CONSTANTS } from '@/constants';
 import { WEBSOCKET_MESSAGE_TYPES } from '@/constants/websocket';
 import { BaseWebSocketClient } from './websocket/base';
+import { authApi } from '@/lib/api';
 
 export interface MatchingRequest {
   type: typeof WEBSOCKET_MESSAGE_TYPES.START_MATCHING;
@@ -61,7 +62,8 @@ export class MatchmakingWebSocketClient extends BaseWebSocketClient {
     this.callbacks = callbacks;
   }
 
-  connect(): Promise<void> {
+  async connect(): Promise<void> {
+    await authApi.ensureAccessToken();
     return new Promise((resolve, reject) => {
       try {
         const wsUrl = this.buildWebSocketUrl('matching');

@@ -132,8 +132,10 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	User        *UserResponse `json:"user"`
-	AccessToken string        `json:"access_token"`
+	User                  *UserResponse `json:"user"`
+	AccessToken           string        `json:"access_token"`
+	RefreshToken          string        `json:"-"`
+	RefreshTokenExpiresAt time.Time     `json:"-"`
 }
 
 type UpdateProfileRequest struct {

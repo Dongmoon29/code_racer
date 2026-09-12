@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
+	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/Dongmoon29/code_racer/internal/config"
+	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -116,16 +120,56 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	// Return token in response body only (no cookies)
-	// Client will store token in sessionStorage for both HTTP and WebSocket connections
-	ctx.JSON(http.StatusOK, gin.H{
+	c.writeLoginResponse(ctx, response, http.StatusOK, "Login successful")
+}
+
+func (c *AuthController) writeLoginResponse(ctx *gin.Context, response *model.LoginResponse, status int, message string) {
+	c.setRefreshCookie(ctx, response.RefreshToken, response.RefreshTokenExpiresAt)
+	ctx.Header("Cache-Control", "no-store")
+	ctx.JSON(status, gin.H{
 		"success": true,
-		"message": "Login successful",
+		"message": message,
 		"data": gin.H{
 			"user":  response.User,
 			"token": response.AccessToken,
 		},
 	})
+}
+
+func (c *AuthController) setRefreshCookie(ctx *gin.Context, token string, expiresAt time.Time) {
+	name, path, secure := refreshCookieSettings(ctx)
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     name,
+		Value:    token,
+		Path:     path,
+		MaxAge:   max(0, int(time.Until(expiresAt).Seconds())),
+		Expires:  expiresAt,
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func (c *AuthController) clearRefreshCookie(ctx *gin.Context) {
+	name, path, secure := refreshCookieSettings(ctx)
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     name,
+		Value:    "",
+		Path:     path,
+		MaxAge:   -1,
+		Expires:  time.Unix(1, 0),
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func refreshCookieSettings(ctx *gin.Context) (name string, path string, secure bool) {
+	secure = util.IsProduction() || ctx.Request.TLS != nil || strings.EqualFold(ctx.GetHeader("X-Forwarded-Proto"), "https")
+	if secure {
+		return constants.SecureRefreshTokenCookieName, "/", true
+	}
+	return constants.RefreshTokenCookieName, "/api/auth", false
 }
 
 // GetCurrentUser godoc
@@ -284,9 +328,7 @@ func (c *AuthController) ExchangeToken(ctx *gin.Context) {
 
 	c.logger.Info().Msg("ExchangeToken: Token exchange successful")
 
-	// Return token in response body only (no cookies)
-	// Client will store token in sessionStorage for both HTTP and WebSocket connections
-	OK(ctx, gin.H{"user": response.User, "token": response.AccessToken})
+	c.writeLoginResponse(ctx, response, http.StatusOK, "Token exchange successful")
 }
 
 func (c *AuthController) validateState(state string) bool {
@@ -307,7 +349,34 @@ func (c *AuthController) validateState(state string) bool {
 }
 
 func (c *AuthController) Logout(ctx *gin.Context) {
-	// No server-side action needed for token-based auth
-	// Client will remove token from sessionStorage
+	name, _, _ := refreshCookieSettings(ctx)
+	refreshToken, _ := ctx.Cookie(name)
+	err := c.authService.Logout(refreshToken)
+	c.clearRefreshCookie(ctx)
+	if err != nil {
+		WriteError(ctx, err)
+		return
+	}
 	JSONMessage(ctx, http.StatusOK, "Successfully logged out")
+}
+
+func (c *AuthController) Refresh(ctx *gin.Context) {
+	name, _, _ := refreshCookieSettings(ctx)
+	refreshToken, err := ctx.Cookie(name)
+	if err != nil {
+		c.clearRefreshCookie(ctx)
+		Unauthorized(ctx, "Login session has expired")
+		return
+	}
+	response, err := c.authService.RefreshSession(refreshToken)
+	if err != nil {
+		if appError, ok := apperr.As(err); !ok || appError.Code != apperr.CodeConflict {
+			c.clearRefreshCookie(ctx)
+		} else {
+			ctx.Header("Retry-After", "1")
+		}
+		WriteError(ctx, err)
+		return
+	}
+	c.writeLoginResponse(ctx, response, http.StatusOK, "Session refreshed")
 }

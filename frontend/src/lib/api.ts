@@ -5,6 +5,7 @@ import type {
   LoginResponse,
   RegisterResponse,
   ExchangeTokenResponse,
+  RefreshTokenResponse,
   GetCurrentUserResponse,
   GetMatchResponse,
   MatchResponse,
@@ -13,24 +14,62 @@ import type {
   UpdateUserProfileResponse,
 } from "@/types";
 import { createErrorHandler } from "@/lib/error-tracking";
+import {
+  clearAccessToken,
+  getAccessToken,
+  hasUsableAccessToken,
+  setAccessToken,
+} from "@/lib/access-token";
 
 // API client basic configuration
 const api = axios.create({
   baseURL: "/api",
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request interceptor - Add Authorization header from sessionStorage
-// Token-based authentication only (no cookies)
+const refreshClient = axios.create({
+  baseURL: "/api",
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+});
+
+let refreshPromise: Promise<RefreshTokenResponse> | null = null;
+
+const refreshSession = async (): Promise<RefreshTokenResponse> => {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      let response;
+      try {
+        response = await refreshClient.post<RefreshTokenResponse>(
+          "/auth/refresh",
+        );
+      } catch (error) {
+        if (!axios.isAxiosError(error) || error.response?.status !== 409) {
+          throw error;
+        }
+        await new Promise((resolve) => globalThis.setTimeout(resolve, 1000));
+        response = await refreshClient.post<RefreshTokenResponse>(
+          "/auth/refresh",
+        );
+      }
+      if (response.data.success) {
+        setAccessToken(response.data.data.token);
+      }
+      return response.data;
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+};
+
+// Add the short-lived in-memory access token to API requests.
 api.interceptors.request.use(
   (config) => {
-    // Get token from sessionStorage for all requests
-    const token =
-      typeof window !== "undefined"
-        ? window.sessionStorage.getItem("authToken")
-        : null;
+    const token = getAccessToken();
 
     if (token) {
       // Add Authorization header with Bearer token
@@ -52,20 +91,38 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Don't redirect during login attempts or auth initialization
+  async (error) => {
+    const originalRequest = error.config as
+      | (typeof error.config & { _retry?: boolean })
+      | undefined;
+    if (error.response?.status === 401 && originalRequest) {
       const url = error.config?.url || "";
-      const skipLogout =
+      const skipRefresh =
         url.includes("/auth/login") ||
         url.includes("/auth/logout") ||
-        url.includes("/users/me") ||
+        url.includes("/auth/refresh") ||
         url.includes("/auth/exchange-token");
-      if (!skipLogout && typeof window !== "undefined") {
-        window.sessionStorage.removeItem("authToken");
-        if (window.location.pathname !== "/login") {
-          window.location.assign("/login");
+
+      if (!skipRefresh && !originalRequest._retry) {
+        originalRequest._retry = true;
+        try {
+          const refreshed = await refreshSession();
+          if (refreshed.success) {
+            originalRequest.headers.Authorization = `Bearer ${refreshed.data.token}`;
+            return api(originalRequest);
+          }
+        } catch {
+          // Fall through to the signed-out state below.
         }
+      }
+
+      clearAccessToken();
+      if (
+        !skipRefresh &&
+        typeof window !== "undefined" &&
+        window.location.pathname !== "/login"
+      ) {
+        window.location.assign("/login");
       }
     }
     return Promise.reject(error);
@@ -94,6 +151,9 @@ export const authApi = {
       email,
       password,
     });
+    if (response.data.success) {
+      setAccessToken(response.data.data.token);
+    }
     return response.data;
   },
 
@@ -111,7 +171,23 @@ export const authApi = {
         provider,
       },
     );
+    if (response.data.success) {
+      setAccessToken(response.data.data.token);
+    }
     return response.data;
+  },
+
+  refresh: refreshSession,
+
+  ensureAccessToken: async (): Promise<string> => {
+    if (hasUsableAccessToken()) {
+      return getAccessToken()!;
+    }
+    const response = await refreshSession();
+    if (!response.success) {
+      throw new Error(response.message || "Login session has expired");
+    }
+    return response.data.token;
   },
 
   // Get current user information
@@ -128,7 +204,11 @@ export const authApi = {
 
   // User logout
   logout: async (): Promise<void> => {
-    await api.post("/auth/logout");
+    try {
+      await api.post("/auth/logout");
+    } finally {
+      clearAccessToken();
+    }
   },
 
   // Google login

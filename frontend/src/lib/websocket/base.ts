@@ -1,5 +1,6 @@
 import { WEBSOCKET_CONSTANTS } from '@/constants';
 import { createErrorHandler } from '@/lib/error-tracking';
+import { getAccessToken } from '@/lib/access-token';
 
 /**
  * Base WebSocket client with common connection, reconnection, and error handling logic
@@ -57,7 +58,7 @@ export abstract class BaseWebSocketClient {
     }
 
     // Add authentication token
-    const token = sessionStorage.getItem('authToken');
+    const token = getAccessToken();
     if (!token) {
       throw new Error('No authentication token found for WebSocket connection');
     }

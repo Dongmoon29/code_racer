@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +18,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/Dongmoon29/code_racer/internal/types"
 	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/golang-jwt/jwt/v5"
@@ -27,6 +31,7 @@ var _ interfaces.AuthService = (*authService)(nil)
 
 type authService struct {
 	userRepo    interfaces.UserRepository
+	refreshRepo interfaces.RefreshTokenRepository
 	jwtSecret   string
 	tokenExpiry time.Duration
 	logger      logger.Logger
@@ -34,11 +39,12 @@ type authService struct {
 }
 
 // NewAuthService creates a new AuthService instance with the provided dependencies
-func NewAuthService(userRepo interfaces.UserRepository, jwtSecret string, oauthConfig *config.OAuthConfig, logger logger.Logger) interfaces.AuthService {
+func NewAuthService(userRepo interfaces.UserRepository, refreshRepo interfaces.RefreshTokenRepository, jwtSecret string, oauthConfig *config.OAuthConfig, logger logger.Logger) interfaces.AuthService {
 	return &authService{
 		userRepo:    userRepo,
+		refreshRepo: refreshRepo,
 		jwtSecret:   jwtSecret,
-		tokenExpiry: constants.TokenExpiryDays * 24 * time.Hour,
+		tokenExpiry: constants.AccessTokenExpiry,
 		logger:      logger,
 		oauthConfig: oauthConfig,
 	}
@@ -103,16 +109,7 @@ func (s *authService) Login(req *model.LoginRequest) (*model.LoginResponse, erro
 		// Don't fail login if we can't update last_login_at
 	}
 
-	// JWT token generation
-	token, err := s.generateToken(user.ID, user.Email, string(user.Role))
-	if err != nil {
-		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to generate access token")
-	}
-
-	return &model.LoginResponse{
-		User:        user.ToResponse(),
-		AccessToken: token,
-	}, nil
+	return s.issueSession(user)
 }
 
 // ValidateToken JWT token validation
@@ -120,7 +117,7 @@ func (s *authService) ValidateToken(tokenString string) (*types.JWTClaims, error
 	// JWT token validation
 	token, err := jwt.ParseWithClaims(tokenString, &types.JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.jwtSecret), nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 
 	if err != nil {
 		return nil, apperr.Wrap(err, apperr.CodeUnauthorized, "Invalid token")
@@ -164,6 +161,90 @@ func (s *authService) generateToken(userID uuid.UUID, email string, role string)
 	}
 
 	return signedToken, nil
+}
+
+func (s *authService) issueSession(user *model.User) (*model.LoginResponse, error) {
+	accessToken, err := s.generateToken(user.ID, user.Email, string(user.Role))
+	if err != nil {
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to generate access token")
+	}
+	refreshToken, err := generateOpaqueToken()
+	if err != nil {
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to generate refresh token")
+	}
+	expiresAt := time.Now().Add(constants.RefreshTokenExpiry)
+	if err := s.refreshRepo.Create(&model.RefreshToken{
+		UserID:    user.ID,
+		TokenHash: hashRefreshToken(refreshToken),
+		ExpiresAt: expiresAt,
+	}); err != nil {
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to create login session")
+	}
+	return &model.LoginResponse{
+		User:                  user.ToResponse(),
+		AccessToken:           accessToken,
+		RefreshToken:          refreshToken,
+		RefreshTokenExpiresAt: expiresAt,
+	}, nil
+}
+
+func (s *authService) RefreshSession(refreshToken string) (*model.LoginResponse, error) {
+	if refreshToken == "" {
+		return nil, apperr.New(apperr.CodeUnauthorized, "Login session is missing")
+	}
+	replacement, err := generateOpaqueToken()
+	if err != nil {
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to refresh login session")
+	}
+	rotated, err := s.refreshRepo.Rotate(hashRefreshToken(refreshToken), hashRefreshToken(replacement), time.Now())
+	if err != nil {
+		if errors.Is(err, repository.ErrRefreshTokenConcurrent) {
+			return nil, apperr.Wrap(err, apperr.CodeConflict, "Session refresh already in progress")
+		}
+		if errors.Is(err, repository.ErrRefreshTokenInvalid) ||
+			errors.Is(err, repository.ErrRefreshTokenExpired) ||
+			errors.Is(err, repository.ErrRefreshTokenReused) {
+			return nil, apperr.Wrap(err, apperr.CodeUnauthorized, "Login session has expired")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to refresh login session")
+	}
+	user, err := s.userRepo.FindByID(rotated.UserID)
+	if err != nil {
+		return nil, apperr.Wrap(err, apperr.CodeUnauthorized, "Login session is invalid")
+	}
+	accessToken, err := s.generateToken(user.ID, user.Email, string(user.Role))
+	if err != nil {
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to generate access token")
+	}
+	return &model.LoginResponse{
+		User:                  user.ToResponse(),
+		AccessToken:           accessToken,
+		RefreshToken:          replacement,
+		RefreshTokenExpiresAt: rotated.ExpiresAt,
+	}, nil
+}
+
+func (s *authService) Logout(refreshToken string) error {
+	if refreshToken == "" {
+		return nil
+	}
+	if err := s.refreshRepo.RevokeFamilyByHash(hashRefreshToken(refreshToken), time.Now()); err != nil {
+		return apperr.Wrap(err, apperr.CodeInternal, "Failed to end login session")
+	}
+	return nil
+}
+
+func generateOpaqueToken() (string, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(raw), nil
+}
+
+func hashRefreshToken(token string) string {
+	digest := sha256.Sum256([]byte(token))
+	return fmt.Sprintf("%x", digest)
 }
 
 func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error) {
@@ -217,15 +298,7 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 		}
 	}
 
-	jwtToken, err := s.generateToken(user.ID, user.Email, string(user.Role))
-	if err != nil {
-		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to generate access token")
-	}
-
-	return &model.LoginResponse{
-		User:        user.ToResponse(),
-		AccessToken: jwtToken,
-	}, nil
+	return s.issueSession(user)
 }
 
 func (s *authService) exchangeGoogleCode(code string) (*oauth2.Token, error) {
@@ -303,16 +376,7 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 		}
 	}
 
-	jwtToken, err := s.generateToken(user.ID, user.Email, string(user.Role))
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to generate JWT token")
-		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to generate access token")
-	}
-
-	return &model.LoginResponse{
-		User:        user.ToResponse(),
-		AccessToken: jwtToken,
-	}, nil
+	return s.issueSession(user)
 }
 
 func (s *authService) exchangeGitHubCode(code string) (*oauth2.Token, error) {

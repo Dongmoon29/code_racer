@@ -4,11 +4,15 @@ import "time"
 
 // Authentication constants
 const (
-	// TokenExpiryDays is the number of days a JWT token remains valid
-	TokenExpiryDays = 7
+	// AccessTokenExpiry is deliberately short because access tokens are exposed
+	// to browser JavaScript for API and WebSocket authentication.
+	AccessTokenExpiry = 15 * time.Minute
 
-	// CookieExpirySeconds is the cookie expiration time in seconds (7 days)
-	CookieExpirySeconds = 3600 * 24 * 7
+	// RefreshTokenExpiry is the absolute lifetime of a persistent login session.
+	RefreshTokenExpiry = 30 * 24 * time.Hour
+
+	RefreshTokenCookieName       = "refresh_token"
+	SecureRefreshTokenCookieName = "__Host-refresh_token"
 )
 
 // WebSocket constants

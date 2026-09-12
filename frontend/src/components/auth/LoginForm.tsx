@@ -21,11 +21,6 @@ const LoginForm: FC = () => {
     const response = await authApi.login(data.email, data.password);
 
     if (response.success) {
-      // Store token in sessionStorage for all authentication (HTTP + WebSocket)
-      if (response.data?.token) {
-        sessionStorage.setItem('authToken', response.data.token);
-      }
-
       // Always sync authStore with fresh /users/me to avoid drift
       try {
         const meResponse = await authApi.getCurrentUser();

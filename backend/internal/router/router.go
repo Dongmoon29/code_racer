@@ -98,6 +98,7 @@ func Setup(
 		{
 			auth.POST("/register", authController.Register)
 			auth.POST("/login", authController.Login)
+			auth.POST("/refresh", authController.Refresh)
 			auth.POST("/logout", authController.Logout)
 
 			// OAuth routes
@@ -154,7 +155,7 @@ func Setup(
 					comments.POST("/vote/:id", postCommentController.VoteComment)
 					comments.PUT("/:id", postCommentController.UpdateComment)
 					comments.DELETE("/:id", postCommentController.DeleteComment)
-					
+
 					// Post-specific routes (must come after specific routes)
 					comments.GET("/:postId", postCommentController.GetComments)
 					comments.POST("/:postId", postCommentController.CreateComment)

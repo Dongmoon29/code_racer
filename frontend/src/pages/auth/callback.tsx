@@ -33,12 +33,6 @@ const AuthCallback: React.FC = () => {
         const response = await authApi.exchangeToken(code, state, provider);
 
         if (response.success) {
-          // Store token in sessionStorage for all authentication (HTTP + WebSocket)
-          const token = response.data.token;
-          if (token) {
-            sessionStorage.setItem('authToken', token);
-          }
-
           // Always fetch fresh user from /users/me to avoid drift
           try {
             const me = await authApi.getCurrentUser();

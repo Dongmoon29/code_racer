@@ -17,6 +17,7 @@ import { Game } from "@/types";
 import { matchApi } from "@/lib/api";
 import { getCodeTemplate } from "@/lib/code-template";
 import { useAuthStore } from "@/stores/authStore";
+import { getAccessToken } from "@/lib/access-token";
 import { type SupportedLanguage } from "@/constants";
 import {
   SubmissionProgress,
@@ -362,10 +363,7 @@ export const useGameRoomWebSocket = ({
     if (!canConnect) return;
 
     // Require auth token before opening WebSocket connection
-    const token =
-      typeof window !== "undefined"
-        ? sessionStorage.getItem("authToken")
-        : null;
+    const token = getAccessToken();
 
     if (!token) {
       // If token is missing, show a gentle notification and skip WS connection

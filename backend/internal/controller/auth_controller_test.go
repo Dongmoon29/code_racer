@@ -3,15 +3,9 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"strings"
-	"testing"
-
 	"fmt"
-
 	"github.com/Dongmoon29/code_racer/internal/apperr"
+	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/types"
@@ -20,7 +14,14 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"testing"
+	"time"
 )
 
 // MockOAuthConfigProvider는 OAuthConfigProvider 인터페이스의 mock 구현체입니다
@@ -97,6 +98,18 @@ func (m *MockAuthService) LoginWithGitHub(code string) (*model.LoginResponse, er
 	return args.Get(0).(*model.LoginResponse), args.Error(1)
 }
 
+func (m *MockAuthService) RefreshSession(refreshToken string) (*model.LoginResponse, error) {
+	args := m.Called(refreshToken)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.LoginResponse), args.Error(1)
+}
+
+func (m *MockAuthService) Logout(refreshToken string) error {
+	return m.Called(refreshToken).Error(0)
+}
+
 func setupTest(t *testing.T) (*gin.Engine, *MockAuthService, *AuthController) {
 	// 기존 환경 변수 값 백업
 	originalFrontendDomain := os.Getenv("FRONTEND_DOMAIN")
@@ -128,6 +141,7 @@ func setupTest(t *testing.T) (*gin.Engine, *MockAuthService, *AuthController) {
 	{
 		auth.POST("/register", authController.Register)
 		auth.POST("/login", authController.Login)
+		auth.POST("/refresh", authController.Refresh)
 		auth.GET("/me", authController.GetCurrentUser)
 		auth.POST("/logout", authController.Logout)
 		auth.GET("/google", authController.GoogleAuthHandler)
@@ -207,7 +221,9 @@ func TestLogin(t *testing.T) {
 				Email: loginReq.Email,
 				Name:  "Test User",
 			},
-			AccessToken: "test-token",
+			AccessToken:           "test-token",
+			RefreshToken:          "test-refresh-token",
+			RefreshTokenExpiresAt: time.Now().Add(24 * time.Hour),
 		}
 
 		mockService.On("Login", loginReq).Return(expectedResponse, nil).Once()
@@ -228,6 +244,12 @@ func TestLogin(t *testing.T) {
 		assert.NotNil(t, response["data"])
 		data := response["data"].(map[string]interface{})
 		assert.Equal(t, expectedResponse.AccessToken, data["token"])
+		require.Len(t, w.Result().Cookies(), 1)
+		cookie := w.Result().Cookies()[0]
+		assert.Equal(t, constants.RefreshTokenCookieName, cookie.Name)
+		assert.Equal(t, expectedResponse.RefreshToken, cookie.Value)
+		assert.True(t, cookie.HttpOnly)
+		assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
 	})
 
 	t.Run("invalid credentials", func(t *testing.T) {
@@ -323,9 +345,11 @@ func TestGetCurrentUser(t *testing.T) {
 }
 
 func TestLogout(t *testing.T) {
-	r, _, _ := setupTest(t)
+	r, mockService, _ := setupTest(t)
+	mockService.On("Logout", "test-refresh-token").Return(nil).Once()
 
 	req := httptest.NewRequest("POST", "/api/auth/logout", nil)
+	req.AddCookie(&http.Cookie{Name: constants.RefreshTokenCookieName, Value: "test-refresh-token"})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -337,6 +361,62 @@ func TestLogout(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &response)
 	assert.True(t, response["success"].(bool))
 	assert.Equal(t, "Successfully logged out", response["message"])
+	require.Len(t, w.Result().Cookies(), 1)
+	assert.Equal(t, -1, w.Result().Cookies()[0].MaxAge)
+}
+
+func TestRefresh(t *testing.T) {
+	r, mockService, _ := setupTest(t)
+	expiresAt := time.Now().Add(24 * time.Hour)
+	expected := &model.LoginResponse{
+		User:                  &model.UserResponse{ID: uuid.New(), Email: "test@example.com", Name: "Test User"},
+		AccessToken:           "new-access-token",
+		RefreshToken:          "new-refresh-token",
+		RefreshTokenExpiresAt: expiresAt,
+	}
+	mockService.On("RefreshSession", "old-refresh-token").Return(expected, nil).Once()
+
+	req := httptest.NewRequest("POST", "/api/auth/refresh", nil)
+	req.AddCookie(&http.Cookie{Name: constants.RefreshTokenCookieName, Value: "old-refresh-token"})
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+	data := response["data"].(map[string]interface{})
+	assert.Equal(t, expected.AccessToken, data["token"])
+	require.Len(t, w.Result().Cookies(), 1)
+	assert.Equal(t, expected.RefreshToken, w.Result().Cookies()[0].Value)
+}
+
+func TestRefreshWithoutCookie(t *testing.T) {
+	r, _, _ := setupTest(t)
+
+	req := httptest.NewRequest("POST", "/api/auth/refresh", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	require.Len(t, w.Result().Cookies(), 1)
+	assert.Equal(t, -1, w.Result().Cookies()[0].MaxAge)
+}
+
+func TestConcurrentRefreshDoesNotClearCookie(t *testing.T) {
+	r, mockService, _ := setupTest(t)
+	mockService.On("RefreshSession", "old-refresh-token").Return(
+		nil,
+		apperr.New(apperr.CodeConflict, "Session refresh already in progress"),
+	).Once()
+
+	req := httptest.NewRequest("POST", "/api/auth/refresh", nil)
+	req.AddCookie(&http.Cookie{Name: constants.RefreshTokenCookieName, Value: "old-refresh-token"})
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusConflict, w.Code)
+	assert.Equal(t, "1", w.Header().Get("Retry-After"))
+	assert.Empty(t, w.Result().Cookies())
 }
 
 func TestGoogleAuth(t *testing.T) {

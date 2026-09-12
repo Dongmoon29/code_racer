@@ -60,6 +60,7 @@ export interface AuthTokenData {
 export type LoginResponse = ApiResponse<AuthTokenData>;
 export type RegisterResponse = ApiResponse<AuthTokenData>;
 export type ExchangeTokenResponse = ApiResponse<AuthTokenData>;
+export type RefreshTokenResponse = ApiResponse<AuthTokenData>;
 export type GetCurrentUserResponse = ApiResponse<User>;
 
 // ============================================

@@ -1,7 +1,8 @@
 import { create } from "zustand";
-import { authApi } from "@/lib/api";
 import { AxiosError } from "axios";
+import { authApi } from "@/lib/api";
 import { createErrorHandler } from "@/lib/error-tracking";
+import { clearAccessToken } from "@/lib/access-token";
 
 export type User = {
   id: string;
@@ -38,18 +39,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   logout: async () => {
     try {
-      // Skip API call if already logged out
-      if (!get().isLoggedIn) {
-        return;
-      }
-
       await authApi.logout();
     } catch (error) {
       const errorHandler = createErrorHandler("authStore", "logout");
       errorHandler(error, { userId: get().user?.id });
     } finally {
-      // Clear token from sessionStorage (more secure than localStorage)
-      sessionStorage.removeItem("authToken");
+      clearAccessToken();
 
       set({
         user: null,
@@ -63,35 +58,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true });
 
-      // Check if token exists in sessionStorage
-      const token = sessionStorage.getItem("authToken");
-      if (!token) {
-        set({ user: null, isLoggedIn: false });
-        return;
-      }
-
-      // Verify token is still valid by fetching user info
-      const response = await authApi.getCurrentUser();
+      // Remove credentials left by the previous sessionStorage-based scheme.
+      sessionStorage.removeItem("authToken");
+      const response = await authApi.refresh();
       if (response.success) {
-        set({ user: response.data, isLoggedIn: true });
+        // Refresh only returns the compact authentication user. Hydrate the
+        // full profile so dashboard-only fields stay available after reload.
+        const currentUserResponse = await authApi.getCurrentUser();
+        set({
+          user: currentUserResponse.success
+            ? currentUserResponse.data
+            : response.data.user,
+          isLoggedIn: true,
+        });
       } else {
-        // No user data - clear invalid token
-        sessionStorage.removeItem("authToken");
+        clearAccessToken();
         set({ user: null, isLoggedIn: false });
       }
     } catch (error) {
       const errorHandler = createErrorHandler("authStore", "initializeAuth");
-      if (error instanceof AxiosError && error.response?.status === 401) {
-        // Token is invalid or expired - clear it
-        sessionStorage.removeItem("authToken");
-        set({ user: null, isLoggedIn: false });
-      } else {
-        errorHandler(error, {
-          hasToken: !!sessionStorage.getItem("authToken"),
-          userId: get().user?.id,
-        });
-        set({ user: null, isLoggedIn: false });
+      clearAccessToken();
+      if (!(error instanceof AxiosError && error.response?.status === 401)) {
+        errorHandler(error, { userId: get().user?.id });
       }
+      set({ user: null, isLoggedIn: false });
     } finally {
       set({ isLoading: false });
     }
