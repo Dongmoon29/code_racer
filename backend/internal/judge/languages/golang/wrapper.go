@@ -20,9 +20,67 @@ type Wrapper struct{}
 func NewWrapper() *Wrapper { return &Wrapper{} }
 
 func (g *Wrapper) WrapBatch(code string, testCasesJSON string, problem *model.Problem) (string, error) {
-	// LeetCode-style MVP: prefer per-test execution; batch harness is optional.
-	// Keeping this unimplemented avoids maintaining two runners.
-	return "", fmt.Errorf("batch wrapper not supported for Go in LeetCode mode")
+	cleanedCode, userImports, err := normalizeGoSubmission(code)
+	if err != nil {
+		return "", err
+	}
+
+	paramTypes := []string{}
+	if problem != nil {
+		paramTypes = problem.IOSchema.ParamTypes
+	}
+	if len(paramTypes) == 0 {
+		return "", fmt.Errorf("missing or invalid io_schema.param_types")
+	}
+
+	importBlock, refs, err := buildGoImportBlock(userImports)
+	if err != nil {
+		return "", err
+	}
+	decodeArgs, callArgs, ok := buildGoBatchArgUnmarshal(paramTypes, refs)
+	if !ok {
+		return "", fmt.Errorf("unsupported Go parameter schema: %v", paramTypes)
+	}
+
+	template := `package main
+
+import (
+%s
+)
+
+// ===== User code (preserved as-is) =====
+%s
+// ====================================
+
+func main() {
+	data, err := %[3]s.ReadAll(%[4]s.Stdin)
+	if err != nil {
+		%[5]s.Fprint(%[4]s.Stderr, "failed to read input")
+		%[4]s.Exit(1)
+	}
+	raw := %[7]s.TrimSpace(string(data))
+	if raw == "" {
+		return
+	}
+	var testCases []%[6]s.RawMessage
+	if err := %[6]s.Unmarshal([]byte(raw), &testCases); err != nil {
+		%[5]s.Fprint(%[4]s.Stderr, "invalid input")
+		%[4]s.Exit(1)
+	}
+
+	results := make([]interface{}, 0, len(testCases))
+	for _, rawCase := range testCases {
+%[8]s
+		results = append(results, %[9]s(%[10]s))
+	}
+	out, err := %[6]s.Marshal(results)
+	if err != nil {
+		%[5]s.Fprint(%[4]s.Stderr, "failed to encode output")
+		%[4]s.Exit(1)
+	}
+	%[5]s.Print(string(out))
+}`
+	return fmt.Sprintf(template, importBlock, cleanedCode, refs["io/ioutil"], refs["os"], refs["fmt"], refs["encoding/json"], refs["strings"], decodeArgs, problem.FunctionName, callArgs), nil
 }
 
 func (g *Wrapper) WrapSingle(code string, testCase string, problem *model.Problem) (string, error) {
@@ -173,7 +231,7 @@ func buildGoImportBlock(userImports []goImport) (string, map[string]string, erro
 			byPath[importPath] = imp
 		}
 		if imp.alias == "." || imp.alias == "_" {
-			return "", nil, fmt.Errorf("Go import %q cannot use alias %q because it is required by the runner", importPath, imp.alias)
+			return "", nil, fmt.Errorf("go import %q cannot use alias %q because it is required by the runner", importPath, imp.alias)
 		}
 		if imp.alias != "" {
 			refs[importPath] = imp.alias
@@ -254,6 +312,34 @@ func buildGoArgUnmarshal(paramTypes []string, refs map[string]string) (decl stri
 		if i < len(paramTypes)-1 {
 			decl += "\n"
 		}
+		if i > 0 {
+			call += ", "
+		}
+		call += fmt.Sprintf("arg%d", i)
+	}
+	return decl, call, true
+}
+
+func buildGoBatchArgUnmarshal(paramTypes []string, refs map[string]string) (decl string, call string, ok bool) {
+	jsonRef := refs["encoding/json"]
+	fmtRef := refs["fmt"]
+	osRef := refs["os"]
+	decl += fmt.Sprintf("\t\tvar args []%s.RawMessage\n", jsonRef)
+	decl += fmt.Sprintf("\t\tif err := %s.Unmarshal(rawCase, &args); err != nil || len(args) != %d {\n", jsonRef, len(paramTypes))
+	decl += fmt.Sprintf("\t\t\t%s.Fprint(%s.Stderr, \"invalid input\")\n", fmtRef, osRef)
+	decl += fmt.Sprintf("\t\t\t%s.Exit(1)\n", osRef)
+	decl += "\t\t}\n"
+
+	for i, paramType := range paramTypes {
+		goType, supported := goTypeFromSchema(paramType)
+		if !supported {
+			return "", "", false
+		}
+		decl += fmt.Sprintf("\t\tvar arg%d %s\n", i, goType)
+		decl += fmt.Sprintf("\t\tif err := %s.Unmarshal(args[%d], &arg%d); err != nil {\n", jsonRef, i, i)
+		decl += fmt.Sprintf("\t\t\t%s.Fprint(%s.Stderr, \"invalid input\")\n", fmtRef, osRef)
+		decl += fmt.Sprintf("\t\t\t%s.Exit(1)\n", osRef)
+		decl += "\t\t}\n"
 		if i > 0 {
 			call += ", "
 		}

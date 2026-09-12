@@ -4,7 +4,6 @@ import (
 	"io"
 	"testing"
 
-	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/types"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -15,10 +14,7 @@ func responseTestJudgeService() *judgeService {
 	return &judgeService{logger: &log}
 }
 
-func TestEvaluateSingleResponse_UsesJudgeStatus(t *testing.T) {
-	service := responseTestJudgeService()
-	testCase := model.TestCase{Input: "1", ExpectedOutput: "true"}
-
+func TestBatchResponseError_UsesJudgeStatus(t *testing.T) {
 	tests := []struct {
 		name      string
 		response  *types.Judge0Response
@@ -51,22 +47,14 @@ func TestEvaluateSingleResponse_UsesJudgeStatus(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := service.evaluateSingleResponse(test.response, testCase, testCase.ExpectedOutput, 0)
-			assert.False(t, result.Passed)
-			assert.Equal(t, test.errorType, result.ErrorType)
-			assert.NotEmpty(t, result.ErrorMessage)
+			errorType, message := batchResponseError(test.response)
+			assert.Equal(t, test.errorType, errorType)
+			assert.NotEmpty(t, message)
 		})
 	}
 }
 
-func TestEvaluateSingleResponse_ComparesJSONSemantically(t *testing.T) {
+func TestCompareResults_ComparesJSONSemantically(t *testing.T) {
 	service := responseTestJudgeService()
-	testCase := model.TestCase{Input: "[]", ExpectedOutput: `{"a":1,"b":[2,3]}`}
-	response := &types.Judge0Response{
-		Status: types.JudgeStatus{ID: 3, Description: "Accepted"},
-		Stdout: `{ "b": [2, 3], "a": 1.0 }`,
-	}
-
-	result := service.evaluateSingleResponse(response, testCase, testCase.ExpectedOutput, 0)
-	assert.True(t, result.Passed)
+	assert.True(t, service.compareResults(`{ "b": [2, 3], "a": 1.0 }`, `{"a":1,"b":[2,3]}`))
 }

@@ -11,7 +11,7 @@ RUN go mod download
 # 소스 코드 복사
 COPY . .
 # 타겟 플랫폼에 맞게 빌드
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /code_racer ./cmd/api/main.go
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /code_racer ./cmd/api/main.go
 # 실행 스테이지
 FROM alpine:3.19
 WORKDIR /app
@@ -29,4 +29,4 @@ COPY --from=builder /app/migrations ./migrations
 USER appuser
 EXPOSE ${PORT}
 # 환경변수를 사용하여 포트 지정
-CMD ["sh", "-c", "./code_racer"]
+CMD ["./code_racer"]

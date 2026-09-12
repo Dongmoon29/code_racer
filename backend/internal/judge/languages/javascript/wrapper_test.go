@@ -190,3 +190,25 @@ func TestWrapper_WrapSingle_ExecutesArgumentArray(t *testing.T) {
 	assert.NoError(t, err, string(output))
 	assert.JSONEq(t, `[0,1]`, string(output))
 }
+
+func TestWrapper_WrapBatch_ExecutesAllArgumentArrays(t *testing.T) {
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("node executable is unavailable")
+	}
+	wrapper := NewWrapper()
+	problem := &model.Problem{
+		FunctionName: "add",
+		IOSchema: model.IOSchema{
+			ParamTypes: []string{"int", "int"},
+			ReturnType: "int",
+		},
+	}
+	wrapperCode, err := wrapper.WrapBatch("function add(a, b) { return a + b; }", `[[1,2],[4,5]]`, problem)
+	assert.NoError(t, err)
+	cmd := exec.Command(node, "-e", wrapperCode)
+	cmd.Stdin = strings.NewReader(`[[1,2],[4,5]]`)
+	output, err := cmd.CombinedOutput()
+	assert.NoError(t, err, string(output))
+	assert.JSONEq(t, `[3,9]`, string(output))
+}

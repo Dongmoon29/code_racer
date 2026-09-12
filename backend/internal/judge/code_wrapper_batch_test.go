@@ -60,8 +60,20 @@ func TestWrapCodeBatch_Go(t *testing.T) {
 	code := "func twoSum(nums []int, target int) []int { return []int{0, 1} }"
 	cases := "[[1,2],[3,4]]"
 
-	_, err := w.WrapCodeBatch(code, 60, cases, problem)
-	if err == nil {
-		t.Fatalf("expected err, got nil")
+	out, err := w.WrapCodeBatch(code, 60, cases, problem)
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+
+	mustContain := []string{
+		"var testCases []json.RawMessage",
+		"for _, rawCase := range testCases",
+		"json.Unmarshal(args[0], &arg0)",
+		"results = append(results, twoSum(arg0, arg1))",
+	}
+	for _, s := range mustContain {
+		if !strings.Contains(out, s) {
+			t.Fatalf("output missing: %s", s)
+		}
 	}
 }

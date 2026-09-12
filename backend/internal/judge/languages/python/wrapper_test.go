@@ -223,3 +223,25 @@ def twoSum(nums: List[int], target: int) -> List[int]:
 	assert.NoError(t, err, string(output))
 	assert.JSONEq(t, `[0,1]`, string(output))
 }
+
+func TestWrapper_WrapBatch_ExecutesAllArgumentArrays(t *testing.T) {
+	python, err := exec.LookPath("python3")
+	if err != nil {
+		t.Skip("python3 executable is unavailable")
+	}
+	wrapper := NewWrapper()
+	problem := &model.Problem{
+		FunctionName: "add",
+		IOSchema: model.IOSchema{
+			ParamTypes: []string{"int", "int"},
+			ReturnType: "int",
+		},
+	}
+	wrapperCode, err := wrapper.WrapBatch("def add(a, b):\n    return a + b", `[[1,2],[4,5]]`, problem)
+	assert.NoError(t, err)
+	cmd := exec.Command(python, "-c", wrapperCode)
+	cmd.Stdin = strings.NewReader(`[[1,2],[4,5]]`)
+	output, err := cmd.CombinedOutput()
+	assert.NoError(t, err, string(output))
+	assert.JSONEq(t, `[3,9]`, string(output))
+}

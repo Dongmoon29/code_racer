@@ -81,12 +81,12 @@ func (s *judgeService) EvaluateCode(code string, language string, problem *model
 		return nil, fmt.Errorf("failed to get language ID: %w", err)
 	}
 
-	perTestEvaluationResult, perTestEvaluationError := s.aggregatePerTest(code, languageID, problem)
-	if perTestEvaluationError == nil && perTestEvaluationResult != nil {
-		s.logEvaluationResult(perTestEvaluationResult, languageID, problem, "per_test")
+	batchEvaluationResult, batchEvaluationError := s.aggregateBatch(code, languageID, problem)
+	if batchEvaluationError == nil && batchEvaluationResult != nil {
+		s.logEvaluationResult(batchEvaluationResult, languageID, problem, "batch")
 	}
 
-	return perTestEvaluationResult, perTestEvaluationError
+	return batchEvaluationResult, batchEvaluationError
 }
 
 // logEvaluationResult logs the evaluation result with detailed metrics
@@ -94,7 +94,7 @@ func (s *judgeService) logEvaluationResult(evaluationResult *types.EvaluationRes
 	passedTestCount := s.countPassedTests(evaluationResult.TestResults)
 	compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB := s.deriveLimits(problem)
 
-	s.logger.Info().
+	s.logger.Debug().
 		Str("mode", evaluationMode).
 		Int("languageID", languageID).
 		Int("testCases", len(evaluationResult.TestResults)).
@@ -144,32 +144,116 @@ func (s *judgeService) deriveLimits(problem *model.Problem) (compileTimeout int,
 	return compileTimeoutSeconds, runTimeoutSeconds, memoryLimitKB
 }
 
-func (s *judgeService) aggregatePerTest(code string, languageID int, problem *model.Problem) (*types.EvaluationResult, error) {
-	var testCaseResults []types.TestCaseResult
-	var totalExecutionTime float64
-	var totalMemoryUsage float64
-	allTestsPassed := true
-
-	for testCaseIndex, testCase := range problem.TestCases {
-		testCaseResult := s.evaluateTestCase(code, languageID, testCase, problem, testCaseIndex)
-		testCaseResults = append(testCaseResults, *testCaseResult)
-		if !testCaseResult.Passed {
-			allTestsPassed = false
-		}
-		totalExecutionTime += testCaseResult.ExecutionTime
-		totalMemoryUsage += testCaseResult.MemoryUsage
+func (s *judgeService) aggregateBatch(code string, languageID int, problem *model.Problem) (*types.EvaluationResult, error) {
+	if len(problem.TestCases) == 0 {
+		return nil, fmt.Errorf("problem has no test cases")
 	}
 
-	testCaseCount := float64(len(problem.TestCases))
-	averageExecutionTime := totalExecutionTime / testCaseCount
-	averageMemoryUsage := totalMemoryUsage / testCaseCount
+	testInputs := make([]json.RawMessage, len(problem.TestCases))
+	for i, testCase := range problem.TestCases {
+		if !json.Valid([]byte(testCase.Input)) {
+			return nil, fmt.Errorf("test case %d has invalid JSON input", i+1)
+		}
+		testInputs[i] = json.RawMessage(testCase.Input)
+	}
+	stdin, err := json.Marshal(testInputs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode batch input: %w", err)
+	}
+	wrapper, err := s.codeWrapper.WrapCodeBatch(code, languageID, string(stdin), problem)
+	if err != nil {
+		return nil, fmt.Errorf("failed to wrap batch submission: %w", err)
+	}
+
+	compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
+	// The problem limit applies to each test case. A batch performs all cases in
+	// one process, so preserve that budget while avoiding repeated compilation.
+	batchRunTimeout := runTimeout * len(problem.TestCases)
+	apiTimeout := time.Duration(compileTimeout+batchRunTimeout+15) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), apiTimeout)
+	defer cancel()
+
+	response, err := s.judge0Client.SubmitCode(ctx, types.Judge0Request{
+		SourceCode:       wrapper,
+		LanguageID:       languageID,
+		Stdin:            string(stdin),
+		CompileTimeout:   compileTimeout,
+		RunTimeout:       batchRunTimeout,
+		MemoryLimit:      memoryLimit,
+		EnableNetworking: false,
+	})
+	if err != nil {
+		if strings.Contains(err.Error(), "exceeded the DAILY quota") {
+			s.sendJudge0QuotaError()
+		}
+		if strings.Contains(err.Error(), "context deadline exceeded") || strings.Contains(err.Error(), "timeout") {
+			s.sendJudge0TimeoutError()
+		}
+		return nil, fmt.Errorf("Judge0 API error: %w", err)
+	}
+
+	if errorType, message := batchResponseError(response); errorType != types.ErrorTypeNone {
+		return &types.EvaluationResult{Passed: false, ErrorType: errorType, ErrorMessage: message}, nil
+	}
+
+	var actualOutputs []json.RawMessage
+	if err := json.Unmarshal([]byte(strings.TrimSpace(response.Stdout)), &actualOutputs); err != nil {
+		return &types.EvaluationResult{
+			Passed:       false,
+			ErrorType:    types.ErrorTypeRuntime,
+			ErrorMessage: "judge returned an invalid batch result",
+		}, nil
+	}
+	if len(actualOutputs) != len(problem.TestCases) {
+		return &types.EvaluationResult{
+			Passed:       false,
+			ErrorType:    types.ErrorTypeRuntime,
+			ErrorMessage: fmt.Sprintf("judge returned %d results for %d test cases", len(actualOutputs), len(problem.TestCases)),
+		}, nil
+	}
+
+	results := make([]types.TestCaseResult, len(problem.TestCases))
+	allPassed := true
+	perTestTime := getFloat64Time(response.Time) / float64(len(problem.TestCases))
+	for i, testCase := range problem.TestCases {
+		actual := string(actualOutputs[i])
+		passed := s.compareResults(actual, testCase.ExpectedOutput)
+		if !passed {
+			allPassed = false
+		}
+		results[i] = types.TestCaseResult{
+			TestCaseIndex: i,
+			Passed:        passed,
+			Input:         testCase.Input,
+			Expected:      testCase.ExpectedOutput,
+			Actual:        actual,
+			ExecutionTime: perTestTime,
+			MemoryUsage:   response.Memory,
+		}
+	}
 
 	return &types.EvaluationResult{
-		Passed:        allTestsPassed,
-		TestResults:   testCaseResults,
-		ExecutionTime: averageExecutionTime,
-		MemoryUsage:   averageMemoryUsage,
+		Passed:        allPassed,
+		TestResults:   results,
+		ExecutionTime: perTestTime,
+		MemoryUsage:   response.Memory,
 	}, nil
+}
+
+func batchResponseError(response *types.Judge0Response) (types.ErrorType, string) {
+	if response == nil {
+		return types.ErrorTypeRuntime, "judge returned no response"
+	}
+	switch {
+	case response.Status.ID == 5:
+		return types.ErrorTypeTimeout, response.Status.Description
+	case response.Status.ID == 6 || response.CompileError != "":
+		return types.ErrorTypeCompilation, firstNonEmpty(response.CompileOutput, response.CompileError, response.Status.Description)
+	case response.Status.ID >= 7 || response.Stderr != "":
+		return types.ErrorTypeRuntime, firstNonEmpty(response.Stderr, response.Message, response.Status.Description)
+	default:
+		return types.ErrorTypeNone, ""
+	}
 }
 
 func (s *judgeService) WrapCodeWithTestCase(code string, languageID int, testCase string, problem *model.Problem) (string, error) {
@@ -188,167 +272,6 @@ func (s *judgeService) getLanguageID(language string) (int, error) {
 	default:
 		return 0, fmt.Errorf("unsupported programming language: %s", language)
 	}
-}
-
-// evaluateTestCase evaluates code for a single test case
-func (s *judgeService) evaluateTestCase(
-	// user code
-	code string,
-	languageID int,
-	testCase model.TestCase,
-	problem *model.Problem,
-	index int,
-) *types.TestCaseResult {
-	s.logger.Debug().
-		Int("testCaseIndex", index).
-		Interface("testCase", testCase).
-		Msg("Starting test case evaluation")
-
-	wrapped, expectedStr, early := s.buildSingleWrappedCode(code, languageID, testCase, problem, index)
-	if early != nil {
-		return early
-	}
-
-	// Calculate timeout: compile timeout + run timeout + network overhead (add 15s buffer)
-	compileTimeout, runTimeout, _ := s.deriveLimits(problem)
-	apiTimeout := time.Duration(compileTimeout+runTimeout+15) * time.Second
-
-	ctx, cancel := context.WithTimeout(context.Background(), apiTimeout)
-	defer cancel()
-
-	s.logger.Debug().
-		Int("compileTimeout", compileTimeout).
-		Int("runTimeout", runTimeout).
-		Dur("apiTimeout", apiTimeout).
-		Msg("Context timeout set for Judge0 API call")
-
-	response, early := s.submitSingle(ctx, wrapped, languageID, testCase.Input, expectedStr, index, problem)
-	if early != nil {
-		return early
-	}
-
-	return s.evaluateSingleResponse(response, testCase, expectedStr, index)
-}
-
-func (s *judgeService) buildSingleWrappedCode(code string, languageID int, testCase model.TestCase, problem *model.Problem, index int) (string, string, *types.TestCaseResult) {
-	wrappedCode, err := s.codeWrapper.WrapCode(code, languageID, testCase.Input, problem)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to wrap code")
-		return "", "", &types.TestCaseResult{TestCaseIndex: index, Passed: false, ErrorMessage: fmt.Sprintf("Failed to wrap code: %v", err)}
-	}
-	s.logger.Debug().Int("testCaseIndex", index).Int("wrappedCodeBytes", len(wrappedCode)).Msg("Code wrapped successfully")
-	return wrappedCode, testCase.ExpectedOutput, nil
-}
-
-func (s *judgeService) submitSingle(ctx context.Context, wrappedCode string, languageID int, stdin string, expectedJSON string, index int, problem *model.Problem) (*types.Judge0Response, *types.TestCaseResult) {
-	compileTimeout, runTimeout, memoryLimit := s.deriveLimits(problem)
-	request := types.Judge0Request{
-		SourceCode: wrappedCode,
-		LanguageID: languageID,
-		// Output comparison is performed by this service using JSON semantics.
-		// Passing expected_output to Judge0 would apply a second, raw-text
-		// comparison and can incorrectly reject equivalent JSON formatting.
-		ExpectedOutput:   "",
-		Stdin:            stdin,
-		CompileTimeout:   compileTimeout,
-		RunTimeout:       runTimeout,
-		MemoryLimit:      memoryLimit,
-		EnableNetworking: false,
-	}
-
-	// Do not log source, stdin, or expected output: code is user-owned and test
-	// cases are judge-only data.
-	s.logger.Info().
-		Int("testCaseIndex", index).
-		Int("languageID", request.LanguageID).
-		Int("sourceBytes", len(request.SourceCode)).
-		Int("stdinBytes", len(request.Stdin)).
-		Int("compileTimeout", request.CompileTimeout).
-		Int("runTimeout", request.RunTimeout).
-		Int("memoryLimit", request.MemoryLimit).
-		Msg("Judge0 request prepared")
-
-	response, err := s.judge0Client.SubmitCode(ctx, request)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Judge0 API request failed")
-
-		// Check if it's a timeout error and send WebSocket notification
-		if strings.Contains(err.Error(), "exceeded the DAILY quota") {
-			s.sendJudge0QuotaError()
-		}
-		if strings.Contains(err.Error(), "context deadline exceeded") || strings.Contains(err.Error(), "timeout") {
-			s.sendJudge0TimeoutError()
-		}
-
-		return nil, &types.TestCaseResult{TestCaseIndex: index, Passed: false, ErrorMessage: fmt.Sprintf("Judge0 API error: %v", err)}
-	}
-	s.logger.Debug().Int("testCaseIndex", index).Interface("response", response).Msg("Received Judge0 API response")
-	return response, nil
-}
-
-func (s *judgeService) evaluateSingleResponse(response *types.Judge0Response, testCase model.TestCase, expectedJSON string, index int) *types.TestCaseResult {
-	inputJSON, _ := json.Marshal(testCase.Input)
-	result := &types.TestCaseResult{
-		TestCaseIndex: index,
-		Input:         string(inputJSON),
-		Expected:      expectedJSON,
-		ExecutionTime: getFloat64Time(response.Time),
-		MemoryUsage:   response.Memory,
-	}
-	if response.Status.ID == 5 {
-		result.ErrorType = types.ErrorTypeTimeout
-		result.ErrorMessage = response.Status.Description
-		return result
-	}
-	if response.Status.ID == 6 {
-		result.ErrorType = types.ErrorTypeCompilation
-		result.ErrorMessage = firstNonEmpty(response.CompileOutput, response.CompileError, response.Status.Description)
-		return result
-	}
-	if response.Status.ID >= 7 && response.Status.ID <= 12 {
-		result.ErrorType = types.ErrorTypeRuntime
-		result.ErrorMessage = firstNonEmpty(response.Stderr, response.Message, response.Status.Description)
-		return result
-	}
-	if response.Status.ID >= 13 {
-		result.ErrorType = types.ErrorTypeRuntime
-		result.ErrorMessage = firstNonEmpty(response.Message, response.Stderr, response.Status.Description)
-		return result
-	}
-	if response.CompileError != "" {
-		s.logger.Error().Str("compileError", response.CompileError).Msg("Compilation error occurred")
-		result.Passed = false
-		result.ErrorType = types.ErrorTypeCompilation
-		result.ErrorMessage = response.CompileError // Return raw compile error
-		return result
-	}
-	// NOTE: Judge0 may populate compile_output on compilation failures even when compile_error is empty.
-	// However, compile_output can also include non-fatal messages depending on language/toolchain.
-	// We only treat it as fatal when the run did not produce output and did not execute.
-	if response.CompileOutput != "" {
-		noStdout := strings.TrimSpace(response.Stdout) == ""
-		noStderr := strings.TrimSpace(response.Stderr) == ""
-		noExec := response.Time == nil || getFloat64Time(response.Time) == 0
-		if noStdout && noStderr && noExec {
-			s.logger.Error().Str("compileError", response.CompileOutput).Msg("Compilation error occurred")
-			result.Passed = false
-			result.ErrorType = types.ErrorTypeCompilation
-			result.ErrorMessage = response.CompileOutput
-			return result
-		}
-		s.logger.Debug().Str("compileOutput", response.CompileOutput).Msg("Non-fatal compile output received")
-	}
-	if response.Stderr != "" {
-		s.logger.Error().Str("stderr", response.Stderr).Msg("Runtime error occurred")
-		result.Passed = false
-		result.ErrorType = types.ErrorTypeRuntime
-		result.ErrorMessage = response.Stderr // Return raw stderr
-		return result
-	}
-	result.Actual = strings.TrimSpace(response.Stdout)
-	result.Passed = s.compareResults(result.Actual, result.Expected)
-	s.logger.Debug().Int("testCaseIndex", index).Bool("passed", result.Passed).Str("actual", result.Actual).Str("expected", result.Expected).Float64("executionTime", result.ExecutionTime).Float64("memoryUsage", result.MemoryUsage).Msg("Test case evaluation completed")
-	return result
 }
 
 func firstNonEmpty(values ...string) string {
@@ -483,7 +406,8 @@ func getFloat64Time(timeValue interface{}) float64 {
 	}
 }
 
-// EvaluateCodeWithRealtime Code evaluation with real-time notifications (hybrid: batch first, fallback to per-test)
+// EvaluateCodeWithRealtime evaluates every test case in one Judge0 submission
+// while preserving the existing per-case WebSocket result messages.
 func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, problem *model.Problem, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
 	// 1. Submission start notification (including total test cases)
 	s.notifySubmissionStarted(matchID, userID, len(problem.TestCases))
@@ -503,14 +427,26 @@ func (s *judgeService) EvaluateCodeWithRealtime(code string, language string, pr
 		return nil, fmt.Errorf("failed to get language ID: %w", err)
 	}
 
-	// LeetCode-style: always per-test evaluation with real-time notifications.
-	perTestEvaluationResult, perTestEvaluationError := s.aggregatePerTestWithRealtime(code, languageID, problem, matchID, userID)
-	if perTestEvaluationError == nil && perTestEvaluationResult != nil {
-		s.logEvaluationResult(perTestEvaluationResult, languageID, problem, "per_test")
-		s.notifySubmissionCompleted(matchID, userID, perTestEvaluationResult)
+	for testCaseIndex, testCase := range problem.TestCases {
+		s.notifyTestCaseRunning(matchID, userID, testCase, testCaseIndex, len(problem.TestCases))
 	}
 
-	return perTestEvaluationResult, perTestEvaluationError
+	result, evaluationError := s.aggregateBatch(code, languageID, problem)
+	if evaluationError != nil {
+		s.notifySubmissionFailed(matchID, userID, evaluationError.Error())
+		return nil, evaluationError
+	}
+	if result.ErrorType != types.ErrorTypeNone {
+		s.notifySubmissionFailed(matchID, userID, result.ErrorMessage)
+	} else if !result.Passed {
+		s.notifySubmissionFailed(matchID, userID, "test cases failed")
+	}
+	for testCaseIndex := range result.TestResults {
+		s.notifyTestCaseCompleted(matchID, userID, problem.TestCases[testCaseIndex], testCaseIndex, &result.TestResults[testCaseIndex])
+	}
+	s.logEvaluationResult(result, languageID, problem, "batch")
+	s.notifySubmissionCompleted(matchID, userID, result)
+	return result, nil
 }
 
 // notifySubmissionStarted Submission start notification
@@ -589,63 +525,6 @@ func (s *judgeService) notifySubmissionFailed(matchID uuid.UUID, userID uuid.UUI
 	} else {
 		s.logger.Warn().Msg("EventBus is nil, cannot publish SUBMISSION_FAILED")
 	}
-}
-
-// aggregatePerTestWithRealtime Individual evaluation with real-time notifications
-func (s *judgeService) aggregatePerTestWithRealtime(code string, languageID int, problem *model.Problem, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
-	var testCaseResults []types.TestCaseResult
-	var totalExecutionTime float64
-	var totalMemoryUsage float64
-	allTestsPassed := true
-	totalTestCases := len(problem.TestCases)
-
-	for testCaseIndex, testCase := range problem.TestCases {
-		// Test case execution start notification
-		s.notifyTestCaseRunning(matchID, userID, testCase, testCaseIndex, totalTestCases)
-
-		// Test case execution
-		testCaseResult := s.evaluateTestCase(code, languageID, testCase, problem, testCaseIndex)
-		testCaseResults = append(testCaseResults, *testCaseResult)
-
-		// Test case completion notification
-		s.notifyTestCaseCompleted(matchID, userID, testCase, testCaseIndex, testCaseResult)
-
-		// Aggregate metrics so far
-		totalExecutionTime += testCaseResult.ExecutionTime
-		totalMemoryUsage += testCaseResult.MemoryUsage
-
-		// Short-circuit on first failure to save Judge0 cost
-		if !testCaseResult.Passed {
-			allTestsPassed = false
-			errorMessage := testCaseResult.ErrorMessage
-			if errorMessage == "" {
-				errorMessage = fmt.Sprintf("test case %d failed", testCaseIndex+1)
-			}
-			s.logger.Debug().Int("testCaseIndex", testCaseIndex).Str("errorType", string(testCaseResult.ErrorType)).Msg("Test case failed")
-			s.notifySubmissionFailed(matchID, userID, errorMessage)
-			processed := float64(len(testCaseResults))
-			return &types.EvaluationResult{
-				Passed:        false,
-				ErrorType:     testCaseResult.ErrorType,
-				ErrorMessage:  errorMessage,
-				TestResults:   testCaseResults,
-				ExecutionTime: totalExecutionTime / processed,
-				MemoryUsage:   totalMemoryUsage / processed,
-			}, nil
-		}
-
-	}
-
-	testCaseCount := float64(len(problem.TestCases))
-	averageExecutionTime := totalExecutionTime / testCaseCount
-	averageMemoryUsage := totalMemoryUsage / testCaseCount
-
-	return &types.EvaluationResult{
-		Passed:        allTestsPassed,
-		TestResults:   testCaseResults,
-		ExecutionTime: averageExecutionTime,
-		MemoryUsage:   averageMemoryUsage,
-	}, nil
 }
 
 // sendJudge0TimeoutError sends a timeout error message via WebSocket

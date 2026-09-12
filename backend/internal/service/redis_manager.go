@@ -7,8 +7,8 @@ import (
 
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
-	"github.com/redis/go-redis/v9"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 )
 
 // RedisManager handles all Redis operations for matches
@@ -29,8 +29,8 @@ const (
 	MatchUsersKey     = "match:%s:users"     // Set: participant user IDs
 	MatchCodesKey     = "match:%s:codes"     // Hash: user_id -> code
 	MatchLanguagesKey = "match:%s:languages" // Hash: user_id -> language
-	MatchStatusKey = "match:%s:status" // String: current status
-	MatchExpiryKey = "match:%s:expiry" // String: expiration timestamp
+	MatchStatusKey    = "match:%s:status"    // String: current status
+	MatchExpiryKey    = "match:%s:expiry"    // String: expiration timestamp
 )
 
 // Match metadata fields
@@ -341,7 +341,11 @@ func (rm *RedisManager) CleanupMatch(matchID uuid.UUID) error {
 	matchCodesKey := fmt.Sprintf(MatchCodesKey, matchID.String())
 	matchExpiryKey := fmt.Sprintf(MatchExpiryKey, matchID.String())
 
-	pipe.Del(ctx, matchDataKey, matchUsersKey, matchCodesKey, matchExpiryKey)
+	matchLanguagesKey := fmt.Sprintf(MatchLanguagesKey, matchID.String())
+	matchStatusKey := fmt.Sprintf(MatchStatusKey, matchID.String())
+
+	// UNLINK releases keys asynchronously so large code hashes do not block Redis.
+	pipe.Unlink(ctx, matchDataKey, matchUsersKey, matchCodesKey, matchLanguagesKey, matchStatusKey, matchExpiryKey)
 
 	_, err := pipe.Exec(ctx)
 	if err != nil {
@@ -392,19 +396,15 @@ func (rm *RedisManager) GetMatchMetadata(matchID uuid.UUID) (map[string]string, 
 
 // CleanupExpiredMatches removes expired matches from Redis
 func (rm *RedisManager) CleanupExpiredMatches() error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-	// Find all match data keys
+	// Iterate incrementally. KEYS blocks Redis while traversing the entire keyspace.
 	pattern := fmt.Sprintf(MatchDataKey, "*")
-	keys, err := rm.rdb.Keys(ctx, pattern).Result()
-	if err != nil {
-		rm.logger.Error().Err(err).Msg("Failed to find match keys")
-		return fmt.Errorf("failed to find match keys: %w", err)
-	}
-
-	var expiredMatches []string
-
-	for _, key := range keys {
+	iterator := rm.rdb.Scan(ctx, 0, pattern, 100).Iterator()
+	expiredMatches := make([]uuid.UUID, 0)
+	for iterator.Next(ctx) {
+		key := iterator.Val()
 		// Extract match ID from key
 		matchIDStr := key[len("match:") : len(key)-len(":data")]
 		matchID, err := uuid.Parse(matchIDStr)
@@ -413,38 +413,24 @@ func (rm *RedisManager) CleanupExpiredMatches() error {
 			continue
 		}
 
-		// Check if match is expired
-		matchExpiryKey := fmt.Sprintf(MatchExpiryKey, matchID.String())
-		expiryStr, err := rm.rdb.Get(ctx, matchExpiryKey).Result()
+		// Match keys normally expire on their own. Clean up only malformed legacy
+		// entries that have lost their TTL.
+		ttl, err := rm.rdb.TTL(ctx, key).Result()
 		if err != nil {
-			if err == redis.Nil {
-				// No expiry set, consider it expired
-				expiredMatches = append(expiredMatches, matchID.String())
-			}
-			continue
+			return fmt.Errorf("failed to inspect match TTL: %w", err)
 		}
-
-		expiry, err := time.Parse(time.RFC3339, expiryStr)
-		if err != nil {
-			rm.logger.Warn().Str("expiry", expiryStr).Msg("Invalid expiry format")
-			continue
-		}
-
-		if time.Now().After(expiry) {
-			expiredMatches = append(expiredMatches, matchID.String())
+		if ttl == -1 {
+			expiredMatches = append(expiredMatches, matchID)
 		}
 	}
+	if err := iterator.Err(); err != nil {
+		return fmt.Errorf("failed to scan match keys: %w", err)
+	}
 
-	// Cleanup expired matches
-	for _, matchIDStr := range expiredMatches {
-		matchID, err := uuid.Parse(matchIDStr)
-		if err != nil {
-			continue
-		}
-
+	for _, matchID := range expiredMatches {
 		if err := rm.CleanupMatch(matchID); err != nil {
 			rm.logger.Error().Err(err).
-				Str("matchID", matchIDStr).
+				Str("matchID", matchID.String()).
 				Msg("Failed to cleanup expired match")
 		}
 	}

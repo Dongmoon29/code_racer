@@ -95,11 +95,7 @@ func (r *matchRepository) FindRecentByUserID(userID uuid.UUID, limit int) ([]mod
 	q := r.db.
 		Preload("PlayerA").
 		Preload("PlayerB").
-		Preload("Winner").
 		Preload("Problem").
-		Preload("Problem.Examples").
-		Preload("Problem.TestCases").
-		Preload("Problem.IOSchema").
 		Where("(player_a_id = ? OR player_b_id = ?) AND status = ?", userID, userID, model.MatchStatusFinished).
 		Order("created_at DESC")
 	if limit > 0 {

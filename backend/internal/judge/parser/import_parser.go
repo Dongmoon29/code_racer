@@ -5,6 +5,15 @@ import (
 	"strings"
 )
 
+var (
+	pythonImportPattern     = regexp.MustCompile(`^(import\s+\w+|from\s+\w+\s+import)`)
+	goQuotedImportPattern   = regexp.MustCompile(`^import\s+"[^"]+"`)
+	goNamedImportPattern    = regexp.MustCompile(`^import\s+\w+`)
+	javaScriptImportPattern = regexp.MustCompile(`^(import\s+.*from\s+["'].*["']|const\s+\w+\s*=\s*require\(["'].*["']\)|import\s+["'].*["'])`)
+	javaImportPattern       = regexp.MustCompile(`^import\s+[a-zA-Z_][a-zA-Z0-9_.*]*;`)
+	cppIncludePattern       = regexp.MustCompile(`^#include\s*[<"][^>"]*[>"]`)
+)
+
 // ImportInfo contains parsed import information for different languages
 type ImportInfo struct {
 	Imports []string
@@ -49,7 +58,7 @@ func (p *ImportParser) parsePythonImports(code string) *ImportInfo {
 		trimmed := strings.TrimSpace(line)
 
 		// Match various Python import patterns
-		if matched, _ := regexp.MatchString(`^(import\s+\w+|from\s+\w+\s+import)`, trimmed); matched {
+		if pythonImportPattern.MatchString(trimmed) {
 			imports = append(imports, trimmed)
 		} else {
 			nonImportLines = append(nonImportLines, line)
@@ -135,9 +144,9 @@ func (p *ImportParser) parseGoImports(code string) *ImportInfo {
 		}
 
 		// Single line import
-		if matched, _ := regexp.MatchString(`^import\s+"[^"]+"`, trimmed); matched {
+		if goQuotedImportPattern.MatchString(trimmed) {
 			imports = append(imports, trimmed)
-		} else if matched, _ := regexp.MatchString(`^import\s+\w+`, trimmed); matched {
+		} else if goNamedImportPattern.MatchString(trimmed) {
 			imports = append(imports, trimmed)
 		} else if inImportBlock && strings.HasPrefix(trimmed, `"`) {
 			// Multi-line import block
@@ -167,7 +176,7 @@ func (p *ImportParser) parseJavaScriptImports(code string) *ImportInfo {
 		trimmed := strings.TrimSpace(line)
 
 		// Match various JavaScript import patterns
-		if matched, _ := regexp.MatchString(`^(import\s+.*from\s+["'].*["']|const\s+\w+\s*=\s*require\(["'].*["']\)|import\s+["'].*["'])`, trimmed); matched {
+		if javaScriptImportPattern.MatchString(trimmed) {
 			imports = append(imports, trimmed)
 		} else {
 			nonImportLines = append(nonImportLines, line)
@@ -194,7 +203,7 @@ func (p *ImportParser) parseJavaImports(code string) *ImportInfo {
 		trimmed := strings.TrimSpace(line)
 
 		// Match Java import statements
-		if matched, _ := regexp.MatchString(`^import\s+[a-zA-Z_][a-zA-Z0-9_.*]*;`, trimmed); matched {
+		if javaImportPattern.MatchString(trimmed) {
 			imports = append(imports, trimmed)
 		} else {
 			nonImportLines = append(nonImportLines, line)
@@ -221,7 +230,7 @@ func (p *ImportParser) parseCppImports(code string) *ImportInfo {
 		trimmed := strings.TrimSpace(line)
 
 		// Match C++ include statements
-		if matched, _ := regexp.MatchString(`^#include\s*[<"][^>"]*[>"]`, trimmed); matched {
+		if cppIncludePattern.MatchString(trimmed) {
 			imports = append(imports, trimmed)
 		} else {
 			nonImportLines = append(nonImportLines, line)

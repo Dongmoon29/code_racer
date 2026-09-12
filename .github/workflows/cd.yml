@@ -37,12 +37,13 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v7
         with:
-          go-version: '1.25'
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
 
       - name: Backend Tests
         working-directory: ./backend
@@ -68,7 +69,7 @@ jobs:
       !contains(github.event.head_commit.modified, 'backend/services/auth/') ||
       contains(github.event.head_commit.modified, 'backend/')
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Google Auth
         id: auth

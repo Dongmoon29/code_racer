@@ -202,7 +202,7 @@ func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Reque
 	// Never log submitted source code or hidden test data. They may contain
 	// proprietary user code and judge-only inputs.
 	if c.logger != nil {
-		c.logger.Info().
+		c.logger.Debug().
 			Int("languageID", req.LanguageID).
 			Int("sourceBytes", len(req.SourceCode)).
 			Int("stdinBytes", len(req.Stdin)).
@@ -236,7 +236,7 @@ func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Reque
 
 	// Log before HTTP call
 	if c.logger != nil {
-		c.logger.Info().
+		c.logger.Debug().
 			Str("method", "POST").
 			Str("url", fmt.Sprintf("%s/submissions?wait=true", c.apiEndpoint)).
 			Msg("⏳ Sending HTTP request to Judge0...")
@@ -255,7 +255,7 @@ func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Reque
 				Msg("❌ Judge0 HTTP request failed")
 		}
 	} else if c.logger != nil {
-		c.logger.Info().
+		c.logger.Debug().
 			Int("statusCode", resp.StatusCode).
 			Dur("elapsed", elapsed).
 			Msg("✅ Judge0 HTTP response received")
@@ -292,7 +292,7 @@ func (c *Judge0Client) executeRequest(ctx context.Context, req types.Judge0Reque
 
 // logJudge0Response logs the Judge0 response in a readable format
 func (c *Judge0Client) logJudge0Response(resp *types.Judge0Response, statusCode int) {
-	logger := c.logger.Info().Int("statusCode", statusCode)
+	logger := c.logger.Debug().Int("statusCode", statusCode)
 	logger = logger.Int("judgeStatusID", resp.Status.ID).Str("judgeStatus", resp.Status.Description)
 
 	// Log execution metrics

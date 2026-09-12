@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS idx_matches_player_b_status_created_at;
+DROP INDEX IF EXISTS idx_matches_player_a_status_created_at;

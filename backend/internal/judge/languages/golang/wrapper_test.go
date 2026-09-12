@@ -117,3 +117,23 @@ func twoSum(nums []int, target int) []int {
 	assert.NoError(t, err, string(output))
 	assert.JSONEq(t, `[2,4]`, string(output))
 }
+
+func TestWrapper_WrapBatch_ExecutesAllArgumentArrays(t *testing.T) {
+	wrapper := NewWrapper()
+	problem := &model.Problem{
+		FunctionName: "add",
+		IOSchema: model.IOSchema{
+			ParamTypes: []string{"int", "int"},
+			ReturnType: "int",
+		},
+	}
+	wrapperCode, err := wrapper.WrapBatch("func add(a int, b int) int { return a + b }", `[[1,2],[4,5]]`, problem)
+	assert.NoError(t, err)
+	file := filepath.Join(t.TempDir(), "main.go")
+	assert.NoError(t, os.WriteFile(file, []byte(wrapperCode), 0o600))
+	cmd := exec.Command("go", "run", file)
+	cmd.Stdin = strings.NewReader(`[[1,2],[4,5]]`)
+	output, err := cmd.CombinedOutput()
+	assert.NoError(t, err, string(output))
+	assert.JSONEq(t, `[3,9]`, string(output))
+}
