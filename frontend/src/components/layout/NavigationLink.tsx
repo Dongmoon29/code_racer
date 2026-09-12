@@ -17,7 +17,7 @@ interface NavigationLinkProps {
 
 export function NavigationLink({ item, isActive, isCollapsed }: NavigationLinkProps) {
   const linkClasses = cn(
-    'group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors duration-200 md:w-full md:flex-none md:text-sm',
+    'group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 text-[clamp(8px,2.5vw,10px)] font-medium leading-none transition-colors duration-200 md:w-full md:flex-none md:text-sm md:leading-normal',
     isCollapsed
       ? 'md:flex-row md:px-2 md:py-2.5'
       : 'md:flex-row md:justify-start md:gap-3 md:px-3 md:py-2.5',
@@ -41,7 +41,7 @@ export function NavigationLink({ item, isActive, isCollapsed }: NavigationLinkPr
       aria-current={isActive ? 'page' : undefined}
     >
       <span className={iconWrapperClasses}>{item.icon}</span>
-      <span className="max-w-full truncate md:hidden">
+      <span className="whitespace-nowrap md:hidden">
         {item.label}
       </span>
       {!isCollapsed && (

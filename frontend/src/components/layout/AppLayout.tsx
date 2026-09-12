@@ -86,7 +86,7 @@ export default function AppLayout({
             onToggle={toggleSidebar}
           />
         )}
-        <div className="min-w-0 flex-1 px-4 pb-24 pt-5 md:p-8">
+        <div className="min-w-0 flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 md:p-8">
           <div className="max-w-7xl mx-auto">{children}</div>
         </div>
       </div>

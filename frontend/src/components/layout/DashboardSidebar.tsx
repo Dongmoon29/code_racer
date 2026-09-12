@@ -33,7 +33,7 @@ export function DashboardSidebar({
   return (
     <aside
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 flex h-[4.5rem] shrink-0 border-t border-[var(--gray-6)] bg-[color:var(--color-panel)]/95 shadow-[0_-8px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl md:sticky md:inset-auto md:top-0 md:h-screen md:flex-col md:overflow-y-auto md:border-r md:border-t-0 md:shadow-none md:transition-[width] md:duration-300",
+        "fixed inset-x-0 bottom-0 z-40 flex h-[calc(4.75rem+env(safe-area-inset-bottom))] shrink-0 border-t border-[var(--gray-6)] bg-[color:var(--color-panel)]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl md:sticky md:inset-auto md:top-0 md:h-screen md:flex-col md:overflow-y-auto md:border-r md:border-t-0 md:pb-0 md:shadow-none md:transition-[width] md:duration-300",
         isCollapsed ? "md:w-[4.5rem]" : "md:w-60",
       )}
     >
@@ -65,7 +65,7 @@ export function DashboardSidebar({
 
       {/* Navigation */}
       <nav
-        className="flex min-w-0 flex-1 items-stretch justify-around gap-1 px-2 py-2 md:w-full md:flex-col md:justify-start md:px-2 md:py-4"
+        className="flex min-w-0 flex-1 items-stretch justify-around gap-0.5 px-1.5 py-1.5 md:w-full md:flex-col md:justify-start md:gap-1 md:px-2 md:py-4"
         aria-label="Main navigation"
       >
         {primaryItems.map((item) => {
@@ -86,7 +86,7 @@ export function DashboardSidebar({
 
       {bottomItems.length > 0 && (
         <nav
-          className="flex w-1/5 min-w-0 items-stretch py-2 pr-2 md:w-full md:flex-col md:gap-1 md:border-t md:border-[var(--gray-6)] md:px-2 md:py-3"
+          className="flex w-1/5 min-w-0 items-stretch py-1.5 pr-1.5 md:w-full md:flex-col md:gap-1 md:border-t md:border-[var(--gray-6)] md:px-2 md:py-3"
           aria-label="Admin navigation"
         >
           {bottomItems.map((item) => {
