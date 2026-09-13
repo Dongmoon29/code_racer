@@ -120,7 +120,9 @@ const UserProfilePage = () => {
 
       <div className="py-3 sm:py-6">
         <div className="mx-auto w-full max-w-4xl">
-          <div className="mb-8">
+          <div
+            className={`mb-8 ${isOwnProfile ? "text-center md:text-left" : ""}`}
+          >
             {!isOwnProfile && (
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-11)]">Racer profile</p>
             )}
