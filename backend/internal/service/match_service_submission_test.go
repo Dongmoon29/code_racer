@@ -16,29 +16,33 @@ func TestValidateSubmissionRequest(t *testing.T) {
 	playerB := uuid.New()
 	match := &model.Match{PlayerAID: playerA, PlayerBID: &playerB}
 
-	require.NoError(t, validateSubmissionRequest(match, playerA, &model.SubmitSolutionRequest{
-		Code: "def solution(): pass", Language: "python",
-	}))
-	require.NoError(t, validateSubmissionRequest(match, playerB, &model.SubmitSolutionRequest{
-		Code: "func solution() {}", Language: "go",
-	}))
+	require.NoError(t, validateSubmissionRequest(match, playerA, "def solution(): pass", "python"))
+	require.NoError(t, validateSubmissionRequest(match, playerB, "func solution() {}", "go"))
 
 	tests := []struct {
-		name string
-		user uuid.UUID
-		req  *model.SubmitSolutionRequest
-		code apperr.Code
+		name     string
+		user     uuid.UUID
+		code     string
+		lang     string
+		expected apperr.Code
 	}{
-		{"non participant", uuid.New(), &model.SubmitSolutionRequest{Code: "x", Language: "go"}, apperr.CodeForbidden},
-		{"unsupported language", playerA, &model.SubmitSolutionRequest{Code: "x", Language: "rust"}, apperr.CodeBadRequest},
-		{"oversized code", playerA, &model.SubmitSolutionRequest{Code: strings.Repeat("x", maxSubmissionCodeBytes+1), Language: "python"}, apperr.CodeBadRequest},
+		{"non participant", uuid.New(), "x", "go", apperr.CodeForbidden},
+		{"unsupported language", playerA, "x", "rust", apperr.CodeBadRequest},
+		{"oversized code", playerA, strings.Repeat("x", maxSubmissionCodeBytes+1), "python", apperr.CodeBadRequest},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := validateSubmissionRequest(match, test.user, test.req)
+			err := validateSubmissionRequest(match, test.user, test.code, test.lang)
 			appErr, ok := apperr.As(err)
 			require.True(t, ok)
-			assert.Equal(t, test.code, appErr.Code)
+			assert.Equal(t, test.expected, appErr.Code)
 		})
 	}
+}
+
+func TestNewGameEngineRejectsMissingDependencies(t *testing.T) {
+	engine, err := NewGameEngine(GameEngineDependencies{})
+
+	require.Nil(t, engine)
+	require.ErrorContains(t, err, "game engine requires")
 }

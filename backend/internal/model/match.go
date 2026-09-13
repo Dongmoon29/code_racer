@@ -133,14 +133,3 @@ func (m *Match) ToResponse() *MatchResponse {
 		CreatedAt:                  m.CreatedAt,
 	}
 }
-
-type SubmitSolutionRequest struct {
-	Code     string `json:"code" binding:"required"`
-	Language string `json:"language" binding:"required"`
-}
-
-type SubmitSolutionResponse struct {
-	Success  bool   `json:"success"`
-	Message  string `json:"message"`
-	IsWinner bool   `json:"is_winner"`
-}

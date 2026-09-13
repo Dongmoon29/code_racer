@@ -1,11 +1,14 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/events"
+	"github.com/Dongmoon29/code_racer/internal/game"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/testutil"
 	"github.com/google/uuid"
@@ -13,6 +16,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+func TestParseMessageUsesTypedProtocol(t *testing.T) {
+	client := &Client{}
+	payload, err := json.Marshal(map[string]interface{}{
+		"type": constants.CodeUpdate,
+		"data": map[string]interface{}{"code": "return 1", "language": "javascript"},
+	})
+	assert.NoError(t, err)
+	message, ok := client.parseMessage(payload)
+	assert.True(t, ok)
+	assert.Equal(t, constants.CodeUpdate, message.Type)
+	assert.Equal(t, "return 1", message.Data.Code)
+	assert.Equal(t, "javascript", message.Data.Language)
+
+	_, ok = client.parseMessage([]byte(`{"type":"unknown"}`))
+	assert.False(t, ok)
+}
 
 func TestTestCaseRunningMessageIncludesCaseDetails(t *testing.T) {
 	message := testCaseRunningMessage(&events.TestCaseRunningEvent{
@@ -48,22 +68,20 @@ func TestTestCaseCompletedMessageIncludesAllOutputs(t *testing.T) {
 	assert.Equal(t, false, message["actual_output"])
 }
 
-// MockMatchmakingService is a mock implementation of MatchmakingService
-type MockMatchmakingService struct {
+// MockGameEngine implements the real-time engine port used by WebSocket tests.
+type MockGameEngine struct {
 	mock.Mock
 }
 
-func (m *MockMatchmakingService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (interface{}, error) {
-	args := m.Called(player1ID, player2ID, difficulty, mode)
-	return args.Get(0), args.Error(1)
+func (m *MockGameEngine) Create(_ context.Context, cmd game.CreateMatchCommand) (*model.Match, error) {
+	args := m.Called(cmd)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.Match), args.Error(1)
 }
 
-func (m *MockMatchmakingService) CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (interface{}, error) {
-	args := m.Called(playerID, difficulty)
-	return args.Get(0), args.Error(1)
-}
-
-func (m *MockMatchmakingService) GetActiveMatch(userID uuid.UUID) (*model.Match, error) {
+func (m *MockGameEngine) GetActive(_ context.Context, userID uuid.UUID) (*model.Match, error) {
 	args := m.Called(userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -71,11 +89,15 @@ func (m *MockMatchmakingService) GetActiveMatch(userID uuid.UUID) (*model.Match,
 	return args.Get(0).(*model.Match), args.Error(1)
 }
 
-func (m *MockMatchmakingService) HandlePlayerConnected(matchID, userID uuid.UUID) error {
+func (m *MockGameEngine) Connect(_ context.Context, cmd game.ParticipantCommand) error {
 	return nil
 }
 
-func (m *MockMatchmakingService) HandlePlayerDisconnected(matchID, userID uuid.UUID) error {
+func (m *MockGameEngine) Disconnect(_ context.Context, cmd game.ParticipantCommand) error {
+	return nil
+}
+
+func (m *MockGameEngine) UpdateCode(_ context.Context, _ game.CodeSnapshotCommand) error {
 	return nil
 }
 
@@ -119,13 +141,13 @@ func (m *MockUserRepository) GetLeaderboardUsers(limit int) ([]*model.User, erro
 func TestWebSocketService_NewWebSocketService(t *testing.T) {
 	// Setup
 	logger := testutil.SetupTestLogger()
-	mockMatchmakingService := &MockMatchmakingService{}
+	mockGameEngine := &MockGameEngine{}
 	mockUserRepository := &MockUserRepository{}
 
 	var mockRDB *redis.Client
 
 	// Execute
-	service := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository, nil)
+	service := NewWebSocketService(mockRDB, logger, mockGameEngine, mockUserRepository, nil)
 
 	// Assert
 	assert.NotNil(t, service)
@@ -135,18 +157,20 @@ func TestWebSocketService_NewWebSocketService(t *testing.T) {
 func TestWebSocketService_InitHub(t *testing.T) {
 	// Setup
 	logger := testutil.SetupTestLogger()
-	mockMatchmakingService := &MockMatchmakingService{}
+	mockGameEngine := &MockGameEngine{}
 	mockUserRepository := &MockUserRepository{}
 
 	var mockRDB *redis.Client
 
-	service := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository, nil)
+	service := NewWebSocketService(mockRDB, logger, mockGameEngine, mockUserRepository, nil)
 
 	// Execute
 	hub := service.InitHub()
+	secondHub := service.InitHub()
 
 	// Assert
 	assert.NotNil(t, hub)
+	assert.Same(t, hub, secondHub, "InitHub must not replace the live hub")
 	assert.NotNil(t, hub.clients)
 	assert.NotNil(t, hub.matchClients)
 	assert.NotNil(t, hub.matchingClients)
@@ -156,7 +180,7 @@ func TestWebSocketService_InitHub(t *testing.T) {
 	assert.NotNil(t, hub.matchBroadcast)
 	assert.NotNil(t, hub.startMatching)
 	assert.NotNil(t, hub.cancelMatching)
-	assert.Equal(t, mockMatchmakingService, hub.matchmakingService)
+	assert.Equal(t, mockGameEngine, hub.engine)
 	assert.Equal(t, mockUserRepository, hub.userRepository)
 	assert.Equal(t, logger, hub.logger)
 }
@@ -164,12 +188,12 @@ func TestWebSocketService_InitHub(t *testing.T) {
 func TestWebSocketService_HandleConnection(t *testing.T) {
 	// Setup
 	logger := testutil.SetupTestLogger()
-	mockMatchmakingService := &MockMatchmakingService{}
+	mockGameEngine := &MockGameEngine{}
 	mockUserRepository := &MockUserRepository{}
 
 	var mockRDB *redis.Client
 
-	service := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository, nil)
+	service := NewWebSocketService(mockRDB, logger, mockGameEngine, mockUserRepository, nil)
 	service.InitHub()
 
 	userID := uuid.New()
@@ -199,12 +223,12 @@ func TestWebSocketService_HandleConnection(t *testing.T) {
 func TestWebSocketService_BroadcastToMatch(t *testing.T) {
 	// Setup
 	logger := testutil.SetupTestLogger()
-	mockMatchmakingService := &MockMatchmakingService{}
+	mockGameEngine := &MockGameEngine{}
 	mockUserRepository := &MockUserRepository{}
 
 	var mockRDB *redis.Client
 
-	service := NewWebSocketService(mockRDB, logger, mockMatchmakingService, mockUserRepository, nil)
+	service := NewWebSocketService(mockRDB, logger, mockGameEngine, mockUserRepository, nil)
 	service.InitHub()
 
 	matchID := uuid.New()

@@ -2,797 +2,92 @@ package service
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"math"
-	"math/big"
-	"strings"
-	"time"
 
-	"github.com/Dongmoon29/code_racer/internal/apperr"
-	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/events"
+	"github.com/Dongmoon29/code_racer/internal/game"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
-	"github.com/Dongmoon29/code_racer/internal/types"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
 )
 
-type MatchService interface {
-	SubmitSolution(gameID uuid.UUID, userID uuid.UUID, req *model.SubmitSolutionRequest) (*model.SubmitSolutionResponse, error)
-	UpdateCode(gameID uuid.UUID, userID uuid.UUID, code string) error
-	GetPlayerCode(gameID uuid.UUID, userID uuid.UUID) (string, error)
-
-	// Matchmaking methods
-	GetRandomProblemByDifficulty(difficulty string) (*model.Problem, error)
-	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error)
-	CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (*model.Match, error)
-
-	// Query methods
-	GetMatch(matchID uuid.UUID) (*model.Match, error)
-	GetActiveMatchForUser(userID uuid.UUID) (*model.Match, error)
-	HandlePlayerConnected(matchID, userID uuid.UUID) error
-	HandlePlayerDisconnected(matchID, userID uuid.UUID) error
-	CloseMatch(matchID, userID uuid.UUID) error
-}
+// matchService is a small facade. Each workflow is implemented by a focused
+// component so HTTP and WebSocket transports share one stable entry point.
 type matchService struct {
-	matchRepo     repository.MatchRepository
-	problemRepo   repository.ProblemRepository
-	rdb           *redis.Client
-	redisManager  *RedisManager
-	logger        logger.Logger
-	judgeService  interfaces.JudgeService
-	userRepo      interfaces.UserRepository
-	wsBroadcaster interfaces.WebSocketBroadcaster
-	eventBus      events.EventBus
+	lifecycle     *matchLifecycleService
+	submissions   *submissionService
+	reconnections *reconnectionService
 }
 
-// NewMatchService creates a new MatchService instance with the provided dependencies
-func NewMatchService(
-	matchRepo repository.MatchRepository,
-	problemRepo repository.ProblemRepository,
-	rdb *redis.Client,
-	judgeService interfaces.JudgeService,
-	userRepo interfaces.UserRepository,
-	logger logger.Logger,
-	wsBroadcaster interfaces.WebSocketBroadcaster,
-	opts ...interface{},
-) MatchService {
-	svc := &matchService{
-		matchRepo:     matchRepo,
-		problemRepo:   problemRepo,
-		rdb:           rdb,
-		redisManager:  NewRedisManager(rdb, logger),
-		judgeService:  judgeService,
-		userRepo:      userRepo,
-		logger:        logger,
-		wsBroadcaster: wsBroadcaster,
-	}
+var _ interfaces.GameEngine = (*matchService)(nil)
 
-	if len(opts) > 0 {
-		if bus, ok := opts[0].(events.EventBus); ok {
-			svc.eventBus = bus
-		}
-	}
-	if rdb != nil {
-		go svc.runDisconnectExpiryWorker()
-	}
-	return svc
+type GameEngineDependencies struct {
+	MatchRepository   repository.MatchRepository
+	ProblemRepository repository.ProblemRepository
+	Redis             *redis.Client
+	Judge             interfaces.JudgeService
+	Users             interfaces.UserRepository
+	Logger            logger.Logger
+	Broadcaster       interfaces.WebSocketBroadcaster
+	Events            events.EventBus
 }
 
-const disconnectedPlayersKey = "disconnected_match_players"
-
-func disconnectMember(matchID, userID uuid.UUID) string {
-	return matchID.String() + ":" + userID.String()
+func NewGameEngine(deps GameEngineDependencies) (interfaces.GameEngine, error) {
+	if deps.MatchRepository == nil || deps.ProblemRepository == nil || deps.Redis == nil || deps.Judge == nil || deps.Users == nil || deps.Logger == nil {
+		return nil, errors.New("game engine requires match/problem repositories, Redis, judge, users, and logger")
+	}
+	state := NewRedisManager(deps.Redis, deps.Logger)
+	ratings := newRatingService(deps.MatchRepository, deps.Users, deps.Logger)
+	reconnections := newReconnectionService(deps.MatchRepository, deps.Redis, state, deps.Events, deps.Logger)
+	return &matchService{
+		lifecycle:     newMatchLifecycleService(deps.MatchRepository, deps.ProblemRepository, deps.Redis, state, reconnections, deps.Events, deps.Logger),
+		submissions:   newSubmissionService(deps.MatchRepository, deps.Judge, deps.Redis, state, ratings, deps.Logger, deps.Events, deps.Broadcaster),
+		reconnections: reconnections,
+	}, nil
 }
 
-func disconnectMarkerKey(matchID, userID uuid.UUID) string {
-	return fmt.Sprintf("match:%s:user:%s:disconnect", matchID, userID)
+func (s *matchService) Start(ctx context.Context) { s.reconnections.Start(ctx) }
+func (s *matchService) Stop()                     { s.reconnections.Stop() }
+
+func (s *matchService) Create(ctx context.Context, cmd game.CreateMatchCommand) (*model.Match, error) {
+	return s.lifecycle.CreateMatch(ctx, cmd.PlayerAID, cmd.PlayerBID, string(cmd.Difficulty), string(cmd.Mode))
 }
 
-func (s *matchService) HandlePlayerConnected(matchID, userID uuid.UUID) error {
-	if matchID == uuid.Nil || s.rdb == nil {
-		return nil
-	}
-	match, err := s.matchRepo.FindByID(matchID)
-	if err != nil {
-		return err
-	}
-	if match.PlayerAID != userID && (match.PlayerBID == nil || *match.PlayerBID != userID) {
-		return apperr.New(apperr.CodeForbidden, "You are not a participant in this match")
-	}
-	ctx := context.Background()
-	pipe := s.rdb.TxPipeline()
-	pipe.Del(ctx, disconnectMarkerKey(matchID, userID))
-	pipe.ZRem(ctx, disconnectedPlayersKey, disconnectMember(matchID, userID))
-	_, err = pipe.Exec(ctx)
-	return err
+func (s *matchService) CreateSingle(ctx context.Context, cmd game.CreateSingleMatchCommand) (*model.Match, error) {
+	return s.lifecycle.CreateSingle(ctx, cmd.PlayerID, string(cmd.Difficulty))
 }
 
-func (s *matchService) HandlePlayerDisconnected(matchID, userID uuid.UUID) error {
-	if matchID == uuid.Nil || s.rdb == nil {
-		return nil
-	}
-	match, err := s.matchRepo.FindByID(matchID)
-	if err != nil {
-		return err
-	}
-	if match.Status != model.MatchStatusPlaying && match.Status != model.MatchStatusWaiting {
-		return nil
-	}
-	if match.PlayerAID != userID && (match.PlayerBID == nil || *match.PlayerBID != userID) {
-		return apperr.New(apperr.CodeForbidden, "You are not a participant in this match")
-	}
-	deadline := time.Now().Add(constants.ReconnectionGracePeriod)
-	ctx := context.Background()
-	pipe := s.rdb.TxPipeline()
-	// Keep the marker longer than the grace period so a restarted service can
-	// still resolve an overdue disconnect from the sorted-set deadline.
-	pipe.Set(ctx, disconnectMarkerKey(matchID, userID), deadline.UnixMilli(), 24*time.Hour)
-	pipe.ZAdd(ctx, disconnectedPlayersKey, redis.Z{Score: float64(deadline.UnixMilli()), Member: disconnectMember(matchID, userID)})
-	_, err = pipe.Exec(ctx)
-	return err
+func (s *matchService) Get(_ context.Context, matchID uuid.UUID) (*model.Match, error) {
+	return s.lifecycle.Get(matchID)
 }
 
-func (s *matchService) runDisconnectExpiryWorker() {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-	for range ticker.C {
-		s.resolveExpiredDisconnects(context.Background())
-	}
+func (s *matchService) GetActive(_ context.Context, userID uuid.UUID) (*model.Match, error) {
+	return s.lifecycle.GetActive(userID)
 }
 
-func (s *matchService) resolveExpiredDisconnects(ctx context.Context) {
-	members, err := s.rdb.ZRangeByScore(ctx, disconnectedPlayersKey, &redis.ZRangeBy{
-		Min: "-inf", Max: fmt.Sprint(time.Now().UnixMilli()), Count: 100,
-	}).Result()
-	if err != nil {
-		s.logger.Warn().Err(err).Msg("Failed to scan expired disconnects")
-		return
-	}
-	for _, member := range members {
-		parts := strings.Split(member, ":")
-		if len(parts) != 2 {
-			_ = s.rdb.ZRem(ctx, disconnectedPlayersKey, member).Err()
-			continue
-		}
-		matchID, matchErr := uuid.Parse(parts[0])
-		userID, userErr := uuid.Parse(parts[1])
-		if matchErr != nil || userErr != nil {
-			_ = s.rdb.ZRem(ctx, disconnectedPlayersKey, member).Err()
-			continue
-		}
-		s.resolveExpiredDisconnect(ctx, matchID, userID, member)
-	}
+func (s *matchService) Close(ctx context.Context, cmd game.ParticipantCommand) error {
+	return s.lifecycle.Close(ctx, cmd.MatchID, cmd.UserID)
 }
 
-func (s *matchService) resolveExpiredDisconnect(ctx context.Context, matchID, userID uuid.UUID, member string) {
-	lockKey := fmt.Sprintf("match:%s:disconnect_resolution_lock", matchID)
-	locked, err := s.rdb.SetNX(ctx, lockKey, userID.String(), 30*time.Second).Result()
-	if err != nil || !locked {
-		return
-	}
-	defer s.rdb.Del(ctx, lockKey)
-	if exists, _ := s.rdb.Exists(ctx, disconnectMarkerKey(matchID, userID)).Result(); exists == 0 {
-		_ = s.rdb.ZRem(ctx, disconnectedPlayersKey, member).Err()
-		return
-	}
-	match, err := s.matchRepo.FindByID(matchID)
-	if err != nil || (match.Status != model.MatchStatusPlaying && match.Status != model.MatchStatusWaiting) {
-		s.clearMatchDisconnects(ctx, matchID)
-		return
-	}
-	if match.Mode == model.MatchModeSingle {
-		if err := s.matchRepo.CloseMatch(matchID, userID); err != nil {
-			return
-		}
-	} else {
-		finished, err := s.matchRepo.FinishDraw(matchID)
-		if err != nil || !finished {
-			return
-		}
-		_ = s.redisManager.UpdateMatchStatus(matchID, model.MatchStatusFinished)
-		if s.eventBus != nil {
-			s.eventBus.Publish(events.TopicGameFinished, &events.GameFinishedEvent{MatchID: matchID.String()})
-		}
-	}
-	s.clearMatchDisconnects(ctx, matchID)
+func (s *matchService) Submit(ctx context.Context, cmd game.SubmitCommand) (*game.SubmissionResult, error) {
+	return s.submissions.Submit(ctx, cmd)
 }
 
-func (s *matchService) clearMatchDisconnects(ctx context.Context, matchID uuid.UUID) {
-	users, _ := s.redisManager.GetMatchUsers(matchID)
-	pipe := s.rdb.TxPipeline()
-	for _, rawUserID := range users {
-		userID, err := uuid.Parse(rawUserID)
-		if err != nil {
-			continue
-		}
-		pipe.Del(ctx, disconnectMarkerKey(matchID, userID))
-		pipe.ZRem(ctx, disconnectedPlayersKey, disconnectMember(matchID, userID))
-	}
-	_, _ = pipe.Exec(ctx)
+func (s *matchService) UpdateCode(_ context.Context, cmd game.CodeSnapshotCommand) error {
+	return s.submissions.UpdateCode(cmd.MatchID, cmd.UserID, cmd.Code, cmd.Language)
 }
 
-// SubmitSolution handles code submission and evaluation
-func (s *matchService) SubmitSolution(matchID uuid.UUID, userID uuid.UUID, req *model.SubmitSolutionRequest) (*model.SubmitSolutionResponse, error) {
-	s.logger.Debug().
-		Str("matchID", matchID.String()).
-		Str("userID", userID.String()).
-		Msg("Starting solution submission")
-
-	match, err := s.fetchMatch(matchID)
-	if err != nil {
-		return nil, err
-	}
-	if err := validateSubmissionRequest(match, userID, req); err != nil {
-		return nil, err
-	}
-
-	result, err := s.evaluateCode(req, match, matchID, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	if result.Passed {
-		return s.handleWinner(matchID, userID, req.Code, req.Language, result)
-	}
-
-	return s.createFailureResponse(result), nil
+func (s *matchService) GetPlayerCode(_ context.Context, cmd game.ParticipantCommand) (string, error) {
+	return s.submissions.GetPlayerCode(cmd.MatchID, cmd.UserID)
 }
 
-const maxSubmissionCodeBytes = 100_000
-
-func validateSubmissionRequest(match *model.Match, userID uuid.UUID, req *model.SubmitSolutionRequest) error {
-	if match == nil || req == nil {
-		return apperr.New(apperr.CodeBadRequest, "Invalid submission")
-	}
-	isParticipant := match.PlayerAID == userID || (match.PlayerBID != nil && *match.PlayerBID == userID)
-	if !isParticipant {
-		return apperr.New(apperr.CodeForbidden, "You are not a participant in this match")
-	}
-	if len(req.Code) > maxSubmissionCodeBytes {
-		return apperr.New(apperr.CodeBadRequest, "Submitted code is too large")
-	}
-	switch strings.ToLower(strings.TrimSpace(req.Language)) {
-	case "javascript", "python", "go":
-		return nil
-	default:
-		return apperr.New(apperr.CodeBadRequest, "Unsupported programming language")
-	}
+func (s *matchService) Connect(ctx context.Context, cmd game.ParticipantCommand) error {
+	return s.reconnections.Connected(ctx, cmd.MatchID, cmd.UserID)
 }
 
-// fetchMatch retrieves the match from repository
-func (s *matchService) fetchMatch(matchID uuid.UUID) (*model.Match, error) {
-	match, err := s.matchRepo.FindPlayingMatchByID(matchID)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to find playing match")
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperr.Wrap(err, apperr.CodeNotFound, "Match not found")
-		}
-		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load match")
-	}
-	return match, nil
-}
-
-// evaluateCode evaluates the submitted code via Judge service
-func (s *matchService) evaluateCode(req *model.SubmitSolutionRequest, match *model.Match, matchID uuid.UUID, userID uuid.UUID) (*types.EvaluationResult, error) {
-	s.logger.Debug().
-		Int("codeBytes", len(req.Code)).
-		Str("language", req.Language).
-		Msg("Evaluating submitted code")
-
-	result, err := s.judgeService.EvaluateCodeWithRealtime(req.Code, req.Language, &match.Problem, matchID, userID)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Code evaluation failed")
-		if strings.Contains(err.Error(), "exceeded the DAILY quota") {
-			return nil, apperr.New(apperr.CodeQuotaExceeded, "Code evaluation service quota exceeded. Please try again later.")
-		}
-		return nil, apperr.Wrap(err, apperr.CodeUpstreamUnavailable, "Code evaluation failed")
-	}
-
-	s.logger.Debug().
-		Bool("passed", result.Passed).
-		Float64("executionTime", result.ExecutionTime).
-		Float64("memoryUsage", result.MemoryUsage).
-		Int("testCaseCount", len(result.TestResults)).
-		Str("errorMessage", result.ErrorMessage).
-		Msg("Code evaluation completed")
-
-	return result, nil
-}
-
-// handleWinner processes winner determination with distributed locking
-func (s *matchService) handleWinner(matchID uuid.UUID, userID uuid.UUID, code, language string, result *types.EvaluationResult) (*model.SubmitSolutionResponse, error) {
-	s.logger.Debug().Msg("All test cases passed, setting winner")
-
-	ctx := context.Background()
-	lockKey := fmt.Sprintf("match:%s:winner_lock", matchID.String())
-	lockValue := userID.String()
-	lockExpiry := 10 * time.Second
-
-	lockAcquired, err := s.acquireWinnerLock(ctx, lockKey, lockValue, lockExpiry)
-	if err != nil {
-		return nil, err
-	}
-
-	if !lockAcquired {
-		return s.createSecondPlaceResponse(), nil
-	}
-
-	defer s.releaseWinnerLock(ctx, lockKey)
-
-	if err := s.persistWinner(matchID, userID, code, language, result); err != nil {
-		return nil, err
-	}
-
-	s.updateMatchStatusInRedis(ctx, matchID)
-	s.updateEloRatings(matchID, userID)
-	s.sendGameFinishedNotification(matchID, userID)
-
-	s.logger.Info().Msg("Match completed - winner determined")
-	return s.createSuccessResponse(), nil
-}
-
-// acquireWinnerLock attempts to acquire distributed lock for winner determination
-func (s *matchService) acquireWinnerLock(ctx context.Context, lockKey, lockValue string, lockExpiry time.Duration) (bool, error) {
-	lockAcquired, err := s.rdb.SetNX(ctx, lockKey, lockValue, lockExpiry).Result()
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to acquire winner lock")
-		return false, err
-	}
-	return lockAcquired, nil
-}
-
-// releaseWinnerLock releases the distributed lock
-func (s *matchService) releaseWinnerLock(ctx context.Context, lockKey string) {
-	s.rdb.Del(ctx, lockKey)
-}
-
-// persistWinner saves winner information to database
-func (s *matchService) persistWinner(matchID uuid.UUID, userID uuid.UUID, code, language string, result *types.EvaluationResult) error {
-	if err := s.matchRepo.SetWinner(matchID, userID, code, language, result.ExecutionTime, result.MemoryUsage); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to set winner")
-		return err
-	}
-	return nil
-}
-
-// updateMatchStatusInRedis updates match status to finished in Redis
-func (s *matchService) updateMatchStatusInRedis(ctx context.Context, matchID uuid.UUID) {
-	matchKey := fmt.Sprintf("match:%s", matchID.String())
-	if err := s.rdb.HSet(ctx, matchKey, "status", string(model.MatchStatusFinished)).Err(); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to update match status in Redis")
-	}
-}
-
-// updateEloRatings updates ELO ratings for ranked matches
-func (s *matchService) updateEloRatings(matchID uuid.UUID, userID uuid.UUID) {
-	updatedMatch, err := s.matchRepo.FindByID(matchID)
-	if err != nil || updatedMatch == nil || updatedMatch.Mode != model.MatchModeRankedPVP || updatedMatch.PlayerBID == nil {
-		return
-	}
-
-	winnerID, loserID := s.determineWinnerAndLoser(updatedMatch, userID)
-	if err := s.applyEloUpdate(updatedMatch, winnerID, loserID); err != nil {
-		s.logger.Warn().Err(err).Msg("Failed to update ELO ratings")
-	}
-}
-
-// determineWinnerAndLoser determines winner and loser IDs from match
-func (s *matchService) determineWinnerAndLoser(match *model.Match, userID uuid.UUID) (uuid.UUID, uuid.UUID) {
-	winnerID := userID
-	var loserID uuid.UUID
-	if winnerID == match.PlayerAID {
-		loserID = *match.PlayerBID
-	} else {
-		loserID = match.PlayerAID
-	}
-	return winnerID, loserID
-}
-
-// applyEloUpdate applies ELO rating updates to winner and loser
-func (s *matchService) applyEloUpdate(match *model.Match, winnerID, loserID uuid.UUID) error {
-	winner, err1 := s.userRepo.FindByID(winnerID)
-	loser, err2 := s.userRepo.FindByID(loserID)
-	if err1 != nil || err2 != nil || winner == nil || loser == nil {
-		return fmt.Errorf("failed to load users for ELO update")
-	}
-
-	winnerOld := winner.Rating
-	loserOld := loser.Rating
-	newWinner, newLoser := applyElo(winnerOld, loserOld, true)
-
-	winner.Rating = newWinner
-	loser.Rating = newLoser
-
-	if err := s.userRepo.Update(winner); err != nil {
-		return fmt.Errorf("failed to update winner rating: %w", err)
-	}
-	if err := s.userRepo.Update(loser); err != nil {
-		return fmt.Errorf("failed to update loser rating: %w", err)
-	}
-
-	match.WinnerRatingDelta = newWinner - winnerOld
-	match.LoserRatingDelta = newLoser - loserOld
-	if err := s.matchRepo.Update(match); err != nil {
-		return fmt.Errorf("failed to update match rating deltas: %w", err)
-	}
-
-	return nil
-}
-
-// createSuccessResponse creates success response for winner
-func (s *matchService) createSuccessResponse() *model.SubmitSolutionResponse {
-	return &model.SubmitSolutionResponse{
-		Success:  true,
-		Message:  "Your solution passed all test cases",
-		IsWinner: true,
-	}
-}
-
-// createSecondPlaceResponse creates response for second place
-func (s *matchService) createSecondPlaceResponse() *model.SubmitSolutionResponse {
-	s.logger.Info().Msg("Another player already won the game")
-	return &model.SubmitSolutionResponse{
-		Success:  true,
-		Message:  "Your solution passed all test cases, but another player won first",
-		IsWinner: false,
-	}
-}
-
-// createFailureResponse creates failure response
-func (s *matchService) createFailureResponse(result *types.EvaluationResult) *model.SubmitSolutionResponse {
-	s.logger.Debug().Msg("Solution failed some test cases")
-	return &model.SubmitSolutionResponse{
-		Success:  false,
-		Message:  fmt.Sprintf("Your solution failed: %s", result.ErrorMessage),
-		IsWinner: false,
-	}
-}
-
-// applyElo applies ELO update with K-factor to winner/loser ratings.
-// Returns updated ratings (winnerNew, loserNew).
-func applyElo(winnerRating int, loserRating int, winnerWon bool) (int, int) {
-	const kFactor = 32.0
-	ra := float64(winnerRating)
-	rb := float64(loserRating)
-	ea := 1.0 / (1.0 + math.Pow(10.0, (rb-ra)/400.0))
-	eb := 1.0 - ea
-	var sa, sb float64
-	if winnerWon {
-		sa, sb = 1.0, 0.0
-	} else {
-		sa, sb = 0.0, 1.0
-	}
-	newRA := int(math.Round(ra + kFactor*(sa-ea)))
-	newRB := int(math.Round(rb + kFactor*(sb-eb)))
-	if newRA < 0 {
-		newRA = 0
-	}
-	if newRB < 0 {
-		newRB = 0
-	}
-	return newRA, newRB
-}
-
-// UpdateCode stores user's code in Redis and will be broadcasted by WebSocket layer
-func (s *matchService) UpdateCode(matchID uuid.UUID, userID uuid.UUID, code string) error {
-	match, err := s.matchRepo.FindByID(matchID)
-	if err != nil {
-		return err
-	}
-
-	// Validate match status
-	if match.Status != model.MatchStatusPlaying {
-		return errors.New("match is not in playing status")
-	}
-
-	// Persist code in Redis
-	if err := s.redisManager.UpdateUserCode(matchID, userID, code); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// GetPlayerCode returns the user's code snapshot stored in Redis
-func (s *matchService) GetPlayerCode(matchID uuid.UUID, userID uuid.UUID) (string, error) {
-	return s.redisManager.GetUserCode(matchID, userID)
-}
-
-func (s *matchService) CloseMatch(matchID uuid.UUID, userID uuid.UUID) error {
-	match, err := s.matchRepo.FindByID(matchID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return apperr.Wrap(err, apperr.CodeNotFound, "Match not found")
-		}
-		return apperr.Wrap(err, apperr.CodeInternal, "Failed to load match")
-	}
-	if match.PlayerAID != userID && (match.PlayerBID == nil || *match.PlayerBID != userID) {
-		return apperr.New(apperr.CodeForbidden, "You are not a participant in this match")
-	}
-	if match.Status != model.MatchStatusPlaying && match.Status != model.MatchStatusWaiting {
-		return nil
-	}
-
-	if match.Mode == model.MatchModeSingle {
-		if err := s.matchRepo.CloseMatch(matchID, userID); err != nil {
-			return err
-		}
-	} else {
-		finished, err := s.matchRepo.FinishDraw(matchID)
-		if err != nil {
-			return err
-		}
-		if finished && s.eventBus != nil {
-			s.eventBus.Publish(events.TopicGameFinished, &events.GameFinishedEvent{MatchID: matchID.String()})
-		}
-	}
-
-	// Cleanup match data in Redis
-	ctx := context.Background()
-	s.clearMatchDisconnects(ctx, matchID)
-
-	// Get participants in the match
-	users, err := s.redisManager.GetMatchUsers(matchID)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to get match users from Redis")
-	}
-
-	// Remove each user from the match
-	for _, uid := range users {
-		userID, err := uuid.Parse(uid)
-		if err != nil {
-			s.logger.Error().Err(err).Str("userID", uid).Msg("Failed to parse user ID")
-			continue
-		}
-		if err := s.redisManager.RemoveUserFromMatch(matchID, userID); err != nil {
-			s.logger.Error().Err(err).Str("userID", uid).Msg("Failed to remove user from match")
-		}
-	}
-
-	// Cleanup all remaining match keys
-	if err := s.redisManager.CleanupMatch(matchID); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to cleanup match")
-	}
-
-	// Cleanup winner lock key as well
-	lockKey := fmt.Sprintf("match:%s:winner_lock", matchID.String())
-	s.rdb.Del(ctx, lockKey)
-
-	return nil
-}
-
-// GetMatch finds a match by ID
-func (s *matchService) GetMatch(matchID uuid.UUID) (*model.Match, error) {
-	s.logger.Debug().Str("matchID", matchID.String()).Msg("Getting match by ID")
-
-	match, err := s.matchRepo.FindByID(matchID)
-	if err != nil {
-		s.logger.Error().Err(err).Str("matchID", matchID.String()).Msg("Failed to get match by ID")
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperr.Wrap(err, apperr.CodeNotFound, "Match not found")
-		}
-		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load match")
-	}
-
-	// Log match data as JSON for easy debugging
-	if match != nil {
-		if jsonData, err := json.MarshalIndent(match, "", "  "); err != nil {
-			s.logger.Error().Err(err).Msg("Failed to marshal match data to JSON")
-		} else {
-			s.logger.Debug().RawJSON("match", jsonData).Msg("Match data loaded successfully")
-		}
-	} else {
-		s.logger.Warn().Str("matchID", matchID.String()).Msg("Match is nil")
-	}
-
-	return match, nil
-}
-
-func (s *matchService) GetActiveMatchForUser(userID uuid.UUID) (*model.Match, error) {
-	match, err := s.matchRepo.FindActiveByUserID(userID)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load active match")
-	}
-	return match, nil
-}
-
-// CreateMatch persists a new match and initializes Redis state
-func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error) {
-	problem, err := s.GetRandomProblemByDifficulty(difficulty)
-	if err != nil {
-		s.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to get random problem")
-		return nil, fmt.Errorf("failed to get problem for difficulty %s: %w", difficulty, err)
-	}
-
-	match := &model.Match{
-		PlayerAID: player1ID,
-		PlayerBID: &player2ID,
-		ProblemID: problem.ID,
-		Status:    model.MatchStatusPlaying,
-		Mode:      model.MatchMode(mode),
-	}
-
-	// Save to database
-	if err := s.matchRepo.CreateExclusive(match); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to create match in database")
-		if errors.Is(err, repository.ErrActiveMatchExists) {
-			return nil, apperr.New(apperr.CodeConflict, "A player already has an active match")
-		}
-		return nil, fmt.Errorf("failed to create match: %w", err)
-	}
-
-	// Load the complete match with associated Problem details
-	createdMatch, err := s.matchRepo.FindByID(match.ID)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to load created match")
-		return nil, fmt.Errorf("failed to load match: %w", err)
-	}
-
-	// Initialize Redis data using RedisManager
-	if err := s.redisManager.CreateMatch(match.ID, player1ID, player2ID, problem.ID, difficulty, mode); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to initialize Redis data for match")
-		// Try to rollback the database record
-		if deleteErr := s.matchRepo.Delete(match.ID); deleteErr != nil {
-			s.logger.Error().Err(deleteErr).Msg("Failed to rollback match creation")
-		}
-		return nil, fmt.Errorf("failed to initialize match data: %w", err)
-	}
-	// Both players must establish their dedicated game socket within the grace
-	// period. Connecting clears this durable deadline.
-	for _, userID := range []uuid.UUID{player1ID, player2ID} {
-		if err := s.HandlePlayerDisconnected(match.ID, userID); err != nil {
-			s.logger.Warn().Err(err).Str("userID", userID.String()).Msg("Failed to schedule initial game connection deadline")
-		}
-	}
-
-	s.logger.Info().
-		Str("matchID", match.ID.String()).
-		Str("player1ID", player1ID.String()).
-		Str("player2ID", player2ID.String()).
-		Str("difficulty", difficulty).
-		Str("problem", problem.Title).
-		Msg("Successfully created match")
-
-	return createdMatch, nil
-}
-
-// CreateSinglePlayerMatch creates a single player match for practice mode
-func (s *matchService) CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (*model.Match, error) {
-	// Pick a random problem for the requested difficulty
-	problem, err := s.GetRandomProblemByDifficulty(difficulty)
-	if err != nil {
-		s.logger.Error().Err(err).Str("difficulty", difficulty).Msg("Failed to get random problem")
-		return nil, fmt.Errorf("failed to get problem for difficulty %s: %w", difficulty, err)
-	}
-
-	match := &model.Match{
-		PlayerAID: playerID,
-		PlayerBID: nil, // No second player for single mode
-		ProblemID: problem.ID,
-		Status:    model.MatchStatusPlaying,
-		Mode:      model.MatchModeSingle,
-	}
-
-	// Save to database
-	if err := s.matchRepo.CreateExclusive(match); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to create single player match in database")
-		if errors.Is(err, repository.ErrActiveMatchExists) {
-			return nil, apperr.New(apperr.CodeConflict, "You already have an active match")
-		}
-		return nil, fmt.Errorf("failed to create single player match: %w", err)
-	}
-
-	// Load the complete match with associated problem details
-	createdMatch, err := s.matchRepo.FindByID(match.ID)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to load created single player match")
-		return nil, fmt.Errorf("failed to load single player match: %w", err)
-	}
-
-	// Initialize Redis data for single player match
-	if err := s.redisManager.CreateSinglePlayerMatch(match.ID, playerID, problem.ID, difficulty); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to initialize Redis data for single player match")
-		// Try to rollback the database record
-		if deleteErr := s.matchRepo.Delete(match.ID); deleteErr != nil {
-			s.logger.Error().Err(deleteErr).Msg("Failed to rollback single player match creation")
-		}
-		return nil, fmt.Errorf("failed to initialize single player match data: %w", err)
-	}
-	if err := s.HandlePlayerDisconnected(match.ID, playerID); err != nil {
-		s.logger.Warn().Err(err).Msg("Failed to schedule initial single-player connection deadline")
-	}
-
-	s.logger.Info().
-		Str("matchID", match.ID.String()).
-		Str("playerID", playerID.String()).
-		Str("difficulty", difficulty).
-		Str("problem", problem.Title).
-		Msg("Successfully created single player match")
-
-	return createdMatch, nil
-}
-
-// GetRandomProblemByDifficulty gets a random problem by difficulty
-func (s *matchService) GetRandomProblemByDifficulty(difficulty string) (*model.Problem, error) {
-	problems, err := s.problemRepo.FindByDifficulty(difficulty)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find problems for difficulty %s: %w", difficulty, err)
-	}
-
-	if len(problems) == 0 {
-		return nil, fmt.Errorf("no problems found for difficulty %s", difficulty)
-	}
-
-	// Select a random problem using crypto/rand for better distribution
-	randomIndexBig, err := rand.Int(rand.Reader, big.NewInt(int64(len(problems))))
-	if err != nil {
-		// Fallback to time-based random if crypto/rand fails
-		s.logger.Warn().Err(err).Msg("Failed to generate cryptographically secure random number, using time-based fallback")
-		randomIndexBig = big.NewInt(time.Now().UnixNano() % int64(len(problems)))
-	}
-	randomIndex := randomIndexBig.Int64()
-	selectedProblem := &problems[randomIndex]
-
-	s.logger.Debug().
-		Str("difficulty", difficulty).
-		Str("selectedProblem", selectedProblem.Title).
-		Int("totalProblems", len(problems)).
-		Msg("Selected random problem")
-
-	return selectedProblem, nil
-}
-
-// sendGameFinishedNotification sends a WebSocket message when the game is finished
-func (s *matchService) sendGameFinishedNotification(matchID, winnerID uuid.UUID) {
-	// Fetch match to check if it's a single player game
-	match, err := s.matchRepo.FindByID(matchID)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to fetch match for game finished notification")
-		return
-	}
-
-	if s.eventBus != nil {
-		s.eventBus.Publish(events.TopicGameFinished, &events.GameFinishedEvent{MatchID: matchID.String(), WinnerID: winnerID.String()})
-		return
-	}
-
-	// Single-player clients refetch after submission and do not need a broadcast.
-	if match.Mode == model.MatchModeSingle {
-		return
-	}
-
-	if s.wsBroadcaster == nil {
-		s.logger.Warn().Msg("WebSocket broadcaster is nil, cannot send game finished notification")
-		return
-	}
-
-	message := map[string]interface{}{
-		"type":      constants.GameFinished,
-		"game_id":   matchID.String(),
-		"winner_id": winnerID.String(),
-	}
-
-	msgBytes, err := json.Marshal(message)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to marshal game finished message")
-		return
-	}
-
-	s.wsBroadcaster.BroadcastToMatch(matchID, msgBytes)
-	s.logger.Info().
-		Str("matchID", matchID.String()).
-		Str("winnerID", winnerID.String()).
-		Msg("Game finished notification sent via WebSocket")
-
+func (s *matchService) Disconnect(ctx context.Context, cmd game.ParticipantCommand) error {
+	return s.reconnections.Disconnected(ctx, cmd.MatchID, cmd.UserID)
 }

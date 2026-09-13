@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 )
 
 var ErrActiveMatchExists = errors.New("user already has an active match")
+var ErrMatchNotPlaying = errors.New("match is not in playing status")
 
 type MatchRepository interface {
 	Create(match *model.Match) error
@@ -22,6 +24,7 @@ type MatchRepository interface {
 	FindPlayingMatchByID(id uuid.UUID) (*model.Match, error)
 	Update(match *model.Match) error
 	SetWinner(matchID uuid.UUID, userID uuid.UUID, code, language string, executionTimeSeconds float64, memoryUsageKB float64) error
+	ApplyRatingDeltas(matchID, winnerID, loserID uuid.UUID, winnerDelta, loserDelta int) error
 	FindByUserID(userID uuid.UUID) ([]model.Match, error)
 	FindRecentByUserID(userID uuid.UUID, limit int) ([]model.Match, error)
 	CloseMatch(matchID uuid.UUID, userID uuid.UUID) error
@@ -165,7 +168,7 @@ func (r *matchRepository) SetWinner(matchID uuid.UUID, userID uuid.UUID, code, l
 			return err
 		}
 		if match.Status != model.MatchStatusPlaying {
-			return errors.New("match is not in playing status")
+			return ErrMatchNotPlaying
 		}
 		if userID != match.PlayerAID && (match.PlayerBID == nil || userID != *match.PlayerBID) {
 			return errors.New("user is not a participant of the match")
@@ -182,6 +185,30 @@ func (r *matchRepository) SetWinner(matchID uuid.UUID, userID uuid.UUID, code, l
 			return err
 		}
 		return tx.Delete(&model.ActiveMatchParticipant{}, "match_id = ?", matchID).Error
+	})
+}
+
+// ApplyRatingDeltas persists both player changes and match deltas atomically.
+func (r *matchRepository) ApplyRatingDeltas(matchID, winnerID, loserID uuid.UUID, winnerDelta, loserDelta int) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		winnerResult := tx.Model(&model.User{}).Where("id = ?", winnerID).Update("rating", gorm.Expr("rating + ?", winnerDelta))
+		if winnerResult.Error != nil {
+			return fmt.Errorf("update winner rating: %w", winnerResult.Error)
+		}
+		if winnerResult.RowsAffected != 1 {
+			return fmt.Errorf("update winner rating: affected=%d", winnerResult.RowsAffected)
+		}
+		loserResult := tx.Model(&model.User{}).Where("id = ?", loserID).Update("rating", gorm.Expr("rating + ?", loserDelta))
+		if loserResult.Error != nil {
+			return fmt.Errorf("update loser rating: %w", loserResult.Error)
+		}
+		if loserResult.RowsAffected != 1 {
+			return fmt.Errorf("update loser rating: affected=%d", loserResult.RowsAffected)
+		}
+		return tx.Model(&model.Match{}).Where("id = ?", matchID).Updates(map[string]interface{}{
+			"winner_rating_delta": winnerDelta,
+			"loser_rating_delta":  loserDelta,
+		}).Error
 	})
 }
 

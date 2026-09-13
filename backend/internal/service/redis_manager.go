@@ -268,7 +268,12 @@ func (rm *RedisManager) GetMatchUsers(matchID uuid.UUID) ([]string, error) {
 
 // UpdateMatchStatus updates the match status
 func (rm *RedisManager) UpdateMatchStatus(matchID uuid.UUID, status model.MatchStatus) error {
-	ctx := context.Background()
+	return rm.UpdateMatchStatusContext(context.Background(), matchID, status)
+}
+
+// UpdateMatchStatusContext updates status using the caller's cancellation and
+// deadline instead of creating an unrelated background context.
+func (rm *RedisManager) UpdateMatchStatusContext(ctx context.Context, matchID uuid.UUID, status model.MatchStatus) error {
 	matchDataKey := fmt.Sprintf(MatchDataKey, matchID.String())
 
 	now := time.Now()

@@ -47,7 +47,7 @@ func main() {
 		rdb,
 	)
 
-	startServer(r, cfg.ServerPort, deps.wsHub, db, rdb, appLogger)
+	startServer(r, cfg.ServerPort, deps.wsHub, deps.gameEngine, db, rdb, appLogger)
 }
 
 func initializeApp(appLogger logger.Logger) (*config.Config, *config.OAuthConfig, *gorm.DB, *redis.Client) {
@@ -93,6 +93,7 @@ type dependencies struct {
 	postCommentController *controller.PostCommentController
 	authMiddleware        *middleware.AuthMiddleware
 	wsHub                 *service.Hub
+	gameEngine            interfaces.GameEngine
 }
 
 func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, oauthCfg *config.OAuthConfig, appLogger logger.Logger) *dependencies {
@@ -112,6 +113,7 @@ func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, 
 		postCommentController: controllers.postCommentController,
 		authMiddleware:        middleware.authMiddleware,
 		wsHub:                 wsHub,
+		gameEngine:            services.matchService,
 	}
 }
 
@@ -137,12 +139,23 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 	// Initialize JudgeService first (no direct WebSocket dependency)
 	judgeService := service.NewJudgeService(cfg.Judge0APIKey, cfg.Judge0APIEndpoint, appLogger, eventBus)
 
-	// Create MatchService without WebSocket dependency
-	matchService := service.NewMatchService(repos.matchRepository, repos.problemRepo, rdb, judgeService, repos.userRepository, appLogger, nil, eventBus)
+	// Create the game engine without a WebSocket dependency.
+	matchService, err := service.NewGameEngine(service.GameEngineDependencies{
+		MatchRepository:   repos.matchRepository,
+		ProblemRepository: repos.problemRepo,
+		Redis:             rdb,
+		Judge:             judgeService,
+		Users:             repos.userRepository,
+		Logger:            appLogger,
+		Events:            eventBus,
+	})
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to initialize game engine")
+	}
+	matchService.Start(context.Background())
 
-	// Initialize Matchmaking and WebSocket services
-	matchmakingService := service.NewMatchmakingService(matchService, rdb, appLogger, eventBus)
-	wsService := service.NewWebSocketService(rdb, appLogger, matchmakingService, repos.userRepository, eventBus)
+	// WebSocket is a transport adapter over the game engine.
+	wsService := service.NewWebSocketService(rdb, appLogger, matchService, repos.userRepository, eventBus)
 
 	// Start WebSocket hub
 	wsHub := wsService.InitHub()
@@ -158,7 +171,6 @@ func initializeServices(repos *repositories, rdb *redis.Client, cfg *config.Conf
 		userService:        userService,
 		judgeService:       judgeService,
 		matchService:       matchService,
-		matchmakingService: matchmakingService,
 		wsService:          wsService,
 		problemService:     problemService,
 		followService:      followService,
@@ -242,8 +254,7 @@ type services struct {
 	authService        interfaces.AuthService
 	userService        service.UserService
 	judgeService       interfaces.JudgeService
-	matchService       service.MatchService
-	matchmakingService service.MatchmakingService
+	matchService       interfaces.GameEngine
 	wsService          service.WebSocketService
 	problemService     service.ProblemService
 	followService      service.FollowService
@@ -266,7 +277,7 @@ type middlewareInstances struct {
 	authMiddleware *middleware.AuthMiddleware
 }
 
-func startServer(router *gin.Engine, port string, wsHub *service.Hub, db *gorm.DB, rdb *redis.Client, appLogger logger.Logger) {
+func startServer(router *gin.Engine, port string, wsHub *service.Hub, gameEngine interfaces.GameEngine, db *gorm.DB, rdb *redis.Client, appLogger logger.Logger) {
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: router,
@@ -289,6 +300,9 @@ func startServer(router *gin.Engine, port string, wsHub *service.Hub, db *gorm.D
 		wsHub.Shutdown()
 		// Give some time for WebSocket connections to close
 		time.Sleep(1 * time.Second)
+	}
+	if gameEngine != nil {
+		gameEngine.Stop()
 	}
 
 	// Shutdown HTTP server with timeout

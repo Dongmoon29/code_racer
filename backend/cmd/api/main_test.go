@@ -75,13 +75,13 @@ func TestStartServer(t *testing.T) {
 
 	// 테스트용 포트
 	testPort := "8082"
-	
+
 	// 테스트용 logger 생성
 	testLogger := logger.NewZerologLogger(zerolog.Nop())
 
 	// 서버 시작을 고루틴으로 실행
 	go func() {
-		startServer(router, testPort, nil, nil, nil, testLogger)
+		startServer(router, testPort, nil, nil, nil, nil, testLogger)
 	}()
 
 	// 서버가 시작될 때까지 잠시 대기

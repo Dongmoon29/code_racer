@@ -9,6 +9,7 @@ import (
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/events"
+	"github.com/Dongmoon29/code_racer/internal/game"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -47,8 +48,8 @@ type Hub struct {
 	startMatching  chan *MatchingRequest
 	cancelMatching chan *CancelRequest
 
-	// Matchmaking service for handling matches
-	matchmakingService MatchmakingService
+	// Game engine port used by the real-time transport.
+	engine gameCoordinator
 
 	// User repository for getting user information
 	userRepository interfaces.UserRepository
@@ -111,41 +112,6 @@ type UserMatchMessage struct {
 	data    []byte
 }
 
-// CodeUpdateMessage represents a code update message
-type CodeUpdateMessage struct {
-	Type     string `json:"type"`
-	MatchID  string `json:"match_id"`
-	UserID   string `json:"user_id"`
-	Code     string `json:"code"`
-	Language string `json:"language,omitempty"` // Optional: language for syntax highlighting
-}
-
-// NEW: Matchmaking message types
-type MatchingRequest struct {
-	Client     *Client `json:"-"`
-	Difficulty string  `json:"difficulty"`
-	Mode       string  `json:"mode"`
-}
-
-type CancelRequest struct {
-	Client *Client `json:"-"`
-}
-
-type MatchingStatusMessage struct {
-	Type          string `json:"type"`
-	Status        string `json:"status"`
-	QueuePos      int    `json:"queue_position,omitempty"`
-	WaitTime      int    `json:"wait_time_seconds,omitempty"`
-	EstimatedWait int    `json:"estimated_wait_seconds,omitempty"`
-}
-
-type MatchFoundMessage struct {
-	Type     string      `json:"type"`
-	GameID   string      `json:"game_id"`
-	Problem  interface{} `json:"problem"`
-	Opponent interface{} `json:"opponent"`
-}
-
 // WebSocketService interface for WebSocket operations
 type WebSocketService interface {
 	InitHub() *Hub
@@ -154,26 +120,42 @@ type WebSocketService interface {
 	BroadcastToAllClients(message []byte)
 }
 
+type gameCoordinator interface {
+	Create(ctx context.Context, cmd game.CreateMatchCommand) (*model.Match, error)
+	GetActive(ctx context.Context, userID uuid.UUID) (*model.Match, error)
+	Connect(ctx context.Context, cmd game.ParticipantCommand) error
+	Disconnect(ctx context.Context, cmd game.ParticipantCommand) error
+}
+
+type codeSnapshotWriter interface {
+	UpdateCode(ctx context.Context, cmd game.CodeSnapshotCommand) error
+}
+
+type websocketGameEngine interface {
+	gameCoordinator
+	codeSnapshotWriter
+}
+
 // webSocketService implements WebSocketService interface
 type webSocketService struct {
-	rdb                *redis.Client
-	redisManager       *RedisManager
-	logger             logger.Logger
-	hub                *Hub
-	matchmakingService MatchmakingService
-	userRepository     interfaces.UserRepository
-	eventBus           events.EventBus
+	rdb            *redis.Client
+	redisManager   *RedisManager
+	logger         logger.Logger
+	hub            *Hub
+	engine         websocketGameEngine
+	userRepository interfaces.UserRepository
+	eventBus       events.EventBus
 }
 
 // NewWebSocketService creates a new WebSocketService instance
-func NewWebSocketService(rdb *redis.Client, logger logger.Logger, matchmakingService MatchmakingService, userRepository interfaces.UserRepository, eventBus events.EventBus) WebSocketService {
+func NewWebSocketService(rdb *redis.Client, logger logger.Logger, engine websocketGameEngine, userRepository interfaces.UserRepository, eventBus events.EventBus) WebSocketService {
 	service := &webSocketService{
-		rdb:                rdb,
-		redisManager:       NewRedisManager(rdb, logger),
-		logger:             logger,
-		matchmakingService: matchmakingService,
-		userRepository:     userRepository,
-		eventBus:           eventBus,
+		rdb:            rdb,
+		redisManager:   NewRedisManager(rdb, logger),
+		logger:         logger,
+		engine:         engine,
+		userRepository: userRepository,
+		eventBus:       eventBus,
 	}
 	service.InitHub()
 	service.subscribeToEvents()
@@ -372,6 +354,9 @@ func firstError(errors ...error) error {
 
 // InitHub initializes the WebSocket hub
 func (s *webSocketService) InitHub() *Hub {
+	if s.hub != nil {
+		return s.hub
+	}
 	s.hub = &Hub{
 		clients:            make(map[*Client]bool),
 		matchClients:       make(map[string]map[*Client]bool),
@@ -383,7 +368,7 @@ func (s *webSocketService) InitHub() *Hub {
 		userMatchBroadcast: make(chan *UserMatchMessage),
 		startMatching:      make(chan *MatchingRequest),
 		cancelMatching:     make(chan *CancelRequest),
-		matchmakingService: s.matchmakingService,
+		engine:             s.engine,
 		userRepository:     s.userRepository,
 		logger:             s.logger,
 		shutdown:           make(chan struct{}),
@@ -457,7 +442,7 @@ func (h *Hub) unregisterClient(client *Client) {
 
 	if lastConnection && client.matchID != uuid.Nil {
 		go func() {
-			if err := h.matchmakingService.HandlePlayerDisconnected(client.matchID, client.userID); err != nil {
+			if err := h.engine.Disconnect(context.Background(), game.ParticipantCommand{MatchID: client.matchID, UserID: client.userID}); err != nil {
 				h.logger.Warn().Err(err).Msg("Failed to record disconnected player state")
 			}
 		}()
@@ -531,7 +516,7 @@ func (h *Hub) cleanupDeadClient(client *Client) bool {
 func (h *Hub) recordDeadClientDisconnects(clients []*Client) {
 	for _, client := range clients {
 		go func(client *Client) {
-			if err := h.matchmakingService.HandlePlayerDisconnected(client.matchID, client.userID); err != nil {
+			if err := h.engine.Disconnect(context.Background(), game.ParticipantCommand{MatchID: client.matchID, UserID: client.userID}); err != nil {
 				h.logger.Warn().Err(err).Msg("Failed to record dead client disconnect")
 			}
 		}(client)
@@ -541,7 +526,7 @@ func (h *Hub) recordDeadClientDisconnects(clients []*Client) {
 // handleStartMatching processes a matching request
 func (h *Hub) handleStartMatching(req *MatchingRequest) {
 	h.logMatchingRequest(req)
-	if activeMatch, err := h.matchmakingService.GetActiveMatch(req.Client.userID); err == nil && activeMatch != nil {
+	if activeMatch, err := h.engine.GetActive(context.Background(), req.Client.userID); err == nil && activeMatch != nil {
 		data, _ := json.Marshal(map[string]interface{}{"type": constants.ActiveMatch, "game_id": activeMatch.ID.String()})
 		select {
 		case req.Client.send <- data:
@@ -737,7 +722,7 @@ func (h *Hub) sendErrorToClient(client *Client, message string) {
 	}
 }
 
-// createMatchedGame delegates match creation to MatchmakingService
+// createMatchedGame delegates match creation to the game engine.
 func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
 	// Update client states
 	player1.isMatching = false
@@ -752,7 +737,9 @@ func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
 	if mode == "" {
 		mode = "casual_pvp"
 	}
-	game, err := h.matchmakingService.CreateMatch(player1.userID, player2.userID, difficulty, mode)
+	createdMatch, err := h.engine.Create(context.Background(), game.CreateMatchCommand{
+		PlayerAID: player1.userID, PlayerBID: player2.userID, Difficulty: model.Difficulty(difficulty), Mode: model.MatchMode(mode),
+	})
 	if err != nil {
 		// Reset flags on error
 		player1.disconnectAfterMatch = false
@@ -779,33 +766,11 @@ func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
 	}
 
 	// Send match found notifications directly to clients
-	h.sendMatchFoundNotifications(player1, player2, game)
+	h.sendMatchFoundNotifications(player1, player2, createdMatch)
 }
 
 // sendMatchFoundNotifications sends match found messages to both players
-func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, match interface{}) {
-	// Type assertion to get the actual game
-	actualMatch, ok := match.(*model.Match)
-	if !ok {
-		// Send simple notification without game details
-		simpleMsg := map[string]interface{}{
-			"type":    constants.MatchFound,
-			"message": "Match found! Redirecting to game...",
-		}
-
-		if msgBytes, err := json.Marshal(simpleMsg); err == nil {
-			select {
-			case player1.send <- msgBytes:
-			default:
-			}
-			select {
-			case player2.send <- msgBytes:
-			default:
-			}
-		}
-		return
-	}
-
+func (h *Hub) sendMatchFoundNotifications(player1, player2 *Client, actualMatch *model.Match) {
 	// Get user names for both players
 	player1User, err1 := h.userRepository.FindByID(player1.userID)
 	player2User, err2 := h.userRepository.FindByID(player2.userID)
@@ -1014,7 +979,7 @@ func (s *webSocketService) HandleConnection(conn *websocket.Conn, userID uuid.UU
 		Msg("🔌 HandleConnection started")
 
 	if matchID != uuid.Nil {
-		if err := s.matchmakingService.HandlePlayerConnected(matchID, userID); err != nil {
+		if err := s.engine.Connect(context.Background(), game.ParticipantCommand{MatchID: matchID, UserID: userID}); err != nil {
 			s.logger.Warn().Err(err).Str("userID", userID.String()).Str("matchID", matchID.String()).Msg("Rejected non-participant game connection")
 			_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "not a match participant"), time.Now().Add(time.Second))
 			_ = conn.Close()
@@ -1246,12 +1211,12 @@ func (c *Client) readPump(wsService *webSocketService) {
 			break
 		}
 
-		msg, msgType := c.parseMessage(message)
-		if msg == nil {
+		msg, ok := c.parseMessage(message)
+		if !ok {
 			continue
 		}
 
-		c.handleMessageByType(msgType, msg, wsService)
+		c.handleMessageByType(msg, wsService)
 	}
 }
 
@@ -1287,182 +1252,15 @@ func (c *Client) readMessage() ([]byte, error) {
 }
 
 // parseMessage parses JSON message and extracts message type
-func (c *Client) parseMessage(message []byte) (map[string]interface{}, string) {
-	var msg map[string]interface{}
+func (c *Client) parseMessage(message []byte) (inboundWebSocketMessage, bool) {
+	var msg inboundWebSocketMessage
 	if err := json.Unmarshal(message, &msg); err != nil {
-		// Don't log message parsing failures (client errors)
-		return nil, ""
+		return inboundWebSocketMessage{}, false
 	}
-
-	msgType, ok := msg["type"].(string)
-	if !ok {
-		// Don't log invalid message types
-		return nil, ""
+	if !constants.IsValidMessageType(msg.Type) {
+		return inboundWebSocketMessage{}, false
 	}
-
-	return msg, msgType
-}
-
-// handleMessageByType routes messages to appropriate handlers based on type
-func (c *Client) handleMessageByType(msgType string, msg map[string]interface{}, wsService *webSocketService) {
-	switch msgType {
-	case constants.Auth:
-		// Handle auth message (already authenticated at connection time)
-		// Logging removed
-
-	case constants.Ping:
-		c.handlePingMessage()
-
-	case constants.StartMatching:
-		c.handleStartMatchingMessage(msg)
-
-	case constants.CancelMatching:
-		c.handleCancelMatchingMessage()
-
-	case constants.CodeUpdate:
-		c.handleCodeUpdateMessage(msg, wsService)
-
-	default:
-		// Don't log unknown message types
-	}
-}
-
-// handlePingMessage responds to ping messages with pong
-func (c *Client) handlePingMessage() {
-	pongMsg := map[string]interface{}{
-		"type":      constants.Pong,
-		"timestamp": time.Now().Unix(),
-	}
-	pongBytes, _ := json.Marshal(pongMsg)
-	c.send <- pongBytes
-}
-
-// handleStartMatchingMessage processes start matching messages
-func (c *Client) handleStartMatchingMessage(msg map[string]interface{}) {
-	c.hub.logger.Info().Interface("message", msg).Str("userID", c.userID.String()).Msg("Received start matching message")
-
-	if difficulty, ok := msg["difficulty"].(string); ok {
-		mode := "casual_pvp"
-		if m, ok := msg["mode"].(string); ok && m != "" {
-			mode = m
-		}
-		c.hub.logger.Info().Str("difficulty", difficulty).Str("userID", c.userID.String()).Msg("Extracted difficulty from message")
-
-		if model.Difficulty(difficulty).IsValid() {
-			c.hub.logger.Info().Str("userID", c.userID.String()).Str("difficulty", difficulty).Msg("Creating match request")
-			matchReq := &MatchingRequest{
-				Client:     c,
-				Difficulty: difficulty,
-				Mode:       mode,
-			}
-			c.hub.startMatching <- matchReq
-			c.hub.logger.Info().Str("userID", c.userID.String()).Msg("Match request sent to hub")
-		} else {
-			c.hub.logger.Warn().Str("difficulty", difficulty).Str("userID", c.userID.String()).Msg("Invalid difficulty received")
-		}
-	} else {
-		c.hub.logger.Error().Interface("message", msg).Str("userID", c.userID.String()).Msg("Failed to extract difficulty from message")
-	}
-}
-
-// handleCancelMatchingMessage processes cancel matching messages
-func (c *Client) handleCancelMatchingMessage() {
-	c.hub.logger.Info().Str("userID", c.userID.String()).Msg("Handling cancel matching request")
-	cancelReq := &CancelRequest{
-		Client: c,
-	}
-	c.hub.cancelMatching <- cancelReq
-}
-
-// handleCodeUpdateMessage processes code update messages
-func (c *Client) handleCodeUpdateMessage(msg map[string]interface{}, wsService *webSocketService) {
-	if data, ok := msg["data"].(map[string]interface{}); ok {
-		var code string
-		var language string
-
-		if c, ok := data["code"].(string); ok {
-			code = c
-		}
-		if l, ok := data["language"].(string); ok {
-			language = l
-		}
-
-		if code != "" {
-			c.storeCodeInRedis(code, wsService)
-			c.broadcastCodeUpdate(code, language, wsService)
-		}
-		if language != "" {
-			c.storeLanguageInRedis(language, wsService)
-		}
-	}
-}
-
-// storeCodeInRedis stores the user's code in Redis
-func (c *Client) storeCodeInRedis(code string, wsService *webSocketService) {
-	// Skip storing code if this is a matchmaking session (nil UUID)
-	if c.matchID == uuid.Nil {
-		wsService.logger.Info().
-			Str("userID", c.userID.String()).
-			Msg("User in matchmaking - skipping code storage")
-		return
-	}
-
-	err := wsService.redisManager.UpdateUserCode(c.matchID, c.userID, code)
-	if err != nil {
-		wsService.logger.Error().Err(err).
-			Str("matchID", c.matchID.String()).
-			Str("userID", c.userID.String()).
-			Msg("Failed to store code in Redis")
-	}
-}
-
-// storeLanguageInRedis stores the user's language in Redis
-func (c *Client) storeLanguageInRedis(language string, wsService *webSocketService) {
-	// Skip storing language if this is a matchmaking session (nil UUID)
-	if c.matchID == uuid.Nil {
-		return
-	}
-
-	err := wsService.redisManager.UpdateUserLanguage(c.matchID, c.userID, language)
-	if err != nil {
-		wsService.logger.Error().Err(err).
-			Str("matchID", c.matchID.String()).
-			Str("userID", c.userID.String()).
-			Str("language", language).
-			Msg("Failed to store language in Redis")
-	}
-}
-
-// broadcastCodeUpdate broadcasts code update to other clients (excluding sender)
-func (c *Client) broadcastCodeUpdate(code string, language string, wsService *webSocketService) {
-	codeUpdateMsg := CodeUpdateMessage{
-		Type:     constants.CodeUpdate,
-		MatchID:  c.matchID.String(),
-		UserID:   c.userID.String(),
-		Code:     code,
-		Language: language,
-	}
-
-	msgBytes, _ := json.Marshal(codeUpdateMsg)
-
-	// Broadcast to all clients in the match except the sender
-	wsService.hub.mu.RLock()
-	matchIDStr := c.matchID.String()
-	matchClients, exists := wsService.hub.matchClients[matchIDStr]
-	if exists {
-		for client := range matchClients {
-			// Skip the sender
-			if client.userID != c.userID {
-				select {
-				case client.send <- msgBytes:
-					// Message sent successfully
-				default:
-					// Client's send channel is blocked, skip
-				}
-			}
-		}
-	}
-	wsService.hub.mu.RUnlock()
+	return msg, true
 }
 
 // writePump writes messages to the client

@@ -126,3 +126,43 @@ func TestMatchRepository_FinishDraw_ReleasesActiveParticipants(t *testing.T) {
 	_, err = repo.FindActiveByUserID(user.ID)
 	assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 }
+
+func TestMatchRepository_UpdateRatingsIsAtomic(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&model.User{}, &model.Problem{}, &model.Match{}))
+	winner := model.User{Email: "winner@example.com", Name: "Winner", Rating: 1000}
+	loser := model.User{Email: "loser@example.com", Name: "Loser", Rating: 1000}
+	require.NoError(t, db.Create(&winner).Error)
+	require.NoError(t, db.Create(&loser).Error)
+	problem := model.Problem{Title: "Problem", Description: "desc", Constraints: "none", Difficulty: model.DifficultyEasy, FunctionName: "solve", TimeLimit: 1000, MemoryLimit: 128}
+	require.NoError(t, db.Create(&problem).Error)
+	match := model.Match{PlayerAID: winner.ID, PlayerBID: &loser.ID, ProblemID: problem.ID, Mode: model.MatchModeRankedPVP, Status: model.MatchStatusFinished}
+	require.NoError(t, db.Create(&match).Error)
+	repo := NewMatchRepository(db, appLogger.NewZerologLogger(zerolog.New(io.Discard)))
+
+	require.NoError(t, repo.ApplyRatingDeltas(match.ID, winner.ID, loser.ID, 16, -16))
+	require.NoError(t, db.First(&winner, "id = ?", winner.ID).Error)
+	require.NoError(t, db.First(&loser, "id = ?", loser.ID).Error)
+	require.NoError(t, db.First(&match, "id = ?", match.ID).Error)
+	assert.Equal(t, 1016, winner.Rating)
+	assert.Equal(t, 984, loser.Rating)
+	assert.Equal(t, 16, match.WinnerRatingDelta)
+	assert.Equal(t, -16, match.LoserRatingDelta)
+}
+
+func TestMatchRepository_SetWinnerIsIdempotentForFinishedMatch(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&model.User{}, &model.Problem{}, &model.Match{}, &model.ActiveMatchParticipant{}))
+	user := model.User{Email: "finished@example.com", Name: "Finished"}
+	require.NoError(t, db.Create(&user).Error)
+	problem := model.Problem{Title: "Problem", Description: "desc", Constraints: "none", Difficulty: model.DifficultyEasy, FunctionName: "solve", TimeLimit: 1000, MemoryLimit: 128}
+	require.NoError(t, db.Create(&problem).Error)
+	match := model.Match{PlayerAID: user.ID, ProblemID: problem.ID, Mode: model.MatchModeSingle, Status: model.MatchStatusFinished}
+	require.NoError(t, db.Create(&match).Error)
+	repo := NewMatchRepository(db, appLogger.NewZerologLogger(zerolog.New(io.Discard)))
+
+	err = repo.SetWinner(match.ID, user.ID, "code", "go", 0.1, 10)
+	require.ErrorIs(t, err, ErrMatchNotPlaying)
+}

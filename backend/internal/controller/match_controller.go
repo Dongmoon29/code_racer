@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 
+	"github.com/Dongmoon29/code_racer/internal/game"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -11,11 +12,11 @@ import (
 )
 
 type MatchController struct {
-	matchService interfaces.MatchService
+	matchService interfaces.GameEngine
 	logger       logger.Logger
 }
 
-func NewMatchController(matchService interfaces.MatchService, logger logger.Logger) *MatchController {
+func NewMatchController(matchService interfaces.GameEngine, logger logger.Logger) *MatchController {
 	return &MatchController{
 		matchService: matchService,
 		logger:       logger,
@@ -31,7 +32,7 @@ func (c *MatchController) GetMatch(ctx *gin.Context) {
 	}
 
 	// Service 호출
-	res, err := c.matchService.GetMatch(matchID)
+	res, err := c.matchService.Get(ctx.Request.Context(), matchID)
 	if err != nil {
 		c.logger.Error().
 			Err(err).
@@ -50,7 +51,7 @@ func (c *MatchController) GetActiveMatch(ctx *gin.Context) {
 		Unauthorized(ctx, "User not authenticated")
 		return
 	}
-	match, err := c.matchService.GetActiveMatchForUser(userID.(uuid.UUID))
+	match, err := c.matchService.GetActive(ctx.Request.Context(), userID.(uuid.UUID))
 	if err != nil {
 		WriteError(ctx, err)
 		return
@@ -75,14 +76,19 @@ func (c *MatchController) SubmitSolution(ctx *gin.Context) {
 		return
 	}
 
-	var req model.SubmitSolutionRequest
+	var req struct {
+		Code     string `json:"code" binding:"required"`
+		Language string `json:"language" binding:"required"`
+	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		BadRequest(ctx, "Invalid request: "+err.Error())
 		return
 	}
 
 	// Code submission and evaluation
-	result, err := c.matchService.SubmitSolution(matchID, userID.(uuid.UUID), &req)
+	result, err := c.matchService.Submit(ctx.Request.Context(), game.SubmitCommand{
+		MatchID: matchID, UserID: userID.(uuid.UUID), Code: req.Code, Language: req.Language,
+	})
 	if err != nil {
 		c.logger.Error().
 			Err(err).
@@ -114,7 +120,7 @@ func (c *MatchController) CloseMatch(ctx *gin.Context) {
 		BadRequest(ctx, "Invalid match ID")
 		return
 	}
-	if err := c.matchService.CloseMatch(matchID, userID.(uuid.UUID)); err != nil {
+	if err := c.matchService.Close(ctx.Request.Context(), game.ParticipantCommand{MatchID: matchID, UserID: userID.(uuid.UUID)}); err != nil {
 		WriteError(ctx, err)
 		return
 	}
@@ -137,12 +143,9 @@ func (c *MatchController) CreateSinglePlayerMatch(ctx *gin.Context) {
 		return
 	}
 
-	if req.Difficulty != "Easy" && req.Difficulty != "Medium" && req.Difficulty != "Hard" {
-		BadRequest(ctx, "Invalid difficulty. Must be Easy, Medium, or Hard")
-		return
-	}
-
-	match, err := c.matchService.CreateSinglePlayerMatch(userID.(uuid.UUID), req.Difficulty)
+	match, err := c.matchService.CreateSingle(ctx.Request.Context(), game.CreateSingleMatchCommand{
+		PlayerID: userID.(uuid.UUID), Difficulty: model.Difficulty(req.Difficulty),
+	})
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to create single player match")
 		WriteError(ctx, err)
