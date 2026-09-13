@@ -19,8 +19,8 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/Dongmoon29/code_racer/internal/types"
-	"github.com/redis/go-redis/v9"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -36,6 +36,9 @@ type MatchService interface {
 
 	// Query methods
 	GetMatch(matchID uuid.UUID) (*model.Match, error)
+	GetActiveMatchForUser(userID uuid.UUID) (*model.Match, error)
+	HandlePlayerConnected(matchID, userID uuid.UUID) error
+	HandlePlayerDisconnected(matchID, userID uuid.UUID) error
 }
 type matchService struct {
 	matchRepo     repository.MatchRepository
@@ -76,7 +79,143 @@ func NewMatchService(
 			svc.eventBus = bus
 		}
 	}
+	if rdb != nil {
+		go svc.runDisconnectExpiryWorker()
+	}
 	return svc
+}
+
+const disconnectedPlayersKey = "disconnected_match_players"
+
+func disconnectMember(matchID, userID uuid.UUID) string {
+	return matchID.String() + ":" + userID.String()
+}
+
+func disconnectMarkerKey(matchID, userID uuid.UUID) string {
+	return fmt.Sprintf("match:%s:user:%s:disconnect", matchID, userID)
+}
+
+func (s *matchService) HandlePlayerConnected(matchID, userID uuid.UUID) error {
+	if matchID == uuid.Nil || s.rdb == nil {
+		return nil
+	}
+	match, err := s.matchRepo.FindByID(matchID)
+	if err != nil {
+		return err
+	}
+	if match.PlayerAID != userID && (match.PlayerBID == nil || *match.PlayerBID != userID) {
+		return apperr.New(apperr.CodeForbidden, "You are not a participant in this match")
+	}
+	ctx := context.Background()
+	pipe := s.rdb.TxPipeline()
+	pipe.Del(ctx, disconnectMarkerKey(matchID, userID))
+	pipe.ZRem(ctx, disconnectedPlayersKey, disconnectMember(matchID, userID))
+	_, err = pipe.Exec(ctx)
+	return err
+}
+
+func (s *matchService) HandlePlayerDisconnected(matchID, userID uuid.UUID) error {
+	if matchID == uuid.Nil || s.rdb == nil {
+		return nil
+	}
+	match, err := s.matchRepo.FindByID(matchID)
+	if err != nil {
+		return err
+	}
+	if match.Status != model.MatchStatusPlaying && match.Status != model.MatchStatusWaiting {
+		return nil
+	}
+	if match.PlayerAID != userID && (match.PlayerBID == nil || *match.PlayerBID != userID) {
+		return apperr.New(apperr.CodeForbidden, "You are not a participant in this match")
+	}
+	deadline := time.Now().Add(constants.ReconnectionGracePeriod)
+	ctx := context.Background()
+	pipe := s.rdb.TxPipeline()
+	// Keep the marker longer than the grace period so a restarted service can
+	// still resolve an overdue disconnect from the sorted-set deadline.
+	pipe.Set(ctx, disconnectMarkerKey(matchID, userID), deadline.UnixMilli(), 24*time.Hour)
+	pipe.ZAdd(ctx, disconnectedPlayersKey, redis.Z{Score: float64(deadline.UnixMilli()), Member: disconnectMember(matchID, userID)})
+	_, err = pipe.Exec(ctx)
+	return err
+}
+
+func (s *matchService) runDisconnectExpiryWorker() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		s.resolveExpiredDisconnects(context.Background())
+	}
+}
+
+func (s *matchService) resolveExpiredDisconnects(ctx context.Context) {
+	members, err := s.rdb.ZRangeByScore(ctx, disconnectedPlayersKey, &redis.ZRangeBy{
+		Min: "-inf", Max: fmt.Sprint(time.Now().UnixMilli()), Count: 100,
+	}).Result()
+	if err != nil {
+		s.logger.Warn().Err(err).Msg("Failed to scan expired disconnects")
+		return
+	}
+	for _, member := range members {
+		parts := strings.Split(member, ":")
+		if len(parts) != 2 {
+			_ = s.rdb.ZRem(ctx, disconnectedPlayersKey, member).Err()
+			continue
+		}
+		matchID, matchErr := uuid.Parse(parts[0])
+		userID, userErr := uuid.Parse(parts[1])
+		if matchErr != nil || userErr != nil {
+			_ = s.rdb.ZRem(ctx, disconnectedPlayersKey, member).Err()
+			continue
+		}
+		s.resolveExpiredDisconnect(ctx, matchID, userID, member)
+	}
+}
+
+func (s *matchService) resolveExpiredDisconnect(ctx context.Context, matchID, userID uuid.UUID, member string) {
+	lockKey := fmt.Sprintf("match:%s:disconnect_resolution_lock", matchID)
+	locked, err := s.rdb.SetNX(ctx, lockKey, userID.String(), 30*time.Second).Result()
+	if err != nil || !locked {
+		return
+	}
+	defer s.rdb.Del(ctx, lockKey)
+	if exists, _ := s.rdb.Exists(ctx, disconnectMarkerKey(matchID, userID)).Result(); exists == 0 {
+		_ = s.rdb.ZRem(ctx, disconnectedPlayersKey, member).Err()
+		return
+	}
+	match, err := s.matchRepo.FindByID(matchID)
+	if err != nil || (match.Status != model.MatchStatusPlaying && match.Status != model.MatchStatusWaiting) {
+		s.clearMatchDisconnects(ctx, matchID)
+		return
+	}
+	if match.Mode == model.MatchModeSingle {
+		if err := s.matchRepo.CloseMatch(matchID, userID); err != nil {
+			return
+		}
+	} else {
+		finished, err := s.matchRepo.FinishDraw(matchID)
+		if err != nil || !finished {
+			return
+		}
+		_ = s.redisManager.UpdateMatchStatus(matchID, model.MatchStatusFinished)
+		if s.eventBus != nil {
+			s.eventBus.Publish(events.TopicGameFinished, &events.GameFinishedEvent{MatchID: matchID.String()})
+		}
+	}
+	s.clearMatchDisconnects(ctx, matchID)
+}
+
+func (s *matchService) clearMatchDisconnects(ctx context.Context, matchID uuid.UUID) {
+	users, _ := s.redisManager.GetMatchUsers(matchID)
+	pipe := s.rdb.TxPipeline()
+	for _, rawUserID := range users {
+		userID, err := uuid.Parse(rawUserID)
+		if err != nil {
+			continue
+		}
+		pipe.Del(ctx, disconnectMarkerKey(matchID, userID))
+		pipe.ZRem(ctx, disconnectedPlayersKey, disconnectMember(matchID, userID))
+	}
+	_, _ = pipe.Exec(ctx)
 }
 
 // SubmitSolution handles code submission and evaluation
@@ -432,6 +571,17 @@ func (s *matchService) GetMatch(matchID uuid.UUID) (*model.Match, error) {
 	return match, nil
 }
 
+func (s *matchService) GetActiveMatchForUser(userID uuid.UUID) (*model.Match, error) {
+	match, err := s.matchRepo.FindActiveByUserID(userID)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load active match")
+	}
+	return match, nil
+}
+
 // CreateMatch persists a new match and initializes Redis state
 func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (*model.Match, error) {
 	problem, err := s.GetRandomProblemByDifficulty(difficulty)
@@ -449,8 +599,11 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 	}
 
 	// Save to database
-	if err := s.matchRepo.Create(match); err != nil {
+	if err := s.matchRepo.CreateExclusive(match); err != nil {
 		s.logger.Error().Err(err).Msg("Failed to create match in database")
+		if errors.Is(err, repository.ErrActiveMatchExists) {
+			return nil, apperr.New(apperr.CodeConflict, "A player already has an active match")
+		}
 		return nil, fmt.Errorf("failed to create match: %w", err)
 	}
 
@@ -469,6 +622,13 @@ func (s *matchService) CreateMatch(player1ID, player2ID uuid.UUID, difficulty st
 			s.logger.Error().Err(deleteErr).Msg("Failed to rollback match creation")
 		}
 		return nil, fmt.Errorf("failed to initialize match data: %w", err)
+	}
+	// Both players must establish their dedicated game socket within the grace
+	// period. Connecting clears this durable deadline.
+	for _, userID := range []uuid.UUID{player1ID, player2ID} {
+		if err := s.HandlePlayerDisconnected(match.ID, userID); err != nil {
+			s.logger.Warn().Err(err).Str("userID", userID.String()).Msg("Failed to schedule initial game connection deadline")
+		}
 	}
 
 	s.logger.Info().
@@ -500,8 +660,11 @@ func (s *matchService) CreateSinglePlayerMatch(playerID uuid.UUID, difficulty st
 	}
 
 	// Save to database
-	if err := s.matchRepo.Create(match); err != nil {
+	if err := s.matchRepo.CreateExclusive(match); err != nil {
 		s.logger.Error().Err(err).Msg("Failed to create single player match in database")
+		if errors.Is(err, repository.ErrActiveMatchExists) {
+			return nil, apperr.New(apperr.CodeConflict, "You already have an active match")
+		}
 		return nil, fmt.Errorf("failed to create single player match: %w", err)
 	}
 
@@ -520,6 +683,9 @@ func (s *matchService) CreateSinglePlayerMatch(playerID uuid.UUID, difficulty st
 			s.logger.Error().Err(deleteErr).Msg("Failed to rollback single player match creation")
 		}
 		return nil, fmt.Errorf("failed to initialize single player match data: %w", err)
+	}
+	if err := s.HandlePlayerDisconnected(match.ID, playerID); err != nil {
+		s.logger.Warn().Err(err).Msg("Failed to schedule initial single-player connection deadline")
 	}
 
 	s.logger.Info().
@@ -571,14 +737,13 @@ func (s *matchService) sendGameFinishedNotification(matchID, winnerID uuid.UUID)
 		return
 	}
 
-	// Don't send WebSocket notification for single player games
+	if s.eventBus != nil {
+		s.eventBus.Publish(events.TopicGameFinished, &events.GameFinishedEvent{MatchID: matchID.String(), WinnerID: winnerID.String()})
+		return
+	}
+
+	// Single-player clients refetch after submission and do not need a broadcast.
 	if match.Mode == model.MatchModeSingle {
-		s.logger.Debug().
-			Str("matchID", matchID.String()).
-			Msg("Skipping WebSocket notification for single player game")
-		if s.eventBus != nil {
-			s.eventBus.Publish(events.TopicGameFinished, &events.GameFinishedEvent{MatchID: matchID.String(), WinnerID: winnerID.String()})
-		}
 		return
 	}
 
@@ -605,7 +770,4 @@ func (s *matchService) sendGameFinishedNotification(matchID, winnerID uuid.UUID)
 		Str("winnerID", winnerID.String()).
 		Msg("Game finished notification sent via WebSocket")
 
-	if s.eventBus != nil {
-		s.eventBus.Publish(events.TopicGameFinished, &events.GameFinishedEvent{MatchID: matchID.String(), WinnerID: winnerID.String()})
-	}
 }

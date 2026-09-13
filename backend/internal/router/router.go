@@ -118,6 +118,7 @@ func Setup(
 		{
 			match := secured.Group("/matches")
 			{
+				match.GET("/active", matchController.GetActiveMatch)
 				match.GET("/:id", matchController.GetMatch)
 				match.POST("/:id/submit", matchController.SubmitSolution)
 				match.POST("/single", matchController.CreateSinglePlayerMatch)

@@ -24,6 +24,7 @@ export const WEBSOCKET_MESSAGE_TYPES = {
   CANCEL_MATCHING: 'cancel_matching',
   MATCHING_STATUS: 'matching_status',
   MATCH_FOUND: 'match_found',
+  ACTIVE_MATCH: 'active_match',
 
   // Error handling
   ERROR: 'error',
@@ -71,6 +72,7 @@ export const getMessageTypeCategory = (
     case WEBSOCKET_MESSAGE_TYPES.CANCEL_MATCHING:
     case WEBSOCKET_MESSAGE_TYPES.MATCHING_STATUS:
     case WEBSOCKET_MESSAGE_TYPES.MATCH_FOUND:
+    case WEBSOCKET_MESSAGE_TYPES.ACTIVE_MATCH:
       return MESSAGE_TYPE_CATEGORIES.MATCHMAKING;
     case WEBSOCKET_MESSAGE_TYPES.ERROR:
     default:

@@ -12,9 +12,9 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
-	"github.com/redis/go-redis/v9"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/redis/go-redis/v9"
 )
 
 // Hub manages WebSocket connections
@@ -394,13 +394,13 @@ func (s *webSocketService) InitHub() *Hub {
 // registerClient adds a new client to the hub
 func (h *Hub) registerClient(client *Client) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
 
 	// Add client to global clients map
 	h.clients[client] = true
 
 	// Add client to match-specific map
 	h.addClientToMatch(client)
+	h.mu.Unlock()
 
 	h.logger.Info().
 		Str("userId", client.userID.String()).
@@ -412,7 +412,6 @@ func (h *Hub) registerClient(client *Client) {
 // unregisterClient removes a client from the hub
 func (h *Hub) unregisterClient(client *Client) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
 
 	// Check if client exists in global map
 	if _, clientExists := h.clients[client]; !clientExists {
@@ -420,6 +419,7 @@ func (h *Hub) unregisterClient(client *Client) {
 			Str("userId", client.userID.String()).
 			Str("matchId", client.matchID.String()).
 			Msg("🔍 Attempted to unregister non-existent client")
+		h.mu.Unlock()
 		return
 	}
 
@@ -432,6 +432,13 @@ func (h *Hub) unregisterClient(client *Client) {
 
 	// Remove from match-specific map
 	h.removeClientFromMatch(client)
+	lastConnection := true
+	for other := range h.matchClients[client.matchID.String()] {
+		if other.userID == client.userID {
+			lastConnection = false
+			break
+		}
+	}
 
 	// Also remove from matchmaking queue if the client was matching
 	// Skip queue removal if disconnect is after successful match
@@ -446,6 +453,15 @@ func (h *Hub) unregisterClient(client *Client) {
 		Str("matchId", client.matchID.String()).
 		Int("remainingClients", len(h.clients)).
 		Msg("🔌 Client unregistered from Hub")
+	h.mu.Unlock()
+
+	if lastConnection && client.matchID != uuid.Nil {
+		go func() {
+			if err := h.matchmakingService.HandlePlayerDisconnected(client.matchID, client.userID); err != nil {
+				h.logger.Warn().Err(err).Msg("Failed to record disconnected player state")
+			}
+		}()
+	}
 }
 
 // logClientDisconnectReason logs the reason for client disconnection
@@ -492,7 +508,7 @@ func (h *Hub) removeClientFromMatch(client *Client) {
 }
 
 // cleanupDeadClient safely removes a dead client while handling lock transitions
-func (h *Hub) cleanupDeadClient(client *Client) {
+func (h *Hub) cleanupDeadClient(client *Client) bool {
 	// Remove from global clients map
 	delete(h.clients, client)
 	close(client.send)
@@ -504,11 +520,39 @@ func (h *Hub) cleanupDeadClient(client *Client) {
 	if client.isMatching {
 		h.removeFromMatchingQueue(client)
 	}
+	for other := range h.matchClients[client.matchID.String()] {
+		if other.userID == client.userID {
+			return false
+		}
+	}
+	return client.matchID != uuid.Nil
+}
+
+func (h *Hub) recordDeadClientDisconnects(clients []*Client) {
+	for _, client := range clients {
+		go func(client *Client) {
+			if err := h.matchmakingService.HandlePlayerDisconnected(client.matchID, client.userID); err != nil {
+				h.logger.Warn().Err(err).Msg("Failed to record dead client disconnect")
+			}
+		}(client)
+	}
 }
 
 // handleStartMatching processes a matching request
 func (h *Hub) handleStartMatching(req *MatchingRequest) {
 	h.logMatchingRequest(req)
+	if activeMatch, err := h.matchmakingService.GetActiveMatch(req.Client.userID); err == nil && activeMatch != nil {
+		data, _ := json.Marshal(map[string]interface{}{"type": constants.ActiveMatch, "game_id": activeMatch.ID.String()})
+		select {
+		case req.Client.send <- data:
+		default:
+		}
+		return
+	} else if err != nil {
+		h.logger.Warn().Err(err).Msg("Failed to check active match before matchmaking")
+		h.sendErrorToClient(req.Client, "Unable to start matchmaking. Please try again.")
+		return
+	}
 
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -537,8 +581,18 @@ func (h *Hub) updateClientMatchingState(client *Client, difficulty, mode string)
 
 // addClientToMatchingQueue adds client to the matching queue
 func (h *Hub) addClientToMatchingQueue(client *Client, difficulty, mode string) {
-	// Prevent duplicate queue entries by removing any existing occurrence first
-	h.removeFromMatchingQueue(client)
+	// One queue entry per user, even when multiple browser tabs are open.
+	for queuedMode, byDifficulty := range h.matchingClients {
+		for queuedDifficulty, clients := range byDifficulty {
+			filtered := clients[:0]
+			for _, queuedClient := range clients {
+				if queuedClient.userID != client.userID {
+					filtered = append(filtered, queuedClient)
+				}
+			}
+			h.matchingClients[queuedMode][queuedDifficulty] = filtered
+		}
+	}
 
 	// Add to matching queue
 	if _, ok := h.matchingClients[mode]; !ok {
@@ -672,6 +726,17 @@ func (h *Hub) sendMatchingStatus(client *Client, status string, queuePos, waitTi
 	}
 }
 
+func (h *Hub) sendErrorToClient(client *Client, message string) {
+	data, err := json.Marshal(map[string]interface{}{"type": constants.Error, "message": message})
+	if err != nil {
+		return
+	}
+	select {
+	case client.send <- data:
+	default:
+	}
+}
+
 // createMatchedGame delegates match creation to MatchmakingService
 func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
 	// Update client states
@@ -710,17 +775,6 @@ func (h *Hub) createMatchedGame(player1, player2 *Client, difficulty string) {
 			}
 		}
 
-		// Return players to matching queue on error (preserve mode bucket)
-		h.mu.Lock()
-		mode := player1.mode
-		if _, ok := h.matchingClients[mode]; !ok {
-			h.matchingClients[mode] = make(map[string][]*Client)
-		}
-		current := h.matchingClients[mode][difficulty]
-		h.matchingClients[mode][difficulty] = append([]*Client{player1, player2}, current...)
-		player1.isMatching = true
-		player2.isMatching = true
-		h.mu.Unlock()
 		return
 	}
 
@@ -841,10 +895,14 @@ func (h *Hub) broadcastToAllClients(data []byte) {
 	if len(deadClients) > 0 {
 		h.mu.RUnlock()
 		h.mu.Lock()
+		var disconnected []*Client
 		for _, deadClient := range deadClients {
-			h.cleanupDeadClient(deadClient)
+			if h.cleanupDeadClient(deadClient) {
+				disconnected = append(disconnected, deadClient)
+			}
 		}
 		h.mu.Unlock()
+		h.recordDeadClientDisconnects(disconnected)
 		h.mu.RLock()
 	}
 }
@@ -876,10 +934,14 @@ func (h *Hub) broadcastToMatchClients(matchID uuid.UUID, data []byte) {
 	if len(deadClients) > 0 {
 		h.mu.RUnlock()
 		h.mu.Lock()
+		var disconnected []*Client
 		for _, deadClient := range deadClients {
-			h.cleanupDeadClient(deadClient)
+			if h.cleanupDeadClient(deadClient) {
+				disconnected = append(disconnected, deadClient)
+			}
 		}
 		h.mu.Unlock()
+		h.recordDeadClientDisconnects(disconnected)
 		h.mu.RLock()
 	}
 }
@@ -951,6 +1013,15 @@ func (s *webSocketService) HandleConnection(conn *websocket.Conn, userID uuid.UU
 		Str("matchId", matchID.String()).
 		Msg("🔌 HandleConnection started")
 
+	if matchID != uuid.Nil {
+		if err := s.matchmakingService.HandlePlayerConnected(matchID, userID); err != nil {
+			s.logger.Warn().Err(err).Str("userID", userID.String()).Str("matchID", matchID.String()).Msg("Rejected non-participant game connection")
+			_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "not a match participant"), time.Now().Add(time.Second))
+			_ = conn.Close()
+			return
+		}
+	}
+
 	client := s.createWebSocketClient(conn, userID, matchID)
 	s.registerClientWithHub(client)
 	s.addUserToMatchParticipants(matchID, userID)
@@ -1004,24 +1075,21 @@ func (s *webSocketService) loadExistingCodeForClient(client *Client, matchID uui
 		client.send <- msgBytes
 	}
 
-	// Load and send opponent's code and language to this client
-	s.hub.mu.RLock()
-	matchIDStr := matchID.String()
-	matchClients, exists := s.hub.matchClients[matchIDStr]
-	if exists {
-		for otherClient := range matchClients {
-			// Skip self
-			if otherClient.userID == userID {
+	// Redis keeps the durable participant list while sockets come and go.
+	participants, err := s.redisManager.GetMatchUsers(matchID)
+	if err == nil {
+		for _, rawUserID := range participants {
+			otherUserID, parseErr := uuid.Parse(rawUserID)
+			if parseErr != nil || otherUserID == userID {
 				continue
 			}
-			// Load opponent's code and language
-			opponentCode, err := s.redisManager.GetUserCode(matchID, otherClient.userID)
+			opponentCode, err := s.redisManager.GetUserCode(matchID, otherUserID)
 			if err == nil && opponentCode != "" {
-				opponentLanguage, _ := s.redisManager.GetUserLanguage(matchID, otherClient.userID)
+				opponentLanguage, _ := s.redisManager.GetUserLanguage(matchID, otherUserID)
 				codeUpdateMsg := CodeUpdateMessage{
 					Type:     constants.CodeUpdate,
 					MatchID:  matchID.String(),
-					UserID:   otherClient.userID.String(),
+					UserID:   otherUserID.String(),
 					Code:     opponentCode,
 					Language: opponentLanguage,
 				}
@@ -1030,7 +1098,6 @@ func (s *webSocketService) loadExistingCodeForClient(client *Client, matchID uui
 			}
 		}
 	}
-	s.hub.mu.RUnlock()
 }
 
 // addUserToMatchParticipants adds user to the match participants list
@@ -1201,7 +1268,6 @@ func (c *Client) handleReadPumpCleanup(wsService *webSocketService) {
 
 	c.hub.unregister <- c
 	c.conn.Close()
-	wsService.cleanupUserData(c.userID, c.matchID)
 }
 
 // setupReadPumpConnection configures WebSocket connection settings

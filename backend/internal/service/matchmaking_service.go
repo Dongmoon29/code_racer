@@ -4,14 +4,30 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/events"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
-	"github.com/redis/go-redis/v9"
+	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 )
 
 // MatchmakingService handles player matching and game creation
 type MatchmakingService interface {
 	CreateMatch(player1ID, player2ID uuid.UUID, difficulty string, mode string) (interface{}, error)
 	CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (interface{}, error)
+	GetActiveMatch(userID uuid.UUID) (*model.Match, error)
+	HandlePlayerConnected(matchID, userID uuid.UUID) error
+	HandlePlayerDisconnected(matchID, userID uuid.UUID) error
+}
+
+func (s *matchmakingService) GetActiveMatch(userID uuid.UUID) (*model.Match, error) {
+	return s.matchService.GetActiveMatchForUser(userID)
+}
+
+func (s *matchmakingService) HandlePlayerConnected(matchID, userID uuid.UUID) error {
+	return s.matchService.HandlePlayerConnected(matchID, userID)
+}
+
+func (s *matchmakingService) HandlePlayerDisconnected(matchID, userID uuid.UUID) error {
+	return s.matchService.HandlePlayerDisconnected(matchID, userID)
 }
 
 type matchmakingService struct {

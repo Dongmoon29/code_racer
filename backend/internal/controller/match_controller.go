@@ -44,6 +44,24 @@ func (c *MatchController) GetMatch(ctx *gin.Context) {
 	OK(ctx, res.ToResponse())
 }
 
+func (c *MatchController) GetActiveMatch(ctx *gin.Context) {
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		Unauthorized(ctx, "User not authenticated")
+		return
+	}
+	match, err := c.matchService.GetActiveMatchForUser(userID.(uuid.UUID))
+	if err != nil {
+		WriteError(ctx, err)
+		return
+	}
+	if match == nil {
+		OK(ctx, nil)
+		return
+	}
+	OK(ctx, match.ToResponse())
+}
+
 func (c *MatchController) SubmitSolution(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")
 	if !exists {
@@ -109,7 +127,7 @@ func (c *MatchController) CreateSinglePlayerMatch(ctx *gin.Context) {
 	match, err := c.matchService.CreateSinglePlayerMatch(userID.(uuid.UUID), req.Difficulty)
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to create single player match")
-		InternalError(ctx, "Failed to create single player match")
+		WriteError(ctx, err)
 		return
 	}
 

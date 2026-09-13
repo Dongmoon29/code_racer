@@ -49,6 +49,7 @@ export const FinishedGame: React.FC<Props> = memo(
     const winnerId = game.winner?.id;
     const winnerIsMe = Boolean(winnerId && me?.id && winnerId === me.id);
     const isSingle = game.mode === "single";
+    const isDraw = !isSingle && !winnerId;
     // Finished matches use the durable server snapshot. The local fallback keeps
     // result pages for matches completed before winner_code was introduced usable.
     const localWinnerCode =
@@ -121,10 +122,10 @@ export const FinishedGame: React.FC<Props> = memo(
 
         <main className="relative mx-auto max-w-7xl">
           <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text)] sm:text-3xl">
-            Solution accepted
+            {isDraw ? "Match drawn" : "Solution accepted"}
           </h1>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+          <div className={`mt-4 grid gap-4 ${isDraw ? "mx-auto max-w-2xl" : "lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]"}`}>
             <div className="space-y-4">
               <section className="rounded-2xl border border-[var(--gray-6)] bg-[var(--color-panel)]/70 p-4 shadow-lg backdrop-blur sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
@@ -153,7 +154,7 @@ export const FinishedGame: React.FC<Props> = memo(
                 </div>
               </section>
 
-              <section className="grid grid-cols-2 gap-3">
+              {!isDraw && <section className="grid grid-cols-2 gap-3">
                 <ResultStatCard
                   icon={Clock3}
                   label="Execution"
@@ -168,12 +169,12 @@ export const FinishedGame: React.FC<Props> = memo(
                   detail={memDetail}
                   tone="violet"
                 />
-              </section>
+              </section>}
 
               <PlayersCard
                 players={players}
                 currentUserId={me?.id}
-                showRatingDelta={isRanked}
+                showRatingDelta={isRanked && !isDraw}
               />
 
               <div>
@@ -187,7 +188,7 @@ export const FinishedGame: React.FC<Props> = memo(
               </div>
             </div>
 
-            <SolutionPanel code={winnerCode} language={winnerLanguage} />
+            {!isDraw && <SolutionPanel code={winnerCode} language={winnerLanguage} />}
           </div>
         </main>
       </div>

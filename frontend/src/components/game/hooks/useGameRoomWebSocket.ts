@@ -256,11 +256,10 @@ export const useGameRoomWebSocket = ({
   );
 
   const handleGameFinished = useCallback(
-    (winnerId?: string) => {
-      if (winnerId) {
-        // Refresh game data so status becomes 'finished' and UI renders FinishedGame
-        refetchGame();
-      }
+    () => {
+      // A finished game may have no winner when a disconnect grace period
+      // expires and the PvP match is declared a draw.
+      refetchGame();
     },
     [refetchGame],
   );
@@ -318,7 +317,7 @@ export const useGameRoomWebSocket = ({
 
         case WEBSOCKET_MESSAGE_TYPES.GAME_FINISHED:
           if (isGameFinishedMessage(message)) {
-            handleGameFinished(message.winner_id);
+            handleGameFinished();
           }
           break;
 

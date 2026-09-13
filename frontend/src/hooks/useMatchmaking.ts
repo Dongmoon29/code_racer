@@ -15,6 +15,7 @@ import type { Difficulty } from "@/components/game/DifficultySelector";
 import { useRouterHelper } from "@/lib/router";
 import { createErrorHandler } from "@/lib/error-tracking";
 import { createSinglePlayerMatch } from "@/api/game";
+import { matchApi } from "@/lib/api";
 
 export interface UseMatchmakingOptions {
   onMatchFound?: (gameId: string) => void;
@@ -160,6 +161,12 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
           }, redirectDelayMs);
         },
 
+        onActiveMatch: (message) => {
+          wsClientRef.current?.disconnectAfterMatch();
+          wsClientRef.current = null;
+          routerHelper.goToGameRoom(message.game_id);
+        },
+
         onMatchmakingDisconnect: () => {
           // Intentional disconnect after matchmaking completion - no error handling
           if (process.env.NODE_ENV === "development") {
@@ -196,6 +203,11 @@ export function useMatchmaking(options: UseMatchmakingOptions = {}) {
       wsClientRef.current = wsClient;
       await wsClient.connect();
     } catch (err) {
+      const activeMatch = await matchApi.getActiveMatch().catch(() => null);
+      if (activeMatch?.id) {
+        routerHelper.goToGameRoom(activeMatch.id);
+        return;
+      }
       const errorHandler = createErrorHandler(
         "useMatchmaking",
         "startMatching",

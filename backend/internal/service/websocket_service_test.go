@@ -8,8 +8,8 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/events"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/testutil"
-	"github.com/redis/go-redis/v9"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -61,6 +61,22 @@ func (m *MockMatchmakingService) CreateMatch(player1ID, player2ID uuid.UUID, dif
 func (m *MockMatchmakingService) CreateSinglePlayerMatch(playerID uuid.UUID, difficulty string) (interface{}, error) {
 	args := m.Called(playerID, difficulty)
 	return args.Get(0), args.Error(1)
+}
+
+func (m *MockMatchmakingService) GetActiveMatch(userID uuid.UUID) (*model.Match, error) {
+	args := m.Called(userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.Match), args.Error(1)
+}
+
+func (m *MockMatchmakingService) HandlePlayerConnected(matchID, userID uuid.UUID) error {
+	return nil
+}
+
+func (m *MockMatchmakingService) HandlePlayerDisconnected(matchID, userID uuid.UUID) error {
+	return nil
 }
 
 // Note: SetWebSocketService removed in refactor

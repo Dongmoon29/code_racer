@@ -9,7 +9,7 @@ type MatchCreatedEvent struct {
 	Match *model.Match
 }
 
-// GameFinishedEvent is published when a game ends and a winner is determined
+// GameFinishedEvent is published whenever a game ends. WinnerID is empty for a draw.
 type GameFinishedEvent struct {
 	MatchID  string
 	WinnerID string

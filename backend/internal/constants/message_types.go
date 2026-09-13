@@ -25,6 +25,7 @@ const (
 	CancelMatching = "cancel_matching"
 	MatchingStatus = "matching_status"
 	MatchFound     = "match_found"
+	ActiveMatch    = "active_match"
 
 	// Error handling
 	Error = "error"
@@ -63,7 +64,7 @@ func IsValidMessageType(msgType string) bool {
 	switch msgType {
 	case Auth, Ping, Pong, CodeUpdate, GameFinished,
 		SubmissionStarted, TestCaseRunning, TestCaseCompleted, SubmissionCompleted, SubmissionFailed,
-		StartMatching, CancelMatching, MatchingStatus, MatchFound, Error,
+		StartMatching, CancelMatching, MatchingStatus, MatchFound, ActiveMatch, Error,
 		Judge0TimeoutError, Judge0QuotaError:
 		return true
 	default:

@@ -87,6 +87,7 @@ export interface MatchResponse {
 }
 
 export type GetMatchResponse = ApiResponse<MatchResponse>;
+export type GetActiveMatchResponse = ApiResponse<MatchResponse | null>;
 
 export interface SubmitSolutionData {
   success: boolean;

@@ -43,6 +43,8 @@ function RadixThemeWrapper({ children }: { children: React.ReactNode }) {
 function MyApp({ Component, pageProps }: AppProps) {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
   const user = useAuthStore((state) => state.user);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isAuthLoading = useAuthStore((state) => state.isLoading);
   const router = useRouter();
   const [queryClient] = useState(() => new QueryClient());
 
@@ -50,6 +52,33 @@ function MyApp({ Component, pageProps }: AppProps) {
     initializeAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (isAuthLoading || !isLoggedIn) return;
+    const path = router.pathname;
+    if (
+      path.startsWith("/game/") ||
+      path.startsWith("/auth/") ||
+      path === "/login" ||
+      path === "/register"
+    ) {
+      return;
+    }
+    let cancelled = false;
+    void import("@/lib/api")
+      .then(({ matchApi }) => matchApi.getActiveMatch())
+      .then((match) => {
+        if (!cancelled && match?.id) {
+          void router.replace(`/game/${match.id}`);
+        }
+      })
+      .catch(() => {
+        // A failed resume check must not prevent the current page from loading.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthLoading, isLoggedIn, router]);
 
   // 라우트 기반 레이아웃 설정
   const layoutConfig = useMemo(

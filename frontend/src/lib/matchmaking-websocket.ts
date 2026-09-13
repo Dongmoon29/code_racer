@@ -36,13 +36,20 @@ export interface MatchFoundMessage {
   };
 }
 
+export interface ActiveMatchMessage {
+  type: typeof WEBSOCKET_MESSAGE_TYPES.ACTIVE_MATCH;
+  game_id: string;
+}
+
 export type MatchingWebSocketMessage =
   | MatchingStatusMessage
-  | MatchFoundMessage;
+  | MatchFoundMessage
+  | ActiveMatchMessage;
 
 export interface MatchingWebSocketCallbacks {
   onStatusUpdate?: (message: MatchingStatusMessage) => void;
   onMatchFound?: (message: MatchFoundMessage) => void;
+  onActiveMatch?: (message: ActiveMatchMessage) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onMatchmakingDisconnect?: () => void;
@@ -140,6 +147,9 @@ export class MatchmakingWebSocketClient extends BaseWebSocketClient {
           console.log('🎉 Match found!:', message);
         }
         this.callbacks.onMatchFound?.(message);
+        break;
+      case WEBSOCKET_MESSAGE_TYPES.ACTIVE_MATCH:
+        this.callbacks.onActiveMatch?.(message);
         break;
       default:
         if (process.env.NODE_ENV === 'development') {

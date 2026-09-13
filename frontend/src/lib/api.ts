@@ -8,6 +8,7 @@ import type {
   RefreshTokenResponse,
   GetCurrentUserResponse,
   GetMatchResponse,
+  GetActiveMatchResponse,
   MatchResponse,
   SubmitSolutionResponse,
   GetUserProfileResponse,
@@ -228,6 +229,11 @@ export const authApi = {
 
 // Game related API
 export const matchApi = {
+  getActiveMatch: async (): Promise<MatchResponse | null> => {
+    const response = await api.get<GetActiveMatchResponse>("/matches/active");
+    return response.data.success ? response.data.data : null;
+  },
+
   // Get game information (used during game play)
   getGame: async (matchId: string): Promise<{ game: Game | null }> => {
     const response = await api.get<GetMatchResponse>(`/matches/${matchId}`);

@@ -60,6 +60,15 @@ type Match struct {
 	UpdatedAt time.Time  `json:"updated_at"`
 }
 
+// ActiveMatchParticipant is a durable per-user lock for an unfinished match.
+// Keeping this as a separate table allows the database to enforce that a user
+// cannot participate in two matches concurrently, even across app instances.
+type ActiveMatchParticipant struct {
+	UserID    uuid.UUID `gorm:"type:uuid;primaryKey" json:"user_id"`
+	MatchID   uuid.UUID `gorm:"type:uuid;not null;index" json:"match_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 func (m *Match) BeforeCreate(tx *gorm.DB) error {
 	if m.ID == uuid.Nil {
 		m.ID = uuid.New()
