@@ -13,10 +13,9 @@ import { ROUTES } from '@/lib/router';
 interface GameHistoryProps {
   games?: unknown[];
   currentUserId?: string;
-  compact?: boolean;
 }
 
-const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId, compact = false }) => {
+const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
   const items: GameHistoryItem[] = normalizeRecentGames(games as unknown[]);
 
   const getModeTag = (mode: string) => {
@@ -87,8 +86,8 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId, compact 
   };
 
   return (
-    <div className={`rounded-xl border bg-card ${compact ? 'p-4' : 'p-6'}`}>
-      <h3 className={compact ? 'sr-only' : 'mb-4 text-lg font-semibold'}>Recent Games</h3>
+    <div className="bg-card rounded-lg border p-6">
+      <h3 className="text-lg font-semibold mb-4">Recent Games</h3>
 
       {items.length === 0 && (
         <div className="text-sm text-muted-foreground">
@@ -96,7 +95,7 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId, compact 
         </div>
       )}
 
-      <div className={compact ? 'space-y-2' : 'space-y-3'}>
+      <div className="space-y-3">
         {items.slice(0, 5).map((game) => {
           const won = game.mode !== 'single' && isWinner(game);
           const lost = game.mode !== 'single' && game.winner && !isWinner(game);
@@ -105,11 +104,11 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId, compact 
           <Link
             key={game.id}
             href={ROUTES.GAME_ROOM(game.id)}
-            className={`block cursor-pointer rounded-lg border bg-[var(--color-panel)] transition-all duration-200 hover:bg-muted/50 hover:shadow-sm ${compact ? 'p-3' : 'p-3 sm:p-4'}`}
+            className="block p-3 sm:p-4 rounded-lg border bg-[var(--color-panel)] transition-all duration-200 hover:bg-muted/50 hover:shadow-sm cursor-pointer"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <div className={`flex items-center gap-2 ${compact ? 'mb-1.5' : 'mb-2'}`}>
+                <div className="flex items-center gap-2 mb-2">
                   {won && (
                     <ThumbsUp className="w-4 h-4 text-green-500 flex-shrink-0" />
                   )}
@@ -120,7 +119,7 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId, compact 
                     {game.problem.title}
                   </h4>
                 </div>
-                <div className={`flex flex-wrap items-center gap-2 ${compact ? 'mb-0' : 'mb-2'}`}>
+                <div className="flex items-center gap-2 flex-wrap mb-2">
                   <Badge variant="outline" size="1" color={getModeColor(game.mode)}>
                     {getModeTag(game.mode)}
                   </Badge>

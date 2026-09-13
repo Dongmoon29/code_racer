@@ -53,32 +53,32 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   const following = followStats?.stats.following ?? 0;
 
   return (
-    <div className="mx-auto w-full max-w-sm lg:mx-0">
-      <div className="flex flex-col gap-3.5">
+    <div className="w-full max-w-sm mx-auto lg:mx-0">
+      <div className="flex flex-col gap-4">
         {/* Profile Image and Basic Info */}
         <div className="w-full flex flex-col items-center">
-          <div className="mb-3 flex h-40 w-40 items-center justify-center overflow-hidden rounded-full sm:h-44 sm:w-44">
+          <div className="w-48 h-48 lg:w-64 lg:h-64 rounded-full overflow-hidden mb-4 flex items-center justify-center">
             {user?.profile_image ? (
               <Image
                 src={user.profile_image}
                 alt="Profile"
-                width={176}
-                height={176}
+                width={256}
+                height={256}
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="text-4xl font-semibold">
+              <div className="text-4xl lg:text-6xl font-semibold ">
                 {user?.name?.charAt(0)?.toUpperCase()}
               </div>
             )}
           </div>
 
-          <h1 className="mb-3 text-center text-xl font-bold text-foreground lg:text-2xl">
+          <h1 className="text-xl lg:text-2xl font-bold text-foreground mb-4 text-center">
             {user?.name}
           </h1>
 
           {/* Follow Stats */}
-          <div className="mb-3 flex items-center justify-center gap-3 text-sm text-muted-foreground">
+          <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground mb-4">
             <button
               type="button"
               onClick={onShowFollowers}

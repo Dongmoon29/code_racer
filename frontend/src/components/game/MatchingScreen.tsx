@@ -35,19 +35,19 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(({ onMatchFoun
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-11)]">Play your way</p>
-        <h2 className="mt-1.5 text-xl font-bold tracking-tight sm:text-2xl">Ready for your next challenge?</h2>
+        <h2 className="mt-2 text-2xl font-bold tracking-tight">Ready for your next challenge?</h2>
         <p className="mt-2 text-sm font-normal text-[var(--gray-11)]">Choose a mode and difficulty to get started.</p>
       </div>
       <fieldset>
-        <legend className="mb-2.5 text-sm font-semibold">Game mode</legend>
-        <div className="grid gap-2.5">
+        <legend className="mb-3 text-sm font-semibold">Game mode</legend>
+        <div className="grid gap-3">
           {modes.map(({ value, title, description, icon: Icon }) => (
             <label key={value} className="relative cursor-pointer">
               <input type="radio" name="game-mode" value={value} checked={mode === value} onChange={() => setMode(value)} className="peer sr-only" />
-              <span className="flex h-full items-center gap-3 rounded-xl border border-[var(--gray-6)] px-4 py-3 transition-colors hover:bg-[var(--gray-3)] peer-checked:border-[var(--accent-8)] peer-checked:bg-[var(--accent-3)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--accent-9)]">
+              <span className="flex h-full items-center gap-3 rounded-xl border border-[var(--gray-6)] p-4 transition-colors hover:bg-[var(--gray-3)] peer-checked:border-[var(--accent-8)] peer-checked:bg-[var(--accent-3)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--accent-9)]">
                 <Icon className="h-5 w-5 shrink-0 text-[var(--accent-11)]" />
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold">{title}</span>
@@ -58,9 +58,9 @@ export const MatchingScreen: React.FC<MatchingScreenProps> = memo(({ onMatchFoun
           ))}
         </div>
       </fieldset>
-      <div className="mt-auto flex flex-col gap-4 border-t border-[var(--gray-6)] pt-4">
+      <div className="mt-auto flex flex-col gap-5 border-t border-[var(--gray-6)] pt-5">
         <fieldset>
-          <legend className="mb-2.5 text-sm font-semibold">Difficulty</legend>
+          <legend className="mb-3 text-sm font-semibold">Difficulty</legend>
           <div className="flex gap-2">
             {difficulties.map((value) => (
               <label key={value} className="flex-1 cursor-pointer">
