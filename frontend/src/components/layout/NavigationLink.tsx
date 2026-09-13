@@ -17,19 +17,19 @@ interface NavigationLinkProps {
 
 export function NavigationLink({ item, isActive, isCollapsed }: NavigationLinkProps) {
   const linkClasses = cn(
-    'group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 text-[clamp(8px,2.5vw,10px)] font-medium leading-none transition-colors duration-200 md:w-full md:flex-none md:text-sm md:leading-normal',
+    'group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-0.5 py-1 text-[clamp(8px,2.5vw,10px)] font-medium leading-none transition-colors md:w-full md:flex-none md:text-[13px] md:leading-normal',
     isCollapsed
-      ? 'md:flex-row md:px-2 md:py-2.5'
-      : 'md:flex-row md:justify-start md:gap-3 md:px-3 md:py-2.5',
+      ? 'md:h-9 md:flex-row md:px-2'
+      : 'md:h-9 md:flex-row md:justify-start md:gap-2 md:px-2',
     isActive
-      ? 'bg-[var(--accent-3)] text-[var(--accent-11)]'
+      ? 'bg-[var(--gray-3)] text-[var(--color-text)] before:absolute before:inset-x-2 before:top-0 before:h-0.5 before:rounded-full before:bg-[var(--accent-9)] md:before:inset-y-1.5 md:before:left-0 md:before:right-auto md:before:h-auto md:before:w-0.5'
       : 'text-[var(--gray-11)] hover:bg-[var(--gray-3)] hover:text-[var(--color-text)]'
   );
 
   const iconWrapperClasses = cn(
-    'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors md:h-9 md:w-9',
+    'flex h-7 w-7 shrink-0 items-center justify-center transition-colors md:h-5 md:w-5 [&>svg]:h-4 [&>svg]:w-4',
     isActive
-      ? 'bg-[var(--accent-4)] text-[var(--accent-11)]'
+      ? 'text-[var(--color-text)]'
       : 'text-[var(--gray-10)] group-hover:text-[var(--color-text)]'
   );
 

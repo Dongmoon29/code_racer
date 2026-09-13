@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { ArrowRightToLine, ArrowLeftToLine } from "lucide-react";
+import { ArrowRightToLine, ArrowLeftToLine, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BUTTON_STYLES } from "@/lib/styles";
 import Logo from "./Logo";
@@ -33,30 +33,30 @@ export function DashboardSidebar({
   return (
     <aside
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 flex h-[calc(4.75rem+env(safe-area-inset-bottom))] shrink-0 border-t border-[var(--gray-6)] bg-[color:var(--color-panel)]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl md:sticky md:inset-auto md:top-0 md:h-screen md:flex-col md:overflow-y-auto md:border-r md:border-t-0 md:pb-0 md:shadow-none md:transition-[width] md:duration-300",
-        isCollapsed ? "md:w-[4.5rem]" : "md:w-60",
+        "fixed inset-x-0 bottom-0 z-40 flex h-[calc(4.75rem+env(safe-area-inset-bottom))] shrink-0 border-t border-[var(--gray-6)] bg-[color:var(--color-panel)]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl md:sticky md:inset-auto md:top-0 md:h-screen md:flex-col md:overflow-y-auto md:border-r md:border-t-0 md:pb-0 md:shadow-none md:transition-[width] md:duration-200",
+        isCollapsed ? "md:w-16" : "md:w-56",
       )}
     >
       {/* Header */}
       <div
         className={cn(
-          "hidden h-20 shrink-0 items-center border-b border-[var(--gray-6)] md:flex",
-          isCollapsed ? "justify-center px-3" : "justify-between px-4",
+          "hidden h-16 shrink-0 items-center border-b border-[var(--gray-6)] md:flex",
+          isCollapsed ? "justify-center px-2" : "px-3",
         )}
       >
         <Link
           href="/"
           aria-label="Go to home"
           className={cn(
-            "flex min-w-0 items-center rounded-xl outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]",
-            isCollapsed ? "justify-center" : "gap-2.5",
+            "flex min-w-0 items-center rounded-md px-1 py-1 outline-none transition-colors hover:bg-[var(--gray-3)] focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]",
+            isCollapsed ? "justify-center" : "gap-2",
           )}
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gray-3)]">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center">
             <Logo />
           </span>
           {!isCollapsed && (
-            <span className="truncate text-base font-semibold tracking-tight text-[var(--color-text)]">
+            <span className="truncate text-sm font-semibold text-[var(--color-text)]">
               codeRacer
             </span>
           )}
@@ -65,7 +65,7 @@ export function DashboardSidebar({
 
       {/* Navigation */}
       <nav
-        className="flex min-w-0 flex-1 items-stretch justify-around gap-0.5 px-1.5 py-1.5 md:w-full md:flex-col md:justify-start md:gap-1 md:px-2 md:py-4"
+        className="flex min-w-0 flex-1 items-stretch justify-around gap-0.5 px-1.5 py-1.5 md:w-full md:flex-col md:justify-start md:gap-0.5 md:px-2 md:py-3"
         aria-label="Main navigation"
       >
         {primaryItems.map((item) => {
@@ -86,7 +86,7 @@ export function DashboardSidebar({
 
       {bottomItems.length > 0 && (
         <nav
-          className="flex w-1/5 min-w-0 items-stretch py-1.5 pr-1.5 md:w-full md:flex-col md:gap-1 md:border-t md:border-[var(--gray-6)] md:px-2 md:py-3"
+          className="flex w-1/5 min-w-0 items-stretch py-1.5 pr-1.5 md:w-full md:flex-col md:gap-0.5 md:border-t md:border-[var(--gray-6)] md:px-2 md:py-2"
           aria-label="Admin navigation"
         >
           {bottomItems.map((item) => {
@@ -106,12 +106,12 @@ export function DashboardSidebar({
         </nav>
       )}
 
-      <div className="hidden border-t border-[var(--gray-6)] p-3 md:block">
+      <div className="hidden border-t border-[var(--gray-6)] p-2 md:block">
         <button
           onClick={onToggle}
           className={cn(
-            "flex w-full items-center rounded-xl py-2 text-sm font-medium",
-            isCollapsed ? "justify-center px-2" : "gap-3 px-3",
+            "flex h-8 w-full items-center rounded-md text-xs font-medium",
+            isCollapsed ? "justify-center px-2" : "gap-2 px-2",
             BUTTON_STYLES.ICON_BUTTON.TEXT,
             "hover:bg-[var(--gray-3)] hover:text-[var(--color-text)]",
           )}
@@ -119,11 +119,12 @@ export function DashboardSidebar({
           type="button"
         >
           {isCollapsed ? (
-            <ArrowRightToLine className="h-5 w-5" />
+            <ArrowRightToLine className="h-4 w-4" />
           ) : (
             <>
-              <ArrowLeftToLine className="h-5 w-5" />
+              <PanelLeft className="h-4 w-4" />
               <span>Collapse sidebar</span>
+              <ArrowLeftToLine className="ml-auto h-3.5 w-3.5 text-[var(--gray-9)]" />
             </>
           )}
         </button>
