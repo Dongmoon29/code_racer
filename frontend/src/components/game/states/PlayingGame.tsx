@@ -1,9 +1,11 @@
-import { FC, memo, useCallback, useState, useRef } from "react";
+import { FC, memo, useCallback, useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
+import { Code2, Eye, FileText } from "lucide-react";
 import { Game } from "@/types";
 import { SubmissionProgress } from "@/types/websocket";
 import { useTheme } from "next-themes";
 import { ProblemDetailsPane } from "./ProblemDetailsPane";
+import { EditorPane } from "./EditorPane";
 import { FullscreenOverlay } from "./FullscreenOverlay";
 import { ProblemEditorSplit } from "./CodeEditorSplitProps";
 import { useFullscreen } from "@/contexts/FullscreenContext";
@@ -65,11 +67,30 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
     const [isResizing, setIsResizing] = useState(false);
     const [problemPaneWidth, setProblemPaneWidth] = useState(25); // percentage
     const [isProblemPaneResizing, setIsProblemPaneResizing] = useState(false);
+    const [isMobile, setIsMobile] = useState(
+      () =>
+        typeof window !== "undefined" &&
+        window.matchMedia("(max-width: 767px)").matches,
+    );
+    const [mobileView, setMobileView] = useState<
+      "problem" | "editor" | "opponent"
+    >("editor");
     const hasOpenedMusicPlayer = useRef(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const fullscreenContainerRef = useRef<HTMLDivElement>(null);
 
     const isSinglePlayerMode = game.mode === "single";
+
+    useEffect(() => {
+      const mediaQuery = window.matchMedia("(max-width: 767px)");
+      const updateMobileState = (
+        event: MediaQueryList | MediaQueryListEvent,
+      ) => setIsMobile(event.matches);
+
+      updateMobileState(mediaQuery);
+      mediaQuery.addEventListener("change", updateMobileState);
+      return () => mediaQuery.removeEventListener("change", updateMobileState);
+    }, []);
 
     if (showMusicPlayer) {
       hasOpenedMusicPlayer.current = true;
@@ -82,6 +103,11 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
     const handleToggleDescription = useCallback(() => {
       setIsDescriptionExpanded((prev) => !prev);
     }, []);
+
+    const handleMobileRun = useCallback(() => {
+      setMobileView("problem");
+      onSubmitCode();
+    }, [onSubmitCode]);
 
     const handleToggleFullscreen = useCallback(async () => {
       if (!fullscreenContainerRef.current) return;
@@ -128,7 +154,106 @@ export const PlayingGame: FC<PlayingGameProps> = memo(
         ref={fullscreenContainerRef}
         className="flex flex-col h-full overflow-hidden"
       >
-        {!isFullscreen ? (
+        {!isFullscreen && isMobile ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div
+              role="tablist"
+              aria-label="Game workspace"
+              className={isSinglePlayerMode
+                ? "grid shrink-0 grid-cols-2 gap-1 border-b border-[var(--gray-6)] bg-[var(--gray-2)] p-1.5"
+                : "grid shrink-0 grid-cols-3 gap-1 border-b border-[var(--gray-6)] bg-[var(--gray-2)] p-1.5"}
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mobileView === "problem"}
+                onClick={() => setMobileView("problem")}
+                className={`flex min-h-10 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors ${
+                  mobileView === "problem"
+                    ? "bg-[var(--accent-4)] text-[var(--accent-11)]"
+                    : "text-[var(--gray-11)] hover:bg-[var(--gray-4)]"
+                }`}
+              >
+                <FileText className="h-4 w-4" />
+                Problem
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mobileView === "editor"}
+                onClick={() => setMobileView("editor")}
+                className={`flex min-h-10 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors ${
+                  mobileView === "editor"
+                    ? "bg-[var(--accent-4)] text-[var(--accent-11)]"
+                    : "text-[var(--gray-11)] hover:bg-[var(--gray-4)]"
+                }`}
+              >
+                <Code2 className="h-4 w-4" />
+                My code
+              </button>
+              {!isSinglePlayerMode && (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mobileView === "opponent"}
+                  onClick={() => setMobileView("opponent")}
+                  className={`flex min-h-10 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors ${
+                    mobileView === "opponent"
+                      ? "bg-[var(--accent-4)] text-[var(--accent-11)]"
+                      : "text-[var(--gray-11)] hover:bg-[var(--gray-4)]"
+                  }`}
+                >
+                  <Eye className="h-4 w-4" />
+                  Rival
+                </button>
+              )}
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-hidden p-1.5">
+              {mobileView === "problem" && (
+                <ProblemDetailsPane
+                  isExpanded
+                  title={game.problem.title}
+                  description={game.problem.description}
+                  examples={game.problem.examples}
+                  constraints={game.problem.constraints}
+                  testCases={game.problem.test_cases}
+                  ioSchema={game.problem.io_schema}
+                  submissionProgress={submissionProgress}
+                  onToggle={handleToggleDescription}
+                  showCollapseButton={false}
+                />
+              )}
+              {mobileView === "editor" && (
+                <EditorPane
+                  title="Me"
+                  code={myCode}
+                  language={selectedLanguage}
+                  theme={theme}
+                  isMinimized={false}
+                  isResizing={false}
+                  showMusicButton
+                  showLanguageSelector
+                  onLanguageChange={onLanguageChange}
+                  onChange={onCodeChange}
+                  onRun={handleMobileRun}
+                  runDisabled={isSubmitting}
+                />
+              )}
+              {!isSinglePlayerMode && mobileView === "opponent" && (
+                <EditorPane
+                  title={opponentName ?? "Opponent"}
+                  code={opponentCode}
+                  language={opponentLanguage}
+                  theme={theme}
+                  readOnly
+                  isMinimized={false}
+                  isResizing={false}
+                />
+              )}
+            </div>
+          </div>
+        ) : !isFullscreen ? (
           <div
             ref={containerRef}
             className="flex-1 flex min-h-0 overflow-hidden game-editor-container"

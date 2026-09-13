@@ -24,6 +24,7 @@ interface ProblemDetailsPaneProps {
   ioSchema?: IOSchema;
   submissionProgress?: SubmissionProgress;
   onToggle: () => void;
+  showCollapseButton?: boolean;
 }
 
 export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
@@ -37,6 +38,7 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
     ioSchema,
     submissionProgress,
     onToggle,
+    showCollapseButton = true,
   }) => {
     const [activeTab, setActiveTab] = useState<'description' | 'test-results'>(
       'description'
@@ -47,7 +49,10 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
     // Automatically switch to "Test Results" tab when evaluation starts
     useEffect(() => {
       if (!submissionProgress) return;
-      if (submissionProgress.isSubmitting) {
+      if (
+        submissionProgress.isSubmitting ||
+        submissionProgress.testCaseResults.length > 0
+      ) {
         setActiveTab('test-results');
       }
     }, [submissionProgress]);
@@ -85,15 +90,17 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
           <span className="font-medium truncate text-[var(--color-text)]">
             {title}
           </span>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={onToggle}
-              className="cursor-pointer p-1 text-[var(--gray-11)] hover:text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded-sm transition-colors shrink-0"
-              title="Minimize"
-            >
-              <Minimize2 className="w-4 h-4" />
-            </button>
-          </div>
+          {showCollapseButton && (
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={onToggle}
+                className="cursor-pointer p-1 text-[var(--gray-11)] hover:text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded-sm transition-colors shrink-0"
+                title="Minimize"
+              >
+                <Minimize2 className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}

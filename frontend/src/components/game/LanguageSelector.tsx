@@ -35,7 +35,7 @@ const LanguageSelector: FC<LanguageSelectorProps> = memo(
           disabled={disabled}
           size="1"
           variant="surface"
-          className="min-w-[120px]"
+          className="min-w-[88px] sm:min-w-[120px]"
         />
       </div>
     );

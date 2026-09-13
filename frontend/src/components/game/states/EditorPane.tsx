@@ -47,7 +47,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     const [showSettings, setShowSettings] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
 
-    const headerClass = `bg-[var(--gray-3)] px-4 py-2 flex items-center border-b border-[var(--gray-6)] rounded-t-md ${
+    const headerClass = `bg-[var(--gray-3)] px-2 sm:px-4 py-2 flex items-center border-b border-[var(--gray-6)] rounded-t-md ${
       isMinimized ? 'justify-center' : 'justify-between'
     }`;
 
@@ -82,9 +82,9 @@ export const EditorPane: FC<EditorPaneProps> = memo(
     return (
       <div className="border rounded-md min-w-0 h-full flex flex-col relative">
         <div className={`${headerClass} shrink-0`}>
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
             <span
-              className={`font-medium truncate ${isMinimized ? 'hidden' : ''}`}
+              className={`font-medium truncate ${isMinimized ? 'hidden' : ''} ${showLanguageSelector ? 'hidden sm:block' : ''}`}
             >
               {title}
             </span>
@@ -95,7 +95,7 @@ export const EditorPane: FC<EditorPaneProps> = memo(
               />
             )}
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
             {onRun && (
               <button
                 onClick={onRun}

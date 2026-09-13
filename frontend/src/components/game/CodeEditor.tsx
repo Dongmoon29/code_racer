@@ -130,7 +130,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     viewRef.current = view;
 
     const disableContextMenu = (e: MouseEvent) => {
-      if (!readOnly) {
+      const usesTouchInput = window.matchMedia('(pointer: coarse)').matches;
+      if (!readOnly && !usesTouchInput) {
         e.preventDefault();
       }
     };

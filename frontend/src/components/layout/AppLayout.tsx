@@ -55,7 +55,7 @@ export default function AppLayout({
     // 게임 페이지는 고정 높이 레이아웃 사용 (페이지 레벨 스크롤 방지)
     if (isGamePage) {
       return (
-        <div className="h-screen flex flex-col overflow-hidden">
+        <div className="h-dvh flex flex-col overflow-hidden">
           {showHeader && !isFullscreen && <Header />}
           <main className="flex-1 min-h-0 overflow-hidden">{children}</main>
         </div>
