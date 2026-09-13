@@ -121,6 +121,7 @@ func Setup(
 				match.GET("/active", matchController.GetActiveMatch)
 				match.GET("/:id", matchController.GetMatch)
 				match.POST("/:id/submit", matchController.SubmitSolution)
+				match.POST("/:id/close", matchController.CloseMatch)
 				match.POST("/single", matchController.CreateSinglePlayerMatch)
 			}
 

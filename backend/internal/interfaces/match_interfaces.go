@@ -13,6 +13,7 @@ type MatchService interface {
 	GetActiveMatchForUser(userID uuid.UUID) (*model.Match, error)
 	HandlePlayerConnected(matchID, userID uuid.UUID) error
 	HandlePlayerDisconnected(matchID, userID uuid.UUID) error
+	CloseMatch(matchID, userID uuid.UUID) error
 	GetRandomProblemByDifficulty(difficulty string) (*model.Problem, error)
 	SubmitSolution(matchID, userID uuid.UUID, req *model.SubmitSolutionRequest) (*model.SubmitSolutionResponse, error)
 }

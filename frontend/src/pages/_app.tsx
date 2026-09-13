@@ -67,13 +67,22 @@ function MyApp({ Component, pageProps }: AppProps) {
     let cancelled = false;
     void import("@/lib/api")
       .then(({ matchApi }) => matchApi.getActiveMatch())
-      .then((match) => {
-        if (!cancelled && match?.id) {
-          void router.replace(`/game/${match.id}`);
+      .then(async (match) => {
+        if (cancelled || !match?.id) return;
+        const resume = window.confirm(
+          "You have a game in progress. Would you like to return to it?",
+        );
+        if (resume) {
+          await router.replace(`/game/${match.id}`);
+          return;
         }
+        const { closeGame } = await import("@/api/game");
+        await closeGame(match.id);
       })
       .catch(() => {
-        // A failed resume check must not prevent the current page from loading.
+        if (!cancelled) {
+          window.alert("The active game could not be updated. Please try again.");
+        }
       });
     return () => {
       cancelled = true;

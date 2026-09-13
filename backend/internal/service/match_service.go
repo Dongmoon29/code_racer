@@ -39,6 +39,7 @@ type MatchService interface {
 	GetActiveMatchForUser(userID uuid.UUID) (*model.Match, error)
 	HandlePlayerConnected(matchID, userID uuid.UUID) error
 	HandlePlayerDisconnected(matchID, userID uuid.UUID) error
+	CloseMatch(matchID, userID uuid.UUID) error
 }
 type matchService struct {
 	matchRepo     repository.MatchRepository
@@ -506,13 +507,37 @@ func (s *matchService) GetPlayerCode(matchID uuid.UUID, userID uuid.UUID) (strin
 }
 
 func (s *matchService) CloseMatch(matchID uuid.UUID, userID uuid.UUID) error {
-	// Close match in DB
-	if err := s.matchRepo.CloseMatch(matchID, userID); err != nil {
-		return err
+	match, err := s.matchRepo.FindByID(matchID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return apperr.Wrap(err, apperr.CodeNotFound, "Match not found")
+		}
+		return apperr.Wrap(err, apperr.CodeInternal, "Failed to load match")
+	}
+	if match.PlayerAID != userID && (match.PlayerBID == nil || *match.PlayerBID != userID) {
+		return apperr.New(apperr.CodeForbidden, "You are not a participant in this match")
+	}
+	if match.Status != model.MatchStatusPlaying && match.Status != model.MatchStatusWaiting {
+		return nil
+	}
+
+	if match.Mode == model.MatchModeSingle {
+		if err := s.matchRepo.CloseMatch(matchID, userID); err != nil {
+			return err
+		}
+	} else {
+		finished, err := s.matchRepo.FinishDraw(matchID)
+		if err != nil {
+			return err
+		}
+		if finished && s.eventBus != nil {
+			s.eventBus.Publish(events.TopicGameFinished, &events.GameFinishedEvent{MatchID: matchID.String()})
+		}
 	}
 
 	// Cleanup match data in Redis
 	ctx := context.Background()
+	s.clearMatchDisconnects(ctx, matchID)
 
 	// Get participants in the match
 	users, err := s.redisManager.GetMatchUsers(matchID)

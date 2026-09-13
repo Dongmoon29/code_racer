@@ -103,6 +103,24 @@ func (c *MatchController) SubmitSolution(ctx *gin.Context) {
 	})
 }
 
+func (c *MatchController) CloseMatch(ctx *gin.Context) {
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		Unauthorized(ctx, "User not authenticated")
+		return
+	}
+	matchID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		BadRequest(ctx, "Invalid match ID")
+		return
+	}
+	if err := c.matchService.CloseMatch(matchID, userID.(uuid.UUID)); err != nil {
+		WriteError(ctx, err)
+		return
+	}
+	OK(ctx, gin.H{"id": matchID, "status": "finished"})
+}
+
 // CreateSinglePlayerMatch creates a single player match
 func (c *MatchController) CreateSinglePlayerMatch(ctx *gin.Context) {
 	userID, exists := ctx.Get("userID")

@@ -2,7 +2,7 @@ import { ApiResponse } from '@/types';
 import api from '@/lib/api';
 
 export const closeGame = async (gameId: string): Promise<ApiResponse> => {
-  const response = await api.post(`/games/${gameId}/close`);
+  const response = await api.post(`/matches/${gameId}/close`);
   return response.data;
 };
 

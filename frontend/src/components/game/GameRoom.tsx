@@ -1,16 +1,21 @@
-import React, { FC, useEffect } from "react";
+import React, { FC, useEffect, useRef } from "react";
+import { useRouter } from "next/router";
 import { useAuthStore } from "@/stores/authStore";
 import { Loader } from "../ui/Loader";
 import { GameStateRenderer } from "./components/GameStateRenderer";
 import { useGameRoomState } from "./hooks/useGameRoomState";
 import { useGameRoomWebSocket } from "./hooks/useGameRoomWebSocket";
 import { useGameData } from "./hooks/useGameData";
+import { closeGame } from "@/api/game";
 
 interface GameRoomProps {
   gameId: string;
 }
 
 const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
+  const router = useRouter();
+  const allowNavigationRef = useRef(false);
+  const isClosingRef = useRef(false);
   const currentUser = useAuthStore((state) => state.user);
   const isAuthLoading = useAuthStore((state) => state.isLoading);
 
@@ -66,9 +71,8 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       // Show warning only when game is in progress
       if (isGameInProgress) {
         event.preventDefault();
-        event.returnValue =
-          "Your written code will be lost if you leave this page.";
-        return "Your written code will be lost if you leave this page.";
+        event.returnValue = "Your game is still in progress.";
+        return "Your game is still in progress.";
       }
     };
 
@@ -77,6 +81,51 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
 
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isGameInProgress]);
+
+  // Internal navigation can be paused long enough to explicitly finish the
+  // game. Closing a tab still uses the browser warning and reconnect grace.
+  useEffect(() => {
+    if (!isGameInProgress) return;
+
+    const handleRouteChangeStart = (url: string) => {
+      if (
+        allowNavigationRef.current ||
+        isClosingRef.current ||
+        url === router.asPath
+      ) {
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "A game is still in progress. End the game and leave this page?",
+      );
+      const cancellationError = new Error("Game navigation cancelled");
+      Object.assign(cancellationError, { cancelled: true });
+      router.events.emit("routeChangeError", cancellationError, url, {
+        shallow: false,
+      });
+
+      if (confirmed) {
+        isClosingRef.current = true;
+        void closeGame(matchId)
+          .then(() => {
+            allowNavigationRef.current = true;
+            return router.push(url);
+          })
+          .catch(() => {
+            isClosingRef.current = false;
+            window.alert("The game could not be ended. Please try again.");
+          });
+      }
+
+      throw cancellationError;
+    };
+
+    router.events.on("routeChangeStart", handleRouteChangeStart);
+    return () => {
+      router.events.off("routeChangeStart", handleRouteChangeStart);
+    };
+  }, [isGameInProgress, matchId, router]);
 
   // Loading state handling
   if (isAuthLoading || gameLoading) {
