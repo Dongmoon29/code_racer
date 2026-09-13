@@ -118,10 +118,10 @@ const UserProfilePage = () => {
         />
       </Head>
 
-      <div className="py-3 sm:py-6">
-        <div className="mx-auto w-full max-w-4xl">
+      <div className="px-4 py-3 sm:px-6 sm:py-5">
+        <div className="mx-auto w-full max-w-[1440px]">
           <div
-            className={`mb-8 ${isOwnProfile ? "text-center md:text-left" : ""}`}
+            className={`mb-5 ${isOwnProfile ? "text-center md:text-left" : ""}`}
           >
             {!isOwnProfile && (
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-11)]">Racer profile</p>
@@ -129,8 +129,14 @@ const UserProfilePage = () => {
             <h1 className="mt-2 break-words text-3xl font-bold tracking-tight">{isOwnProfile ? `Welcome back, ${user.name}.` : user.name}</h1>
             <p className="mt-2 text-sm font-normal text-[var(--gray-11)]">{isOwnProfile ? 'Pick your next challenge and revisit your recent races.' : 'Explore recent races and connect with this developer.'}</p>
           </div>
-          <div className="grid gap-6 xl:grid-cols-2 xl:items-stretch">
-            <div className="min-w-0">
+          <div
+            className={`grid items-start gap-5 ${
+              isOwnProfile
+                ? "xl:grid-cols-[minmax(250px,0.78fr)_minmax(420px,1.25fr)_minmax(320px,0.97fr)]"
+                : "lg:grid-cols-[minmax(260px,0.7fr)_minmax(420px,1.3fr)]"
+            }`}
+          >
+            <section className="min-w-0 rounded-2xl border border-[var(--gray-6)] bg-[var(--color-panel)] p-5 [&>div]:mx-0 [&>div]:max-w-none">
               {isOwnProfile ? (
                 <ProfileSidebar
                   user={user!}
@@ -144,15 +150,16 @@ const UserProfilePage = () => {
                   onShowFollowing={() => setActiveTab("following")}
                 />
               )}
-            </div>
+            </section>
 
             {isOwnProfile && (
-                  <section className="min-w-0 rounded-2xl border border-[var(--gray-6)] bg-[var(--color-panel)] p-5 sm:p-6 [&>div]:h-full">
-                    <MatchingScreen onMatchFound={handleMatchFound} />
-                  </section>
-                )}
-            <div className={`min-w-0 ${isOwnProfile ? "xl:col-start-2" : ""}`}>
-              <div className="space-y-6">
+              <section className="min-w-0 rounded-2xl border border-[var(--gray-6)] bg-[var(--color-panel)] p-5 [&>div]:h-full">
+                <MatchingScreen onMatchFound={handleMatchFound} />
+              </section>
+            )}
+
+            <section className="min-w-0">
+              <div className="space-y-4">
                 <nav aria-label="Profile sections" className="flex gap-1 overflow-x-auto border-b border-[var(--gray-6)]">
                   {(["games", "followers", "following"] as const).map((tab) => (
                     <button key={tab} type="button" aria-current={activeTab === tab ? "page" : undefined} onClick={() => setActiveTab(tab)} className={`shrink-0 cursor-pointer border-b-2 px-4 py-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent-9)] ${activeTab === tab ? "border-[var(--accent-9)] text-[var(--accent-11)]" : "border-transparent text-[var(--gray-11)] hover:text-[var(--gray-12)]"}`}>
@@ -161,7 +168,7 @@ const UserProfilePage = () => {
                   ))}
                 </nav>
                 {activeTab === "games" && (
-                  <GameHistory currentUserId={user?.id} games={recentGames} />
+                  <GameHistory currentUserId={user?.id} games={recentGames} compact={isOwnProfile} />
                 )}
                 {activeTab === "followers" && (
                   <FollowersList userId={user?.id || ""} />
@@ -170,7 +177,7 @@ const UserProfilePage = () => {
                   <FollowingList userId={user?.id || ""} />
                 )}
               </div>
-            </div>
+            </section>
           </div>
         </div>
       </div>
