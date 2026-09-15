@@ -2,8 +2,10 @@ import { ReactNode } from 'react';
 import { useRouter } from 'next/router';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { Loader } from '@/components/ui/Loader';
-import { useSidebarState } from '@/hooks/useSidebarState';
-import { DashboardSidebar, NavigationItem } from './DashboardSidebar';
+import {
+  DashboardTopNavigation,
+  NavigationItem,
+} from './DashboardTopNavigation';
 import Header from './Header';
 import { useFullscreen } from '@/contexts/FullscreenContext';
 import { LayoutConfig } from './layoutConfig';
@@ -19,7 +21,7 @@ export default function AppLayout({
   layoutConfig,
   navigationItems = [],
 }: AppLayoutProps) {
-  const { layoutType, requireAuth, requireAdmin, showSidebar, showHeader } =
+  const { layoutType, requireAuth, requireAdmin, showNavigation, showHeader } =
     layoutConfig;
   const { isFullscreen } = useFullscreen();
   const router = useRouter();
@@ -31,9 +33,6 @@ export default function AppLayout({
     requireAuth: requireAuth ?? false,
     requireAdmin: requireAdmin ?? false,
   });
-
-  // 사이드바 상태 관리
-  const { isCollapsed, toggleSidebar } = useSidebarState();
 
   // 레이아웃 타입이 'none'인 경우 레이아웃 없이 렌더링
   if (layoutType === 'none') {
@@ -75,20 +74,16 @@ export default function AppLayout({
     );
   }
 
-  // Admin 또는 Dashboard 레이아웃 (Sidebar 포함)
+  // Admin 또는 Dashboard 레이아웃 (GitHub 스타일 상단 탐색 포함)
   if (layoutType === 'admin' || layoutType === 'dashboard') {
     return (
-      <div className="min-h-screen bg-[var(--color-background)] flex">
-        {showSidebar && (
-          <DashboardSidebar
-            navigationItems={navigationItems}
-            isCollapsed={isCollapsed}
-            onToggle={toggleSidebar}
-          />
+      <div className="flex min-h-screen flex-col bg-[var(--color-background)]">
+        {showNavigation && (
+          <DashboardTopNavigation navigationItems={navigationItems} />
         )}
-        <div className="min-w-0 flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 md:p-8">
+        <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 md:p-8">
           <div className="max-w-7xl mx-auto">{children}</div>
-        </div>
+        </main>
       </div>
     );
   }

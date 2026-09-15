@@ -10,7 +10,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { ROUTES } from '@/lib/router';
-import { NavigationItem } from './DashboardSidebar';
+import { NavigationItem } from './DashboardTopNavigation';
 
 export type LayoutType = 'admin' | 'dashboard' | 'public' | 'none';
 
@@ -18,7 +18,7 @@ export interface LayoutConfig {
   layoutType: LayoutType;
   requireAuth?: boolean;
   requireAdmin?: boolean;
-  showSidebar?: boolean;
+  showNavigation?: boolean;
   showHeader?: boolean;
 }
 
@@ -64,7 +64,7 @@ export function getLayoutConfig(pathname: string): LayoutConfig {
         layoutType: 'admin',
         requireAuth: true,
         requireAdmin: true,
-        showSidebar: true,
+        showNavigation: true,
         showHeader: false,
       };
 
@@ -73,7 +73,7 @@ export function getLayoutConfig(pathname: string): LayoutConfig {
         layoutType: 'dashboard',
         requireAuth: true,
         requireAdmin: false,
-        showSidebar: true,
+        showNavigation: true,
         showHeader: false,
       };
 
@@ -84,7 +84,7 @@ export function getLayoutConfig(pathname: string): LayoutConfig {
         layoutType: 'public',
         requireAuth: isGameRoute,
         requireAdmin: false,
-        showSidebar: false,
+        showNavigation: false,
         showHeader: true,
       };
 
@@ -93,7 +93,7 @@ export function getLayoutConfig(pathname: string): LayoutConfig {
         layoutType: 'none',
         requireAuth: false,
         requireAdmin: false,
-        showSidebar: false,
+        showNavigation: false,
         showHeader: false,
       };
 
@@ -102,7 +102,7 @@ export function getLayoutConfig(pathname: string): LayoutConfig {
         layoutType: 'public',
         requireAuth: false,
         requireAdmin: false,
-        showSidebar: false,
+        showNavigation: false,
         showHeader: true,
       };
   }
