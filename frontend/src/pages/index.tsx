@@ -3,20 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { GetServerSideProps } from "next";
 import { motion, useInView } from "framer-motion";
-import {
-  ArrowRight,
-  Braces,
-  CheckCircle2,
-  ChevronRight,
-  Play,
-  Radio,
-  Sparkles,
-  Swords,
-  Terminal,
-  Trophy,
-  Users,
-} from "lucide-react";
-import { GitHubIcon } from "@/components/icons/BrandIcons";
 import { useAuthStore } from "@/stores/authStore";
 import { FEATURES } from "@/lib/features";
 import { GitHubCommit } from "@/lib/github-api";
@@ -128,33 +114,24 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Link
                 href={primaryHref}
-                className="group inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-bold text-slate-950 shadow-[0_12px_40px_rgba(255,255,255,0.14)] transition hover:-translate-y-0.5 hover:bg-cyan-50"
+                className="inline-flex h-12 items-center justify-center rounded-xl bg-white px-6 text-sm font-bold text-slate-950 shadow-[0_12px_40px_rgba(255,255,255,0.14)] transition hover:-translate-y-0.5 hover:bg-cyan-50"
               >
-                <Play className="h-4 w-4 fill-current" />
                 {isLoggedIn ? "Enter the arena" : "Start racing free"}
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
                 href="https://github.com/Dongmoon29/code_racer"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-6 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.08]"
+                className="inline-flex h-12 items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] px-6 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.08]"
               >
-                <GitHubIcon className="h-4 w-4" />
                 View on GitHub
               </Link>
             </div>
 
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-medium text-slate-400">
-              <span className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Free to play
-              </span>
-              <span className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Instant judging
-              </span>
-              <span className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> 3 languages
-              </span>
+              <span>Free to play</span>
+              <span>Instant judging</span>
+              <span>3 languages</span>
             </div>
           </motion.div>
 
@@ -182,16 +159,13 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
         <section className="border-y border-white/[0.07] bg-white/[0.025]">
           <div className="mx-auto grid max-w-7xl divide-y divide-white/[0.07] px-5 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-8 lg:px-10">
             {[
-              { icon: Radio, title: "Live synchronization", description: "See the race unfold as it happens" },
-              { icon: Terminal, title: "Isolated evaluation", description: "Run every solution against judge cases" },
-              { icon: Trophy, title: "Competitive rating", description: "Track progress with every ranked match" },
-            ].map(({ icon: Icon, title, description }) => (
-              <div key={title} className="flex items-center gap-4 px-3 py-7 sm:px-7">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-cyan-300"><Icon className="h-5 w-5" /></div>
-                <div>
-                  <p className="text-sm font-bold text-white">{title}</p>
-                  <p className="mt-1 text-xs font-normal text-slate-500">{description}</p>
-                </div>
+              { title: "Live synchronization", description: "See the race unfold as it happens" },
+              { title: "Isolated evaluation", description: "Run every solution against judge cases" },
+              { title: "Competitive rating", description: "Track progress with every ranked match" },
+            ].map(({ title, description }) => (
+              <div key={title} className="px-3 py-7 sm:px-7">
+                <p className="text-sm font-bold text-white">{title}</p>
+                <p className="mt-1 text-xs font-normal text-slate-500">{description}</p>
               </div>
             ))}
           </div>
@@ -210,16 +184,13 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
 
           <div className="mt-14 grid gap-4 md:grid-cols-3">
             {[
-              { number: "01", icon: Swords, title: "Choose your race", description: "Practice solo or challenge another developer in a live match." },
-              { number: "02", icon: Braces, title: "Solve under pressure", description: "Write in JavaScript, Python, or Go while the clock keeps moving." },
-              { number: "03", icon: Trophy, title: "Claim the finish", description: "Pass every judge case first and watch your competitive record grow." },
-            ].map(({ number, icon: Icon, title, description }, index) => (
+              { number: "01", title: "Choose your race", description: "Practice solo or challenge another developer in a live match." },
+              { number: "02", title: "Solve under pressure", description: "Write in JavaScript, Python, or Go while the clock keeps moving." },
+              { number: "03", title: "Claim the finish", description: "Pass every judge case first and watch your competitive record grow." },
+            ].map(({ number, title, description }, index) => (
               <AnimatedSection key={number} delay={index * 0.08} className="h-full">
                 <article className="group relative h-full overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035] p-6 transition duration-300 hover:-translate-y-1 hover:border-cyan-400/25 hover:bg-white/[0.055]">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-slate-600">{number}</span>
-                    <Icon className="h-5 w-5 text-cyan-400" />
-                  </div>
+                  <span className="font-mono text-xs font-bold text-slate-600">{number}</span>
                   <h3 className="mt-10 text-xl font-bold">{title}</h3>
                   <p className="mt-3 text-sm font-normal leading-6 text-slate-400">{description}</p>
                 </article>
@@ -231,15 +202,14 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
         <section className="border-y border-white/[0.07] bg-[#0b0e12]">
           <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10 lg:py-28">
             <AnimatedSection className="mx-auto max-w-2xl text-center">
-              <div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl border border-violet-400/20 bg-violet-400/10"><Sparkles className="h-5 w-5 text-violet-300" /></div>
-              <h2 className="mt-5 text-3xl font-black tracking-[-0.035em] sm:text-5xl">Everything you need to race better.</h2>
+              <h2 className="text-3xl font-black tracking-[-0.035em] sm:text-5xl">Everything you need to race better.</h2>
               <p className="mt-5 text-base font-normal leading-7 text-slate-400">Focused tools for fast feedback, fair competition, and consistent practice.</p>
             </AnimatedSection>
 
             <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map((feature, index) => (
                 <AnimatedSection key={feature.id} delay={index * 0.05} className="h-full">
-                  <FeatureCard title={feature.title} description={feature.description} icon={feature.icon} />
+                  <FeatureCard title={feature.title} description={feature.description} />
                 </AnimatedSection>
               ))}
             </div>
@@ -252,13 +222,13 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-400">Built in public</p>
               <h2 className="mt-4 text-3xl font-black tracking-[-0.035em] sm:text-4xl">Always moving forward.</h2>
               <p className="mt-5 max-w-md text-sm font-normal leading-7 text-slate-400">CodeRacer is open source and actively evolving. Follow the latest improvements or help shape the next release.</p>
-              <Link href="https://github.com/Dongmoon29/code_racer" target="_blank" rel="noopener noreferrer" className="mt-7 inline-flex items-center gap-2 text-sm font-bold text-white transition hover:text-cyan-300">
-                Explore the repository <ChevronRight className="h-4 w-4" />
+              <Link href="https://github.com/Dongmoon29/code_racer" target="_blank" rel="noopener noreferrer" className="mt-7 inline-flex text-sm font-bold text-white transition hover:text-cyan-300">
+                Explore the repository
               </Link>
             </AnimatedSection>
             <AnimatedSection delay={0.08}>
               <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035]">
-                <RecentCommits commits={commits} className="!border-0 !bg-transparent !shadow-none" />
+                <RecentCommits commits={commits} className="!border-0 !bg-transparent !shadow-none" showIcons={false} />
               </div>
             </AnimatedSection>
           </section>
@@ -267,12 +237,10 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
         <section className="px-5 pb-20 sm:px-8 lg:px-10 lg:pb-28">
           <AnimatedSection className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-cyan-300/15 bg-gradient-to-br from-cyan-400/[0.11] via-white/[0.04] to-violet-500/[0.13] px-6 py-14 text-center sm:px-10 sm:py-18">
             <div aria-hidden="true" className="absolute left-1/2 top-0 -z-10 h-48 w-96 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl" />
-            <Users className="mx-auto h-6 w-6 text-cyan-300" />
-            <h2 className="mt-5 text-3xl font-black tracking-[-0.035em] sm:text-5xl">Your next rival is waiting.</h2>
+            <h2 className="text-3xl font-black tracking-[-0.035em] sm:text-5xl">Your next rival is waiting.</h2>
             <p className="mx-auto mt-4 max-w-xl text-sm font-normal leading-7 text-slate-300 sm:text-base">Join the arena, choose a challenge, and find out how fast you really think.</p>
-            <Link href={primaryHref} className="group mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-50">
+            <Link href={primaryHref} className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-white px-6 text-sm font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-50">
               {isLoggedIn ? "Race now" : "Create your account"}
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </AnimatedSection>
         </section>
