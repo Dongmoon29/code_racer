@@ -18,6 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+import { ListSkeleton, Skeleton } from "@/components/ui/Skeleton";
 
 type PostType = "bug" | "feature" | "improvement" | "other";
 type PostStatus = "pending" | "in_progress" | "resolved" | "closed";
@@ -567,8 +568,21 @@ const CommunityPostPage = () => {
         {breadcrumbs}
 
         {postLoading ? (
-          <div className="text-center py-10 text-[var(--gray-11)]">
-            Loading...
+          <div
+            className="rounded-lg border border-[var(--gray-6)] bg-[var(--color-panel)] p-5"
+            aria-label="Loading post"
+            role="status"
+          >
+            <div className="flex gap-3">
+              <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+              <div className="flex-1 space-y-4">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-8 w-2/3" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+              </div>
+            </div>
+            <span className="sr-only">Loading post</span>
           </div>
         ) : !post ? (
           <div className="text-center py-10 text-[var(--gray-11)]">
@@ -722,9 +736,7 @@ const CommunityPostPage = () => {
                 Thread
               </h2>
               {commentsLoading ? (
-                <div className="text-center py-6 text-[var(--gray-11)]">
-                  Loading...
-                </div>
+                <ListSkeleton rows={3} />
               ) : comments.length === 0 ? (
                 <div className="text-center py-6 text-[var(--gray-11)]">
                   No comments yet.

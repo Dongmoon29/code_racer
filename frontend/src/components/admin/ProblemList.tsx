@@ -11,6 +11,7 @@ import {
 } from "@/hooks/useProblem";
 import { CreateProblemRequest, ProblemDetail, ProblemSummary } from "@/types";
 import { Loader } from "@/components/ui/Loader";
+import { FormSkeleton } from "@/components/ui/Skeleton";
 import { ProblemListHeader } from "./ProblemListHeader";
 import { ProblemListFilters } from "./ProblemListFilters";
 import { ProblemListTable } from "./ProblemListTable";
@@ -20,9 +21,7 @@ import { DIFFICULTY_CONFIG } from "@/constants";
 const CodeEditor = dynamic(() => import("@/components/game/CodeEditor"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full items-center justify-center">
-      <Loader variant="spinner" />
-    </div>
+    <div className="h-full animate-pulse bg-[var(--gray-4)] motion-reduce:animate-none" />
   ),
 });
 
@@ -195,11 +194,7 @@ export default function ProblemList() {
   ]);
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader variant="spinner" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   if (error) {

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useVoting } from "@/hooks/useVoting";
+import { ListSkeleton } from "@/components/ui/Skeleton";
 
 type PostType = "bug" | "feature" | "improvement" | "other";
 type PostStatus = "pending" | "in_progress" | "resolved" | "closed";
@@ -277,9 +278,7 @@ const CommunityIndexPage = () => {
         {/* Posts List */}
         <div className="space-y-3">
           {postsLoading ? (
-            <div className="text-center py-8 text-[var(--gray-11)]">
-              Loading...
-            </div>
+            <ListSkeleton rows={5} />
           ) : posts.length === 0 ? (
             <div className="text-center py-8 text-[var(--gray-11)]">
               No posts yet.

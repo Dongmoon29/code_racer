@@ -9,7 +9,7 @@ import {
   PublicProfileSidebar,
 } from "@/components/profile";
 import { MatchingScreen } from "@/components/game/MatchingScreen";
-import { Loader } from "@/components/ui/Loader";
+import { ProfilePageSkeleton } from "@/components/ui/Skeleton";
 import { useAuthStore } from "@/stores/authStore";
 import { FollowersList, FollowingList } from "@/components/profile/FollowLists";
 import { LAYOUT_PADDING } from "@/lib/styles";
@@ -69,23 +69,11 @@ const UserProfilePage = () => {
 
   // Wait for router to be ready
   if (!router.isReady || !userId) {
-    return (
-      <div className={LAYOUT_PADDING.SECTION}>
-        <div className="flex items-center justify-center">
-          <Loader variant="spinner" size="lg" />
-        </div>
-      </div>
-    );
+    return <ProfilePageSkeleton />;
   }
 
   if (isLoading) {
-    return (
-      <div className={LAYOUT_PADDING.SECTION}>
-        <div className="flex items-center justify-center">
-          <Loader variant="spinner" size="lg" />
-        </div>
-      </div>
-    );
+    return <ProfilePageSkeleton />;
   }
 
   if (error || !data?.profile) {

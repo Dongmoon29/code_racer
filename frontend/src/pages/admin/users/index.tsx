@@ -4,6 +4,7 @@ import { userApi } from '@/lib/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { IconButton, TextField } from '@radix-ui/themes';
 import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { ListSkeleton, Skeleton } from '@/components/ui/Skeleton';
 
 type UserItem = {
   id: string;
@@ -69,7 +70,7 @@ export default function AdminUsersPage() {
     return currentDir === 'desc' ? '▼' : '▲';
   };
 
-  const { data, isFetching, isError, error } = useQuery({
+  const { data, isFetching, isLoading, isError, error } = useQuery({
     queryKey: ['admin-users', { page, limit: PAGE_SIZE, sort, search }],
     queryFn: () =>
       userApi.adminList(page, PAGE_SIZE, sort, search || undefined),
@@ -119,6 +120,16 @@ export default function AdminUsersPage() {
     }
     return range;
   }, [data, page]);
+
+  if (isLoading) {
+    return (
+      <div aria-label="Loading users" role="status">
+        <Skeleton className="mb-6 h-8 w-52" />
+        <Skeleton className="mb-6 h-10 w-full max-w-md" />
+        <ListSkeleton rows={8} />
+      </div>
+    );
+  }
 
   return (
     <>

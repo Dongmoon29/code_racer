@@ -7,6 +7,7 @@ import { userApi } from '@/lib/api';
 import { LAYOUT_PADDING } from '@/lib/styles';
 import { useQuery } from '@tanstack/react-query';
 import { ROUTES } from '@/lib/router';
+import { LeaderboardSkeleton } from '@/components/ui/Skeleton';
 
 interface LeaderboardUser {
   id: string;
@@ -20,7 +21,7 @@ interface RankedUser extends LeaderboardUser {
 }
 
 const LeaderboardPage = () => {
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, isLoading } = useQuery({
     queryKey: ['leaderboard'],
     queryFn: () => userApi.getLeaderboard(),
     keepPreviousData: true,
@@ -83,6 +84,19 @@ const LeaderboardPage = () => {
         };
     }
   };
+
+  if (isLoading) {
+    return (
+      <>
+        <Head>
+          <title>Leaderboard - CodeRacer</title>
+        </Head>
+        <div className={LAYOUT_PADDING.SECTION}>
+          <LeaderboardSkeleton />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

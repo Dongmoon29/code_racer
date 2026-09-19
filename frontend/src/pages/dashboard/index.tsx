@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { ProfileSidebar, GameHistory } from '@/components/profile';
-import { Loader } from '@/components/ui/Loader';
+import { ProfilePageSkeleton } from '@/components/ui/Skeleton';
 import { ROUTES } from '@/lib/router';
 import { LAYOUT_PADDING, LAYOUT_WIDTH } from '@/lib/styles';
 
@@ -64,13 +64,7 @@ const DashboardIndex = () => {
   }, [user?.id, router]);
 
   if (isLoading) {
-    return (
-      <div className={LAYOUT_PADDING.SECTION}>
-        <div className="flex items-center justify-center">
-          <Loader variant="spinner" />
-        </div>
-      </div>
-    );
+    return <ProfilePageSkeleton />;
   }
 
   if (error) {

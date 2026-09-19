@@ -1,7 +1,7 @@
 import React, { FC, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useAuthStore } from "@/stores/authStore";
-import { Loader } from "../ui/Loader";
+import { GameRoomSkeleton } from "../ui/Skeleton";
 import { GameStateRenderer } from "./components/GameStateRenderer";
 import { useGameRoomState } from "./hooks/useGameRoomState";
 import { useGameRoomWebSocket } from "./hooks/useGameRoomWebSocket";
@@ -129,11 +129,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
 
   // Loading state handling
   if (isAuthLoading || gameLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader variant="spinner" size="lg" />
-      </div>
-    );
+    return <GameRoomSkeleton />;
   }
 
   // Unauthenticated user handling

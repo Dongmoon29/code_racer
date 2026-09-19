@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { ROUTES } from "@/lib/router";
+import { ListSkeleton } from "@/components/ui/Skeleton";
 
 interface FollowListsProps {
   userId: string;
@@ -30,7 +31,7 @@ export const FollowersList: React.FC<FollowListsProps> = ({ userId }) => {
       <h3 className="text-lg font-semibold mb-4">Followers</h3>
 
       {isLoading ? (
-        <div className="text-sm text-muted-foreground">Loading...</div>
+        <ListSkeleton rows={3} />
       ) : followers.length === 0 ? (
         <div className="text-sm text-muted-foreground">No followers yet.</div>
       ) : (
@@ -57,7 +58,7 @@ export const FollowingList: React.FC<FollowListsProps> = ({ userId }) => {
       <h3 className="text-lg font-semibold mb-4">Following</h3>
 
       {isLoading ? (
-        <div className="text-sm text-muted-foreground">Loading...</div>
+        <ListSkeleton rows={3} />
       ) : following.length === 0 ? (
         <div className="text-sm text-muted-foreground">
           Not following anyone yet.
