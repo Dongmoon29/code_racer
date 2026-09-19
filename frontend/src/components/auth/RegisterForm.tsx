@@ -49,6 +49,7 @@ const RegisterForm: FC = () => {
           id="name"
           label="Name"
           type="text"
+          autoComplete="name"
           placeholder="John Doe"
           registration={register('name')}
           error={errors.name?.message}
@@ -60,6 +61,7 @@ const RegisterForm: FC = () => {
           id="email"
           label="Email"
           type="email"
+          autoComplete="email"
           placeholder="you@example.com"
           registration={register('email')}
           error={errors.email?.message}
@@ -71,6 +73,7 @@ const RegisterForm: FC = () => {
           id="password"
           label="Password"
           type={showPassword ? 'text' : 'password'}
+          autoComplete="new-password"
           registration={register('password')}
           error={errors.password?.message}
           disabled={loading}
@@ -79,6 +82,8 @@ const RegisterForm: FC = () => {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
             >
               {showPassword ? (
                 <EyeOff className="h-5 w-5" />
@@ -93,6 +98,7 @@ const RegisterForm: FC = () => {
           id="confirmPassword"
           label="Confirm Password"
           type="password"
+          autoComplete="new-password"
           registration={register('confirmPassword')}
           error={errors.confirmPassword?.message}
           disabled={loading}

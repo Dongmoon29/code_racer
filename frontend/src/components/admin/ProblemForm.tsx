@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import type { ProblemFormData } from "@/types";
 import { createProblem, updateProblem } from "@/lib/problem-api";
 import { createDefaultFormData } from "./constants/problem-form-constants";
@@ -22,99 +23,99 @@ const difficultyOptions: ProblemFormData["difficulty"][] = [
   "Hard",
 ];
 
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p role="alert" className="mt-1 text-xs text-red-500">
+      {message}
+    </p>
+  );
+}
+
 export default function ProblemForm({
   initialData,
   mode,
   onSuccess,
   onCancel,
 }: ProblemFormProps) {
-  const [formData, setFormData] = useState<ProblemFormData>(
-    initialData || createDefaultFormData(),
-  );
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string>("");
+  const [submitError, setSubmitError] = useState("");
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ProblemFormData>({
+    defaultValues: initialData ?? createDefaultFormData(),
+    mode: "onBlur",
+  });
 
   useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-    }
-  }, [initialData]);
+    reset(initialData ?? createDefaultFormData());
+  }, [initialData, reset]);
 
-  const handleInputChange = <K extends keyof ProblemFormData>(
-    field: K,
-    value: ProblemFormData[K],
-  ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  const onSubmit = async (formData: ProblemFormData) => {
+    setSubmitError("");
 
     const validationError = validateProblemForm(formData);
     if (validationError) {
-      setError(validationError);
+      setSubmitError(validationError);
       return;
     }
-
-    setIsSubmitting(true);
 
     try {
       if (mode === "create") {
         await createProblem(formData);
-      } else if (initialData && initialData.id) {
+      } else if (initialData?.id) {
         await updateProblem(initialData.id, {
           ...formData,
           id: initialData.id,
         });
       }
-
       onSuccess?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "An error occurred",
+      );
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 ">
+    <div className="mx-auto max-w-4xl rounded-lg p-6 shadow-lg">
+      <h2 className="mb-6 text-2xl font-bold">
         {mode === "create" ? "Add New Problem" : "Edit Problem"}
       </h2>
-      {error && (
-        <div className="mb-4 p-4 border border-red-200 rounded-md">
-          <p className="text-red-600">{error}</p>
+      {submitError && (
+        <div role="alert" className="mb-4 rounded-md border border-red-200 p-4">
+          <p className="text-red-600">{submitError}</p>
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium mb-2">Title *</label>
+            <label htmlFor="problem-title" className="mb-2 block text-sm font-medium">
+              Title *
+            </label>
             <input
+              id="problem-title"
               type="text"
-              value={formData.title}
-              onChange={(e) => handleInputChange("title", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
+              {...register("title", { required: "Title is required" })}
+              aria-invalid={errors.title ? true : undefined}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <FieldError message={errors.title?.message} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium  mb-2">
+            <label htmlFor="problem-difficulty" className="mb-2 block text-sm font-medium">
               Difficulty *
             </label>
             <select
-              value={formData.difficulty}
-              onChange={(e) =>
-                handleInputChange(
-                  "difficulty",
-                  e.target.value as ProblemFormData["difficulty"],
-                )
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
+              id="problem-difficulty"
+              {...register("difficulty", { required: "Difficulty is required" })}
+              aria-invalid={errors.difficulty ? true : undefined}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {difficultyOptions.map((option) => (
                 <option key={option} value={option}>
@@ -122,109 +123,123 @@ export default function ProblemForm({
                 </option>
               ))}
             </select>
+            <FieldError message={errors.difficulty?.message} />
           </div>
         </div>
 
-        {/* Description */}
         <div>
-          <label className="block text-sm font-medium  mb-2">
+          <label htmlFor="problem-description" className="mb-2 block text-sm font-medium">
             Problem Description *
           </label>
           <textarea
-            value={formData.description}
-            onChange={(e) => handleInputChange("description", e.target.value)}
+            id="problem-description"
+            {...register("description", {
+              required: "Problem description is required",
+            })}
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
+            aria-invalid={errors.description ? true : undefined}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          <FieldError message={errors.description?.message} />
         </div>
 
-        <ExamplesField
-          examples={formData.examples}
-          onChange={(examples) => handleInputChange("examples", examples)}
-        />
+        <ExamplesField control={control} register={register} errors={errors} />
 
-        {/* Constraints */}
         <div>
-          <label className="block text-sm font-medium  mb-2">
+          <label htmlFor="problem-constraints" className="mb-2 block text-sm font-medium">
             Constraints *
           </label>
           <textarea
-            value={formData.constraints}
-            onChange={(e) => handleInputChange("constraints", e.target.value)}
+            id="problem-constraints"
+            {...register("constraints", { required: "Constraints are required" })}
             rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-invalid={errors.constraints ? true : undefined}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="1 <= nums.length <= 10^4"
-            required
           />
+          <FieldError message={errors.constraints?.message} />
         </div>
 
-        <IOSchemaField
-          value={formData.io_schema}
-          onChange={(ioSchema) => handleInputChange("io_schema", ioSchema)}
+        <Controller
+          control={control}
+          name="io_schema"
+          render={({ field }) => (
+            <IOSchemaField value={field.value} onChange={field.onChange} />
+          )}
         />
 
-        {/* Function Name */}
         <div>
-          <label className="block text-sm font-medium  mb-2">
+          <label htmlFor="problem-function-name" className="mb-2 block text-sm font-medium">
             Function Name *
           </label>
           <input
+            id="problem-function-name"
             type="text"
-            value={formData.function_name}
-            onChange={(e) => handleInputChange("function_name", e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register("function_name", {
+              required: "Function name is required",
+              pattern: {
+                value: /^[A-Za-z_][A-Za-z0-9_]*$/,
+                message:
+                  "Use letters, numbers, and underscores, starting with a letter or underscore",
+              },
+            })}
+            aria-invalid={errors.function_name ? true : undefined}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="twoSum"
-            required
           />
+          <FieldError message={errors.function_name?.message} />
         </div>
 
-        <TestCasesField
-          testCases={formData.test_cases}
-          onChange={(testCases) => handleInputChange("test_cases", testCases)}
-        />
+        <TestCasesField control={control} register={register} errors={errors} />
 
-        {/* Limits */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium  mb-2">
+            <label htmlFor="problem-time-limit" className="mb-2 block text-sm font-medium">
               Time Limit (ms)
             </label>
             <input
+              id="problem-time-limit"
               type="number"
-              value={formData.time_limit}
-              onChange={(e) =>
-                handleInputChange("time_limit", parseInt(e.target.value))
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {...register("time_limit", {
+                valueAsNumber: true,
+                required: "Time limit is required",
+                min: { value: 100, message: "Minimum time limit is 100 ms" },
+              })}
+              aria-invalid={errors.time_limit ? true : undefined}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               min="100"
               step="100"
             />
+            <FieldError message={errors.time_limit?.message} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium  mb-2">
+            <label htmlFor="problem-memory-limit" className="mb-2 block text-sm font-medium">
               Memory Limit (MB)
             </label>
             <input
+              id="problem-memory-limit"
               type="number"
-              value={formData.memory_limit}
-              onChange={(e) =>
-                handleInputChange("memory_limit", parseInt(e.target.value))
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {...register("memory_limit", {
+                valueAsNumber: true,
+                required: "Memory limit is required",
+                min: { value: 16, message: "Minimum memory limit is 16 MB" },
+              })}
+              aria-invalid={errors.memory_limit ? true : undefined}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               min="16"
               step="16"
             />
+            <FieldError message={errors.memory_limit?.message} />
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex justify-end space-x-4 pt-6 border-t">
+        <div className="flex justify-end space-x-4 border-t pt-6">
           <button
             type="button"
             onClick={onCancel}
-            className="px-6 py-2 border border-gray-300  rounded-md hover:bg-gray-50"
+            disabled={isSubmitting}
+            className="rounded-md border border-gray-300 px-6 py-2 hover:bg-gray-50 disabled:opacity-50"
           >
             Cancel
           </button>

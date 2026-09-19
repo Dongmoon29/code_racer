@@ -33,7 +33,6 @@ export function useAuthForm<T extends FieldValues>({
   onSubmit,
   defaultErrorMessage = "Operation failed",
 }: UseAuthFormOptions<T>): UseAuthFormReturn<T> {
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -44,7 +43,6 @@ export function useAuthForm<T extends FieldValues>({
 
   const handleFormSubmit = async (data: T) => {
     try {
-      setLoading(true);
       setError(null);
       await onSubmit(data);
     } catch (err: unknown) {
@@ -52,14 +50,12 @@ export function useAuthForm<T extends FieldValues>({
         console.error("Form submission failed:", err);
       }
       setError(extractErrorMessage(err, defaultErrorMessage));
-    } finally {
-      setLoading(false);
     }
   };
 
   return {
     form,
-    loading,
+    loading: form.formState.isSubmitting,
     error,
     showPassword,
     setShowPassword,

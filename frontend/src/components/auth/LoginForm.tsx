@@ -78,6 +78,7 @@ const LoginForm: FC = () => {
           id="email"
           label="Email"
           type="email"
+          autoComplete="email"
           placeholder="you@example.com"
           registration={register('email')}
           error={errors.email?.message}
@@ -89,6 +90,7 @@ const LoginForm: FC = () => {
           id="password"
           label="Password"
           type={showPassword ? 'text' : 'password'}
+          autoComplete="current-password"
           registration={register('password')}
           error={errors.password?.message}
           disabled={loading}
@@ -97,7 +99,8 @@ const LoginForm: FC = () => {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-              tabIndex={-1}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
             >
               {showPassword ? (
                 <EyeOff className="h-5 w-5" />

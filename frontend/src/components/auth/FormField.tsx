@@ -18,6 +18,8 @@ export const FormField: FC<FormFieldProps> = ({
   disabled,
   ...inputProps
 }) => {
+  const errorId = inputProps.id ? `${inputProps.id}-error` : undefined;
+
   return (
     <div className="space-y-1">
       <label
@@ -31,12 +33,14 @@ export const FormField: FC<FormFieldProps> = ({
           {...inputProps}
           {...registration}
           disabled={disabled}
-          className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : inputProps['aria-describedby']}
+          className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${icon || rightElement ? 'pr-11' : ''} ${
             error ? 'border-red-500' : 'border-input'
           }`}
         />
         {icon && (
-          <div className="absolute right-3 top-3.5 text-[hsl(var(--muted-foreground))]">
+          <div aria-hidden="true" className="absolute right-3 top-3.5 text-[hsl(var(--muted-foreground))]">
             {icon}
           </div>
         )}
@@ -47,7 +51,7 @@ export const FormField: FC<FormFieldProps> = ({
         )}
       </div>
       {error && (
-        <p className="text-sm text-red-500 mt-1">{error}</p>
+        <p id={errorId} role="alert" className="text-sm text-red-500 mt-1">{error}</p>
       )}
     </div>
   );

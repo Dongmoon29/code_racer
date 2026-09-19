@@ -3,6 +3,9 @@ import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
 import { communityApi } from "@/lib/api";
 import { ROUTES } from "@/lib/router";
 import {
@@ -48,15 +51,47 @@ interface Post {
   };
 }
 
+const postSchema = yup.object({
+  type: yup
+    .mixed<PostType>()
+    .oneOf(["bug", "feature", "improvement", "other"])
+    .required(),
+  title: yup
+    .string()
+    .trim()
+    .min(3, "Title must be at least 3 characters")
+    .max(120, "Title must be at most 120 characters")
+    .required("Title is required"),
+  content: yup
+    .string()
+    .trim()
+    .min(10, "Content must be at least 10 characters")
+    .max(5000, "Content must be at most 5,000 characters")
+    .required("Content is required"),
+});
+
+type CommunityPostFormData = yup.InferType<typeof postSchema>;
+
+const postDefaultValues: CommunityPostFormData = {
+  type: "bug",
+  title: "",
+  content: "",
+};
+
 const CommunityIndexPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [sort, setSort] = useState<PostSort>("hot");
-  const [formData, setFormData] = useState({
-    type: "bug" as PostType,
-    title: "",
-    content: "",
-  });
   const [error, setError] = useState<string>("");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CommunityPostFormData>({
+    resolver: yupResolver(postSchema),
+    defaultValues: postDefaultValues,
+    mode: "onBlur",
+  });
 
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
@@ -74,7 +109,7 @@ const CommunityIndexPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["communityPosts"] });
       setShowForm(false);
-      setFormData({ type: "bug", title: "", content: "" });
+      reset(postDefaultValues);
       setError("");
     },
     onError: (err: unknown) => {
@@ -195,24 +230,18 @@ const CommunityIndexPage = () => {
             )}
 
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                createPostMutation.mutate(formData);
-              }}
+              onSubmit={handleSubmit((values) =>
+                createPostMutation.mutate(values),
+              )}
               className="space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium mb-2 text-[var(--color-text)]">
+                <label htmlFor="post-type" className="block text-sm font-medium mb-2 text-[var(--color-text)]">
                   Type
                 </label>
                 <select
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      type: e.target.value as PostType,
-                    })
-                  }
+                  id="post-type"
+                  {...register("type")}
                   className="w-full px-3 py-2 border border-[var(--gray-6)] rounded-md bg-[var(--color-panel)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-9)]"
                 >
                   <option value="bug">Bug Report</option>
@@ -223,41 +252,53 @@ const CommunityIndexPage = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 text-[var(--color-text)]">
+                <label htmlFor="post-title" className="block text-sm font-medium mb-2 text-[var(--color-text)]">
                   Title
                 </label>
                 <input
                   type="text"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
+                  id="post-title"
+                  {...register("title")}
+                  aria-invalid={errors.title ? true : undefined}
+                  aria-describedby={errors.title ? "post-title-error" : undefined}
                   placeholder="A short, descriptive title"
                   className="w-full px-3 py-2 border border-[var(--gray-6)] rounded-md bg-[var(--color-panel)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-9)]"
-                  required
                 />
+                {errors.title && (
+                  <p id="post-title-error" role="alert" className="mt-1 text-sm text-red-500">
+                    {errors.title.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 text-[var(--color-text)]">
+                <label htmlFor="post-content" className="block text-sm font-medium mb-2 text-[var(--color-text)]">
                   Content
                 </label>
                 <textarea
-                  value={formData.content}
-                  onChange={(e) =>
-                    setFormData({ ...formData, content: e.target.value })
-                  }
+                  id="post-content"
+                  {...register("content")}
+                  aria-invalid={errors.content ? true : undefined}
+                  aria-describedby={errors.content ? "post-content-error" : undefined}
                   placeholder="Describe the details..."
                   rows={5}
                   className="w-full px-3 py-2 border border-[var(--gray-6)] rounded-md bg-[var(--color-panel)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-9)] resize-none"
-                  required
                 />
+                {errors.content && (
+                  <p id="post-content-error" role="alert" className="mt-1 text-sm text-red-500">
+                    {errors.content.message}
+                  </p>
+                )}
               </div>
 
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setError("");
+                    reset(postDefaultValues);
+                  }}
                   className="px-4 py-2 border border-[var(--gray-6)] rounded-md text-[var(--color-text)] hover:bg-[var(--gray-2)] transition-colors"
                 >
                   Cancel
