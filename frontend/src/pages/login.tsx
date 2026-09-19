@@ -61,12 +61,18 @@ const LoginPage: React.FC = () => {
       </Head>
       <div className="flex w-full min-h-[calc(100vh-80px)]">
         {/* Left Column - Form */}
-        <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col items-center justify-center">
-          <div className="max-w-md mx-auto w-full">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">
-                Sign In to CodeRacer
+        <div className="flex w-full flex-col items-center justify-center p-5 sm:p-8 md:w-1/2 md:p-12">
+          <div className="mx-auto w-full max-w-md rounded-3xl border border-[var(--gray-6)] bg-[var(--color-panel)] p-6 shadow-xl shadow-black/5 sm:p-8">
+            <div className="mb-7">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-10)]">
+                Welcome back
+              </p>
+              <h1 className="text-3xl font-bold tracking-tight text-[hsl(var(--foreground))]">
+                Sign in to CodeRacer
               </h1>
+              <p className="mt-2 font-normal leading-6 text-[var(--gray-10)]">
+                Continue your challenges and pick up where you left off.
+              </p>
             </div>
             {message && (
               <Alert variant="success" className="mb-6">

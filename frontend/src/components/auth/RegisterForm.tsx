@@ -1,22 +1,23 @@
-import React, { FC } from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import { Eye, EyeOff, Mail, User } from 'lucide-react';
-import { authApi } from '@/lib/api';
-import { Loader } from '../ui/Loader';
-import { Alert } from '../ui/alert';
-import { Button } from '../ui/Button';
-import { registerSchema, RegisterFormData } from '@/lib/validations/auth';
-import { OAuthButtons } from './OAuthButtons';
-import { FormField } from './FormField';
-import { useAuthForm } from '@/hooks/useAuthForm';
+import React, { FC } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import { Eye, EyeOff, Mail, User } from "lucide-react";
+import { authApi } from "@/lib/api";
+import { Loader } from "../ui/Loader";
+import { Alert } from "../ui/alert";
+import { Button } from "../ui/Button";
+import { registerSchema, RegisterFormData } from "@/lib/validations/auth";
+import { OAuthButtons } from "./OAuthButtons";
+import { FormField } from "./FormField";
+import { useAuthForm } from "@/hooks/useAuthForm";
+import { yupResolver } from "@hookform/resolvers/yup";
 
 const RegisterForm: FC = () => {
   const router = useRouter();
 
   const onSubmit = async (data: RegisterFormData) => {
     await authApi.register(data.email, data.password, data.name);
-    router.push('/login?registered=true');
+    router.push("/login?registered=true");
   };
 
   const {
@@ -31,9 +32,9 @@ const RegisterForm: FC = () => {
     setShowPassword,
     handleFormSubmit,
   } = useAuthForm<RegisterFormData>({
-    schema: registerSchema,
+    resolver: yupResolver(registerSchema),
     onSubmit,
-    defaultErrorMessage: 'Registration failed',
+    defaultErrorMessage: "Registration failed",
   });
 
   return (
@@ -51,7 +52,7 @@ const RegisterForm: FC = () => {
           type="text"
           autoComplete="name"
           placeholder="John Doe"
-          registration={register('name')}
+          registration={register("name")}
           error={errors.name?.message}
           disabled={loading}
           icon={<User className="h-5 w-5" />}
@@ -63,7 +64,7 @@ const RegisterForm: FC = () => {
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
-          registration={register('email')}
+          registration={register("email")}
           error={errors.email?.message}
           disabled={loading}
           icon={<Mail className="h-5 w-5" />}
@@ -72,9 +73,9 @@ const RegisterForm: FC = () => {
         <FormField
           id="password"
           label="Password"
-          type={showPassword ? 'text' : 'password'}
+          type={showPassword ? "text" : "password"}
           autoComplete="new-password"
-          registration={register('password')}
+          registration={register("password")}
           error={errors.password?.message}
           disabled={loading}
           rightElement={
@@ -82,7 +83,7 @@ const RegisterForm: FC = () => {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={showPassword ? "Hide password" : "Show password"}
               aria-pressed={showPassword}
             >
               {showPassword ? (
@@ -99,13 +100,18 @@ const RegisterForm: FC = () => {
           label="Confirm Password"
           type="password"
           autoComplete="new-password"
-          registration={register('confirmPassword')}
+          registration={register("confirmPassword")}
           error={errors.confirmPassword?.message}
           disabled={loading}
         />
 
-        <Button type="submit" className="!w-full h-12" disabled={loading} style={{ width: '100%' }}>
-          {loading ? <Loader variant="inline" size="sm" /> : 'Register'}
+        <Button
+          type="submit"
+          className="!w-full h-12"
+          disabled={loading}
+          style={{ width: "100%" }}
+        >
+          {loading ? <Loader variant="inline" size="sm" /> : "Register"}
         </Button>
       </form>
 
@@ -113,7 +119,7 @@ const RegisterForm: FC = () => {
 
       <div className="mt-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
         <p>
-          Already have an account?{' '}
+          Already have an account?{" "}
           <Link
             href="/login"
             className="text-[hsl(var(--primary))] font-medium hover:underline"

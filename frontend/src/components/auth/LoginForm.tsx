@@ -1,17 +1,18 @@
-import React, { FC } from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import { Eye, EyeOff, Mail } from 'lucide-react';
-import { authApi } from '../../lib/api';
-import { Loader } from '../ui/Loader';
-import { Button } from '../ui/Button';
-import { Alert } from '../ui/alert';
-import { useRouterHelper } from '@/lib/router';
-import { useAuthStore } from '../../stores/authStore';
-import { loginSchema, LoginFormData } from '@/lib/validations/auth';
-import { OAuthButtons } from './OAuthButtons';
-import { FormField } from './FormField';
-import { useAuthForm } from '@/hooks/useAuthForm';
+import React, { FC } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import { Eye, EyeOff, Mail } from "lucide-react";
+import { authApi } from "../../lib/api";
+import { Loader } from "../ui/Loader";
+import { Button } from "../ui/Button";
+import { Alert } from "../ui/alert";
+import { useRouterHelper } from "@/lib/router";
+import { useAuthStore } from "../../stores/authStore";
+import { loginSchema, LoginFormData } from "@/lib/validations/auth";
+import { OAuthButtons } from "./OAuthButtons";
+import { FormField } from "./FormField";
+import { useAuthForm } from "@/hooks/useAuthForm";
+import { yupResolver } from "@hookform/resolvers/yup";
 
 const LoginForm: FC = () => {
   const router = useRouter();
@@ -32,7 +33,7 @@ const LoginForm: FC = () => {
         if (response.success && response.data.user) {
           useAuthStore.getState().login(response.data.user);
         }
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === "development") {
           console.error(e);
         }
       }
@@ -44,7 +45,7 @@ const LoginForm: FC = () => {
         await routerHelper.goToDashboard();
       }
     } else {
-      throw new Error(response.message || 'Login failed');
+      throw new Error(response.message || "Login failed");
     }
   };
 
@@ -60,9 +61,9 @@ const LoginForm: FC = () => {
     setShowPassword,
     handleFormSubmit,
   } = useAuthForm<LoginFormData>({
-    schema: loginSchema,
+    resolver: yupResolver(loginSchema),
     onSubmit,
-    defaultErrorMessage: 'Invalid email or password',
+    defaultErrorMessage: "Invalid email or password",
   });
 
   return (
@@ -80,7 +81,7 @@ const LoginForm: FC = () => {
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
-          registration={register('email')}
+          registration={register("email")}
           error={errors.email?.message}
           disabled={loading}
           icon={<Mail className="h-5 w-5" />}
@@ -89,9 +90,9 @@ const LoginForm: FC = () => {
         <FormField
           id="password"
           label="Password"
-          type={showPassword ? 'text' : 'password'}
+          type={showPassword ? "text" : "password"}
           autoComplete="current-password"
-          registration={register('password')}
+          registration={register("password")}
           error={errors.password?.message}
           disabled={loading}
           rightElement={
@@ -99,7 +100,7 @@ const LoginForm: FC = () => {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={showPassword ? "Hide password" : "Show password"}
               aria-pressed={showPassword}
             >
               {showPassword ? (
@@ -111,8 +112,13 @@ const LoginForm: FC = () => {
           }
         />
 
-        <Button type="submit" className="!w-full h-12" disabled={loading} style={{ width: '100%' }}>
-          {loading ? <Loader variant="inline" size="sm" /> : 'Login'}
+        <Button
+          type="submit"
+          className="!w-full h-12"
+          disabled={loading}
+          style={{ width: "100%" }}
+        >
+          {loading ? <Loader variant="inline" size="sm" /> : "Login"}
         </Button>
       </form>
 
@@ -120,7 +126,7 @@ const LoginForm: FC = () => {
 
       <div className="mt-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
         <p>
-          Don&apos;t have an account?{' '}
+          Don&apos;t have an account?{" "}
           <Link
             href="/register"
             className="text-[hsl(var(--primary))] font-medium hover:underline"

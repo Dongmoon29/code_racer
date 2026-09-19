@@ -3,7 +3,7 @@ import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { communityApi } from "@/lib/api";
@@ -26,6 +26,15 @@ import {
 import { useAuthStore } from "@/stores/authStore";
 import { useVoting } from "@/hooks/useVoting";
 import { ListSkeleton } from "@/components/ui/Skeleton";
+import {
+  formControlClass,
+  formErrorClass,
+  formHintClass,
+  formLabelClass,
+  primaryFormButtonClass,
+  secondaryFormButtonClass,
+} from "@/components/ui/FormPrimitives";
+import { cn } from "@/lib/utils";
 
 type PostType = "bug" | "feature" | "improvement" | "other";
 type PostStatus = "pending" | "in_progress" | "resolved" | "closed";
@@ -84,6 +93,7 @@ const CommunityIndexPage = () => {
   const [error, setError] = useState<string>("");
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -91,6 +101,10 @@ const CommunityIndexPage = () => {
     resolver: yupResolver(postSchema),
     defaultValues: postDefaultValues,
     mode: "onBlur",
+  });
+  const [postTitle = "", postContent = ""] = useWatch({
+    control,
+    name: ["title", "content"],
   });
 
   const user = useAuthStore((state) => state.user);
@@ -218,13 +232,22 @@ const CommunityIndexPage = () => {
 
         {/* Create Post Form */}
         {showForm && (
-          <div className="bg-[var(--color-panel)] border border-[var(--gray-6)] rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4 text-[var(--color-text)]">
-              Create New Post
-            </h2>
+          <div className="mb-6 overflow-hidden rounded-2xl border border-[var(--gray-6)] bg-[var(--color-panel)] shadow-lg shadow-black/5">
+            <div className="border-b border-[var(--gray-6)] px-5 py-4 sm:px-6">
+              <h2 className="text-lg font-semibold text-[var(--color-text)]">
+                Create a post
+              </h2>
+              <p className={formHintClass}>
+                Share enough context so other racers can understand and respond
+                quickly.
+              </p>
+            </div>
 
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+              <div
+                role="alert"
+                className="mx-5 mt-5 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500 sm:mx-6"
+              >
                 {error}
               </div>
             )}
@@ -233,16 +256,17 @@ const CommunityIndexPage = () => {
               onSubmit={handleSubmit((values) =>
                 createPostMutation.mutate(values),
               )}
-              className="space-y-4"
+              className="space-y-5 p-5 sm:p-6"
+              noValidate
             >
               <div>
-                <label htmlFor="post-type" className="block text-sm font-medium mb-2 text-[var(--color-text)]">
-                  Type
+                <label htmlFor="post-type" className={formLabelClass}>
+                  What kind of post is this?
                 </label>
                 <select
                   id="post-type"
                   {...register("type")}
-                  className="w-full px-3 py-2 border border-[var(--gray-6)] rounded-md bg-[var(--color-panel)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-9)]"
+                  className={formControlClass}
                 >
                   <option value="bug">Bug Report</option>
                   <option value="feature">Feature Request</option>
@@ -252,46 +276,70 @@ const CommunityIndexPage = () => {
               </div>
 
               <div>
-                <label htmlFor="post-title" className="block text-sm font-medium mb-2 text-[var(--color-text)]">
-                  Title
-                </label>
+                <div className="flex items-center justify-between gap-4">
+                  <label htmlFor="post-title" className={formLabelClass}>
+                    Title
+                  </label>
+                  <span className="text-xs font-normal text-[var(--gray-9)]">
+                    {postTitle.length}/120
+                  </span>
+                </div>
                 <input
                   type="text"
                   id="post-title"
                   {...register("title")}
                   aria-invalid={errors.title ? true : undefined}
-                  aria-describedby={errors.title ? "post-title-error" : undefined}
+                  aria-describedby={
+                    errors.title ? "post-title-error" : undefined
+                  }
                   placeholder="A short, descriptive title"
-                  className="w-full px-3 py-2 border border-[var(--gray-6)] rounded-md bg-[var(--color-panel)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-9)]"
+                  maxLength={120}
+                  className={formControlClass}
                 />
                 {errors.title && (
-                  <p id="post-title-error" role="alert" className="mt-1 text-sm text-red-500">
+                  <p
+                    id="post-title-error"
+                    role="alert"
+                    className={formErrorClass}
+                  >
                     {errors.title.message}
                   </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="post-content" className="block text-sm font-medium mb-2 text-[var(--color-text)]">
-                  Content
-                </label>
+                <div className="flex items-center justify-between gap-4">
+                  <label htmlFor="post-content" className={formLabelClass}>
+                    Content
+                  </label>
+                  <span className="text-xs font-normal text-[var(--gray-9)]">
+                    {postContent.length}/5,000
+                  </span>
+                </div>
                 <textarea
                   id="post-content"
                   {...register("content")}
                   aria-invalid={errors.content ? true : undefined}
-                  aria-describedby={errors.content ? "post-content-error" : undefined}
-                  placeholder="Describe the details..."
-                  rows={5}
-                  className="w-full px-3 py-2 border border-[var(--gray-6)] rounded-md bg-[var(--color-panel)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-9)] resize-none"
+                  aria-describedby={
+                    errors.content ? "post-content-error" : undefined
+                  }
+                  placeholder="What happened, what did you expect, and how can someone reproduce it?"
+                  rows={7}
+                  maxLength={5000}
+                  className={cn(formControlClass, "resize-y leading-6")}
                 />
                 {errors.content && (
-                  <p id="post-content-error" role="alert" className="mt-1 text-sm text-red-500">
+                  <p
+                    id="post-content-error"
+                    role="alert"
+                    className={formErrorClass}
+                  >
                     {errors.content.message}
                   </p>
                 )}
               </div>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-col-reverse gap-3 border-t border-[var(--gray-6)] pt-5 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={() => {
@@ -299,14 +347,14 @@ const CommunityIndexPage = () => {
                     setError("");
                     reset(postDefaultValues);
                   }}
-                  className="px-4 py-2 border border-[var(--gray-6)] rounded-md text-[var(--color-text)] hover:bg-[var(--gray-2)] transition-colors"
+                  className={secondaryFormButtonClass}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createPostMutation.isPending}
-                  className="px-4 py-2 bg-[var(--accent-9)] text-white rounded-md hover:bg-[var(--accent-10)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  className={cn(primaryFormButtonClass, "gap-2")}
                 >
                   <Send className="w-4 h-4" />
                   {createPostMutation.isPending ? "Posting..." : "Post"}

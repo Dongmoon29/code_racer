@@ -1,18 +1,14 @@
-import React, { useState } from 'react';
-import Image from 'next/image';
-import { Button } from '@/components/ui/Button';
-import {
-  MapPin,
-  Calendar,
-  Star,
-  Code,
-  Globe,
-  Users,
-} from 'lucide-react';
-import { GitHubIcon, LinkedInIcon } from '@/components/icons/BrandIcons';
-import { useQuery } from '@tanstack/react-query';
-import { userApi } from '@/lib/api';
-import ProfileEditForm, { LanguageOption } from './ProfileEditForm';
+import React, { useMemo, useState } from "react";
+import Image from "next/image";
+import { Button } from "@/components/ui/Button";
+import { MapPin, Calendar, Star, Code, Globe, Users } from "lucide-react";
+import { GitHubIcon, LinkedInIcon } from "@/components/icons/BrandIcons";
+import { useQuery } from "@tanstack/react-query";
+import { userApi } from "@/lib/api";
+import ProfileEditForm, {
+  LanguageOption,
+  type ProfileFormValues,
+} from "./ProfileEditForm";
 
 interface UserInfo {
   id: string;
@@ -45,12 +41,32 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
   // Get follow stats
   const { data: followStats } = useQuery({
-    queryKey: ['followStats', user.id],
+    queryKey: ["followStats", user.id],
     queryFn: () => userApi.getFollowStats(user.id),
   });
 
   const followers = followStats?.stats.followers ?? 0;
   const following = followStats?.stats.following ?? 0;
+  const profileFormInitial = useMemo<ProfileFormValues>(
+    () => ({
+      name: user.name ?? "",
+      homepage: user.homepage,
+      linkedin: user.linkedin,
+      github: user.github,
+      company: user.company,
+      job_title: user.job_title,
+      fav_language: (user.fav_language as LanguageOption) || "",
+    }),
+    [
+      user.name,
+      user.homepage,
+      user.linkedin,
+      user.github,
+      user.company,
+      user.job_title,
+      user.fav_language,
+    ],
+  );
 
   return (
     <div className="w-full max-w-sm mx-auto lg:mx-0">
@@ -101,24 +117,16 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
           <Button
             onClick={() => setShowEdit((v) => !v)}
-            style={{ width: '100%', cursor: 'pointer' }}
+            style={{ width: "100%", cursor: "pointer" }}
           >
-            {showEdit ? 'Cancel' : 'Edit Profile'}
+            {showEdit ? "Cancel" : "Edit Profile"}
           </Button>
         </div>
 
         {showEdit && (
           <div>
             <ProfileEditForm
-              initial={{
-                name: user?.name,
-                homepage: user?.homepage,
-                linkedin: user?.linkedin,
-                github: user?.github,
-                company: user?.company,
-                job_title: user?.job_title,
-                fav_language: (user?.fav_language as LanguageOption) || '',
-              }}
+              initial={profileFormInitial}
               onSaved={() => setShowEdit(false)}
             />
           </div>
@@ -158,10 +166,10 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
           <Calendar className="w-4 h-4" />
           <span>
-            Joined{' '}
-            {new Date(user?.created_at || '').toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
+            Joined{" "}
+            {new Date(user?.created_at || "").toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
             })}
           </span>
         </div>

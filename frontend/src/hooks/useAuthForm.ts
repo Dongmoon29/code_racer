@@ -5,12 +5,10 @@ import {
   FieldValues,
   type Resolver,
 } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
 import { extractErrorMessage } from "@/lib/error-utils";
-import type { AnyObjectSchema } from "yup";
 
 interface UseAuthFormOptions<T extends FieldValues> {
-  schema: AnyObjectSchema;
+  resolver: Resolver<T>;
   onSubmit: (data: T) => Promise<void>;
   defaultErrorMessage?: string;
 }
@@ -29,7 +27,7 @@ interface UseAuthFormReturn<T extends FieldValues> {
  * Consolidates common form state management, validation, and error handling
  */
 export function useAuthForm<T extends FieldValues>({
-  schema,
+  resolver,
   onSubmit,
   defaultErrorMessage = "Operation failed",
 }: UseAuthFormOptions<T>): UseAuthFormReturn<T> {
@@ -37,7 +35,7 @@ export function useAuthForm<T extends FieldValues>({
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<T>({
-    resolver: yupResolver(schema) as Resolver<T>,
+    resolver,
     mode: "onBlur",
   });
 

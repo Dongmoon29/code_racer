@@ -1,4 +1,12 @@
 import type { IOSchema } from "@/types";
+import {
+  dangerFormButtonClass,
+  formControlClass,
+  formHintClass,
+  formLabelClass,
+  secondaryFormButtonClass,
+} from "@/components/ui/FormPrimitives";
+import { cn } from "@/lib/utils";
 
 interface IOSchemaFieldProps {
   value: IOSchema;
@@ -41,11 +49,11 @@ export default function IOSchemaField({ value, onChange }: IOSchemaFieldProps) {
   };
 
   return (
-    <section className="space-y-3" aria-labelledby="signature-heading">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 id="signature-heading" className="text-sm font-medium">
+        <p className="text-sm font-medium text-[var(--gray-11)]">
           Function signature *
-        </h3>
+        </p>
         <button
           type="button"
           onClick={() =>
@@ -54,7 +62,7 @@ export default function IOSchemaField({ value, onChange }: IOSchemaFieldProps) {
               param_types: [...value.param_types, "int"],
             })
           }
-          className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
+          className={cn(secondaryFormButtonClass, "min-h-9 px-3")}
         >
           + Add Parameter
         </button>
@@ -62,16 +70,17 @@ export default function IOSchemaField({ value, onChange }: IOSchemaFieldProps) {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <span className="block text-xs text-[var(--gray-10)]">
-            Parameter types (in order)
-          </span>
+          <span className={formHintClass}>Parameter types (in order)</span>
           {value.param_types.map((paramType, index) => (
-            <div key={index} className="flex gap-2">
+            <div
+              key={index}
+              className="flex gap-2 rounded-xl border border-[var(--gray-6)] bg-[var(--gray-2)]/40 p-2"
+            >
               <select
                 aria-label={`Parameter ${index + 1} type`}
                 value={paramType}
                 onChange={(event) => updateParam(index, event.target.value)}
-                className="min-w-0 flex-1 rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={cn(formControlClass, "min-w-0 flex-1")}
                 required
               >
                 {schemaTypes.map((type) => (
@@ -84,7 +93,7 @@ export default function IOSchemaField({ value, onChange }: IOSchemaFieldProps) {
                 <button
                   type="button"
                   onClick={() => removeParam(index)}
-                  className="rounded border border-red-500 px-3 text-sm text-red-500 hover:bg-red-500/10"
+                  className={dangerFormButtonClass}
                 >
                   Delete
                 </button>
@@ -93,14 +102,14 @@ export default function IOSchemaField({ value, onChange }: IOSchemaFieldProps) {
           ))}
         </div>
 
-        <label className="text-xs text-[var(--gray-10)]">
+        <label className={formLabelClass}>
           Return type
           <select
             value={value.return_type}
             onChange={(event) =>
               onChange({ ...value, return_type: event.target.value })
             }
-            className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-[initial] focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={cn(formControlClass, "mt-2")}
             required
           >
             {schemaTypes.map((type) => (
@@ -111,6 +120,6 @@ export default function IOSchemaField({ value, onChange }: IOSchemaFieldProps) {
           </select>
         </label>
       </div>
-    </section>
+    </div>
   );
 }

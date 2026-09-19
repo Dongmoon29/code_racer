@@ -1,5 +1,11 @@
-import React, { FC, InputHTMLAttributes, ReactNode } from 'react';
-import { UseFormRegisterReturn } from 'react-hook-form';
+import React, { FC, InputHTMLAttributes, ReactNode } from "react";
+import { UseFormRegisterReturn } from "react-hook-form";
+import {
+  formControlClass,
+  formErrorClass,
+  formLabelClass,
+} from "@/components/ui/FormPrimitives";
+import { cn } from "@/lib/utils";
 
 interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -21,11 +27,8 @@ export const FormField: FC<FormFieldProps> = ({
   const errorId = inputProps.id ? `${inputProps.id}-error` : undefined;
 
   return (
-    <div className="space-y-1">
-      <label
-        htmlFor={inputProps.id}
-        className="text-sm font-medium text-[hsl(var(--foreground))]"
-      >
+    <div>
+      <label htmlFor={inputProps.id} className={formLabelClass}>
         {label}
       </label>
       <div className="relative">
@@ -34,24 +37,29 @@ export const FormField: FC<FormFieldProps> = ({
           {...registration}
           disabled={disabled}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? errorId : inputProps['aria-describedby']}
-          className={`w-full h-12 px-3 py-2 border rounded-md bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none ${icon || rightElement ? 'pr-11' : ''} ${
-            error ? 'border-red-500' : 'border-input'
-          }`}
+          aria-describedby={error ? errorId : inputProps["aria-describedby"]}
+          className={cn(
+            formControlClass,
+            "h-12",
+            (icon || rightElement) && "pr-11",
+          )}
         />
         {icon && (
-          <div aria-hidden="true" className="absolute right-3 top-3.5 text-[hsl(var(--muted-foreground))]">
+          <div
+            aria-hidden="true"
+            className="absolute right-3 top-3.5 text-[hsl(var(--muted-foreground))]"
+          >
             {icon}
           </div>
         )}
         {rightElement && (
-          <div className="absolute right-3 top-3.5">
-            {rightElement}
-          </div>
+          <div className="absolute right-3 top-3.5">{rightElement}</div>
         )}
       </div>
       {error && (
-        <p id={errorId} role="alert" className="text-sm text-red-500 mt-1">{error}</p>
+        <p id={errorId} role="alert" className={formErrorClass}>
+          {error}
+        </p>
       )}
     </div>
   );

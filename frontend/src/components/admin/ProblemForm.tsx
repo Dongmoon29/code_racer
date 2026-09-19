@@ -2,13 +2,23 @@
 
 import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
 import type { ProblemFormData } from "@/types";
 import { createProblem, updateProblem } from "@/lib/problem-api";
 import { createDefaultFormData } from "./constants/problem-form-constants";
 import ExamplesField from "./problem-form/ExamplesField";
 import IOSchemaField from "./problem-form/IOSchemaField";
 import TestCasesField from "./problem-form/TestCasesField";
-import { validateProblemForm } from "./problem-form/validateProblemForm";
+import { problemFormSchema } from "./problem-form/problemFormSchema";
+import {
+  FormSection,
+  formControlClass,
+  formErrorClass,
+  formHintClass,
+  formLabelClass,
+  primaryFormButtonClass,
+  secondaryFormButtonClass,
+} from "@/components/ui/FormPrimitives";
 
 interface ProblemFormProps {
   initialData?: ProblemFormData;
@@ -26,7 +36,7 @@ const difficultyOptions: ProblemFormData["difficulty"][] = [
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p role="alert" className="mt-1 text-xs text-red-500">
+    <p role="alert" className={formErrorClass}>
       {message}
     </p>
   );
@@ -47,6 +57,7 @@ export default function ProblemForm({
     formState: { errors, isSubmitting },
   } = useForm<ProblemFormData>({
     defaultValues: initialData ?? createDefaultFormData(),
+    resolver: yupResolver(problemFormSchema),
     mode: "onBlur",
   });
 
@@ -56,12 +67,6 @@ export default function ProblemForm({
 
   const onSubmit = async (formData: ProblemFormData) => {
     setSubmitError("");
-
-    const validationError = validateProblemForm(formData);
-    if (validationError) {
-      setSubmitError(validationError);
-      return;
-    }
 
     try {
       if (mode === "create") {
@@ -81,172 +86,210 @@ export default function ProblemForm({
   };
 
   return (
-    <div className="mx-auto max-w-4xl rounded-lg p-6 shadow-lg">
-      <h2 className="mb-6 text-2xl font-bold">
-        {mode === "create" ? "Add New Problem" : "Edit Problem"}
-      </h2>
+    <div className="mx-auto max-w-5xl px-3 py-4 sm:px-6 sm:py-8">
+      <div className="mb-7">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-10)]">
+          Problem library
+        </p>
+        <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          {mode === "create" ? "Add a new problem" : "Edit problem"}
+        </h2>
+        <p className="mt-2 max-w-2xl font-normal leading-6 text-[var(--gray-10)]">
+          Define the challenge, function contract, and judge cases. Required
+          fields are marked with an asterisk.
+        </p>
+      </div>
       {submitError && (
-        <div role="alert" className="mb-4 rounded-md border border-red-200 p-4">
-          <p className="text-red-600">{submitError}</p>
+        <div
+          role="alert"
+          className="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 p-4"
+        >
+          <p className="text-sm text-red-500">{submitError}</p>
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div>
-            <label htmlFor="problem-title" className="mb-2 block text-sm font-medium">
-              Title *
-            </label>
-            <input
-              id="problem-title"
-              type="text"
-              {...register("title", { required: "Title is required" })}
-              aria-invalid={errors.title ? true : undefined}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <FieldError message={errors.title?.message} />
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+        <FormSection
+          title="Challenge details"
+          description="Write the learner-facing prompt and choose how difficult the problem should be."
+          headingId="challenge-details-heading"
+        >
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_220px]">
+              <div>
+                <label htmlFor="problem-title" className={formLabelClass}>
+                  Title *
+                </label>
+                <input
+                  id="problem-title"
+                  type="text"
+                  {...register("title")}
+                  aria-invalid={errors.title ? true : undefined}
+                  className={formControlClass}
+                  placeholder="Two Sum"
+                />
+                <FieldError message={errors.title?.message} />
+              </div>
+              <div>
+                <label htmlFor="problem-difficulty" className={formLabelClass}>
+                  Difficulty *
+                </label>
+                <select
+                  id="problem-difficulty"
+                  {...register("difficulty")}
+                  aria-invalid={errors.difficulty ? true : undefined}
+                  className={formControlClass}
+                >
+                  {difficultyOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <FieldError message={errors.difficulty?.message} />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="problem-description" className={formLabelClass}>
+                Problem description *
+              </label>
+              <textarea
+                id="problem-description"
+                {...register("description")}
+                rows={6}
+                aria-invalid={errors.description ? true : undefined}
+                className={formControlClass}
+                placeholder="Explain the task, inputs, and expected result."
+              />
+              <FieldError message={errors.description?.message} />
+            </div>
+            <div>
+              <label htmlFor="problem-constraints" className={formLabelClass}>
+                Constraints *
+              </label>
+              <textarea
+                id="problem-constraints"
+                {...register("constraints")}
+                rows={3}
+                aria-invalid={errors.constraints ? true : undefined}
+                className={formControlClass}
+                placeholder="1 <= nums.length <= 10^4"
+              />
+              <FieldError message={errors.constraints?.message} />
+            </div>
           </div>
+        </FormSection>
 
-          <div>
-            <label htmlFor="problem-difficulty" className="mb-2 block text-sm font-medium">
-              Difficulty *
-            </label>
-            <select
-              id="problem-difficulty"
-              {...register("difficulty", { required: "Difficulty is required" })}
-              aria-invalid={errors.difficulty ? true : undefined}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {difficultyOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            <FieldError message={errors.difficulty?.message} />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="problem-description" className="mb-2 block text-sm font-medium">
-            Problem Description *
-          </label>
-          <textarea
-            id="problem-description"
-            {...register("description", {
-              required: "Problem description is required",
-            })}
-            rows={4}
-            aria-invalid={errors.description ? true : undefined}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <FormSection
+          title="Examples"
+          description="Add examples that teach users how inputs map to outputs."
+          headingId="examples-section-heading"
+        >
+          <ExamplesField
+            control={control}
+            register={register}
+            errors={errors}
           />
-          <FieldError message={errors.description?.message} />
-        </div>
+        </FormSection>
 
-        <ExamplesField control={control} register={register} errors={errors} />
-
-        <div>
-          <label htmlFor="problem-constraints" className="mb-2 block text-sm font-medium">
-            Constraints *
-          </label>
-          <textarea
-            id="problem-constraints"
-            {...register("constraints", { required: "Constraints are required" })}
-            rows={2}
-            aria-invalid={errors.constraints ? true : undefined}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="1 <= nums.length <= 10^4"
-          />
-          <FieldError message={errors.constraints?.message} />
-        </div>
-
-        <Controller
-          control={control}
-          name="io_schema"
-          render={({ field }) => (
-            <IOSchemaField value={field.value} onChange={field.onChange} />
-          )}
-        />
-
-        <div>
-          <label htmlFor="problem-function-name" className="mb-2 block text-sm font-medium">
-            Function Name *
-          </label>
-          <input
-            id="problem-function-name"
-            type="text"
-            {...register("function_name", {
-              required: "Function name is required",
-              pattern: {
-                value: /^[A-Za-z_][A-Za-z0-9_]*$/,
-                message:
-                  "Use letters, numbers, and underscores, starting with a letter or underscore",
-              },
-            })}
-            aria-invalid={errors.function_name ? true : undefined}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="twoSum"
-          />
-          <FieldError message={errors.function_name?.message} />
-        </div>
-
-        <TestCasesField control={control} register={register} errors={errors} />
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div>
-            <label htmlFor="problem-time-limit" className="mb-2 block text-sm font-medium">
-              Time Limit (ms)
-            </label>
-            <input
-              id="problem-time-limit"
-              type="number"
-              {...register("time_limit", {
-                valueAsNumber: true,
-                required: "Time limit is required",
-                min: { value: 100, message: "Minimum time limit is 100 ms" },
-              })}
-              aria-invalid={errors.time_limit ? true : undefined}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              min="100"
-              step="100"
+        <FormSection
+          title="Function contract"
+          description="Define the function name, ordered parameters, and return type used by every language template."
+          headingId="function-contract-heading"
+        >
+          <div className="space-y-5">
+            <div>
+              <label htmlFor="problem-function-name" className={formLabelClass}>
+                Function name *
+              </label>
+              <input
+                id="problem-function-name"
+                type="text"
+                {...register("function_name")}
+                aria-invalid={errors.function_name ? true : undefined}
+                className={formControlClass}
+                placeholder="twoSum"
+              />
+              <p className={formHintClass}>
+                Use the exact identifier that starter code and the judge will
+                call.
+              </p>
+              <FieldError message={errors.function_name?.message} />
+            </div>
+            <Controller
+              control={control}
+              name="io_schema"
+              render={({ field }) => (
+                <IOSchemaField value={field.value} onChange={field.onChange} />
+              )}
             />
-            <FieldError message={errors.time_limit?.message} />
           </div>
+        </FormSection>
 
-          <div>
-            <label htmlFor="problem-memory-limit" className="mb-2 block text-sm font-medium">
-              Memory Limit (MB)
-            </label>
-            <input
-              id="problem-memory-limit"
-              type="number"
-              {...register("memory_limit", {
-                valueAsNumber: true,
-                required: "Memory limit is required",
-                min: { value: 16, message: "Minimum memory limit is 16 MB" },
-              })}
-              aria-invalid={errors.memory_limit ? true : undefined}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              min="16"
-              step="16"
-            />
-            <FieldError message={errors.memory_limit?.message} />
+        <FormSection
+          title="Judge cases"
+          description="Inputs and expected outputs are JSON. Add enough cases to cover normal and edge conditions."
+          headingId="judge-cases-heading"
+        >
+          <TestCasesField
+            control={control}
+            register={register}
+            errors={errors}
+          />
+        </FormSection>
+
+        <FormSection
+          title="Execution limits"
+          description="Set the maximum resources allowed for each submission."
+          headingId="execution-limits-heading"
+        >
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <label htmlFor="problem-time-limit" className={formLabelClass}>
+                Time limit (ms)
+              </label>
+              <input
+                id="problem-time-limit"
+                type="number"
+                {...register("time_limit", { valueAsNumber: true })}
+                aria-invalid={errors.time_limit ? true : undefined}
+                className={formControlClass}
+                min="100"
+                step="100"
+              />
+              <FieldError message={errors.time_limit?.message} />
+            </div>
+            <div>
+              <label htmlFor="problem-memory-limit" className={formLabelClass}>
+                Memory limit (MB)
+              </label>
+              <input
+                id="problem-memory-limit"
+                type="number"
+                {...register("memory_limit", { valueAsNumber: true })}
+                aria-invalid={errors.memory_limit ? true : undefined}
+                className={formControlClass}
+                min="16"
+                step="16"
+              />
+              <FieldError message={errors.memory_limit?.message} />
+            </div>
           </div>
-        </div>
+        </FormSection>
 
-        <div className="flex justify-end space-x-4 border-t pt-6">
+        <div className="sticky bottom-3 z-10 flex flex-col-reverse gap-3 rounded-2xl border border-[var(--gray-6)] bg-[var(--color-panel)]/95 p-3 shadow-xl backdrop-blur sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="rounded-md border border-gray-300 px-6 py-2 hover:bg-gray-50 disabled:opacity-50"
+            className={secondaryFormButtonClass}
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className={primaryFormButtonClass}
           >
             {isSubmitting
               ? "Processing..."
