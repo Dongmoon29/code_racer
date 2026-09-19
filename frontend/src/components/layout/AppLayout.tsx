@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { Loader } from '@/components/ui/Loader';
 import {
+  DashboardMobileNavigation,
   DashboardTopNavigation,
   NavigationItem,
 } from './DashboardTopNavigation';
@@ -79,9 +80,12 @@ export default function AppLayout({
     return (
       <div className="flex min-h-screen flex-col bg-[var(--color-background)]">
         {showNavigation && (
-          <DashboardTopNavigation navigationItems={navigationItems} />
+          <>
+            <DashboardTopNavigation navigationItems={navigationItems} />
+            <DashboardMobileNavigation navigationItems={navigationItems} />
+          </>
         )}
-        <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 md:p-8">
+        <main className="min-w-0 flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 md:p-8">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>

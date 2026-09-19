@@ -21,7 +21,7 @@ export function DashboardTopNavigation({
   const router = useRouter();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--gray-6)] bg-[color:var(--color-panel)]/95 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 hidden border-b border-[var(--gray-6)] bg-[color:var(--color-panel)]/95 backdrop-blur-xl md:block">
       <div className="flex h-14 items-center px-4 sm:px-6">
         <Link
           href="/"
@@ -74,5 +74,50 @@ export function DashboardTopNavigation({
         })}
       </nav>
     </header>
+  );
+}
+
+export function DashboardMobileNavigation({
+  navigationItems,
+}: DashboardTopNavigationProps) {
+  const router = useRouter();
+
+  return (
+    <nav
+      aria-label="Mobile navigation"
+      className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(4.75rem+env(safe-area-inset-bottom))] items-stretch justify-around gap-0.5 border-t border-[var(--gray-6)] bg-[color:var(--color-panel)]/95 px-1.5 py-1.5 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl md:hidden"
+    >
+      {navigationItems.map((item) => {
+        const isActive = item.pattern
+          ? router.pathname.startsWith(item.pattern)
+          : router.pathname === item.href;
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={isActive ? 'page' : undefined}
+            className={cn(
+              'group flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 text-[clamp(8px,2.5vw,10px)] font-medium leading-none transition-colors',
+              isActive
+                ? 'bg-[var(--accent-3)] text-[var(--accent-11)]'
+                : 'text-[var(--gray-11)] hover:bg-[var(--gray-3)] hover:text-[var(--color-text)]',
+            )}
+          >
+            <span
+              className={cn(
+                'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg [&>svg]:h-5 [&>svg]:w-5',
+                isActive
+                  ? 'bg-[var(--accent-4)] text-[var(--accent-11)]'
+                  : 'text-[var(--gray-10)] group-hover:text-[var(--color-text)]',
+              )}
+            >
+              {item.icon}
+            </span>
+            <span className="max-w-full truncate">{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
