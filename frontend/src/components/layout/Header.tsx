@@ -11,6 +11,8 @@ import { useDropdown } from "@/hooks/useDropdown";
 import { ROUTES } from "@/lib/router";
 import { LAYOUT_PADDING, NAVIGATION_STYLES } from "@/lib/styles";
 import { cn } from "@/lib/utils";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
+import { useTranslation } from "next-i18next/pages";
 
 const Header: FC = () => {
   const user = useAuthStore((state) => state.user);
@@ -19,6 +21,7 @@ const Header: FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdown = useDropdown();
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   const handleLogout = async () => {
     await logout();
@@ -86,7 +89,7 @@ const Header: FC = () => {
                   NAVIGATION_STYLES.LINK.HOVER,
                 )}
               >
-                Home
+                {t("nav.home")}
               </Link>
 
               {isLoggedIn && user ? (
@@ -98,7 +101,7 @@ const Header: FC = () => {
                     NAVIGATION_STYLES.LINK.HOVER,
                   )}
                 >
-                  Dashboard
+                  {t("nav.dashboard")}
                 </Link>
               ) : (
                 <Link
@@ -109,7 +112,7 @@ const Header: FC = () => {
                     NAVIGATION_STYLES.LINK.HOVER,
                   )}
                 >
-                  Dashboard
+                  {t("nav.dashboard")}
                 </Link>
               )}
 
@@ -132,9 +135,10 @@ const Header: FC = () => {
                     NAVIGATION_STYLES.LINK.HOVER,
                   )}
                 >
-                  Login
+                  {t("nav.login")}
                 </Link>
               )}
+              <LanguageSwitcher compact />
             </div>
           </nav>
         </div>

@@ -6,6 +6,7 @@ import { userApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { ROUTES } from "@/lib/router";
 import { ListSkeleton } from "@/components/ui/Skeleton";
+import { useTranslation } from "next-i18next/pages";
 
 interface FollowListsProps {
   userId: string;
@@ -19,6 +20,7 @@ type FollowerUser = {
 };
 
 export const FollowersList: React.FC<FollowListsProps> = ({ userId }) => {
+  const { t } = useTranslation("common");
   const { data, isLoading } = useQuery({
     queryKey: ["followers", userId],
     queryFn: () => userApi.getFollowers(userId, 1, 50),
@@ -28,12 +30,12 @@ export const FollowersList: React.FC<FollowListsProps> = ({ userId }) => {
 
   return (
     <div className="bg-card rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4">Followers</h3>
+      <h3 className="text-lg font-semibold mb-4">{t("follow.followers")}</h3>
 
       {isLoading ? (
         <ListSkeleton rows={3} />
       ) : followers.length === 0 ? (
-        <div className="text-sm text-muted-foreground">No followers yet.</div>
+        <div className="text-sm text-muted-foreground">{t("follow.noFollowers")}</div>
       ) : (
         <div className="space-y-3">
           {followers.map((follower) => (
@@ -46,6 +48,7 @@ export const FollowersList: React.FC<FollowListsProps> = ({ userId }) => {
 };
 
 export const FollowingList: React.FC<FollowListsProps> = ({ userId }) => {
+  const { t } = useTranslation("common");
   const { data, isLoading } = useQuery({
     queryKey: ["following", userId],
     queryFn: () => userApi.getFollowing(userId, 1, 50),
@@ -55,13 +58,13 @@ export const FollowingList: React.FC<FollowListsProps> = ({ userId }) => {
 
   return (
     <div className="bg-card rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4">Following</h3>
+      <h3 className="text-lg font-semibold mb-4">{t("follow.following")}</h3>
 
       {isLoading ? (
         <ListSkeleton rows={3} />
       ) : following.length === 0 ? (
         <div className="text-sm text-muted-foreground">
-          Not following anyone yet.
+          {t("follow.notFollowing")}
         </div>
       ) : (
         <div className="space-y-3">
@@ -79,6 +82,7 @@ interface FollowerItemProps {
 }
 
 const FollowerItem: React.FC<FollowerItemProps> = ({ user }) => {
+  const { t } = useTranslation("common");
   const currentUser = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
@@ -162,7 +166,7 @@ const FollowerItem: React.FC<FollowerItemProps> = ({ user }) => {
               : "bg-[var(--green-9)] hover:bg-[var(--green-10)] text-white"
           }`}
         >
-          {isFollowing ? "Unfollow" : "Follow"}
+          {isFollowing ? t("follow.unfollow") : t("follow.follow")}
         </button>
       )}
     </div>

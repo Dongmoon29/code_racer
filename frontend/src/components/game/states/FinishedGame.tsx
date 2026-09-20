@@ -6,19 +6,7 @@ import { Button } from "../../ui/Button";
 import { PlayersCard, type ResultPlayer } from "./finished-game/PlayersCard";
 import { ResultStatCard } from "./finished-game/ResultStatCard";
 import { SolutionPanel } from "./finished-game/SolutionPanel";
-
-function formatMode(mode: Game["mode"]): string {
-  switch (mode) {
-    case "ranked_pvp":
-      return "Ranked Match";
-    case "casual_pvp":
-      return "Casual Match";
-    case "single":
-      return "Solo Challenge";
-    default:
-      return String(mode);
-  }
-}
+import { useTranslation } from "next-i18next/pages";
 
 function difficultyClass(difficulty?: string): string {
   switch (difficulty?.toLowerCase()) {
@@ -45,6 +33,14 @@ interface Props {
 export const FinishedGame: React.FC<Props> = memo(
   ({ game, me, myCode, opponentCode, selectedLanguage }) => {
     const router = useRouter();
+    const { t, i18n } = useTranslation("common");
+
+    const modeLabel =
+      game.mode === "ranked_pvp"
+        ? t("game.rankedMatch")
+        : game.mode === "casual_pvp"
+          ? t("game.casualMatch")
+          : t("game.soloChallenge");
 
     const winnerId = game.winner?.id;
     const winnerIsMe = Boolean(winnerId && me?.id && winnerId === me.id);
@@ -67,7 +63,11 @@ export const FinishedGame: React.FC<Props> = memo(
         : "—";
     const execDetail =
       typeof execSeconds === "number"
-        ? `${execSeconds.toFixed(3)} seconds`
+        ? new Intl.NumberFormat(i18n.resolvedLanguage, {
+            style: "unit",
+            unit: "second",
+            maximumFractionDigits: 3,
+          }).format(execSeconds)
         : "";
     const memLabel =
       typeof memKB === "number"
@@ -122,7 +122,7 @@ export const FinishedGame: React.FC<Props> = memo(
 
         <main className="relative mx-auto max-w-7xl">
           <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text)] sm:text-3xl">
-            {isDraw ? "Match drawn" : "Solution accepted"}
+            {isDraw ? t("game.draw") : t("game.accepted")}
           </h1>
 
           <div className={`mt-4 grid gap-4 ${isDraw ? "mx-auto max-w-2xl" : "lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]"}`}>
@@ -132,7 +132,7 @@ export const FinishedGame: React.FC<Props> = memo(
                   <div>
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--gray-11)]">
                       <Code2 className="h-4 w-4" />
-                      Completed problem
+                      {t("game.completedProblem")}
                     </div>
                     <h2 className="mt-2 text-xl font-bold text-[var(--color-text)] sm:text-2xl">
                       {game.problem.title}
@@ -150,21 +150,21 @@ export const FinishedGame: React.FC<Props> = memo(
                 </div>
                 <div className="mt-4 flex items-center gap-2 border-t border-[var(--gray-6)] pt-3 text-sm text-[var(--gray-11)]">
                   <Gauge className="h-4 w-4" />
-                  {formatMode(game.mode)}
+                  {modeLabel}
                 </div>
               </section>
 
               {!isDraw && <section className="grid grid-cols-2 gap-3">
                 <ResultStatCard
                   icon={Clock3}
-                  label="Execution"
+                  label={t("game.execution")}
                   value={execLabel}
                   detail={execDetail}
                   tone="cyan"
                 />
                 <ResultStatCard
                   icon={MemoryStick}
-                  label="Memory"
+                  label={t("game.memory")}
                   value={memLabel}
                   detail={memDetail}
                   tone="violet"
@@ -183,7 +183,7 @@ export const FinishedGame: React.FC<Props> = memo(
                   className="btn-neon h-11 w-full rounded-xl"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Back to Dashboard
+                  {t("game.backDashboard")}
                 </Button>
               </div>
             </div>

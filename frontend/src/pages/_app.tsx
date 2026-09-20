@@ -21,6 +21,9 @@ import { useAuthStore } from "../stores/authStore";
 import { FullscreenProvider } from "../contexts/FullscreenContext";
 import { LofiPlayerProvider } from "../contexts/LofiPlayerContext";
 import { ToastProvider } from "../components/ui/Toast";
+import { appWithTranslation, useTranslation } from "next-i18next/pages";
+import { i18nConfig } from "@/lib/i18n-config";
+import BrowserLocaleSync from "@/components/i18n/BrowserLocaleSync";
 
 // Wrapper component to sync Radix Theme with next-themes
 function RadixThemeWrapper({ children }: { children: React.ReactNode }) {
@@ -41,6 +44,7 @@ function RadixThemeWrapper({ children }: { children: React.ReactNode }) {
 }
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const { t } = useTranslation("common");
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
   const user = useAuthStore((state) => state.user);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
@@ -70,7 +74,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       .then(async (match) => {
         if (cancelled || !match?.id) return;
         const resume = window.confirm(
-          "You have a game in progress. Would you like to return to it?",
+          t("session.resumePrompt"),
         );
         if (resume) {
           await router.replace(`/game/${match.id}`);
@@ -82,14 +86,14 @@ function MyApp({ Component, pageProps }: AppProps) {
       .catch(() => {
         if (!cancelled) {
           window.alert(
-            "The active game could not be updated. Please try again.",
+            t("session.updateFailed"),
           );
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [isAuthLoading, isLoggedIn, router]);
+  }, [isAuthLoading, isLoggedIn, router, t]);
 
   // 라우트 기반 레이아웃 설정
   const layoutConfig = useMemo(
@@ -100,13 +104,13 @@ function MyApp({ Component, pageProps }: AppProps) {
   // 네비게이션 아이템 생성
   const navigationItems = useMemo(() => {
     if (layoutConfig.layoutType === "admin") {
-      return getAdminNavigationItems();
+      return getAdminNavigationItems(t);
     }
     if (layoutConfig.layoutType === "dashboard") {
-      return getDashboardNavigationItems(user?.id, user?.role);
+      return getDashboardNavigationItems(t, user?.id, user?.role);
     }
     return [];
-  }, [layoutConfig.layoutType, user?.id, user?.role]);
+  }, [layoutConfig.layoutType, user?.id, user?.role, t]);
 
   // Admin 페이지 제목 생성
   const adminTitle = useMemo(() => {
@@ -127,6 +131,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <NextThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <BrowserLocaleSync />
       <RadixThemeWrapper>
         <QueryClientProvider client={queryClient}>
           <FullscreenProvider>
@@ -160,4 +165,4 @@ function MyApp({ Component, pageProps }: AppProps) {
   );
 }
 
-export default MyApp;
+export default appWithTranslation(MyApp, i18nConfig);

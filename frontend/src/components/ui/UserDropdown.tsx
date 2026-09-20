@@ -4,6 +4,7 @@ import React, { RefObject, FC } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { User } from '@/stores/authStore';
+import { useTranslation } from 'next-i18next/pages';
 
 interface UserDropdownProps {
   user: User;
@@ -24,6 +25,7 @@ const UserDropdown: FC<UserDropdownProps> = ({
   onLogout,
   onNavigateToProfile,
 }) => {
+  const { t } = useTranslation('common');
   return (
     <div className="relative z-50" ref={dropdownRef}>
       <button
@@ -70,7 +72,7 @@ const UserDropdown: FC<UserDropdownProps> = ({
               }}
               className="block w-full text-left px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--gray-4)] cursor-pointer transition-colors"
             >
-              My Profile
+              {t('nav.myProfile')}
             </button>
             {user.role === 'admin' && (
               <Link
@@ -78,14 +80,14 @@ const UserDropdown: FC<UserDropdownProps> = ({
                 className="block w-full text-left px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--gray-4)] cursor-pointer transition-colors"
                 onClick={onClose}
               >
-                Admin Panel
+                {t('nav.adminPanel')}
               </Link>
             )}
             <button
               onClick={onLogout}
               className="block w-full text-left px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--gray-4)] cursor-pointer transition-colors"
             >
-              Logout
+              {t('nav.logout')}
             </button>
           </div>
         </div>

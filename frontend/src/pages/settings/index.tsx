@@ -3,15 +3,17 @@ import Head from 'next/head';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LAYOUT_PADDING, LAYOUT_WIDTH } from '@/lib/styles';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'next-i18next/pages';
 
 const SettingsPage: React.FC = () => {
+  const { t } = useTranslation('common');
   return (
     <>
       <Head>
-        <title>Settings - CodeRacer</title>
+        <title>{t('settings.title')} - CodeRacer</title>
         <meta
           name="description"
-          content="Customize your CodeRacer experience"
+          content={t('settings.description')}
         />
       </Head>
 
@@ -19,21 +21,21 @@ const SettingsPage: React.FC = () => {
         <div className={cn(LAYOUT_WIDTH.CONTAINER_SMALL, 'space-y-6')}>
           <div>
             <h1 className="text-3xl font-bold text-[var(--color-text)] mb-2">
-              Settings
+              {t('settings.title')}
             </h1>
           </div>
 
           <section className="bg-card rounded-lg border p-6">
             <h2 className="text-lg font-semibold text-[var(--color-text)]">
-              Theme
+              {t('settings.theme')}
             </h2>
             <p className="mt-1 text-sm text-[var(--gray-11)]">
-              Switch between light and dark mode.
+              {t('settings.themeDescription')}
             </p>
 
             <div className="mt-4 flex items-center justify-between">
               <span className="text-sm text-[var(--color-text)]">
-                Appearance
+                {t('settings.appearance')}
               </span>
               <ThemeToggle />
             </div>

@@ -2,8 +2,9 @@ import Document, { Html, Head, Main, NextScript } from "next/document";
 
 export default class MyDocument extends Document {
   render() {
+    const locale = this.props.__NEXT_DATA__.locale ?? "en";
     return (
-      <Html lang="en">
+      <Html lang={locale}>
         <Head>
           {/* Preconnect to external domains for faster loading */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />

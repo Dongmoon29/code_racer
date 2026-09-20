@@ -13,6 +13,7 @@ import { ProfilePageSkeleton } from "@/components/ui/Skeleton";
 import { useAuthStore } from "@/stores/authStore";
 import { FollowersList, FollowingList } from "@/components/profile/FollowLists";
 import { LAYOUT_PADDING } from "@/lib/styles";
+import { useTranslation } from "next-i18next/pages";
 
 interface UserInfo {
   id: string;
@@ -54,6 +55,7 @@ const UserProfilePage = () => {
   const { userId } = router.query;
   const currentUser = useAuthStore((state) => state.user);
   const [activeTab, setActiveTab] = useState<ProfileTab>("games");
+  const { t } = useTranslation("common");
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["userProfile", userId],
@@ -81,7 +83,7 @@ const UserProfilePage = () => {
       <div className={LAYOUT_PADDING.SECTION}>
         <div className="flex items-center justify-center">
           <div className="text-lg text-[var(--red-9)]">
-            Failed to load user profile
+            {t("profile.loadFailed")}
           </div>
         </div>
       </div>
@@ -112,10 +114,10 @@ const UserProfilePage = () => {
             className={`mb-8 ${isOwnProfile ? "text-center md:text-left" : ""}`}
           >
             {!isOwnProfile && (
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-11)]">Racer profile</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-11)]">{t("profile.racerProfile")}</p>
             )}
-            <h1 className="mt-2 break-words text-3xl font-bold tracking-tight">{isOwnProfile ? `Welcome back, ${user.name}.` : user.name}</h1>
-            <p className="mt-2 text-sm font-normal text-[var(--gray-11)]">{isOwnProfile ? 'Pick your next challenge and revisit your recent races.' : 'Explore recent races and connect with this developer.'}</p>
+            <h1 className="mt-2 break-words text-3xl font-bold tracking-tight">{isOwnProfile ? t("profile.welcomeBack", { name: user.name }) : user.name}</h1>
+            <p className="mt-2 text-sm font-normal text-[var(--gray-11)]">{isOwnProfile ? t("profile.ownDescription") : t("profile.publicDescription")}</p>
           </div>
           <div className="grid gap-6 xl:grid-cols-2 xl:items-stretch">
             <div className="min-w-0">
@@ -141,10 +143,10 @@ const UserProfilePage = () => {
                 )}
             <div className={`min-w-0 ${isOwnProfile ? "xl:col-start-2" : ""}`}>
               <div className="space-y-6">
-                <nav aria-label="Profile sections" className="flex gap-1 overflow-x-auto border-b border-[var(--gray-6)]">
+                <nav aria-label={t("profile.sections")} className="flex gap-1 overflow-x-auto border-b border-[var(--gray-6)]">
                   {(["games", "followers", "following"] as const).map((tab) => (
                     <button key={tab} type="button" aria-current={activeTab === tab ? "page" : undefined} onClick={() => setActiveTab(tab)} className={`shrink-0 cursor-pointer border-b-2 px-4 py-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent-9)] ${activeTab === tab ? "border-[var(--accent-9)] text-[var(--accent-11)]" : "border-transparent text-[var(--gray-11)] hover:text-[var(--gray-12)]"}`}>
-                      {tab === "games" ? "Recent games" : tab === "followers" ? "Followers" : "Following"}
+                      {tab === "games" ? t("profile.recentGames") : tab === "followers" ? t("profile.followersTitle") : t("profile.followingTitle")}
                     </button>
                   ))}
                 </nav>

@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ROUTES } from "@/lib/router";
 import { LeaderboardSkeleton } from "@/components/ui/Skeleton";
 import SEOHead from "@/components/seo/SEOHead";
+import { useTranslation } from "next-i18next/pages";
 
 interface LeaderboardUser {
   id: string;
@@ -21,6 +22,7 @@ interface RankedUser extends LeaderboardUser {
 }
 
 const LeaderboardPage = () => {
+  const { t, i18n } = useTranslation("common");
   const { data, isFetching, isLoading } = useQuery({
     queryKey: ["leaderboard"],
     queryFn: () => userApi.getLeaderboard(),
@@ -54,6 +56,8 @@ const LeaderboardPage = () => {
 
   const topThree = finalRankedUsers.slice(0, 3);
   const rest = finalRankedUsers.slice(3);
+  const formatRating = (rating: number) =>
+    rating.toLocaleString(i18n.resolvedLanguage || "en");
 
   const getCardStyles = (position: number) => {
     // 0: center (1st), 1: left (2nd), 2: right (3rd)
@@ -89,8 +93,8 @@ const LeaderboardPage = () => {
     return (
       <>
         <SEOHead
-          title="CodeRacer Leaderboard"
-          description="See the highest-rated CodeRacer players and compete for a place on the real-time coding leaderboard."
+          title={t("leaderboard.title")}
+          description={t("leaderboard.seoDescription")}
           url="/leaderboard"
         />
         <div className={LAYOUT_PADDING.SECTION}>
@@ -103,8 +107,8 @@ const LeaderboardPage = () => {
   return (
     <>
       <SEOHead
-        title="CodeRacer Leaderboard"
-        description="See the highest-rated CodeRacer players and compete for a place on the real-time coding leaderboard."
+        title={t("leaderboard.title")}
+        description={t("leaderboard.seoDescription")}
         url="/leaderboard"
       />
       <div className={LAYOUT_PADDING.SECTION}>
@@ -114,10 +118,10 @@ const LeaderboardPage = () => {
             <Crown className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground mb-2">
-            LEADERBOARD
+            {t("leaderboard.title")}
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Top players this season
+            {t("leaderboard.description")}
           </p>
         </div>
 
@@ -173,10 +177,10 @@ const LeaderboardPage = () => {
                     <div
                       className={`text-2xl font-extrabold mb-1 ${styles.rating}`}
                     >
-                      {user.rating.toLocaleString()}
+                      {formatRating(user.rating)}
                     </div>
                     <div className="text-xs text-muted-foreground mb-4">
-                      rating
+                      {t("leaderboard.rating")}
                     </div>
                   </div>
                 );
@@ -232,10 +236,10 @@ const LeaderboardPage = () => {
                       <div
                         className={`text-3xl font-extrabold mb-1 ${styles.rating}`}
                       >
-                        {user.rating.toLocaleString()}
+                        {formatRating(user.rating)}
                       </div>
                       <div className="text-xs text-muted-foreground mb-4">
-                        rating
+                        {t("leaderboard.rating")}
                       </div>
                     </div>
                   );
@@ -289,10 +293,10 @@ const LeaderboardPage = () => {
                       <div
                         className={`text-2xl font-extrabold mb-1 ${styles.rating}`}
                       >
-                        {user.rating.toLocaleString()}
+                        {formatRating(user.rating)}
                       </div>
                       <div className="text-xs text-muted-foreground mb-2">
-                        rating
+                        {t("leaderboard.rating")}
                       </div>
                     </div>
                   );
@@ -307,7 +311,9 @@ const LeaderboardPage = () => {
           <div className="overflow-hidden rounded-2xl border border-[var(--gray-6)] bg-[var(--color-panel)]">
             {rest.length === 0 && topThree.length === 0 && (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                {isFetching ? "Loading…" : "No users"}
+                {isFetching
+                  ? t("common.loading")
+                  : t("leaderboard.noUsers")}
               </div>
             )}
 
@@ -345,10 +351,10 @@ const LeaderboardPage = () => {
 
                 <div className="text-right">
                   <div className="text-sm font-semibold text-foreground">
-                    {user.rating.toLocaleString()}
+                    {formatRating(user.rating)}
                   </div>
                   <div className="text-[11px] text-muted-foreground">
-                    points
+                    {t("leaderboard.rating")}
                   </div>
                 </div>
               </div>

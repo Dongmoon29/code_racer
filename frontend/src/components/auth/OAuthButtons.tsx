@@ -1,11 +1,13 @@
 import React, { FC } from "react";
 import { GoogleIcon, GitHubIcon } from "../ui/icons";
+import { useTranslation } from "next-i18next/pages";
 
 interface OAuthButtonsProps {
   disabled?: boolean;
 }
 
 export const OAuthButtons: FC<OAuthButtonsProps> = ({ disabled = false }) => {
+  const { t } = useTranslation("common");
   const handleOAuthLogin = (provider: "google" | "github") => {
     window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/${provider}`;
   };
@@ -18,7 +20,7 @@ export const OAuthButtons: FC<OAuthButtonsProps> = ({ disabled = false }) => {
         </div>
         <div className="relative flex justify-center text-sm">
           <span className="rounded-full bg-[var(--color-panel)] px-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--gray-10)]">
-            Or continue with
+            {t("auth.orContinueWith")}
           </span>
         </div>
       </div>
@@ -29,7 +31,7 @@ export const OAuthButtons: FC<OAuthButtonsProps> = ({ disabled = false }) => {
           className="flex h-11 cursor-pointer items-center justify-center rounded-xl border border-[var(--gray-6)] bg-white text-gray-900 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
           onClick={() => handleOAuthLogin("google")}
           disabled={disabled}
-          aria-label="Continue with Google"
+          aria-label={t("auth.continueGoogle")}
         >
           <GoogleIcon aria-hidden="true" />
         </button>
@@ -39,7 +41,7 @@ export const OAuthButtons: FC<OAuthButtonsProps> = ({ disabled = false }) => {
           className="flex h-11 cursor-pointer items-center justify-center rounded-xl border border-[var(--gray-6)] bg-white text-gray-900 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
           onClick={() => handleOAuthLogin("github")}
           disabled={disabled}
-          aria-label="Continue with GitHub"
+          aria-label={t("auth.continueGithub")}
         >
           <GitHubIcon aria-hidden="true" />
         </button>

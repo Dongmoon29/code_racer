@@ -13,10 +13,12 @@ import { OAuthButtons } from "./OAuthButtons";
 import { FormField } from "./FormField";
 import { useAuthForm } from "@/hooks/useAuthForm";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { useTranslation } from "next-i18next/pages";
 
 const LoginForm: FC = () => {
   const router = useRouter();
   const routerHelper = useRouterHelper(router);
+  const { t } = useTranslation("common");
 
   const onSubmit = async (data: LoginFormData) => {
     const response = await authApi.login(data.email, data.password);
@@ -63,7 +65,7 @@ const LoginForm: FC = () => {
   } = useAuthForm<LoginFormData>({
     resolver: yupResolver(loginSchema),
     onSubmit,
-    defaultErrorMessage: "Invalid email or password",
+    defaultErrorMessage: t("auth.loginFailed"),
   });
 
   return (
@@ -77,7 +79,7 @@ const LoginForm: FC = () => {
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
         <FormField
           id="email"
-          label="Email"
+          label={t("auth.email")}
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
@@ -89,7 +91,7 @@ const LoginForm: FC = () => {
 
         <FormField
           id="password"
-          label="Password"
+          label={t("auth.password")}
           type={showPassword ? "text" : "password"}
           autoComplete="current-password"
           registration={register("password")}
@@ -100,7 +102,7 @@ const LoginForm: FC = () => {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
               aria-pressed={showPassword}
             >
               {showPassword ? (
@@ -118,7 +120,7 @@ const LoginForm: FC = () => {
           disabled={loading}
           style={{ width: "100%" }}
         >
-          {loading ? <Loader variant="inline" size="sm" /> : "Login"}
+          {loading ? <Loader variant="inline" size="sm" /> : t("nav.login")}
         </Button>
       </form>
 
@@ -126,12 +128,12 @@ const LoginForm: FC = () => {
 
       <div className="mt-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
         <p>
-          Don&apos;t have an account?{" "}
+          {t("auth.noAccount")}{" "}
           <Link
             href="/register"
             className="text-[hsl(var(--primary))] font-medium hover:underline"
           >
-            Register
+            {t("nav.register")}
           </Link>
         </p>
       </div>

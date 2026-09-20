@@ -11,9 +11,11 @@ import { OAuthButtons } from "./OAuthButtons";
 import { FormField } from "./FormField";
 import { useAuthForm } from "@/hooks/useAuthForm";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { useTranslation } from "next-i18next/pages";
 
 const RegisterForm: FC = () => {
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   const onSubmit = async (data: RegisterFormData) => {
     await authApi.register(data.email, data.password, data.name);
@@ -34,7 +36,7 @@ const RegisterForm: FC = () => {
   } = useAuthForm<RegisterFormData>({
     resolver: yupResolver(registerSchema),
     onSubmit,
-    defaultErrorMessage: "Registration failed",
+    defaultErrorMessage: t("auth.registrationFailed"),
   });
 
   return (
@@ -48,7 +50,7 @@ const RegisterForm: FC = () => {
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
         <FormField
           id="name"
-          label="Name"
+          label={t("auth.name")}
           type="text"
           autoComplete="name"
           placeholder="John Doe"
@@ -60,7 +62,7 @@ const RegisterForm: FC = () => {
 
         <FormField
           id="email"
-          label="Email"
+          label={t("auth.email")}
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
@@ -72,7 +74,7 @@ const RegisterForm: FC = () => {
 
         <FormField
           id="password"
-          label="Password"
+          label={t("auth.password")}
           type={showPassword ? "text" : "password"}
           autoComplete="new-password"
           registration={register("password")}
@@ -83,7 +85,7 @@ const RegisterForm: FC = () => {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
               aria-pressed={showPassword}
             >
               {showPassword ? (
@@ -97,7 +99,7 @@ const RegisterForm: FC = () => {
 
         <FormField
           id="confirmPassword"
-          label="Confirm Password"
+          label={t("auth.confirmPassword")}
           type="password"
           autoComplete="new-password"
           registration={register("confirmPassword")}
@@ -111,7 +113,7 @@ const RegisterForm: FC = () => {
           disabled={loading}
           style={{ width: "100%" }}
         >
-          {loading ? <Loader variant="inline" size="sm" /> : "Register"}
+          {loading ? <Loader variant="inline" size="sm" /> : t("nav.register")}
         </Button>
       </form>
 
@@ -119,12 +121,12 @@ const RegisterForm: FC = () => {
 
       <div className="mt-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
         <p>
-          Already have an account?{" "}
+          {t("auth.haveAccount")}{" "}
           <Link
             href="/login"
             className="text-[hsl(var(--primary))] font-medium hover:underline"
           >
-            Login
+            {t("nav.login")}
           </Link>
         </p>
       </div>

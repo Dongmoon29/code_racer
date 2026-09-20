@@ -10,6 +10,7 @@ import {
 import Header from './Header';
 import { useFullscreen } from '@/contexts/FullscreenContext';
 import { LayoutConfig } from './layoutConfig';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -86,7 +87,12 @@ export default function AppLayout({
           </>
         )}
         <main className="min-w-0 flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 md:p-8">
-          <div className="max-w-7xl mx-auto">{children}</div>
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-4 flex justify-end md:hidden">
+              <LanguageSwitcher compact />
+            </div>
+            {children}
+          </div>
         </main>
       </div>
     );

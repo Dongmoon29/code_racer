@@ -9,6 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ExternalLink, Clock, User } from 'lucide-react';
+import { useTranslation } from 'next-i18next/pages';
 
 interface RecentCommitsProps {
   className?: string;
@@ -21,6 +22,7 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
   commits = [],
   showIcons = true,
 }) => {
+  const { t, i18n } = useTranslation('common');
   const isDarkMode = className.includes('!bg-transparent');
   
   // If no commits, return empty state
@@ -47,9 +49,9 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
               />
             </svg>
           )}
-          Recent Updates
+          {t('updates.title')}
           <Badge variant="secondary" className={`ml-auto ${isDarkMode ? 'bg-gray-700/50 text-white/80 border-gray-600/50' : ''}`}>
-            recent {commits.length} commits
+            {t('updates.count', { count: commits.length })}
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -85,7 +87,7 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
                   <div className={`flex items-center gap-4 text-xs ${isDarkMode ? 'text-white/70' : 'text-gray-500'}`}>
                     <div className={showIcons ? "flex items-center gap-1" : ""}>
                       {showIcons && <Clock className="w-3 h-3" />}
-                      {formatRelativeTime(commit.commit.author.date)}
+                      {formatRelativeTime(commit.commit.author.date, i18n.resolvedLanguage)}
                     </div>
 
                     {commit.author && (
@@ -104,7 +106,7 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
                     rel="noopener noreferrer"
                     className={`transition-colors ${isDarkMode ? 'text-white/60 hover:text-white' : 'text-gray-400 hover:text-gray-600'}`}
                   >
-                    {showIcons ? <ExternalLink className="w-4 h-4" /> : <span className="text-xs">View</span>}
+                    {showIcons ? <ExternalLink className="w-4 h-4" /> : <span className="text-xs">{t('updates.view')}</span>}
                   </Link>
                 </div>
               </div>
@@ -119,7 +121,7 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({
             rel="noopener noreferrer"
             className={`text-sm flex items-center gap-1 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-blue-600 hover:text-blue-800'}`}
           >
-            View All Commits
+            {t('updates.viewAll')}
             {showIcons && <ExternalLink className="w-3 h-3" />}
           </Link>
         </div>

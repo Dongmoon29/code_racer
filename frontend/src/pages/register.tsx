@@ -5,10 +5,12 @@ import { RegisterForm } from "../components/dynamic";
 import Image from "next/image";
 import { useAuthStore } from "@/stores/authStore";
 import { motion } from "framer-motion";
+import { useTranslation } from "next-i18next/pages";
 
 const RegisterPage: React.FC = () => {
   const router = useRouter();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const { t } = useTranslation("common");
 
   useEffect(() => {
     // Redirect logged-in users to dashboard when accessing registration page
@@ -20,7 +22,7 @@ const RegisterPage: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Register | Code Racer</title>
+        <title>{t("nav.register")} | CodeRacer</title>
         <meta
           name="description"
           content="Create a new account for Code Racer"
@@ -32,13 +34,13 @@ const RegisterPage: React.FC = () => {
           <div className="mx-auto w-full max-w-md rounded-3xl border border-[var(--gray-6)] bg-[var(--color-panel)] p-6 shadow-xl shadow-black/5 sm:p-8">
             <div className="mb-7">
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-10)]">
-                Create your account
+                {t("auth.createAccount")}
               </p>
               <h1 className="text-3xl font-bold tracking-tight text-[hsl(var(--foreground))]">
-                Join CodeRacer
+                {t("auth.joinTitle")}
               </h1>
               <p className="mt-2 font-normal leading-6 text-[var(--gray-10)]">
-                Start practicing, racing, and tracking your progress.
+                {t("auth.joinDescription")}
               </p>
             </div>
 
@@ -63,7 +65,7 @@ const RegisterPage: React.FC = () => {
             >
               <Image
                 src="/code_racer_hero.webp"
-                alt="Code Racer illustration"
+                alt={t("auth.illustrationAlt")}
                 fill
                 style={{ objectFit: "contain" }}
                 className="p-4"

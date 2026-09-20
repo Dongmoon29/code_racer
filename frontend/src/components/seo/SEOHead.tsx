@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { useRouter } from "next/router";
 
 interface SEOHeadProps {
   title?: string;
@@ -31,7 +32,7 @@ export default function SEOHead({
   description = defaultSEO.description,
   keywords = defaultSEO.keywords,
   image = defaultSEO.image,
-  url = defaultSEO.url,
+  url,
   type = defaultSEO.type,
   author = defaultSEO.author,
   publishedTime,
@@ -39,13 +40,24 @@ export default function SEOHead({
   structuredData,
   robots = "index, follow",
 }: SEOHeadProps) {
+  const router = useRouter();
+  const locale = router.locale === "ko" ? "ko" : "en";
+  const path = router.asPath.split(/[?#]/)[0] || "/";
+  const localizedPath = path === "/" ? "" : path;
+  const canonicalPath = locale === "ko" ? `/ko${localizedPath}` : localizedPath;
   const fullTitle = title.includes("CodeRacer")
     ? title
     : `${title} | CodeRacer`;
   const fullImageUrl = image.startsWith("http")
     ? image
     : `${defaultSEO.url}${image}`;
-  const fullUrl = url.startsWith("http") ? url : `${defaultSEO.url}${url}`;
+  const fullUrl = url
+    ? url.startsWith("http")
+      ? url
+      : `${defaultSEO.url}${locale === "ko" ? "/ko" : ""}${url === "/" ? "" : url}`
+    : `${defaultSEO.url}${canonicalPath}`;
+  const englishUrl = `${defaultSEO.url}${localizedPath}`;
+  const koreanUrl = `${defaultSEO.url}/ko${localizedPath}`;
 
   return (
     <Head>
@@ -59,6 +71,9 @@ export default function SEOHead({
 
       {/* Canonical URL */}
       <link rel="canonical" href={fullUrl} />
+      <link rel="alternate" hrefLang="en" href={englishUrl} />
+      <link rel="alternate" hrefLang="ko" href={koreanUrl} />
+      <link rel="alternate" hrefLang="x-default" href={englishUrl} />
 
       {/* Open Graph Meta Tags */}
       <meta property="og:type" content={type} />
@@ -67,7 +82,8 @@ export default function SEOHead({
       <meta property="og:image" content={fullImageUrl} />
       <meta property="og:url" content={fullUrl} />
       <meta property="og:site_name" content="CodeRacer" />
-      <meta property="og:locale" content="en_US" />
+      <meta property="og:locale" content={locale === "ko" ? "ko_KR" : "en_US"} />
+      <meta property="og:locale:alternate" content={locale === "ko" ? "en_US" : "ko_KR"} />
 
       {/* Twitter Card Meta Tags */}
       <meta name="twitter:card" content="summary_large_image" />

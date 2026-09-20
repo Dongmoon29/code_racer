@@ -9,6 +9,7 @@ import { Alert } from "../../ui/alert";
 import { GAME_ROOM_CONSTANTS } from "../constants/game-room-constants";
 import { useRouterHelper } from "@/lib/router";
 import { type SupportedLanguage } from "@/constants";
+import { useTranslation } from "next-i18next/pages";
 
 interface GameStateRendererProps {
   game: Game;
@@ -40,6 +41,7 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
   }) => {
     const router = useRouter();
     const routerHelper = useRouterHelper(router);
+    const { t } = useTranslation("common");
 
     const me =
       game.playerA?.id === currentUser.id
@@ -66,8 +68,8 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
       case GAME_ROOM_CONSTANTS.GAME_STATUS.WAITING:
         return (
           <Alert variant="warning">
-            <h3>Game Initializing</h3>
-            <p>{GAME_ROOM_CONSTANTS.MESSAGES.GAME_INITIALIZING}</p>
+            <h3>{t("game.initializing")}</h3>
+            <p>{t("game.initializingDescription")}</p>
           </Alert>
         );
 
@@ -103,10 +105,10 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
       case GAME_ROOM_CONSTANTS.GAME_STATUS.CLOSED:
         return (
           <Alert variant="warning">
-            <h3>Game Closed</h3>
-            <p>{GAME_ROOM_CONSTANTS.MESSAGES.GAME_CLOSED}</p>
+            <h3>{t("game.closed")}</h3>
+            <p>{t("game.closedDescription")}</p>
             <Button onClick={() => routerHelper.goToDashboard()}>
-              {GAME_ROOM_CONSTANTS.MESSAGES.BACK_TO_DASHBOARD}
+              {t("game.backDashboard")}
             </Button>
           </Alert>
         );
@@ -114,10 +116,10 @@ export const GameStateRenderer: FC<GameStateRendererProps> = memo(
       default:
         return (
           <Alert variant="error">
-            <h3>Invalid Game State</h3>
-            <p>{GAME_ROOM_CONSTANTS.MESSAGES.INVALID_GAME_STATE}</p>
+            <h3>{t("game.invalidState")}</h3>
+            <p>{t("game.invalidStateDescription")}</p>
             <Button onClick={() => routerHelper.goToDashboard()}>
-              {GAME_ROOM_CONSTANTS.MESSAGES.BACK_TO_DASHBOARD}
+              {t("game.backDashboard")}
             </Button>
           </Alert>
         );

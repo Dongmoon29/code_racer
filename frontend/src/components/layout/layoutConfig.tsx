@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { ROUTES } from '@/lib/router';
 import { NavigationItem } from './DashboardTopNavigation';
+import type { TFunction } from 'i18next';
 
 export type LayoutType = 'admin' | 'dashboard' | 'public' | 'none';
 
@@ -111,22 +112,22 @@ export function getLayoutConfig(pathname: string): LayoutConfig {
 /**
  * Admin 레이아웃용 네비게이션 아이템을 생성합니다.
  */
-export function getAdminNavigationItems(): NavigationItem[] {
+export function getAdminNavigationItems(t: TFunction): NavigationItem[] {
   return [
     {
       href: ROUTES.ADMIN,
-      label: 'Dashboard',
+      label: t('nav.dashboard'),
       icon: <LayoutDashboard className="w-5 h-5 shrink-0" />,
     },
     {
       href: ROUTES.ADMIN_PROBLEMS,
-      label: 'Problems',
+      label: t('nav.problems'),
       icon: <FileText className="w-5 h-5 shrink-0" />,
       pattern: '/admin/problems',
     },
     {
       href: ROUTES.ADMIN_USERS,
-      label: 'Users',
+      label: t('nav.users'),
       icon: <Users className="w-5 h-5 shrink-0" />,
       pattern: '/admin/users',
     },
@@ -137,30 +138,31 @@ export function getAdminNavigationItems(): NavigationItem[] {
  * Dashboard 레이아웃용 네비게이션 아이템을 생성합니다.
  */
 export function getDashboardNavigationItems(
+  t: TFunction,
   userId?: string,
   userRole?: string
 ): NavigationItem[] {
   const items: NavigationItem[] = [
     {
       href: userId ? ROUTES.USER_PROFILE(userId) : '/dashboard',
-      label: 'Profile',
+      label: t('nav.profile'),
       icon: <User className="w-5 h-5 shrink-0" />,
       pattern: '/users',
     },
     {
       href: ROUTES.LEADERBOARD,
-      label: 'Leaderboard',
+      label: t('nav.leaderboard'),
       icon: <Trophy className="w-5 h-5 shrink-0" />,
     },
     {
       href: ROUTES.SETTINGS,
-      label: 'Settings',
+      label: t('nav.settings'),
       icon: <Settings className="w-5 h-5 shrink-0" />,
       pattern: '/settings',
     },
     {
       href: ROUTES.COMMUNITY,
-      label: 'Community',
+      label: t('nav.community'),
       icon: <MessageSquare className="w-5 h-5 shrink-0" />,
       pattern: '/community',
     },
@@ -170,7 +172,7 @@ export function getDashboardNavigationItems(
   if (userRole === 'admin') {
     items.push({
       href: ROUTES.ADMIN,
-      label: 'Admin',
+      label: t('nav.admin'),
       icon: <Shield className="w-5 h-5 shrink-0" />,
       pattern: '/admin',
     });

@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { cn } from '@/lib/utils';
 import Logo from './Logo';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { useTranslation } from 'next-i18next/pages';
 
 export interface NavigationItem {
   href: string;
@@ -19,13 +21,14 @@ export function DashboardTopNavigation({
   navigationItems,
 }: DashboardTopNavigationProps) {
   const router = useRouter();
+  const { t } = useTranslation('common');
 
   return (
     <header className="sticky top-0 z-40 hidden border-b border-[var(--gray-6)] bg-[color:var(--color-panel)]/95 backdrop-blur-xl md:block">
-      <div className="flex h-14 items-center px-4 sm:px-6">
+      <div className="flex h-14 items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
-          aria-label="Go to home"
+          aria-label={t('nav.goHome')}
           className="flex min-w-0 items-center gap-2 rounded-md px-1 py-1 outline-none transition-colors hover:bg-[var(--gray-3)] focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]"
         >
           <span className="flex h-8 w-8 shrink-0 items-center justify-center">
@@ -35,10 +38,11 @@ export function DashboardTopNavigation({
             codeRacer
           </span>
         </Link>
+        <LanguageSwitcher compact />
       </div>
 
       <nav
-        aria-label="Main navigation"
+        aria-label={t('nav.mainNavigation')}
         className="flex h-11 items-stretch gap-1 overflow-x-auto px-3 [scrollbar-width:none] sm:px-5 [&::-webkit-scrollbar]:hidden"
       >
         {navigationItems.map((item) => {
@@ -81,10 +85,11 @@ export function DashboardMobileNavigation({
   navigationItems,
 }: DashboardTopNavigationProps) {
   const router = useRouter();
+  const { t } = useTranslation('common');
 
   return (
     <nav
-      aria-label="Mobile navigation"
+      aria-label={t('nav.mobileNavigation')}
       className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(4.75rem+env(safe-area-inset-bottom))] items-stretch justify-around gap-0.5 border-t border-[var(--gray-6)] bg-[color:var(--color-panel)]/95 px-1.5 py-1.5 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl md:hidden"
     >
       {navigationItems.map((item) => {

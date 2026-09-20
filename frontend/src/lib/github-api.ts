@@ -190,37 +190,37 @@ export function truncateCommitMessage(
   return firstLine.substring(0, maxLength - 3) + '...';
 }
 
-export function formatRelativeTime(dateString: string): string {
+export function formatRelativeTime(dateString: string, locale = 'en'): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor(
     (now.getTime() - date.getTime()) / TIMER_CONSTANTS.INTERVALS.SECOND
   );
 
-  if (diffInSeconds < 60) {
-    return 'just now';
-  }
+  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+
+  if (diffInSeconds < 60) return formatter.format(-diffInSeconds, 'second');
 
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   if (diffInMinutes < 60) {
-    return `${diffInMinutes} minuites ago`;
+    return formatter.format(-diffInMinutes, 'minute');
   }
 
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) {
-    return `${diffInHours} hours ago`;
+    return formatter.format(-diffInHours, 'hour');
   }
 
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 7) {
-    return `${diffInDays} days ago`;
+    return formatter.format(-diffInDays, 'day');
   }
 
   const diffInWeeks = Math.floor(diffInDays / 7);
   if (diffInWeeks < 4) {
-    return `${diffInWeeks} weeks ago`;
+    return formatter.format(-diffInWeeks, 'week');
   }
 
   const diffInMonths = Math.floor(diffInDays / 30);
-  return `${diffInMonths} months ago`;
+  return formatter.format(-diffInMonths, 'month');
 }

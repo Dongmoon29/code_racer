@@ -4,6 +4,8 @@ import React, { FC } from 'react';
 import Link from 'next/link';
 import { User } from '@/stores/authStore';
 import { ROUTES } from '@/lib/router';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { useTranslation } from 'next-i18next/pages';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -20,6 +22,7 @@ const MobileMenu: FC<MobileMenuProps> = ({
   onLogout,
   onClose,
 }) => {
+  const { t } = useTranslation('common');
   if (!isOpen) return null;
 
   return (
@@ -27,7 +30,7 @@ const MobileMenu: FC<MobileMenuProps> = ({
       {isLoggedIn && user ? (
         <div className="space-y-3 px-4">
           <div className="text-sm text-[var(--gray-11)] flex items-center space-x-2">
-            <span>Signed in as</span>
+            <span>{t('nav.signedInAs')}</span>
             <span className="font-medium">{user.email}</span>
           </div>
           <Link
@@ -35,7 +38,7 @@ const MobileMenu: FC<MobileMenuProps> = ({
             className="block py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
             onClick={onClose}
           >
-            Dashboard
+            {t('nav.dashboard')}
           </Link>
           {user.role === 'admin' && (
             <Link
@@ -43,7 +46,7 @@ const MobileMenu: FC<MobileMenuProps> = ({
               className="block py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
               onClick={onClose}
             >
-              Admin Panel
+              {t('nav.adminPanel')}
             </Link>
           )}
           <button
@@ -53,7 +56,7 @@ const MobileMenu: FC<MobileMenuProps> = ({
             }}
             className="block w-full text-left py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
           >
-            Logout
+            {t('nav.logout')}
           </button>
         </div>
       ) : (
@@ -63,17 +66,20 @@ const MobileMenu: FC<MobileMenuProps> = ({
             className="block py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
             onClick={onClose}
           >
-            Login
+            {t('nav.login')}
           </Link>
           <Link
             href="/register"
             className="block py-2 text-[var(--color-text)] hover:bg-[var(--gray-4)] rounded transition-colors"
             onClick={onClose}
           >
-            Register
+            {t('nav.register')}
           </Link>
         </div>
       )}
+      <div className="mt-4 border-t border-[var(--gray-6)] px-4 pt-4">
+        <LanguageSwitcher />
+      </div>
     </div>
   );
 };

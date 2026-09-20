@@ -7,6 +7,7 @@ import { ProfileSidebar, GameHistory } from '@/components/profile';
 import { ProfilePageSkeleton } from '@/components/ui/Skeleton';
 import { ROUTES } from '@/lib/router';
 import { LAYOUT_PADDING, LAYOUT_WIDTH } from '@/lib/styles';
+import { useTranslation } from 'next-i18next/pages';
 
 interface UserInfo {
   id: string;
@@ -42,6 +43,7 @@ interface CurrentUserResponse extends UserInfo {
 }
 
 const DashboardIndex = () => {
+  const { t } = useTranslation('common');
   const router = useRouter();
   const { data, isLoading, error } = useQuery({
     queryKey: ['currentUser'],
@@ -72,7 +74,7 @@ const DashboardIndex = () => {
       <div className={LAYOUT_PADDING.SECTION}>
         <div className="flex items-center justify-center">
           <div className="text-lg text-[var(--red-9)]">
-            Failed to load user information
+            {t('profile.userLoadFailed')}
           </div>
         </div>
       </div>
@@ -84,7 +86,7 @@ const DashboardIndex = () => {
   return (
     <>
       <Head>
-        <title>My Profile - CodeRacer</title>
+        <title>{t('nav.myProfile')} - CodeRacer</title>
         <meta
           name="description"
           content="Manage your profile and account settings"

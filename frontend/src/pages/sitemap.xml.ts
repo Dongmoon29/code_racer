@@ -8,14 +8,16 @@ interface SitemapProps {
   }>;
 }
 
-function generateSiteMap(pages: SitemapProps["pages"]) {
+function generateSiteMap(pages: SitemapProps["pages"], baseUrl: string) {
   return `<?xml version="1.0" encoding="UTF-8"?>
-   <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+   <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
      ${pages
        .map((page) => {
          return `
        <url>
            <loc>${page.url}</loc>
+           <xhtml:link rel="alternate" hreflang="en" href="${page.url.replace('/ko', '')}" />
+           <xhtml:link rel="alternate" hreflang="ko" href="${page.url.includes('/ko') ? page.url : page.url.replace(baseUrl, `${baseUrl}/ko`)}" />
            <changefreq>${page.changefreq}</changefreq>
            <priority>${page.priority}</priority>
        </url>
@@ -51,8 +53,13 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     },
   ];
 
+  const localizedPages = staticPages.flatMap((page) => [
+    page,
+    { ...page, url: page.url.replace(baseUrl, `${baseUrl}/ko`) },
+  ]);
+
   // Generate the XML sitemap
-  const sitemap = generateSiteMap(staticPages);
+  const sitemap = generateSiteMap(localizedPages, baseUrl);
 
   res.setHeader("Content-Type", "text/xml");
   res.setHeader(

@@ -15,6 +15,7 @@ import {
   generateWebsiteStructuredData,
   generateOrganizationStructuredData,
 } from "@/lib/json-ld-schemas";
+import { useTranslation } from "next-i18next/pages";
 
 interface HomeProps {
   commits: GitHubCommit[];
@@ -52,6 +53,7 @@ const AnimatedSection: FC<{
 };
 
 const HomePage: FC<HomeProps> = ({ commits }) => {
+  const { t } = useTranslation("common");
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const user = useAuthStore((state) => state.user);
   const primaryHref =
@@ -60,15 +62,13 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
   const websiteStructuredData = generateWebsiteStructuredData({
     name: "CodeRacer",
     url: "https://coderacer.codes",
-    description:
-      "Real-time coding competition platform for improving programming skills through fun, competitive challenges.",
+    description: t("home.seoDescription"),
   });
 
   const softwareAppStructuredData = generateSoftwareApplicationStructuredData({
     "@type": "SoftwareApplication",
     name: "CodeRacer",
-    description:
-      "Real-time coding competition platform where developers can improve their programming skills through competitive coding challenges.",
+    description: t("home.seoDescription"),
     url: "https://coderacer.codes",
     applicationCategory: "GameApplication",
     operatingSystem: "Web Browser",
@@ -79,8 +79,8 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
   return (
     <>
       <SEOHead
-        title="CodeRacer - Real-Time Algorithm Coding Races"
-        description="Race developers in real time, solve algorithm challenges, and improve your competitive programming skills with instant judging."
+        title={t("home.seoTitle")}
+        description={t("home.seoDescription")}
         keywords="CodeRacer, coding race, real-time coding competition, algorithm practice, competitive programming"
         image="/code_racer_hero2.webp"
         structuredData={[
@@ -108,17 +108,16 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
           <motion.div initial="hidden" animate="visible" variants={reveal}>
             <h1 className="max-w-4xl text-5xl font-black leading-[0.95] tracking-[-0.055em] sm:text-6xl lg:text-7xl xl:text-[5.4rem]">
               <span className="mb-5 block text-sm font-bold uppercase tracking-[0.22em] text-cyan-400 sm:text-base">
-                CodeRacer — real-time algorithm races
+                {t("home.eyebrow")}
               </span>
-              Think fast.
+              {t("home.headline")}
               <span className="mt-2 block bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-400 bg-clip-text text-transparent">
-                Code faster.
+                {t("home.headlineAccent")}
               </span>
             </h1>
 
             <p className="mt-7 max-w-xl text-base font-normal leading-7 text-slate-300 sm:text-lg sm:leading-8">
-              Go head-to-head on algorithm challenges, submit before your
-              opponent, and turn every match into measurable progress.
+              {t("home.description")}
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -126,7 +125,7 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
                 href={primaryHref}
                 className="inline-flex h-12 items-center justify-center rounded-xl bg-white px-6 text-sm font-bold text-slate-950 shadow-[0_12px_40px_rgba(255,255,255,0.14)] transition hover:-translate-y-0.5 hover:bg-cyan-50"
               >
-                {isLoggedIn ? "Enter the arena" : "Start racing free"}
+                {isLoggedIn ? t("home.enterArena") : t("home.startFree")}
               </Link>
               <Link
                 href="https://github.com/Dongmoon29/code_racer"
@@ -134,14 +133,14 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
                 rel="noopener noreferrer"
                 className="inline-flex h-12 items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] px-6 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.08]"
               >
-                View on GitHub
+                {t("home.viewGithub")}
               </Link>
             </div>
 
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-medium text-slate-400">
-              <span>Free to play</span>
-              <span>Instant judging</span>
-              <span>3 languages</span>
+              <span>{t("home.freeToPlay")}</span>
+              <span>{t("home.instantJudging")}</span>
+              <span>{t("home.threeLanguages")}</span>
             </div>
           </motion.div>
 
@@ -157,7 +156,7 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
             />
             <Image
               src="/code_racer_hero2.webp"
-              alt="CodeRacer robot driving a race car"
+              alt={t("home.heroAlt")}
               fill
               priority
               className="object-contain drop-shadow-[0_35px_60px_rgba(124,58,237,0.22)]"
@@ -170,16 +169,16 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
           <div className="mx-auto grid max-w-7xl divide-y divide-white/[0.07] px-5 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-8 lg:px-10">
             {[
               {
-                title: "Live synchronization",
-                description: "See the race unfold as it happens",
+                title: t("home.highlights.liveTitle"),
+                description: t("home.highlights.liveDescription"),
               },
               {
-                title: "Isolated evaluation",
-                description: "Run every solution against judge cases",
+                title: t("home.highlights.judgeTitle"),
+                description: t("home.highlights.judgeDescription"),
               },
               {
-                title: "Competitive rating",
-                description: "Track progress with every ranked match",
+                title: t("home.highlights.ratingTitle"),
+                description: t("home.highlights.ratingDescription"),
               },
             ].map(({ title, description }) => (
               <div key={title} className="px-3 py-7 sm:px-7">
@@ -196,15 +195,14 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
           <AnimatedSection className="grid gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:items-end">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-400">
-                How it works
+                {t("home.howItWorks")}
               </p>
               <h2 className="mt-4 text-3xl font-black tracking-[-0.035em] sm:text-5xl">
-                From ready to ranked in three moves.
+                {t("home.stepsTitle")}
               </h2>
             </div>
             <p className="max-w-2xl text-base font-normal leading-7 text-slate-400 lg:justify-self-end">
-              Pick your difficulty, enter the arena, and submit a passing
-              solution before the other racer. No setup, no ceremony—just code.
+              {t("home.stepsDescription")}
             </p>
           </AnimatedSection>
 
@@ -212,21 +210,18 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
             {[
               {
                 number: "01",
-                title: "Choose your race",
-                description:
-                  "Practice solo or challenge another developer in a live match.",
+                title: t("home.steps.chooseTitle"),
+                description: t("home.steps.chooseDescription"),
               },
               {
                 number: "02",
-                title: "Solve under pressure",
-                description:
-                  "Write in JavaScript, Python, or Go while the clock keeps moving.",
+                title: t("home.steps.solveTitle"),
+                description: t("home.steps.solveDescription"),
               },
               {
                 number: "03",
-                title: "Claim the finish",
-                description:
-                  "Pass every judge case first and watch your competitive record grow.",
+                title: t("home.steps.finishTitle"),
+                description: t("home.steps.finishDescription"),
               },
             ].map(({ number, title, description }, index) => (
               <AnimatedSection
@@ -252,11 +247,10 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
           <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10 lg:py-28">
             <AnimatedSection className="mx-auto max-w-2xl text-center">
               <h2 className="text-3xl font-black tracking-[-0.035em] sm:text-5xl">
-                Everything you need to race better.
+                {t("home.featuresTitle")}
               </h2>
               <p className="mt-5 text-base font-normal leading-7 text-slate-400">
-                Focused tools for fast feedback, fair competition, and
-                consistent practice.
+                {t("home.featuresDescription")}
               </p>
             </AnimatedSection>
 
@@ -268,8 +262,8 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
                   className="h-full"
                 >
                   <FeatureCard
-                    title={feature.title}
-                    description={feature.description}
+                    title={t(`home.features.${feature.id}.title`)}
+                    description={t(`home.features.${feature.id}.description`)}
                   />
                 </AnimatedSection>
               ))}
@@ -281,14 +275,13 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
           <section className="mx-auto grid max-w-7xl gap-10 px-5 py-24 sm:px-8 lg:grid-cols-[0.72fr_1.28fr] lg:px-10 lg:py-28">
             <AnimatedSection>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-400">
-                Built in public
+                {t("home.builtInPublic")}
               </p>
               <h2 className="mt-4 text-3xl font-black tracking-[-0.035em] sm:text-4xl">
-                Always moving forward.
+                {t("home.updatesTitle")}
               </h2>
               <p className="mt-5 max-w-md text-sm font-normal leading-7 text-slate-400">
-                CodeRacer is open source and actively evolving. Follow the
-                latest improvements or help shape the next release.
+                {t("home.updatesDescription")}
               </p>
               <Link
                 href="https://github.com/Dongmoon29/code_racer"
@@ -296,7 +289,7 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
                 rel="noopener noreferrer"
                 className="mt-7 inline-flex text-sm font-bold text-white transition hover:text-cyan-300"
               >
-                Explore the repository
+                {t("home.exploreRepository")}
               </Link>
             </AnimatedSection>
             <AnimatedSection delay={0.08}>
@@ -318,17 +311,16 @@ const HomePage: FC<HomeProps> = ({ commits }) => {
               className="absolute left-1/2 top-0 -z-10 h-48 w-96 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl"
             />
             <h2 className="text-3xl font-black tracking-[-0.035em] sm:text-5xl">
-              Your next rival is waiting.
+              {t("home.ctaTitle")}
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-sm font-normal leading-7 text-slate-300 sm:text-base">
-              Join the arena, choose a challenge, and find out how fast you
-              really think.
+              {t("home.ctaDescription")}
             </p>
             <Link
               href={primaryHref}
               className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-white px-6 text-sm font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-50"
             >
-              {isLoggedIn ? "Race now" : "Create your account"}
+              {isLoggedIn ? t("home.raceNow") : t("home.createAccount")}
             </Link>
           </AnimatedSection>
         </section>

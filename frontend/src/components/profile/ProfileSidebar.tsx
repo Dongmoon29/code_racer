@@ -9,6 +9,7 @@ import ProfileEditForm, {
   LanguageOption,
   type ProfileFormValues,
 } from "./ProfileEditForm";
+import { useTranslation } from "next-i18next/pages";
 
 interface UserInfo {
   id: string;
@@ -37,6 +38,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   onShowFollowers,
   onShowFollowing,
 }) => {
+  const { t, i18n } = useTranslation("common");
   const [showEdit, setShowEdit] = useState(false);
 
   // Get follow stats
@@ -102,7 +104,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             >
               <Users className="w-4 h-4" />
               <span className="font-semibold text-foreground">{followers}</span>
-              <span>followers</span>
+              <span>{t("profile.followers")}</span>
             </button>
             <span>·</span>
             <button
@@ -111,7 +113,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
               className="flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer"
             >
               <span className="font-semibold text-foreground">{following}</span>
-              <span>following</span>
+              <span>{t("profile.following")}</span>
             </button>
           </div>
 
@@ -119,7 +121,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             onClick={() => setShowEdit((v) => !v)}
             style={{ width: "100%", cursor: "pointer" }}
           >
-            {showEdit ? "Cancel" : "Edit Profile"}
+            {showEdit ? t("common.cancel") : t("profile.editProfile")}
           </Button>
         </div>
 
@@ -147,7 +149,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <Star className="w-4 h-4 text-yellow-500" />
             <span className="font-semibold text-foreground">{user.rating}</span>
-            <span>rating</span>
+            <span>{t("profile.rating")}</span>
           </div>
         )}
 
@@ -155,7 +157,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         {user?.fav_language && (
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <Code className="w-4 h-4" />
-            <span>Favorite Language</span>
+            <span>{t("profile.favoriteLanguage")}</span>
             <span className="font-semibold text-foreground">
               {user.fav_language}
             </span>
@@ -166,10 +168,11 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
           <Calendar className="w-4 h-4" />
           <span>
-            Joined{" "}
-            {new Date(user?.created_at || "").toLocaleDateString("en-US", {
+            {t("profile.joined", {
+              date: new Date(user?.created_at || "").toLocaleDateString(i18n.resolvedLanguage, {
               year: "numeric",
               month: "long",
+              }),
             })}
           </span>
         </div>

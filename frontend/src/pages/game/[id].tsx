@@ -6,9 +6,11 @@ import { Loader } from '../../components/ui/Loader';
 import { Button } from '@/components/ui/Button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { useTranslation } from 'next-i18next/pages';
 
 const GamePage: React.FC = () => {
   const router = useRouter();
+  const { t } = useTranslation('common');
   const { id } = router.query;
   const { isLoading: isAuthLoading } = useAuthGuard({
     requireAuth: true,
@@ -20,7 +22,7 @@ const GamePage: React.FC = () => {
     return (
       <>
         <Head>
-          <title>Loading... | Code Racer</title>
+          <title>{t('game.loading')} | CodeRacer</title>
           <meta name="description" content="Loading game..." />
         </Head>
         <div className="flex justify-center items-center h-64 text-[var(--color-text)]">
@@ -38,22 +40,22 @@ const GamePage: React.FC = () => {
     return (
       <>
         <Head>
-          <title>Invalid Game | Code Racer</title>
+          <title>{t('game.invalid')} | CodeRacer</title>
           <meta name="description" content="Invalid game ID" />
         </Head>
         <div className="max-w-2xl mx-auto p-6">
           <Alert variant="error">
             <AlertTitle className="text-lg font-semibold text-[var(--color-text)]">
-              Invalid Game ID
+              {t('game.invalidId')}
             </AlertTitle>
             <AlertDescription className="mt-2 text-[var(--gray-11)]">
-              <p className="mb-4">The game ID provided is not valid.</p>
+              <p className="mb-4">{t('game.invalidDescription')}</p>
               <Button
                 onClick={() => router.push('/dashboard')}
                 variant="default"
                 className="w-full sm:w-auto"
               >
-                Back to Dashboard
+                {t('game.backDashboard')}
               </Button>
             </AlertDescription>
           </Alert>
@@ -65,7 +67,7 @@ const GamePage: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Game Room | Code Racer</title>
+        <title>{t('game.room')} | CodeRacer</title>
         <meta name="description" content="Compete in real-time coding challenge" />
         <meta
           name="viewport"

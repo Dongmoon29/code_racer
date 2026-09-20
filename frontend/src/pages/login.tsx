@@ -7,12 +7,14 @@ import { Alert } from "@/components/ui/alert";
 import { useAuthStore } from "@/stores/authStore";
 import { motion } from "framer-motion";
 import { Loader } from "@/components/ui/Loader";
+import { useTranslation } from "next-i18next/pages";
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isLoading = useAuthStore((state) => state.isLoading);
+  const { t } = useTranslation("common");
 
   useEffect(() => {
     // Only redirect if we're sure the user is logged in
@@ -27,17 +29,17 @@ const LoginPage: React.FC = () => {
 
     if (router.query.registered === "true") {
       setMessage(
-        "Registration successful! Please login with your new account.",
+        t("auth.registrationSuccess"),
       );
     }
-  }, [isLoading, isLoggedIn, router.query, router]);
+  }, [isLoading, isLoggedIn, router.query, router, t]);
 
   // Show loading while checking auth status
   if (isLoading) {
     return (
       <>
         <Head>
-          <title>Login | CodeRacer</title>
+          <title>{t("nav.login")} | CodeRacer</title>
           <meta
             name="description"
             content="Login to CodeRacer to start competing in real-time coding challenges"
@@ -53,7 +55,7 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Login | CodeRacer</title>
+        <title>{t("nav.login")} | CodeRacer</title>
         <meta
           name="description"
           content="Login to CodeRacer to start competing in real-time coding challenges"
@@ -65,13 +67,13 @@ const LoginPage: React.FC = () => {
           <div className="mx-auto w-full max-w-md rounded-3xl border border-[var(--gray-6)] bg-[var(--color-panel)] p-6 shadow-xl shadow-black/5 sm:p-8">
             <div className="mb-7">
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-10)]">
-                Welcome back
+                {t("auth.welcomeBack")}
               </p>
               <h1 className="text-3xl font-bold tracking-tight text-[hsl(var(--foreground))]">
-                Sign in to CodeRacer
+                {t("auth.signInTitle")}
               </h1>
               <p className="mt-2 font-normal leading-6 text-[var(--gray-10)]">
-                Continue your challenges and pick up where you left off.
+                {t("auth.signInDescription")}
               </p>
             </div>
             {message && (
@@ -100,7 +102,7 @@ const LoginPage: React.FC = () => {
             >
               <Image
                 src="/code_racer_hero.webp"
-                alt="Code Racer illustration"
+                alt={t("auth.illustrationAlt")}
                 fill
                 style={{ objectFit: "contain" }}
                 className="p-4"

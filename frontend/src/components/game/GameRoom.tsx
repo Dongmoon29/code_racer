@@ -7,6 +7,7 @@ import { useGameRoomState } from "./hooks/useGameRoomState";
 import { useGameRoomWebSocket } from "./hooks/useGameRoomWebSocket";
 import { useGameData } from "./hooks/useGameData";
 import { closeGame } from "@/api/game";
+import { useTranslation } from "next-i18next/pages";
 
 interface GameRoomProps {
   gameId: string;
@@ -14,6 +15,7 @@ interface GameRoomProps {
 
 const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
   const router = useRouter();
+  const { t } = useTranslation("common");
   const allowNavigationRef = useRef(false);
   const isClosingRef = useRef(false);
   const currentUser = useAuthStore((state) => state.user);
@@ -71,8 +73,8 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       // Show warning only when game is in progress
       if (isGameInProgress) {
         event.preventDefault();
-        event.returnValue = "Your game is still in progress.";
-        return "Your game is still in progress.";
+        event.returnValue = t("game.leaveWarning");
+        return t("game.leaveWarning");
       }
     };
 
@@ -80,7 +82,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isGameInProgress]);
+  }, [isGameInProgress, t]);
 
   // Internal navigation can be paused long enough to explicitly finish the
   // game. Closing a tab still uses the browser warning and reconnect grace.
@@ -97,7 +99,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       }
 
       const confirmed = window.confirm(
-        "A game is still in progress. End the game and leave this page?",
+        t("game.leaveConfirm"),
       );
       const cancellationError = new Error("Game navigation cancelled");
       Object.assign(cancellationError, { cancelled: true });
@@ -114,7 +116,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
           })
           .catch(() => {
             isClosingRef.current = false;
-            window.alert("The game could not be ended. Please try again.");
+            window.alert(t("game.endFailed"));
           });
       }
 
@@ -125,7 +127,7 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
     return () => {
       router.events.off("routeChangeStart", handleRouteChangeStart);
     };
-  }, [isGameInProgress, matchId, router]);
+  }, [isGameInProgress, matchId, router, t]);
 
   // Loading state handling
   if (isAuthLoading || gameLoading) {
@@ -143,14 +145,14 @@ const GameRoom: FC<GameRoomProps> = ({ gameId: matchId }) => {
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-[var(--red-11)] mb-2">
-            Error
+            {t("game.error")}
           </h2>
           <p className="text-[var(--gray-11)] mb-4">{gameError}</p>
           <button
             onClick={refetchGame}
             className="px-4 py-2 bg-[var(--accent-9)] text-white rounded hover:bg-[var(--accent-10)] transition-colors"
           >
-            Retry
+            {t("game.retry")}
           </button>
         </div>
       </div>

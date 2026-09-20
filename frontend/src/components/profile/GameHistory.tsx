@@ -9,6 +9,7 @@ import {
 import { DifficultyBadge } from '@/components/ui/DifficultyBadge';
 import { Badge } from '@/components/ui/Badge';
 import { ROUTES } from '@/lib/router';
+import { useTranslation } from 'next-i18next/pages';
 
 interface GameHistoryProps {
   games?: unknown[];
@@ -16,16 +17,17 @@ interface GameHistoryProps {
 }
 
 const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
+  const { t, i18n } = useTranslation('common');
   const items: GameHistoryItem[] = normalizeRecentGames(games as unknown[]);
 
   const getModeTag = (mode: string) => {
     switch (mode) {
       case 'ranked_pvp':
-        return 'ranked';
+        return t('history.ranked');
       case 'casual_pvp':
-        return 'casual';
+        return t('history.casual');
       case 'single':
-        return 'single';
+        return t('history.single');
       default:
         return mode;
     }
@@ -48,19 +50,19 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
   ): { name: string; id?: string; profile_image?: string } => {
     if (!currentUserId) {
       return {
-        name: game.playerB?.name || game.playerA?.name || 'Unknown',
+        name: game.playerB?.name || game.playerA?.name || t('history.unknown'),
         id: game.playerB?.id || game.playerA?.id,
         profile_image: game.playerB?.profile_image || game.playerA?.profile_image,
       };
     }
     return game.playerA?.id === currentUserId
       ? { 
-          name: game.playerB?.name || 'Unknown', 
+          name: game.playerB?.name || t("history.unknown"),
           id: game.playerB?.id,
           profile_image: game.playerB?.profile_image,
         }
       : { 
-          name: game.playerA?.name || 'Unknown', 
+          name: game.playerA?.name || t("history.unknown"),
           id: game.playerA?.id,
           profile_image: game.playerA?.profile_image,
         };
@@ -77,21 +79,22 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    const formatter = new Intl.RelativeTimeFormat(i18n.resolvedLanguage, { numeric: 'auto' });
+    if (diffInSeconds < 60) return formatter.format(-diffInSeconds, 'second');
+    if (diffInSeconds < 3600) return formatter.format(-Math.floor(diffInSeconds / 60), 'minute');
+    if (diffInSeconds < 86400) return formatter.format(-Math.floor(diffInSeconds / 3600), 'hour');
+    if (diffInSeconds < 604800) return formatter.format(-Math.floor(diffInSeconds / 86400), 'day');
     
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString(i18n.resolvedLanguage, { month: 'short', day: 'numeric' });
   };
 
   return (
     <div className="bg-card rounded-lg border p-6">
-      <h3 className="text-lg font-semibold mb-4">Recent Games</h3>
+      <h3 className="text-lg font-semibold mb-4">{t('history.title')}</h3>
 
       {items.length === 0 && (
         <div className="text-sm text-muted-foreground">
-          No recent games yet.
+          {t('history.empty')}
         </div>
       )}
 
@@ -127,7 +130,7 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
                 </div>
                 {game.mode !== 'single' && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>vs</span>
+                    <span>{t('history.versus')}</span>
                     {getOpponent(game).id ? (
                       <Link
                         href={ROUTES.USER_PROFILE(getOpponent(game).id!)}
@@ -185,7 +188,7 @@ const GameHistory: FC<GameHistoryProps> = ({ games = [], currentUserId }) => {
       {items.length > 5 && (
         <div className="mt-4 text-center">
           <button className="text-sm text-blue-600 hover:underline">
-            View all games
+            {t('history.viewAll')}
           </button>
         </div>
       )}
