@@ -10,6 +10,7 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/testutil"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // This is a lightweight integration-style test using the in-memory sqlite from testutil
@@ -30,6 +31,7 @@ func (m *mockUserService) ListUsers(page int, limit int, orderBy string, dir str
 func (m *mockUserService) GetLeaderboard(limit int) ([]*model.LeaderboardUser, error) {
 	return []*model.LeaderboardUser{}, nil
 }
+func (m *mockUserService) DeactivateUser(actorID, targetID uuid.UUID) error { return nil }
 func (m *mockUserService) GetRecentGames(id uuid.UUID, limit int) ([]model.RecentGameSummary, error) {
 	return m.g, nil
 }
@@ -74,4 +76,21 @@ func TestGetCurrentUser_WithRecentGamesDTO(t *testing.T) {
 	if resp.Data.RecentGames[0].Status != model.MatchStatusFinished {
 		t.Fatalf("recent game not finished")
 	}
+}
+
+func TestAdminDeactivateUser(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	actorID := uuid.New()
+	targetID := uuid.New()
+	ctrl := NewUserController(&mockUserService{}, testutil.SetupTestLogger())
+	router := gin.New()
+	router.DELETE("/api/admin/users/:id", func(ctx *gin.Context) {
+		ctx.Set("userID", actorID)
+	}, ctrl.AdminDeactivateUser)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodDelete, "/api/admin/users/"+targetID.String(), nil)
+	router.ServeHTTP(recorder, request)
+
+	assert.Equal(t, http.StatusOK, recorder.Code)
 }

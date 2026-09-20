@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { userApi } from '@/lib/api';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { IconButton, TextField } from '@radix-ui/themes';
 import {
   ArrowDown,
@@ -15,6 +15,8 @@ import {
   X,
 } from 'lucide-react';
 import { ListSkeleton, Skeleton } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
+import { extractErrorMessage } from '@/lib/error-utils';
 import {
   DataTable,
   DataTableBody,
@@ -33,6 +35,8 @@ type UserItem = {
   email: string;
   role: string;
   oauth_provider?: string;
+  account_status: 'active' | 'deactivated' | 'suspended';
+  deactivated_at?: string;
   created_at?: string;
   updated_at?: string;
   last_login_at?: string;
@@ -46,6 +50,7 @@ export default function AdminUsersPage() {
   const [searchInput, setSearchInput] = useState<string>('');
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Helper function to handle sort toggle
   const handleSortToggle = (
@@ -101,6 +106,59 @@ export default function AdminUsersPage() {
       userApi.adminList(page, PAGE_SIZE, sort, search || undefined),
     keepPreviousData: true,
   });
+
+  const deactivateUserMutation = useMutation({
+    mutationFn: userApi.deactivate,
+    onSuccess: async () => {
+      setExpandedUserId(null);
+      await queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      showToast({
+        title: 'User deactivated',
+        message: 'Login sessions were revoked and personal data was removed.',
+        variant: 'success',
+      });
+    },
+    onError: (mutationError: unknown) => {
+      showToast({
+        title: 'Unable to deactivate user',
+        message: extractErrorMessage(
+          mutationError,
+          'The account could not be deactivated.'
+        ),
+        variant: 'error',
+      });
+    },
+  });
+
+  const handleDeactivateUser = (user: UserItem) => {
+    if (user.account_status !== 'active') return;
+    const confirmed = window.confirm(
+      `Deactivate ${user.name}? This revokes every login session and permanently removes their personal information.`
+    );
+    if (confirmed) deactivateUserMutation.mutate(user.id);
+  };
+
+  const renderAccountBadge = (user: UserItem) => {
+    if (user.account_status === 'deactivated') {
+      return (
+        <span className="inline-flex rounded-full border border-[var(--gray-6)] bg-[var(--gray-a3)] px-2.5 py-1 text-xs font-semibold text-[var(--gray-10)]">
+          Deactivated
+        </span>
+      );
+    }
+    if (user.account_status === 'suspended') {
+      return (
+        <span className="inline-flex rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-400">
+          Suspended
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex rounded-full border border-[var(--accent-6)] bg-[var(--accent-a3)] px-2.5 py-1 text-xs font-semibold capitalize text-[var(--accent-11)]">
+        {user.role}
+      </span>
+    );
+  };
 
   // Prefetch next page when available
   useEffect(() => {
@@ -239,11 +297,7 @@ export default function AdminUsersPage() {
                   key={u.id}
                   title={u.name}
                   description={u.email}
-                  badge={
-                    <span className="inline-flex rounded-full border border-[var(--accent-6)] bg-[var(--accent-a3)] px-2.5 py-1 text-xs font-semibold capitalize text-[var(--accent-11)]">
-                      {u.role}
-                    </span>
-                  }
+                  badge={renderAccountBadge(u)}
                   expanded={isExpanded}
                   onToggle={() =>
                     setExpandedUserId(isExpanded ? null : u.id)
@@ -313,8 +367,18 @@ export default function AdminUsersPage() {
                     </button>
                     <button
                       type="button"
-                      className="inline-flex items-center justify-center rounded-lg border border-red-500/20 px-3 py-2.5 text-red-400 transition-colors hover:bg-red-500/10"
-                      aria-label={`Delete ${u.name}`}
+                      className="inline-flex items-center justify-center rounded-lg border border-red-500/20 px-3 py-2.5 text-red-400 transition-colors hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent"
+                      aria-label={`Deactivate ${u.name}`}
+                      title={
+                        u.account_status === 'active'
+                          ? 'Deactivate user'
+                          : 'User is already inactive'
+                      }
+                      disabled={
+                        u.account_status !== 'active' ||
+                        deactivateUserMutation.isPending
+                      }
+                      onClick={() => handleDeactivateUser(u)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -407,9 +471,7 @@ export default function AdminUsersPage() {
                     <span className="block truncate">{u.email}</span>
                   </DataTableCell>
                   <DataTableCell className="px-3 text-sm">
-                    <span className="inline-flex rounded-full border border-[var(--accent-6)] bg-[var(--accent-a3)] px-2.5 py-1 text-xs font-semibold capitalize text-[var(--accent-11)]">
-                      {u.role}
-                    </span>
+                    {renderAccountBadge(u)}
                   </DataTableCell>
                   <DataTableCell className="hidden px-3 text-sm capitalize text-[var(--gray-11)] lg:table-cell">
                     {u.oauth_provider ? u.oauth_provider : '-'}
@@ -439,9 +501,18 @@ export default function AdminUsersPage() {
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--gray-10)] transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
-                        aria-label={`Delete ${u.name}`}
-                        title="Delete user"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--gray-10)] transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[var(--gray-10)]"
+                        aria-label={`Deactivate ${u.name}`}
+                        title={
+                          u.account_status === 'active'
+                            ? 'Deactivate user'
+                            : 'User is already inactive'
+                        }
+                        disabled={
+                          u.account_status !== 'active' ||
+                          deactivateUserMutation.isPending
+                        }
+                        onClick={() => handleDeactivateUser(u)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

@@ -66,8 +66,11 @@ func (m *AuthMiddleware) OptionalAuth() gin.HandlerFunc {
 			if err == nil {
 				userID, err := uuid.Parse(claims.UserID)
 				if err == nil {
-					c.Set("userID", userID)
-					m.logger.Debug().Str("userID", userID.String()).Msg("Optional auth: user authenticated")
+					user, findErr := m.userRepository.FindByID(userID)
+					if findErr == nil && user.IsActive() {
+						c.Set("userID", userID)
+						m.logger.Debug().Str("userID", userID.String()).Msg("Optional auth: user authenticated")
+					}
 				}
 			}
 		}
@@ -138,16 +141,25 @@ func (m *AuthMiddleware) validateAndSetContext(ctx *gin.Context, tokenString str
 		ctx.Abort()
 		return
 	}
+	if !user.IsActive() {
+		m.logger.Warn().Str("userID", userID.String()).Msg("Inactive user attempted authentication")
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "Account is unavailable",
+		})
+		ctx.Abort()
+		return
+	}
 
 	ctx.Set("userID", userID)
 	ctx.Set("email", claims.Email)
-	
+
 	// Use JWT role for API, DB role for WebSocket
 	if useJWTRole {
 		ctx.Set("userRole", claims.Role)
 	} else {
 		ctx.Set("userRole", user.Role)
 	}
-	
+
 	ctx.Next()
 }

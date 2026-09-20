@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/Dongmoon29/code_racer/internal/interfaces"
@@ -19,6 +20,7 @@ type UserService interface {
 	UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRequest) (*model.User, error)
 	ListUsers(page int, limit int, orderBy string, dir string, search string) ([]*model.User, int64, error)
 	GetLeaderboard(limit int) ([]*model.LeaderboardUser, error)
+	DeactivateUser(actorID, targetID uuid.UUID) error
 }
 
 type userService struct {
@@ -45,6 +47,9 @@ func (s *userService) GetUserByID(userID uuid.UUID) (*model.UserResponse, error)
 			return nil, apperr.Wrap(err, apperr.CodeNotFound, "User not found")
 		}
 		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user")
+	}
+	if !user.IsActive() {
+		return nil, apperr.New(apperr.CodeNotFound, "User not found")
 	}
 	return user.ToResponse(), nil
 }
@@ -107,6 +112,9 @@ func (s *userService) GetProfile(userID uuid.UUID) (*model.User, error) {
 			return nil, apperr.Wrap(err, apperr.CodeNotFound, "User not found")
 		}
 		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user profile")
+	}
+	if !user.IsActive() {
+		return nil, apperr.New(apperr.CodeNotFound, "User not found")
 	}
 
 	return user, nil
@@ -185,4 +193,41 @@ func (s *userService) GetLeaderboard(limit int) ([]*model.LeaderboardUser, error
 	}
 
 	return leaderboardUsers, nil
+}
+
+func (s *userService) DeactivateUser(actorID, targetID uuid.UUID) error {
+	if actorID == targetID {
+		return apperr.New(apperr.CodeConflict, "You cannot deactivate your own account")
+	}
+
+	target, err := s.userRepo.FindByID(targetID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return apperr.Wrap(err, apperr.CodeNotFound, "User not found")
+		}
+		return apperr.Wrap(err, apperr.CodeInternal, "Failed to load user")
+	}
+	if !target.IsActive() {
+		return apperr.New(apperr.CodeConflict, "User is already deactivated")
+	}
+	if target.Role == model.RoleAdmin {
+		return apperr.New(apperr.CodeForbidden, "Admin accounts cannot be deactivated")
+	}
+
+	if err := s.userRepo.Deactivate(targetID, time.Now().UTC()); err != nil {
+		switch {
+		case errors.Is(err, repository.ErrUserAlreadyDeactivated):
+			return apperr.Wrap(err, apperr.CodeConflict, "User is already deactivated")
+		case errors.Is(err, repository.ErrUserHasActiveMatch):
+			return apperr.Wrap(err, apperr.CodeConflict, "User cannot be deactivated while a game is active")
+		case errors.Is(err, repository.ErrAdminDeactivation):
+			return apperr.Wrap(err, apperr.CodeForbidden, "Admin accounts cannot be deactivated")
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			return apperr.Wrap(err, apperr.CodeNotFound, "User not found")
+		default:
+			return apperr.Wrap(err, apperr.CodeInternal, "Failed to deactivate user")
+		}
+	}
+
+	return nil
 }

@@ -333,6 +333,8 @@ export const userApi = {
         email: string;
         role: string;
         oauth_provider?: string;
+        account_status: 'active' | 'deactivated' | 'suspended';
+        deactivated_at?: string;
         created_at: string;
         updated_at?: string;
       }>;
@@ -340,6 +342,13 @@ export const userApi = {
       limit: number;
       total: number;
       has_next: boolean;
+    };
+  },
+  deactivate: async (userId: string) => {
+    const response = await api.delete(`/admin/users/${userId}`);
+    return response.data as {
+      success: boolean;
+      message: string;
     };
   },
   updateProfile: async (

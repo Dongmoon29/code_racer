@@ -176,6 +176,7 @@ func Setup(
 			admin.Use(authMiddleware.AdminRequired())
 			{
 				admin.GET("/users", userController.AdminListUsers)
+				admin.DELETE("/users/:id", userController.AdminDeactivateUser)
 			}
 
 			// problems

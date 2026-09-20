@@ -92,6 +92,9 @@ func (s *authService) Login(req *model.LoginRequest) (*model.LoginResponse, erro
 		}
 		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to login")
 	}
+	if !user.IsActive() {
+		return nil, apperr.New(apperr.CodeUnauthorized, "Account is unavailable")
+	}
 
 	// Password verification
 	if !util.CheckPasswordHash(req.Password, user.Password) {
@@ -138,6 +141,9 @@ func (s *authService) GetUserByID(id uuid.UUID) (*model.UserResponse, error) {
 		}
 		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user")
 	}
+	if !user.IsActive() {
+		return nil, apperr.New(apperr.CodeUnauthorized, "Account is unavailable")
+	}
 
 	return user.ToResponse(), nil
 }
@@ -164,6 +170,9 @@ func (s *authService) generateToken(userID uuid.UUID, email string, role string)
 }
 
 func (s *authService) issueSession(user *model.User) (*model.LoginResponse, error) {
+	if !user.IsActive() {
+		return nil, apperr.New(apperr.CodeUnauthorized, "Account is unavailable")
+	}
 	accessToken, err := s.generateToken(user.ID, user.Email, string(user.Role))
 	if err != nil {
 		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to generate access token")
@@ -211,6 +220,10 @@ func (s *authService) RefreshSession(refreshToken string) (*model.LoginResponse,
 	user, err := s.userRepo.FindByID(rotated.UserID)
 	if err != nil {
 		return nil, apperr.Wrap(err, apperr.CodeUnauthorized, "Login session is invalid")
+	}
+	if !user.IsActive() {
+		_ = s.refreshRepo.RevokeFamilyByHash(hashRefreshToken(replacement), time.Now())
+		return nil, apperr.New(apperr.CodeUnauthorized, "Account is unavailable")
 	}
 	accessToken, err := s.generateToken(user.ID, user.Email, string(user.Role))
 	if err != nil {
@@ -281,6 +294,9 @@ func (s *authService) LoginWithGoogle(code string) (*model.LoginResponse, error)
 			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to create user")
 		}
 	} else {
+		if !user.IsActive() {
+			return nil, apperr.New(apperr.CodeUnauthorized, "Account is unavailable")
+		}
 		// User exists - allow login regardless of OAuth provider
 		user.LastLoginAt = &now
 
@@ -358,6 +374,9 @@ func (s *authService) LoginWithGitHub(code string) (*model.LoginResponse, error)
 			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to create user")
 		}
 	} else {
+		if !user.IsActive() {
+			return nil, apperr.New(apperr.CodeUnauthorized, "Account is unavailable")
+		}
 		// User exists - allow login regardless of OAuth provider
 		user.LastLoginAt = &now
 

@@ -14,32 +14,49 @@ const (
 	RoleAdmin Role = "admin"
 )
 
+type AccountStatus string
+
+const (
+	AccountStatusActive      AccountStatus = "active"
+	AccountStatusDeactivated AccountStatus = "deactivated"
+	AccountStatusSuspended   AccountStatus = "suspended"
+)
+
 type User struct {
-	ID            uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
-	Email         string     `gorm:"type:varchar(255);unique;not null" json:"email"`
-	Password      string     `gorm:"type:varchar(255)" json:"-"`
-	Name          string     `gorm:"type:varchar(255);not null" json:"name"`
-	ProfileImage  string     `gorm:"type:varchar(255)" json:"profile_image"`
-	Role          Role       `gorm:"type:varchar(20);default:'user'" json:"role"`
-	OAuthProvider string     `gorm:"type:varchar(20)" json:"oauth_provider,omitempty"`
-	OAuthID       string     `gorm:"type:varchar(255)" json:"oauth_id,omitempty"`
-	Homepage      string     `gorm:"type:varchar(255)" json:"homepage"`
-	LinkedIn      string     `gorm:"type:varchar(255)" json:"linkedin"`
-	GitHub        string     `gorm:"type:varchar(255)" json:"github"`
-	Company       string     `gorm:"type:varchar(255)" json:"company"`
-	JobTitle      string     `gorm:"type:varchar(255)" json:"job_title"`
-	FavLanguage   string     `gorm:"type:varchar(50)" json:"fav_language"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	LastLoginAt   *time.Time `gorm:"type:timestamptz" json:"last_login_at,omitempty"`
-	Rating        int        `gorm:"type:integer;default:1000" json:"rating"`
+	ID            uuid.UUID     `gorm:"type:uuid;primary_key" json:"id"`
+	Email         string        `gorm:"type:varchar(255);unique;not null" json:"email"`
+	Password      string        `gorm:"type:varchar(255)" json:"-"`
+	Name          string        `gorm:"type:varchar(255);not null" json:"name"`
+	ProfileImage  string        `gorm:"type:varchar(255)" json:"profile_image"`
+	Role          Role          `gorm:"type:varchar(20);default:'user'" json:"role"`
+	OAuthProvider string        `gorm:"column:oauth_provider;type:varchar(20)" json:"oauth_provider,omitempty"`
+	OAuthID       string        `gorm:"column:oauth_id;type:varchar(255)" json:"oauth_id,omitempty"`
+	Homepage      string        `gorm:"type:varchar(255)" json:"homepage"`
+	LinkedIn      string        `gorm:"column:linkedin;type:varchar(255)" json:"linkedin"`
+	GitHub        string        `gorm:"column:github;type:varchar(255)" json:"github"`
+	Company       string        `gorm:"type:varchar(255)" json:"company"`
+	JobTitle      string        `gorm:"type:varchar(255)" json:"job_title"`
+	FavLanguage   string        `gorm:"type:varchar(50)" json:"fav_language"`
+	CreatedAt     time.Time     `json:"created_at"`
+	UpdatedAt     time.Time     `json:"updated_at"`
+	LastLoginAt   *time.Time    `gorm:"type:timestamptz" json:"last_login_at,omitempty"`
+	Rating        int           `gorm:"type:integer;default:1000" json:"rating"`
+	AccountStatus AccountStatus `gorm:"type:varchar(20);not null;default:'active';index" json:"account_status"`
+	DeactivatedAt *time.Time    `json:"deactivated_at,omitempty"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 	if u.ID == uuid.Nil {
 		u.ID = uuid.New()
 	}
+	if u.AccountStatus == "" {
+		u.AccountStatus = AccountStatusActive
+	}
 	return nil
+}
+
+func (u *User) IsActive() bool {
+	return u.AccountStatus == "" || u.AccountStatus == AccountStatusActive
 }
 
 type LeaderboardUser struct {
@@ -65,6 +82,8 @@ type UserResponse struct {
 	FavLanguage   string              `json:"fav_language,omitempty"`
 	CreatedAt     time.Time           `json:"created_at"`
 	Rating        int                 `json:"rating"`
+	AccountStatus AccountStatus       `json:"account_status"`
+	DeactivatedAt *time.Time          `json:"deactivated_at,omitempty"`
 	RecentGames   []RecentGameSummary `json:"recent_games"`
 }
 
@@ -85,6 +104,8 @@ func (u *User) ToResponse() *UserResponse {
 		FavLanguage:   u.FavLanguage,
 		CreatedAt:     u.CreatedAt,
 		Rating:        u.Rating,
+		AccountStatus: u.AccountStatus,
+		DeactivatedAt: u.DeactivatedAt,
 	}
 }
 

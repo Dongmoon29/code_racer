@@ -163,6 +163,27 @@ func (c *UserController) AdminListUsers(ctx *gin.Context) {
 	})
 }
 
+func (c *UserController) AdminDeactivateUser(ctx *gin.Context) {
+	actorID, exists := ctx.Get("userID")
+	if !exists {
+		Unauthorized(ctx, "User not authenticated")
+		return
+	}
+
+	targetID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		BadRequest(ctx, "Invalid user ID")
+		return
+	}
+
+	if err := c.userService.DeactivateUser(actorID.(uuid.UUID), targetID); err != nil {
+		WriteError(ctx, err)
+		return
+	}
+
+	JSONMessage(ctx, http.StatusOK, "User account deactivated")
+}
+
 func (c *UserController) GetLeaderboard(ctx *gin.Context) {
 	users, err := c.userService.GetLeaderboard(20)
 	if err != nil {
