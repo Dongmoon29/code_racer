@@ -156,7 +156,7 @@ func (m *AuthMiddleware) validateAndSetContext(ctx *gin.Context, tokenString str
 
 	// Roles can be changed by an administrator while an access token is still
 	// valid, so authorization must always use the latest database value.
-	ctx.Set("userRole", user.Role)
+	ctx.Set("userRole", string(user.Role))
 
 	ctx.Next()
 }
