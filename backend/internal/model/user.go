@@ -152,6 +152,10 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+type AdminUpdateUserRoleRequest struct {
+	Role Role `json:"role" binding:"required,oneof=user admin"`
+}
+
 type LoginResponse struct {
 	User                  *UserResponse `json:"user"`
 	AccessToken           string        `json:"access_token"`

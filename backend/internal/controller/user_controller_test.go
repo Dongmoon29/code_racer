@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Dongmoon29/code_racer/internal/model"
@@ -32,6 +33,9 @@ func (m *mockUserService) GetLeaderboard(limit int) ([]*model.LeaderboardUser, e
 	return []*model.LeaderboardUser{}, nil
 }
 func (m *mockUserService) DeactivateUser(actorID, targetID uuid.UUID) error { return nil }
+func (m *mockUserService) UpdateUserRole(actorID, targetID uuid.UUID, role model.Role) (*model.User, error) {
+	return &model.User{ID: targetID, Role: role}, nil
+}
 func (m *mockUserService) GetRecentGames(id uuid.UUID, limit int) ([]model.RecentGameSummary, error) {
 	return m.g, nil
 }
@@ -93,4 +97,27 @@ func TestAdminDeactivateUser(t *testing.T) {
 	router.ServeHTTP(recorder, request)
 
 	assert.Equal(t, http.StatusOK, recorder.Code)
+}
+
+func TestAdminUpdateUserRole(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	actorID := uuid.New()
+	targetID := uuid.New()
+	ctrl := NewUserController(&mockUserService{}, testutil.SetupTestLogger())
+	router := gin.New()
+	router.PATCH("/api/admin/users/:id/role", func(ctx *gin.Context) {
+		ctx.Set("userID", actorID)
+	}, ctrl.AdminUpdateUserRole)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(
+		http.MethodPatch,
+		"/api/admin/users/"+targetID.String()+"/role",
+		strings.NewReader(`{"role":"admin"}`),
+	)
+	request.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(recorder, request)
+
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), `"role":"admin"`)
 }

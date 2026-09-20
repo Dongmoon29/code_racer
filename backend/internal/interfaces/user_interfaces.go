@@ -12,6 +12,7 @@ type UserRepository interface {
 	FindByID(id uuid.UUID) (*model.User, error)
 	FindByEmail(email string) (*model.User, error)
 	Update(user *model.User) error
+	UpdateRole(id uuid.UUID, role model.Role) error
 	Deactivate(id uuid.UUID, deactivatedAt time.Time) error
 	// ListUsers returns users with offset/limit and total count, ordered by field/dir
 	// search parameter searches in name, email, or ID fields

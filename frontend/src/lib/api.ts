@@ -351,6 +351,19 @@ export const userApi = {
       message: string;
     };
   },
+  updateRole: async (userId: string, role: 'user' | 'admin') => {
+    const response = await api.patch(`/admin/users/${userId}/role`, { role });
+    return response.data as {
+      success: boolean;
+      message: string;
+      data: {
+        id: string;
+        name: string;
+        email: string;
+        role: 'user' | 'admin';
+      };
+    };
+  },
   updateProfile: async (
     profile: UserProfile,
   ): Promise<UpdateUserProfileResponse> => {

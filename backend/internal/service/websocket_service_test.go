@@ -128,6 +128,11 @@ func (m *MockUserRepository) Update(user *model.User) error {
 	return args.Error(0)
 }
 
+func (m *MockUserRepository) UpdateRole(id uuid.UUID, role model.Role) error {
+	args := m.Called(id, role)
+	return args.Error(0)
+}
+
 func (m *MockUserRepository) Deactivate(id uuid.UUID, deactivatedAt time.Time) error {
 	args := m.Called(id, deactivatedAt)
 	return args.Error(0)

@@ -17,6 +17,11 @@ import {
 import { ListSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import { extractErrorMessage } from '@/lib/error-utils';
+import { useAuthStore } from '@/stores/authStore';
+import {
+  AdminUserRole,
+  UserRoleDialog,
+} from '@/components/admin/UserRoleDialog';
 import {
   DataTable,
   DataTableBody,
@@ -49,8 +54,11 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState<string>('');
   const [searchInput, setSearchInput] = useState<string>('');
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<UserItem | null>(null);
+  const [editingRole, setEditingRole] = useState<AdminUserRole>('user');
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const currentUserId = useAuthStore((state) => state.user?.id);
 
   // Helper function to handle sort toggle
   const handleSortToggle = (
@@ -129,6 +137,32 @@ export default function AdminUsersPage() {
       });
     },
   });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: AdminUserRole }) =>
+      userApi.updateRole(userId, role),
+    onSuccess: async () => {
+      setEditingUser(null);
+      await queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      showToast({
+        title: 'Role updated',
+        message: 'The user permissions now reflect the selected role.',
+        variant: 'success',
+      });
+    },
+    onError: (mutationError: unknown) => {
+      showToast({
+        title: 'Unable to update role',
+        message: extractErrorMessage(mutationError, 'The user role could not be updated.'),
+        variant: 'error',
+      });
+    },
+  });
+
+  const openRoleDialog = (user: UserItem) => {
+    setEditingUser(user);
+    setEditingRole(user.role === 'admin' ? 'admin' : 'user');
+  };
 
   const handleDeactivateUser = (user: UserItem) => {
     if (user.account_status !== 'active') return;
@@ -360,8 +394,9 @@ export default function AdminUsersPage() {
                     </Link>
                     <button
                       type="button"
-                      className="inline-flex items-center justify-center rounded-lg border border-[var(--gray-6)] px-3 py-2.5 transition-colors hover:bg-[var(--gray-4)]"
+                      className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-[var(--gray-6)] px-3 py-2.5 transition-colors hover:bg-[var(--gray-4)]"
                       aria-label={`Edit ${u.name}`}
+                      onClick={() => openRoleDialog(u)}
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
@@ -494,9 +529,10 @@ export default function AdminUsersPage() {
                   <DataTableCell className="px-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-4)] hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]"
+                        className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-4)] hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]"
                         aria-label={`Edit ${u.name}`}
                         title="Edit user"
+                        onClick={() => openRoleDialog(u)}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -575,6 +611,25 @@ export default function AdminUsersPage() {
           </button>
         </nav>
       </div>
+
+      {editingUser && (
+        <UserRoleDialog
+          user={editingUser}
+          role={editingRole}
+          isOwnAccount={editingUser.id === currentUserId}
+          isSaving={updateRoleMutation.isPending}
+          onRoleChange={setEditingRole}
+          onClose={() => {
+            if (!updateRoleMutation.isPending) setEditingUser(null);
+          }}
+          onSave={() =>
+            updateRoleMutation.mutate({
+              userId: editingUser.id,
+              role: editingRole,
+            })
+          }
+        />
+      )}
     </>
   );
 }

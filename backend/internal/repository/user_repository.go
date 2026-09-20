@@ -70,6 +70,19 @@ func (r *userRepository) Update(user *model.User) error {
 	return r.db.Save(user).Error
 }
 
+func (r *userRepository) UpdateRole(id uuid.UUID, role model.Role) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var user model.User
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, "id = ?", id).Error; err != nil {
+			return err
+		}
+		if !user.IsActive() {
+			return ErrUserAlreadyDeactivated
+		}
+		return tx.Model(&user).Update("role", role).Error
+	})
+}
+
 func (r *userRepository) Deactivate(id uuid.UUID, deactivatedAt time.Time) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		var user model.User

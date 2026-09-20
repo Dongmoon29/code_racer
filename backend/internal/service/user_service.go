@@ -20,6 +20,7 @@ type UserService interface {
 	UpdateProfile(userID uuid.UUID, req *model.UpdateProfileRequest) (*model.User, error)
 	ListUsers(page int, limit int, orderBy string, dir string, search string) ([]*model.User, int64, error)
 	GetLeaderboard(limit int) ([]*model.LeaderboardUser, error)
+	UpdateUserRole(actorID, targetID uuid.UUID, role model.Role) (*model.User, error)
 	DeactivateUser(actorID, targetID uuid.UUID) error
 }
 
@@ -193,6 +194,43 @@ func (s *userService) GetLeaderboard(limit int) ([]*model.LeaderboardUser, error
 	}
 
 	return leaderboardUsers, nil
+}
+
+func (s *userService) UpdateUserRole(actorID, targetID uuid.UUID, role model.Role) (*model.User, error) {
+	if role != model.RoleUser && role != model.RoleAdmin {
+		return nil, apperr.New(apperr.CodeBadRequest, "Role must be user or admin")
+	}
+	if actorID == targetID {
+		return nil, apperr.New(apperr.CodeConflict, "You cannot change your own role")
+	}
+
+	target, err := s.userRepo.FindByID(targetID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperr.Wrap(err, apperr.CodeNotFound, "User not found")
+		}
+		return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to load user")
+	}
+	if !target.IsActive() {
+		return nil, apperr.New(apperr.CodeConflict, "Inactive user roles cannot be changed")
+	}
+	if target.Role == role {
+		return target, nil
+	}
+
+	if err := s.userRepo.UpdateRole(targetID, role); err != nil {
+		switch {
+		case errors.Is(err, repository.ErrUserAlreadyDeactivated):
+			return nil, apperr.Wrap(err, apperr.CodeConflict, "Inactive user roles cannot be changed")
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			return nil, apperr.Wrap(err, apperr.CodeNotFound, "User not found")
+		default:
+			return nil, apperr.Wrap(err, apperr.CodeInternal, "Failed to update user role")
+		}
+	}
+
+	target.Role = role
+	return target, nil
 }
 
 func (s *userService) DeactivateUser(actorID, targetID uuid.UUID) error {

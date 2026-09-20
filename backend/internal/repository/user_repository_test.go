@@ -102,3 +102,31 @@ func TestUserRepositoryDeactivateRejectsAdmin(t *testing.T) {
 	assert.True(t, got.IsActive())
 	assert.Equal(t, model.RoleAdmin, got.Role)
 }
+
+func TestUserRepositoryUpdateRole(t *testing.T) {
+	db := newUserRepositoryTestDB(t)
+	repo := NewUserRepository(db, appLogger.NewZerologLogger(zerolog.New(io.Discard)))
+	user := model.User{Email: "role@example.com", Name: "Role User", Role: model.RoleUser}
+	require.NoError(t, db.Create(&user).Error)
+
+	require.NoError(t, repo.UpdateRole(user.ID, model.RoleAdmin))
+
+	var got model.User
+	require.NoError(t, db.First(&got, "id = ?", user.ID).Error)
+	assert.Equal(t, model.RoleAdmin, got.Role)
+}
+
+func TestUserRepositoryUpdateRoleRejectsInactiveUser(t *testing.T) {
+	db := newUserRepositoryTestDB(t)
+	repo := NewUserRepository(db, appLogger.NewZerologLogger(zerolog.New(io.Discard)))
+	user := model.User{
+		Email:         "inactive-role@example.com",
+		Name:          "Inactive User",
+		Role:          model.RoleUser,
+		AccountStatus: model.AccountStatusDeactivated,
+	}
+	require.NoError(t, db.Create(&user).Error)
+
+	err := repo.UpdateRole(user.ID, model.RoleAdmin)
+	require.ErrorIs(t, err, ErrUserAlreadyDeactivated)
+}

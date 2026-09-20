@@ -184,6 +184,38 @@ func (c *UserController) AdminDeactivateUser(ctx *gin.Context) {
 	JSONMessage(ctx, http.StatusOK, "User account deactivated")
 }
 
+func (c *UserController) AdminUpdateUserRole(ctx *gin.Context) {
+	actorID, exists := ctx.Get("userID")
+	if !exists {
+		Unauthorized(ctx, "User not authenticated")
+		return
+	}
+
+	targetID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		BadRequest(ctx, "Invalid user ID")
+		return
+	}
+
+	var req model.AdminUpdateUserRoleRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		BadRequest(ctx, "Role must be user or admin")
+		return
+	}
+
+	user, err := c.userService.UpdateUserRole(actorID.(uuid.UUID), targetID, req.Role)
+	if err != nil {
+		WriteError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "User role updated",
+		"data":    user,
+	})
+}
+
 func (c *UserController) GetLeaderboard(ctx *gin.Context) {
 	users, err := c.userService.GetLeaderboard(20)
 	if err != nil {

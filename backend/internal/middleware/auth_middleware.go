@@ -36,7 +36,7 @@ func (m *AuthMiddleware) APIAuthRequired() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		m.validateAndSetContext(c, tokenString, true)
+		m.validateAndSetContext(c, tokenString)
 	}
 }
 
@@ -52,7 +52,7 @@ func (m *AuthMiddleware) WebSocketAuthRequired() gin.HandlerFunc {
 			ctx.Abort()
 			return
 		}
-		m.validateAndSetContext(ctx, tokenString, false)
+		m.validateAndSetContext(ctx, tokenString)
 	}
 }
 
@@ -99,7 +99,7 @@ func (m *AuthMiddleware) extractToken(c *gin.Context, allowQueryParam bool) stri
 	return ""
 }
 
-func (m *AuthMiddleware) validateAndSetContext(ctx *gin.Context, tokenString string, useJWTRole bool) {
+func (m *AuthMiddleware) validateAndSetContext(ctx *gin.Context, tokenString string) {
 	claims, err := m.authService.ValidateToken(tokenString)
 	if err != nil {
 		m.logger.Error().
@@ -154,12 +154,9 @@ func (m *AuthMiddleware) validateAndSetContext(ctx *gin.Context, tokenString str
 	ctx.Set("userID", userID)
 	ctx.Set("email", claims.Email)
 
-	// Use JWT role for API, DB role for WebSocket
-	if useJWTRole {
-		ctx.Set("userRole", claims.Role)
-	} else {
-		ctx.Set("userRole", user.Role)
-	}
+	// Roles can be changed by an administrator while an access token is still
+	// valid, so authorization must always use the latest database value.
+	ctx.Set("userRole", user.Role)
 
 	ctx.Next()
 }
