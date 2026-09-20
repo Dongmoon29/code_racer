@@ -15,7 +15,6 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/constants"
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
@@ -27,11 +26,22 @@ import (
 	"gorm.io/gorm"
 )
 
-var _ interfaces.AuthService = (*authService)(nil)
+type AuthService interface {
+	Register(req *model.RegisterRequest) (*model.UserResponse, error)
+	Login(req *model.LoginRequest) (*model.LoginResponse, error)
+	ValidateToken(tokenString string) (*types.JWTClaims, error)
+	GetUserByID(id uuid.UUID) (*model.UserResponse, error)
+	LoginWithGoogle(code string) (*model.LoginResponse, error)
+	LoginWithGitHub(code string) (*model.LoginResponse, error)
+	RefreshSession(refreshToken string) (*model.LoginResponse, error)
+	Logout(refreshToken string) error
+}
+
+var _ AuthService = (*authService)(nil)
 
 type authService struct {
-	userRepo    interfaces.UserRepository
-	refreshRepo interfaces.RefreshTokenRepository
+	userRepo    repository.UserRepository
+	refreshRepo repository.RefreshTokenRepository
 	jwtSecret   string
 	tokenExpiry time.Duration
 	logger      logger.Logger
@@ -39,7 +49,7 @@ type authService struct {
 }
 
 // NewAuthService creates a new AuthService instance with the provided dependencies
-func NewAuthService(userRepo interfaces.UserRepository, refreshRepo interfaces.RefreshTokenRepository, jwtSecret string, oauthConfig *config.OAuthConfig, logger logger.Logger) interfaces.AuthService {
+func NewAuthService(userRepo repository.UserRepository, refreshRepo repository.RefreshTokenRepository, jwtSecret string, oauthConfig *config.OAuthConfig, logger logger.Logger) AuthService {
 	return &authService{
 		userRepo:    userRepo,
 		refreshRepo: refreshRepo,

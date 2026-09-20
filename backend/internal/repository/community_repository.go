@@ -1,19 +1,29 @@
 package repository
 
 import (
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+type CommunityRepository interface {
+	Create(post *model.Post) error
+	FindByID(id uuid.UUID) (*model.Post, error)
+	FindByIDWithMeta(id uuid.UUID, viewerID *uuid.UUID) (*model.Post, error)
+	FindByUserID(userID uuid.UUID, limit, offset int) ([]*model.Post, int64, error)
+	ListAllWithMeta(limit, offset int, status *model.PostStatus, postType *model.PostType, sort model.PostSort, viewerID *uuid.UUID) ([]*model.Post, int64, error)
+	Vote(postID, userID uuid.UUID, value int16) error
+	Update(post *model.Post) error
+	Delete(id uuid.UUID) error
+}
+
 type communityRepository struct {
 	db     *gorm.DB
 	logger logger.Logger
 }
 
-func NewCommunityRepository(db *gorm.DB, logger logger.Logger) interfaces.CommunityRepository {
+func NewCommunityRepository(db *gorm.DB, logger logger.Logger) CommunityRepository {
 	return &communityRepository{
 		db:     db,
 		logger: logger,

@@ -3,20 +3,21 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
+	"github.com/Dongmoon29/code_racer/internal/repository"
+	"github.com/Dongmoon29/code_racer/internal/service"
 	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type AuthMiddleware struct {
-	authService    interfaces.AuthService
+	authService    service.AuthService
 	logger         logger.Logger
-	userRepository interfaces.UserRepository
+	userRepository repository.UserRepository
 }
 
-func NewAuthMiddleware(authService interfaces.AuthService, userRepository interfaces.UserRepository, logger logger.Logger) *AuthMiddleware {
+func NewAuthMiddleware(authService service.AuthService, userRepository repository.UserRepository, logger logger.Logger) *AuthMiddleware {
 	return &AuthMiddleware{
 		authService:    authService,
 		userRepository: userRepository,

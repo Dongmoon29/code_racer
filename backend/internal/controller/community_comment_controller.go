@@ -3,19 +3,19 @@ package controller
 import (
 	"strconv"
 
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type PostCommentController struct {
-	commentService interfaces.PostCommentService
+	commentService service.PostCommentService
 	logger         logger.Logger
 }
 
-func NewPostCommentController(commentService interfaces.PostCommentService, logger logger.Logger) *PostCommentController {
+func NewPostCommentController(commentService service.PostCommentService, logger logger.Logger) *PostCommentController {
 	return &PostCommentController{
 		commentService: commentService,
 		logger:         logger,

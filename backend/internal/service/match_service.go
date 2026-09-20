@@ -6,13 +6,33 @@ import (
 
 	"github.com/Dongmoon29/code_racer/internal/events"
 	"github.com/Dongmoon29/code_racer/internal/game"
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
+
+// GameEngine is the application-facing contract shared by HTTP and WebSocket transports.
+type GameEngine interface {
+	Start(ctx context.Context)
+	Stop()
+	Create(ctx context.Context, cmd game.CreateMatchCommand) (*model.Match, error)
+	CreateSingle(ctx context.Context, cmd game.CreateSingleMatchCommand) (*model.Match, error)
+	Get(ctx context.Context, matchID uuid.UUID) (*model.Match, error)
+	GetActive(ctx context.Context, userID uuid.UUID) (*model.Match, error)
+	Connect(ctx context.Context, cmd game.ParticipantCommand) error
+	Disconnect(ctx context.Context, cmd game.ParticipantCommand) error
+	Close(ctx context.Context, cmd game.ParticipantCommand) error
+	Submit(ctx context.Context, cmd game.SubmitCommand) (*game.SubmissionResult, error)
+	UpdateCode(ctx context.Context, cmd game.CodeSnapshotCommand) error
+	GetPlayerCode(ctx context.Context, cmd game.ParticipantCommand) (string, error)
+}
+
+type WebSocketBroadcaster interface {
+	BroadcastToMatch(matchID uuid.UUID, message []byte)
+	BroadcastToAllClients(message []byte)
+}
 
 // matchService is a small facade. Each workflow is implemented by a focused
 // component so HTTP and WebSocket transports share one stable entry point.
@@ -22,20 +42,20 @@ type matchService struct {
 	reconnections *reconnectionService
 }
 
-var _ interfaces.GameEngine = (*matchService)(nil)
+var _ GameEngine = (*matchService)(nil)
 
 type GameEngineDependencies struct {
 	MatchRepository   repository.MatchRepository
 	ProblemRepository repository.ProblemRepository
 	Redis             *redis.Client
-	Judge             interfaces.JudgeService
-	Users             interfaces.UserRepository
+	Judge             JudgeService
+	Users             repository.UserRepository
 	Logger            logger.Logger
-	Broadcaster       interfaces.WebSocketBroadcaster
+	Broadcaster       WebSocketBroadcaster
 	Events            events.EventBus
 }
 
-func NewGameEngine(deps GameEngineDependencies) (interfaces.GameEngine, error) {
+func NewGameEngine(deps GameEngineDependencies) (GameEngine, error) {
 	if deps.MatchRepository == nil || deps.ProblemRepository == nil || deps.Redis == nil || deps.Judge == nil || deps.Users == nil || deps.Logger == nil {
 		return nil, errors.New("game engine requires match/problem repositories, Redis, judge, users, and logger")
 	}

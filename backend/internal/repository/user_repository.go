@@ -4,13 +4,23 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+type UserRepository interface {
+	Create(user *model.User) error
+	FindByID(id uuid.UUID) (*model.User, error)
+	FindByEmail(email string) (*model.User, error)
+	Update(user *model.User) error
+	UpdateRole(id uuid.UUID, role model.Role) error
+	Deactivate(id uuid.UUID, deactivatedAt time.Time) error
+	ListUsers(offset, limit int, orderByField, orderDir, search string) ([]*model.User, int64, error)
+	GetLeaderboardUsers(limit int) ([]*model.User, error)
+}
 
 var (
 	ErrUserAlreadyDeactivated = errors.New("user is already deactivated")
@@ -23,7 +33,7 @@ type userRepository struct {
 	logger logger.Logger
 }
 
-func NewUserRepository(db *gorm.DB, logger logger.Logger) interfaces.UserRepository {
+func NewUserRepository(db *gorm.DB, logger logger.Logger) UserRepository {
 	return &userRepository{
 		db:     db,
 		logger: logger,

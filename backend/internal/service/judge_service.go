@@ -10,14 +10,29 @@ import (
 
 	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/events"
-	"github.com/Dongmoon29/code_racer/internal/factory"
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/judge"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/types"
 	"github.com/google/uuid"
 )
+
+type JudgeService interface {
+	EvaluateCode(code, language string, problem *model.Problem) (*types.EvaluationResult, error)
+	EvaluateCodeWithRealtime(code, language string, problem *model.Problem, matchID, userID uuid.UUID) (*types.EvaluationResult, error)
+	WrapCodeWithTestCase(code string, languageID int, testCase string, problem *model.Problem) (string, error)
+}
+
+type codeWrapper interface {
+	WrapCode(code string, languageID int, testCase string, problem *model.Problem) (string, error)
+	WrapCodeBatch(code string, languageID int, testCasesJSON string, problem *model.Problem) (string, error)
+}
+
+type judge0Client interface {
+	SubmitCode(ctx context.Context, request types.Judge0Request) (*types.Judge0Response, error)
+	Close()
+	GetRateLimitStatus() int
+}
 
 // Judge service constants
 const (
@@ -34,15 +49,15 @@ const (
 )
 
 type judgeService struct {
-	codeWrapper       interfaces.CodeWrapper
-	judge0Client      interfaces.Judge0Client
+	codeWrapper       codeWrapper
+	judge0Client      judge0Client
 	logger            logger.Logger
 	functionExtractor *judge.FunctionExtractor
 	eventBus          events.EventBus
 }
 
 // Interface implementation check
-var _ interfaces.JudgeService = (*judgeService)(nil)
+var _ JudgeService = (*judgeService)(nil)
 
 func (s *judgeService) validateProblemIOSchema(problem *model.Problem) error {
 	if problem == nil {
@@ -58,10 +73,11 @@ func (s *judgeService) validateProblemIOSchema(problem *model.Problem) error {
 }
 
 // NewJudgeService creates a new JudgeService instance with the provided configuration
-func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger, eventBus events.EventBus) interfaces.JudgeService {
+func NewJudgeService(apiKey string, apiEndpoint string, logger logger.Logger, eventBus events.EventBus) JudgeService {
+	judge0Config := judge.DefaultJudge0Config(apiKey, apiEndpoint, logger)
 	return &judgeService{
-		codeWrapper:       factory.NewCodeWrapper(logger),
-		judge0Client:      factory.NewJudge0Client(apiKey, apiEndpoint, logger),
+		codeWrapper:       judge.NewCodeWrapper(logger),
+		judge0Client:      judge.NewJudge0Client(judge0Config),
 		logger:            logger,
 		functionExtractor: judge.NewFunctionExtractor(logger),
 		eventBus:          eventBus,

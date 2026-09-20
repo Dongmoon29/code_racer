@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/Dongmoon29/code_racer/internal/apperr"
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
@@ -25,13 +24,13 @@ type UserService interface {
 }
 
 type userService struct {
-	userRepo  interfaces.UserRepository
+	userRepo  repository.UserRepository
 	matchRepo repository.MatchRepository
 	logger    logger.Logger
 }
 
 // NewUserService creates a new UserService instance with the provided dependencies
-func NewUserService(userRepo interfaces.UserRepository, matchRepo repository.MatchRepository, logger logger.Logger) UserService {
+func NewUserService(userRepo repository.UserRepository, matchRepo repository.MatchRepository, logger logger.Logger) UserService {
 	return &userService{
 		userRepo:  userRepo,
 		matchRepo: matchRepo,

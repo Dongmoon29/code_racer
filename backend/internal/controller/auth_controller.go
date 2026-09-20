@@ -10,9 +10,9 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/apperr"
 	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/constants"
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/service"
 	"github.com/Dongmoon29/code_racer/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -28,12 +28,12 @@ type OAuthConfigProvider interface {
 // AuthController handles authentication-related endpoints
 // @Description Handles authentication-related endpoints including registration, login, OAuth
 type AuthController struct {
-	authService         interfaces.AuthService
+	authService         service.AuthService
 	logger              logger.Logger
 	oauthConfigProvider OAuthConfigProvider
 }
 
-func NewAuthController(authService interfaces.AuthService, logger logger.Logger, oauthConfigProvider OAuthConfigProvider) *AuthController {
+func NewAuthController(authService service.AuthService, logger logger.Logger, oauthConfigProvider OAuthConfigProvider) *AuthController {
 	return &AuthController{
 		authService:         authService,
 		logger:              logger,

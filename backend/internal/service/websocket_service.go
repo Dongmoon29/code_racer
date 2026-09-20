@@ -10,9 +10,9 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/events"
 	"github.com/Dongmoon29/code_racer/internal/game"
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/redis/go-redis/v9"
@@ -52,7 +52,7 @@ type Hub struct {
 	engine gameCoordinator
 
 	// User repository for getting user information
-	userRepository interfaces.UserRepository
+	userRepository repository.UserRepository
 
 	// Logger for structured logging
 	logger logger.Logger
@@ -143,12 +143,12 @@ type webSocketService struct {
 	logger         logger.Logger
 	hub            *Hub
 	engine         websocketGameEngine
-	userRepository interfaces.UserRepository
+	userRepository repository.UserRepository
 	eventBus       events.EventBus
 }
 
 // NewWebSocketService creates a new WebSocketService instance
-func NewWebSocketService(rdb *redis.Client, logger logger.Logger, engine websocketGameEngine, userRepository interfaces.UserRepository, eventBus events.EventBus) WebSocketService {
+func NewWebSocketService(rdb *redis.Client, logger logger.Logger, engine websocketGameEngine, userRepository repository.UserRepository, eventBus events.EventBus) WebSocketService {
 	service := &webSocketService{
 		rdb:            rdb,
 		redisManager:   NewRedisManager(rdb, logger),

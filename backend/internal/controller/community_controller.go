@@ -3,19 +3,19 @@ package controller
 import (
 	"strconv"
 
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type CommunityController struct {
-	communityService interfaces.CommunityService
+	communityService service.CommunityService
 	logger           logger.Logger
 }
 
-func NewCommunityController(communityService interfaces.CommunityService, logger logger.Logger) *CommunityController {
+func NewCommunityController(communityService service.CommunityService, logger logger.Logger) *CommunityController {
 	return &CommunityController{
 		communityService: communityService,
 		logger:           logger,

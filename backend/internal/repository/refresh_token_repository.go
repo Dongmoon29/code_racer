@@ -4,12 +4,17 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+type RefreshTokenRepository interface {
+	Create(token *model.RefreshToken) error
+	Rotate(currentHash, replacementHash string, now time.Time) (*model.RefreshToken, error)
+	RevokeFamilyByHash(tokenHash string, now time.Time) error
+}
 
 var (
 	ErrRefreshTokenInvalid    = errors.New("refresh token is invalid")
@@ -24,7 +29,7 @@ type refreshTokenRepository struct {
 	db *gorm.DB
 }
 
-func NewRefreshTokenRepository(db *gorm.DB) interfaces.RefreshTokenRepository {
+func NewRefreshTokenRepository(db *gorm.DB) RefreshTokenRepository {
 	return &refreshTokenRepository{db: db}
 }
 

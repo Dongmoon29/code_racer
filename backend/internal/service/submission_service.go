@@ -12,7 +12,6 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/constants"
 	"github.com/Dongmoon29/code_racer/internal/events"
 	"github.com/Dongmoon29/code_racer/internal/game"
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
@@ -34,16 +33,16 @@ return 0
 // submissionService owns validation, judging, and winner determination.
 type submissionService struct {
 	matches     repository.MatchRepository
-	judge       interfaces.JudgeService
+	judge       JudgeService
 	redis       *redis.Client
 	state       *RedisManager
 	ratings     *ratingService
 	logger      logger.Logger
 	events      events.EventBus
-	broadcaster interfaces.WebSocketBroadcaster
+	broadcaster WebSocketBroadcaster
 }
 
-func newSubmissionService(matches repository.MatchRepository, judge interfaces.JudgeService, redisClient *redis.Client, state *RedisManager, ratings *ratingService, appLogger logger.Logger, eventBus events.EventBus, broadcaster interfaces.WebSocketBroadcaster) *submissionService {
+func newSubmissionService(matches repository.MatchRepository, judge JudgeService, redisClient *redis.Client, state *RedisManager, ratings *ratingService, appLogger logger.Logger, eventBus events.EventBus, broadcaster WebSocketBroadcaster) *submissionService {
 	return &submissionService{matches: matches, judge: judge, redis: redisClient, state: state, ratings: ratings, logger: appLogger, events: eventBus, broadcaster: broadcaster}
 }
 

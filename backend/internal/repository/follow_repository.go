@@ -3,19 +3,27 @@ package repository
 import (
 	"errors"
 
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+type FollowRepository interface {
+	Follow(followerID, followingID uuid.UUID) error
+	Unfollow(followerID, followingID uuid.UUID) error
+	IsFollowing(followerID, followingID uuid.UUID) (bool, error)
+	GetFollowStats(userID uuid.UUID, currentUserID *uuid.UUID) (*model.FollowStats, error)
+	GetFollowers(userID uuid.UUID, limit, offset int) ([]*model.User, int64, error)
+	GetFollowing(userID uuid.UUID, limit, offset int) ([]*model.User, int64, error)
+}
+
 type followRepository struct {
 	db     *gorm.DB
 	logger logger.Logger
 }
 
-func NewFollowRepository(db *gorm.DB, logger logger.Logger) interfaces.FollowRepository {
+func NewFollowRepository(db *gorm.DB, logger logger.Logger) FollowRepository {
 	return &followRepository{
 		db:     db,
 		logger: logger,
@@ -153,4 +161,3 @@ func (r *followRepository) GetFollowing(userID uuid.UUID, limit, offset int) ([]
 
 	return users, total, nil
 }
-

@@ -2,9 +2,9 @@ package service
 
 import (
 	"github.com/Dongmoon29/code_racer/internal/apperr"
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/google/uuid"
 )
 
@@ -17,11 +17,11 @@ type FollowService interface {
 }
 
 type followService struct {
-	followRepo interfaces.FollowRepository
+	followRepo repository.FollowRepository
 	logger     logger.Logger
 }
 
-func NewFollowService(followRepo interfaces.FollowRepository, logger logger.Logger) FollowService {
+func NewFollowService(followRepo repository.FollowRepository, logger logger.Logger) FollowService {
 	return &followService{
 		followRepo: followRepo,
 		logger:     logger,
@@ -87,4 +87,3 @@ func (s *followService) GetFollowing(userID uuid.UUID, limit, offset int) ([]*mo
 	}
 	return users, total, nil
 }
-

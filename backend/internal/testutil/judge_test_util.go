@@ -3,14 +3,13 @@ package testutil
 import (
 	"fmt"
 
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/types"
 	"github.com/google/uuid"
 )
 
-// MockJudgeService implements interfaces.JudgeService for testing
+// MockJudgeService is a test double for the judge service contract.
 type MockJudgeService struct {
 	Logger logger.Logger
 }
@@ -43,7 +42,7 @@ func (m *MockJudgeService) EvaluateCodeWithRealtime(code string, language string
 }
 
 // SetupTestJudgeService creates a mock JudgeService instance for testing
-func SetupTestJudgeService(logger logger.Logger) interfaces.JudgeService {
+func SetupTestJudgeService(logger logger.Logger) *MockJudgeService {
 	return &MockJudgeService{
 		Logger: logger,
 	}

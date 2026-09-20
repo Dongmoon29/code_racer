@@ -4,19 +4,29 @@ import (
 	"errors"
 
 	"github.com/Dongmoon29/code_racer/internal/apperr"
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+type CommunityService interface {
+	CreatePost(userID uuid.UUID, req *model.CreatePostRequest) (*model.PostResponse, error)
+	GetPostByID(id, viewerID uuid.UUID) (*model.PostResponse, error)
+	GetUserPosts(userID uuid.UUID, limit, offset int) ([]*model.PostResponse, int64, error)
+	ListPosts(viewerID uuid.UUID, limit, offset int, status *model.PostStatus, postType *model.PostType, sort model.PostSort) ([]*model.PostResponse, int64, error)
+	VotePost(userID, postID uuid.UUID, value int16) (*model.PostResponse, error)
+	UpdatePostStatus(id uuid.UUID, status model.PostStatus) (*model.PostResponse, error)
+	DeletePost(id uuid.UUID) error
+}
+
 type communityService struct {
-	communityRepo interfaces.CommunityRepository
+	communityRepo repository.CommunityRepository
 	logger        logger.Logger
 }
 
-func NewCommunityService(communityRepo interfaces.CommunityRepository, logger logger.Logger) interfaces.CommunityService {
+func NewCommunityService(communityRepo repository.CommunityRepository, logger logger.Logger) CommunityService {
 	return &communityService{
 		communityRepo: communityRepo,
 		logger:        logger,

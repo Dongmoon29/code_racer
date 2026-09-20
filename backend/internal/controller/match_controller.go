@@ -4,19 +4,19 @@ import (
 	"net/http"
 
 	"github.com/Dongmoon29/code_racer/internal/game"
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type MatchController struct {
-	matchService interfaces.GameEngine
+	matchService service.GameEngine
 	logger       logger.Logger
 }
 
-func NewMatchController(matchService interfaces.GameEngine, logger logger.Logger) *MatchController {
+func NewMatchController(matchService service.GameEngine, logger logger.Logger) *MatchController {
 	return &MatchController{
 		matchService: matchService,
 		logger:       logger,

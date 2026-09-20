@@ -1,19 +1,30 @@
 package repository
 
 import (
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+type PostCommentRepository interface {
+	Create(comment *model.PostComment) error
+	FindByPostID(postID uuid.UUID, limit, offset int) ([]*model.PostComment, int64, error)
+	FindByPostIDWithReplies(postID uuid.UUID) ([]*model.PostComment, error)
+	FindByPostIDWithRepliesWithMeta(postID uuid.UUID, viewerID *uuid.UUID) ([]*model.PostComment, error)
+	FindByID(id uuid.UUID) (*model.PostComment, error)
+	FindByIDWithMeta(id uuid.UUID, viewerID *uuid.UUID) (*model.PostComment, error)
+	Vote(commentID, userID uuid.UUID, value int16) error
+	Update(comment *model.PostComment) error
+	Delete(id uuid.UUID) error
+}
+
 type postCommentRepository struct {
 	db     *gorm.DB
 	logger logger.Logger
 }
 
-func NewPostCommentRepository(db *gorm.DB, logger logger.Logger) interfaces.PostCommentRepository {
+func NewPostCommentRepository(db *gorm.DB, logger logger.Logger) PostCommentRepository {
 	return &postCommentRepository{
 		db:     db,
 		logger: logger,

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
 	"github.com/Dongmoon29/code_racer/internal/repository"
@@ -15,11 +14,11 @@ import (
 // lifecycle and submission code do not need to know how ELO is calculated.
 type ratingService struct {
 	matches repository.MatchRepository
-	users   interfaces.UserRepository
+	users   repository.UserRepository
 	logger  logger.Logger
 }
 
-func newRatingService(matches repository.MatchRepository, users interfaces.UserRepository, appLogger logger.Logger) *ratingService {
+func newRatingService(matches repository.MatchRepository, users repository.UserRepository, appLogger logger.Logger) *ratingService {
 	return &ratingService{matches: matches, users: users, logger: appLogger}
 }
 

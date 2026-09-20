@@ -6,19 +6,28 @@ import (
 	"strings"
 
 	"github.com/Dongmoon29/code_racer/internal/apperr"
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	"github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/model"
+	"github.com/Dongmoon29/code_racer/internal/repository"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+type PostCommentService interface {
+	CreateComment(userID, postID uuid.UUID, req *model.CreatePostCommentRequest) (*model.PostCommentResponse, error)
+	GetCommentsByPostID(postID uuid.UUID, limit, offset int) ([]*model.PostCommentResponse, int64, error)
+	GetCommentsByPostIDWithReplies(postID, viewerID uuid.UUID) ([]*model.PostCommentResponse, error)
+	UpdateComment(id, userID uuid.UUID, content string) (*model.PostCommentResponse, error)
+	DeleteComment(id, userID uuid.UUID) error
+	VoteComment(userID, commentID uuid.UUID, value int16) (*model.PostCommentResponse, error)
+}
+
 type postCommentService struct {
-	commentRepo interfaces.PostCommentRepository
+	commentRepo repository.PostCommentRepository
 	logger      logger.Logger
 }
 
-func NewPostCommentService(commentRepo interfaces.PostCommentRepository, logger logger.Logger) interfaces.PostCommentService {
+func NewPostCommentService(commentRepo repository.PostCommentRepository, logger logger.Logger) PostCommentService {
 	return &postCommentService{
 		commentRepo: commentRepo,
 		logger:      logger,

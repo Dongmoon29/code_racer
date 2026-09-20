@@ -12,7 +12,6 @@ import (
 	"github.com/Dongmoon29/code_racer/internal/config"
 	"github.com/Dongmoon29/code_racer/internal/controller"
 	"github.com/Dongmoon29/code_racer/internal/events"
-	"github.com/Dongmoon29/code_racer/internal/interfaces"
 	logger "github.com/Dongmoon29/code_racer/internal/logger"
 	"github.com/Dongmoon29/code_racer/internal/middleware"
 	"github.com/Dongmoon29/code_racer/internal/repository"
@@ -93,7 +92,7 @@ type dependencies struct {
 	postCommentController *controller.PostCommentController
 	authMiddleware        *middleware.AuthMiddleware
 	wsHub                 *service.Hub
-	gameEngine            interfaces.GameEngine
+	gameEngine            service.GameEngine
 }
 
 func initializeDependencies(db *gorm.DB, rdb *redis.Client, cfg *config.Config, oauthCfg *config.OAuthConfig, appLogger logger.Logger) *dependencies {
@@ -241,25 +240,25 @@ func initializeMiddleware(services *services, repos *repositories, appLogger log
 }
 
 type repositories struct {
-	userRepository         interfaces.UserRepository
-	refreshTokenRepository interfaces.RefreshTokenRepository
+	userRepository         repository.UserRepository
+	refreshTokenRepository repository.RefreshTokenRepository
 	matchRepository        repository.MatchRepository
 	problemRepo            repository.ProblemRepository
-	followRepository       interfaces.FollowRepository
-	communityRepository    interfaces.CommunityRepository
-	postCommentRepository  interfaces.PostCommentRepository
+	followRepository       repository.FollowRepository
+	communityRepository    repository.CommunityRepository
+	postCommentRepository  repository.PostCommentRepository
 }
 
 type services struct {
-	authService        interfaces.AuthService
+	authService        service.AuthService
 	userService        service.UserService
-	judgeService       interfaces.JudgeService
-	matchService       interfaces.GameEngine
+	judgeService       service.JudgeService
+	matchService       service.GameEngine
 	wsService          service.WebSocketService
 	problemService     service.ProblemService
 	followService      service.FollowService
-	communityService   interfaces.CommunityService
-	postCommentService interfaces.PostCommentService
+	communityService   service.CommunityService
+	postCommentService service.PostCommentService
 }
 
 type controllers struct {
@@ -277,7 +276,7 @@ type middlewareInstances struct {
 	authMiddleware *middleware.AuthMiddleware
 }
 
-func startServer(router *gin.Engine, port string, wsHub *service.Hub, gameEngine interfaces.GameEngine, db *gorm.DB, rdb *redis.Client, appLogger logger.Logger) {
+func startServer(router *gin.Engine, port string, wsHub *service.Hub, gameEngine service.GameEngine, db *gorm.DB, rdb *redis.Client, appLogger logger.Logger) {
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: router,
