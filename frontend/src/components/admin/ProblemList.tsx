@@ -122,13 +122,13 @@ export default function ProblemList() {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case DIFFICULTY_CONFIG.Easy.value:
-        return "bg-green-100 text-green-800";
+        return "border-emerald-500/25 bg-emerald-500/10 text-emerald-400";
       case DIFFICULTY_CONFIG.Medium.value:
-        return "bg-yellow-100 text-yellow-800";
+        return "border-amber-500/25 bg-amber-500/10 text-amber-400";
       case DIFFICULTY_CONFIG.Hard.value:
-        return "bg-red-100 text-red-800";
+        return "border-rose-500/25 bg-rose-500/10 text-rose-400";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "border-[var(--gray-6)] bg-[var(--gray-3)] text-[var(--gray-11)]";
     }
   };
 

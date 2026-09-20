@@ -3,8 +3,29 @@ import Link from 'next/link';
 import { userApi } from '@/lib/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { IconButton, TextField } from '@radix-ui/themes';
-import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { ListSkeleton, Skeleton } from '@/components/ui/Skeleton';
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableEmpty,
+  DataTableHead,
+  DataTableHeaderCell,
+  DataTableRow,
+  DataTableShell,
+  MobileDisclosureCard,
+} from '@/components/ui/DataTable';
 
 type UserItem = {
   id: string;
@@ -65,9 +86,13 @@ export default function AdminUsersPage() {
     const currentDir = sort.split(':')[1] || 'desc';
 
     if (currentField !== field) {
-      return '↕';
+      return <ArrowUpDown className="h-3.5 w-3.5 opacity-50" aria-hidden="true" />;
     }
-    return currentDir === 'desc' ? '▼' : '▲';
+    return currentDir === 'desc' ? (
+      <ArrowDown className="h-3.5 w-3.5 text-[var(--accent-11)]" aria-hidden="true" />
+    ) : (
+      <ArrowUp className="h-3.5 w-3.5 text-[var(--accent-11)]" aria-hidden="true" />
+    );
   };
 
   const { data, isFetching, isLoading, isError, error } = useQuery({
@@ -175,288 +200,276 @@ export default function AdminUsersPage() {
           )}
         </form>
         {search && (
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-[var(--gray-10)]">
             Searching for: <span className="font-semibold">{search}</span> (
             {data?.total ?? 0} results)
           </p>
         )}
       </div>
 
-      <div className="overflow-hidden rounded-lg shadow">
+      <DataTableShell>
         {isError && (
-          <div className="px-4 py-2 text-sm text-red-600 border-b border-red-200 bg-red-50">
+          <div className="border-b border-red-500/20 bg-red-500/10 px-5 py-3 text-sm text-red-400">
             {error instanceof Error ? error.message : 'Failed to load users'}
           </div>
         )}
 
-        {/* Mobile: Table with ID and Email only, expandable details */}
-        <div className="md:hidden overflow-x-auto">
-          <table className="min-w-full divide-y">
-            <thead>
-              <tr>
-                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider">
-                  ID
-                </th>
-                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-3 py-2 w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {(!data?.items || data.items.length === 0) && !isFetching && (
-                <tr>
-                  <td
-                    colSpan={2}
-                    className="px-4 py-8 text-center text-sm text-muted-foreground"
-                  >
-                    {isError
-                      ? 'Failed to load users'
-                      : search
-                      ? 'No users found'
-                      : 'No users'}
-                  </td>
-                </tr>
+        {/* Mobile: touch-friendly disclosure cards */}
+        <div className="space-y-2 bg-[var(--gray-1)] p-3 md:hidden">
+          {(!data?.items || data.items.length === 0) && !isFetching ? (
+            <div className="rounded-xl border border-dashed border-[var(--gray-6)] px-5 py-12 text-center">
+              <p className="text-sm font-semibold text-[var(--gray-12)]">
+                {isError
+                  ? 'Unable to load users'
+                  : search
+                    ? 'No matching users'
+                    : 'No users yet'}
+              </p>
+              {search && (
+                <p className="mt-1 text-xs text-[var(--gray-10)]">
+                  Try a different name, email, or ID.
+                </p>
               )}
-              {(data?.items || []).map((u: UserItem) => {
-                const isExpanded = expandedUserId === u.id;
-                return (
-                  <React.Fragment key={u.id}>
-                    <tr
-                      onClick={() =>
-                        setExpandedUserId(isExpanded ? null : u.id)
-                      }
-                      className="cursor-pointer hover:bg-[var(--gray-4)] transition-colors"
-                    >
-                      <td className="px-3 py-3 text-xs font-mono truncate max-w-[120px]">
+            </div>
+          ) : (
+            (data?.items || []).map((u: UserItem) => {
+              const isExpanded = expandedUserId === u.id;
+              return (
+                <MobileDisclosureCard
+                  key={u.id}
+                  title={u.name}
+                  description={u.email}
+                  badge={
+                    <span className="inline-flex rounded-full border border-[var(--accent-6)] bg-[var(--accent-a3)] px-2.5 py-1 text-xs font-semibold capitalize text-[var(--accent-11)]">
+                      {u.role}
+                    </span>
+                  }
+                  expanded={isExpanded}
+                  onToggle={() =>
+                    setExpandedUserId(isExpanded ? null : u.id)
+                  }
+                >
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-5">
+                    <div className="col-span-2 min-w-0">
+                      <dt className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--gray-10)]">
+                        User ID
+                      </dt>
+                      <dd className="truncate font-mono text-xs text-[var(--gray-11)]" title={u.id}>
                         {u.id}
-                      </td>
-                      <td className="px-3 py-3 text-sm truncate">{u.email}</td>
-                      <td className="px-3 py-3 text-center">
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </td>
-                    </tr>
-                    {isExpanded && (
-                      <tr>
-                        <td colSpan={3} className="px-3 py-4">
-                          <div className="space-y-3">
-                            <div>
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">
-                                Name
-                              </label>
-                              <p className="text-sm">
-                                <Link
-                                  href={`/users/${u.id}`}
-                                  className="text-[var(--accent-9)] hover:underline"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {u.name}
-                                </Link>
-                              </p>
-                            </div>
-
-                            <div>
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">
-                                Role
-                              </label>
-                              <p>
-                                <span className="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-[var(--gray-3)]">
-                                  {u.role}
-                                </span>
-                              </p>
-                            </div>
-
-                            <div>
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">
-                                OAuth Provider
-                              </label>
-                              <p className="text-sm">
-                                {u.oauth_provider ? u.oauth_provider : '-'}
-                              </p>
-                            </div>
-
-                            <div>
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">
-                                Created
-                              </label>
-                              <p className="text-sm">
-                                {u.created_at
-                                  ? new Date(u.created_at).toLocaleDateString()
-                                  : '-'}
-                              </p>
-                            </div>
-
-                            <div>
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">
-                                Updated
-                              </label>
-                              <p className="text-sm">
-                                {u.updated_at
-                                  ? new Date(u.updated_at).toLocaleDateString()
-                                  : '-'}
-                              </p>
-                            </div>
-
-                            <div>
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">
-                                Last Login
-                              </label>
-                              <p className="text-sm">
-                                {u.last_login_at
-                                  ? new Date(
-                                      u.last_login_at
-                                    ).toLocaleDateString()
-                                  : '-'}
-                              </p>
-                            </div>
-
-                            <div className="flex items-center gap-2 pt-2 border-t border-[var(--gray-6)]">
-                              <button
-                                className="text-xs text-[var(--accent-9)] hover:underline"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                Edit
-                              </button>
-                              <button
-                                className="text-xs text-red-600 hover:underline"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--gray-10)]">
+                        OAuth
+                      </dt>
+                      <dd className="text-sm capitalize text-[var(--gray-11)]">
+                        {u.oauth_provider || '-'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--gray-10)]">
+                        Last login
+                      </dt>
+                      <dd className="text-sm text-[var(--gray-11)]">
+                        {u.last_login_at
+                          ? new Date(u.last_login_at).toLocaleDateString()
+                          : '-'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--gray-10)]">
+                        Created
+                      </dt>
+                      <dd className="text-sm text-[var(--gray-11)]">
+                        {u.created_at
+                          ? new Date(u.created_at).toLocaleDateString()
+                          : '-'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--gray-10)]">
+                        Updated
+                      </dt>
+                      <dd className="text-sm text-[var(--gray-11)]">
+                        {u.updated_at
+                          ? new Date(u.updated_at).toLocaleDateString()
+                          : '-'}
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="mt-4 grid grid-cols-[1fr_auto_auto] gap-2 border-t border-[var(--gray-6)] pt-4">
+                    <Link
+                      href={`/users/${u.id}`}
+                      className="inline-flex items-center justify-center rounded-lg bg-[var(--accent-9)] px-3 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--accent-10)]"
+                    >
+                      View profile
+                    </Link>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center rounded-lg border border-[var(--gray-6)] px-3 py-2.5 transition-colors hover:bg-[var(--gray-4)]"
+                      aria-label={`Edit ${u.name}`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center rounded-lg border border-red-500/20 px-3 py-2.5 text-red-400 transition-colors hover:bg-red-500/10"
+                      aria-label={`Delete ${u.name}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </MobileDisclosureCard>
+              );
+            })
+          )}
         </div>
 
         {/* Desktop: Table Layout */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="min-w-full divide-y">
-            <thead>
+        <div className="hidden overflow-x-auto md:block">
+          <DataTable className="min-w-[1080px]">
+            <caption className="sr-only">User list</caption>
+            <DataTableHead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <DataTableHeaderCell className="w-48">
                   ID
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                </DataTableHeaderCell>
+                <DataTableHeaderCell>
                   Name
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                </DataTableHeaderCell>
+                <DataTableHeaderCell>
                   Email
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                </DataTableHeaderCell>
+                <DataTableHeaderCell>
                   Role
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                </DataTableHeaderCell>
+                <DataTableHeaderCell>
                   OAuth
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                </DataTableHeaderCell>
+                <DataTableHeaderCell>
                   <button
-                    className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+                    className="inline-flex items-center gap-1.5 rounded-md transition-colors hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]"
                     onClick={() => handleSortToggle('created_at')}
                     title="Sort by created date"
                   >
                     Created
-                    <span>{getSortIcon('created_at')}</span>
+                    {getSortIcon('created_at')}
                   </button>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                </DataTableHeaderCell>
+                <DataTableHeaderCell>
                   <button
-                    className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+                    className="inline-flex items-center gap-1.5 rounded-md transition-colors hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]"
                     onClick={() => handleSortToggle('updated_at')}
                     title="Sort by updated date"
                   >
                     Updated
-                    <span>{getSortIcon('updated_at')}</span>
+                    {getSortIcon('updated_at')}
                   </button>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                </DataTableHeaderCell>
+                <DataTableHeaderCell>
                   <button
-                    className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+                    className="inline-flex items-center gap-1.5 rounded-md transition-colors hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]"
                     onClick={() => handleSortToggle('last_login_at')}
                     title="Sort by last login date"
                   >
                     Last Login
-                    <span>{getSortIcon('last_login_at')}</span>
+                    {getSortIcon('last_login_at')}
                   </button>
-                </th>
-                <th className="px-4 py-3" />
+                </DataTableHeaderCell>
+                <DataTableHeaderCell className="text-right">
+                  Actions
+                </DataTableHeaderCell>
               </tr>
-            </thead>
-            <tbody className="divide-y">
+            </DataTableHead>
+            <DataTableBody>
+              {(!data?.items || data.items.length === 0) && !isFetching && (
+                <DataTableEmpty
+                  colSpan={9}
+                  title={isError ? 'Unable to load users' : search ? 'No matching users' : 'No users yet'}
+                  description={search ? 'Try a different name, email, or ID.' : undefined}
+                />
+              )}
               {(data?.items || []).map((u: UserItem) => (
-                <tr key={u.id}>
-                  <td className="px-4 py-3 text-xs font-mono">{u.id}</td>
-                  <td className="px-4 py-3 text-sm">
+                <DataTableRow key={u.id}>
+                  <DataTableCell className="max-w-48 truncate font-mono text-xs text-[var(--gray-9)]" title={u.id}>
+                    {u.id}
+                  </DataTableCell>
+                  <DataTableCell className="whitespace-nowrap text-sm">
                     <Link
                       href={`/users/${u.id}`}
-                      className="underline underline-offset-2 hover:opacity-80"
+                      className="font-semibold transition-colors hover:text-[var(--accent-11)]"
                     >
                       {u.name}
                     </Link>
-                  </td>
-                  <td className="px-4 py-3 text-sm">{u.email}</td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className="inline-flex px-2 py-1 rounded-full text-xs font-semibold">
+                  </DataTableCell>
+                  <DataTableCell className="text-sm text-[var(--gray-11)]">{u.email}</DataTableCell>
+                  <DataTableCell className="text-sm">
+                    <span className="inline-flex rounded-full border border-[var(--accent-6)] bg-[var(--accent-a3)] px-2.5 py-1 text-xs font-semibold capitalize text-[var(--accent-11)]">
                       {u.role}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
+                  </DataTableCell>
+                  <DataTableCell className="text-sm capitalize text-[var(--gray-11)]">
                     {u.oauth_provider ? u.oauth_provider : '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
+                  </DataTableCell>
+                  <DataTableCell className="whitespace-nowrap text-sm text-[var(--gray-10)]">
                     {u.created_at
                       ? new Date(u.created_at).toLocaleDateString()
                       : '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
+                  </DataTableCell>
+                  <DataTableCell className="whitespace-nowrap text-sm text-[var(--gray-10)]">
                     {u.updated_at
                       ? new Date(u.updated_at).toLocaleDateString()
                       : '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
+                  </DataTableCell>
+                  <DataTableCell className="whitespace-nowrap text-sm text-[var(--gray-10)]">
                     {u.last_login_at
                       ? new Date(u.last_login_at).toLocaleDateString()
                       : '-'}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm">
-                    <div className="flex items-center gap-2">
-                      <button className="mr-2">Edit</button>
-                      <button>Delete</button>
+                  </DataTableCell>
+                  <DataTableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-4)] hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]"
+                        aria-label={`Edit ${u.name}`}
+                        title="Edit user"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--gray-10)] transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+                        aria-label={`Delete ${u.name}`}
+                        title="Delete user"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
-                  </td>
-                </tr>
+                  </DataTableCell>
+                </DataTableRow>
               ))}
-            </tbody>
-          </table>
+            </DataTableBody>
+          </DataTable>
         </div>
-      </div>
+      </DataTableShell>
 
       <div className="mt-6 flex items-center justify-center">
-        <div className="flex items-center gap-4 rounded-full px-5 py-3">
+        <nav
+          className="flex items-center gap-2 rounded-xl border border-[var(--gray-6)] bg-[var(--color-panel)] p-1.5 shadow-sm"
+          aria-label="User list pagination"
+        >
           <button
-            className="inline-flex items-center gap-2"
+            className="inline-flex h-9 items-center gap-1 rounded-lg px-2.5 text-sm font-medium text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-4)] hover:text-[var(--gray-12)] disabled:cursor-not-allowed disabled:opacity-40"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={isFetching || page === 1}
             aria-label="Previous page"
           >
-            <span className="text-lg">‹</span>
-            <span className="hidden sm:inline text-sm">Previous</span>
+            <ChevronLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Previous</span>
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {paginationRange.map((item, idx) =>
               item === '…' ? (
-                <span key={`dots-${idx}`} className="px-2">
+                <span key={`dots-${idx}`} className="px-1.5 text-sm text-[var(--gray-9)]">
                   …
                 </span>
               ) : (
@@ -464,10 +477,10 @@ export default function AdminUsersPage() {
                   key={item}
                   onClick={() => setPage(item as number)}
                   disabled={isFetching}
-                  className={`relative inline-flex items-center justify-center w-8 h-8 rounded-full text-sm transition-colors ${
+                  className={`relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-colors ${
                     item === page
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-[var(--accent-9)] text-white shadow-sm'
+                      : 'text-[var(--gray-11)] hover:bg-[var(--gray-4)] hover:text-[var(--gray-12)]'
                   }`}
                   aria-current={item === page ? 'page' : undefined}
                 >
@@ -478,15 +491,15 @@ export default function AdminUsersPage() {
           </div>
 
           <button
-            className="inline-flex items-center gap-2"
+            className="inline-flex h-9 items-center gap-1 rounded-lg px-2.5 text-sm font-medium text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-4)] hover:text-[var(--gray-12)] disabled:cursor-not-allowed disabled:opacity-40"
             onClick={() => setPage((p) => p + 1)}
             disabled={isFetching || !data?.has_next}
             aria-label="Next page"
           >
-            <span className="hidden sm:inline text-sm">Next</span>
-            <span className="text-lg">›</span>
+            <span className="hidden sm:inline">Next</span>
+            <ChevronRight className="h-4 w-4" />
           </button>
-        </div>
+        </nav>
       </div>
     </>
   );
