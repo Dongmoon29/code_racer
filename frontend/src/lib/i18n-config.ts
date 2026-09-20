@@ -9,6 +9,7 @@ export const i18nConfig: UserConfig = {
   i18n: {
     defaultLocale: "en",
     locales: [...supportedLocales],
+    localeDetection: false,
   },
   defaultNS: "common",
   ns: ["common"],

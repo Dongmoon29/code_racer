@@ -23,7 +23,7 @@ import { LofiPlayerProvider } from "../contexts/LofiPlayerContext";
 import { ToastProvider } from "../components/ui/Toast";
 import { appWithTranslation, useTranslation } from "next-i18next/pages";
 import { i18nConfig } from "@/lib/i18n-config";
-import BrowserLocaleSync from "@/components/i18n/BrowserLocaleSync";
+import LocalePreferenceSync from "@/components/i18n/LocalePreferenceSync";
 
 // Wrapper component to sync Radix Theme with next-themes
 function RadixThemeWrapper({ children }: { children: React.ReactNode }) {
@@ -131,7 +131,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <NextThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <BrowserLocaleSync />
+      <LocalePreferenceSync />
       <RadixThemeWrapper>
         <QueryClientProvider client={queryClient}>
           <FullscreenProvider>

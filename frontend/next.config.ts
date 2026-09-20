@@ -4,6 +4,7 @@ const nextConfig = {
   i18n: {
     locales: ['en', 'ko'],
     defaultLocale: 'en',
+    localeDetection: false,
   },
   logging: {
     fetches: {
