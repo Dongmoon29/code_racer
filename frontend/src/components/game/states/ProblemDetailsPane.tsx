@@ -4,6 +4,7 @@ import { ProblemDetailsTabs } from './ProblemDetailsTabs';
 import TestCaseDisplay from '../TestCaseDisplay';
 import { SubmissionProgress } from '@/types/websocket';
 import { IOSchema } from '@/types';
+import { formatExampleInput } from '@/lib/problem-display';
 
 interface ProblemDetailsPaneProps {
   isExpanded: boolean;
@@ -136,7 +137,10 @@ export const ProblemDetailsPane: FC<ProblemDetailsPaneProps> = memo(
                         <div>
                           <span className="font-semibold text-sm">Input:</span>
                           <div className="mt-1 p-2 bg-[var(--gray-3)] rounded border border-[var(--gray-6)] font-mono text-sm">
-                            {example.input}
+                            {formatExampleInput(
+                              example.input,
+                              ioSchema?.param_types
+                            )}
                           </div>
                         </div>
                         <div>
