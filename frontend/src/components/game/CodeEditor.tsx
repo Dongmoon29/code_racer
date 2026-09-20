@@ -35,6 +35,7 @@ interface CodeEditorProps {
   theme?: string;
   readOnly?: boolean;
   isResizing?: boolean;
+  fontSize?: number;
 }
 
 const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -44,6 +45,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   theme = "dark",
   readOnly = false,
   isResizing = false,
+  fontSize,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -216,7 +218,10 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       <div
         ref={editorRef}
         className="flex-1 overflow-auto relative font-medium"
-        style={{ willChange: isResizing ? "auto" : "contents" }}
+        style={{
+          willChange: isResizing ? "auto" : "contents",
+          fontSize: fontSize ? `${fontSize}px` : undefined,
+        }}
       />
     </div>
   );

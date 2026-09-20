@@ -315,6 +315,7 @@ export default function ProblemList() {
                   language="javascript"
                   theme="dark"
                   readOnly={!isViewJsonEditing}
+                  fontSize={13}
                 />
               </div>
             )}
@@ -524,6 +525,7 @@ export default function ProblemList() {
                 onChange={setJsonText}
                 language="javascript"
                 theme="dark"
+                fontSize={13}
               />
             </div>
 
