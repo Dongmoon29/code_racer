@@ -26,7 +26,7 @@ export const OAuthButtons: FC<OAuthButtonsProps> = ({ disabled = false }) => {
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
-          className="flex h-11 items-center justify-center rounded-xl border border-[var(--gray-6)] bg-white text-gray-900 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-11 cursor-pointer items-center justify-center rounded-xl border border-[var(--gray-6)] bg-white text-gray-900 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
           onClick={() => handleOAuthLogin("google")}
           disabled={disabled}
           aria-label="Continue with Google"
@@ -36,7 +36,7 @@ export const OAuthButtons: FC<OAuthButtonsProps> = ({ disabled = false }) => {
 
         <button
           type="button"
-          className="flex h-11 items-center justify-center rounded-xl border border-[var(--gray-6)] bg-white text-gray-900 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-11 cursor-pointer items-center justify-center rounded-xl border border-[var(--gray-6)] bg-white text-gray-900 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
           onClick={() => handleOAuthLogin("github")}
           disabled={disabled}
           aria-label="Continue with GitHub"
