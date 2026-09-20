@@ -327,26 +327,26 @@ export default function AdminUsersPage() {
 
         {/* Desktop: Table Layout */}
         <div className="hidden overflow-x-auto md:block">
-          <DataTable className="min-w-[1080px]">
+          <DataTable className="table-fixed">
             <caption className="sr-only">User list</caption>
             <DataTableHead>
               <tr>
-                <DataTableHeaderCell className="w-48">
+                <DataTableHeaderCell className="hidden w-40 px-3 xl:table-cell">
                   ID
                 </DataTableHeaderCell>
-                <DataTableHeaderCell>
+                <DataTableHeaderCell className="w-36 px-3">
                   Name
                 </DataTableHeaderCell>
-                <DataTableHeaderCell>
+                <DataTableHeaderCell className="w-56 px-3">
                   Email
                 </DataTableHeaderCell>
-                <DataTableHeaderCell>
+                <DataTableHeaderCell className="w-20 px-3">
                   Role
                 </DataTableHeaderCell>
-                <DataTableHeaderCell>
+                <DataTableHeaderCell className="hidden w-24 px-3 lg:table-cell">
                   OAuth
                 </DataTableHeaderCell>
-                <DataTableHeaderCell>
+                <DataTableHeaderCell className="hidden w-28 px-3 lg:table-cell">
                   <button
                     className="inline-flex items-center gap-1.5 rounded-md transition-colors hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]"
                     onClick={() => handleSortToggle('created_at')}
@@ -356,7 +356,7 @@ export default function AdminUsersPage() {
                     {getSortIcon('created_at')}
                   </button>
                 </DataTableHeaderCell>
-                <DataTableHeaderCell>
+                <DataTableHeaderCell className="hidden w-28 px-3 xl:table-cell">
                   <button
                     className="inline-flex items-center gap-1.5 rounded-md transition-colors hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]"
                     onClick={() => handleSortToggle('updated_at')}
@@ -366,7 +366,7 @@ export default function AdminUsersPage() {
                     {getSortIcon('updated_at')}
                   </button>
                 </DataTableHeaderCell>
-                <DataTableHeaderCell>
+                <DataTableHeaderCell className="w-28 px-3">
                   <button
                     className="inline-flex items-center gap-1.5 rounded-md transition-colors hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]"
                     onClick={() => handleSortToggle('last_login_at')}
@@ -376,8 +376,8 @@ export default function AdminUsersPage() {
                     {getSortIcon('last_login_at')}
                   </button>
                 </DataTableHeaderCell>
-                <DataTableHeaderCell className="text-right">
-                  Actions
+                <DataTableHeaderCell className="w-20 px-3 text-right">
+                  <span className="sr-only">Actions</span>
                 </DataTableHeaderCell>
               </tr>
             </DataTableHead>
@@ -391,42 +391,45 @@ export default function AdminUsersPage() {
               )}
               {(data?.items || []).map((u: UserItem) => (
                 <DataTableRow key={u.id}>
-                  <DataTableCell className="max-w-48 truncate font-mono text-xs text-[var(--gray-9)]" title={u.id}>
-                    {u.id}
+                  <DataTableCell className="hidden px-3 font-mono text-xs text-[var(--gray-9)] xl:table-cell" title={u.id}>
+                    <span className="block truncate">{u.id}</span>
                   </DataTableCell>
-                  <DataTableCell className="whitespace-nowrap text-sm">
+                  <DataTableCell className="px-3 text-sm">
                     <Link
                       href={`/users/${u.id}`}
-                      className="font-semibold transition-colors hover:text-[var(--accent-11)]"
+                      className="block truncate font-semibold transition-colors hover:text-[var(--accent-11)]"
+                      title={u.name}
                     >
                       {u.name}
                     </Link>
                   </DataTableCell>
-                  <DataTableCell className="text-sm text-[var(--gray-11)]">{u.email}</DataTableCell>
-                  <DataTableCell className="text-sm">
+                  <DataTableCell className="px-3 text-sm text-[var(--gray-11)]" title={u.email}>
+                    <span className="block truncate">{u.email}</span>
+                  </DataTableCell>
+                  <DataTableCell className="px-3 text-sm">
                     <span className="inline-flex rounded-full border border-[var(--accent-6)] bg-[var(--accent-a3)] px-2.5 py-1 text-xs font-semibold capitalize text-[var(--accent-11)]">
                       {u.role}
                     </span>
                   </DataTableCell>
-                  <DataTableCell className="text-sm capitalize text-[var(--gray-11)]">
+                  <DataTableCell className="hidden px-3 text-sm capitalize text-[var(--gray-11)] lg:table-cell">
                     {u.oauth_provider ? u.oauth_provider : '-'}
                   </DataTableCell>
-                  <DataTableCell className="whitespace-nowrap text-sm text-[var(--gray-10)]">
+                  <DataTableCell className="hidden whitespace-nowrap px-3 text-sm text-[var(--gray-10)] lg:table-cell">
                     {u.created_at
                       ? new Date(u.created_at).toLocaleDateString()
                       : '-'}
                   </DataTableCell>
-                  <DataTableCell className="whitespace-nowrap text-sm text-[var(--gray-10)]">
+                  <DataTableCell className="hidden whitespace-nowrap px-3 text-sm text-[var(--gray-10)] xl:table-cell">
                     {u.updated_at
                       ? new Date(u.updated_at).toLocaleDateString()
                       : '-'}
                   </DataTableCell>
-                  <DataTableCell className="whitespace-nowrap text-sm text-[var(--gray-10)]">
+                  <DataTableCell className="whitespace-nowrap px-3 text-sm text-[var(--gray-10)]">
                     {u.last_login_at
                       ? new Date(u.last_login_at).toLocaleDateString()
                       : '-'}
                   </DataTableCell>
-                  <DataTableCell className="text-right">
+                  <DataTableCell className="px-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-4)] hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]"
