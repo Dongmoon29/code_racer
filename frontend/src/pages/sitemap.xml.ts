@@ -1,15 +1,14 @@
-import { GetServerSideProps } from 'next';
+import { GetServerSideProps } from "next";
 
 interface SitemapProps {
   pages: Array<{
     url: string;
-    lastmod: string;
     changefreq: string;
     priority: string;
   }>;
 }
 
-function generateSiteMap(pages: SitemapProps['pages']) {
+function generateSiteMap(pages: SitemapProps["pages"]) {
   return `<?xml version="1.0" encoding="UTF-8"?>
    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
      ${pages
@@ -17,13 +16,12 @@ function generateSiteMap(pages: SitemapProps['pages']) {
          return `
        <url>
            <loc>${page.url}</loc>
-           <lastmod>${page.lastmod}</lastmod>
            <changefreq>${page.changefreq}</changefreq>
            <priority>${page.priority}</priority>
        </url>
      `;
        })
-       .join('')}
+       .join("")}
    </urlset>
  `;
 }
@@ -33,35 +31,34 @@ function SiteMap() {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://coderacer.codes';
-  const currentDate = new Date().toISOString().split('T')[0];
-
-  // Define all static pages
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://coderacer.codes";
+  // Only include canonical, public pages that are useful search destinations.
   const staticPages = [
     {
       url: `${baseUrl}`,
-      lastmod: currentDate,
-      changefreq: 'daily',
-      priority: '1.0',
+      changefreq: "weekly",
+      priority: "1.0",
     },
     {
-      url: `${baseUrl}/login`,
-      lastmod: currentDate,
-      changefreq: 'monthly',
-      priority: '0.8',
+      url: `${baseUrl}/leaderboard`,
+      changefreq: "daily",
+      priority: "0.8",
     },
     {
-      url: `${baseUrl}/register`,
-      lastmod: currentDate,
-      changefreq: 'monthly',
-      priority: '0.8',
+      url: `${baseUrl}/community`,
+      changefreq: "daily",
+      priority: "0.7",
     },
   ];
 
   // Generate the XML sitemap
   const sitemap = generateSiteMap(staticPages);
 
-  res.setHeader('Content-Type', 'text/xml');
+  res.setHeader("Content-Type", "text/xml");
+  res.setHeader(
+    "Cache-Control",
+    "public, s-maxage=86400, stale-while-revalidate=604800",
+  );
   res.write(sitemap);
   res.end();
 

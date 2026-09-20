@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -35,6 +34,7 @@ import {
   secondaryFormButtonClass,
 } from "@/components/ui/FormPrimitives";
 import { cn } from "@/lib/utils";
+import SEOHead from "@/components/seo/SEOHead";
 
 type PostType = "bug" | "feature" | "improvement" | "other";
 type PostStatus = "pending" | "in_progress" | "resolved" | "closed";
@@ -192,9 +192,11 @@ const CommunityIndexPage = () => {
 
   return (
     <>
-      <Head>
-        <title>Community - CodeRacer</title>
-      </Head>
+      <SEOHead
+        title="CodeRacer Community"
+        description="Discuss coding challenges, report issues, and share ideas with the CodeRacer community."
+        url="/community"
+      />
 
       <div className="max-w-7xl mx-auto py-8">
         <div className="flex items-start justify-between gap-6 mb-6">

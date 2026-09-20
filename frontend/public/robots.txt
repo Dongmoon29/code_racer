@@ -6,14 +6,7 @@ Disallow: /admin/
 Disallow: /dashboard/
 Disallow: /game/
 Disallow: /api/
-
-# Allow important pages for SEO
-Allow: /
-Allow: /login
-Allow: /register
+Disallow: /settings/
 
 # Sitemap location
 Sitemap: https://coderacer.codes/sitemap.xml
-
-# Crawl delay (optional)
-Crawl-delay: 1

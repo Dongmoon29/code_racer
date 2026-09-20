@@ -33,19 +33,19 @@ export interface WebSite {
   url: string;
   description: string;
   potentialAction?: {
-    '@type': string;
+    "@type": string;
     target: string;
-    'query-input': string;
+    "query-input": string;
   };
 }
 
 export interface WebPage {
-  '@type': string;
+  "@type": string;
   name: string;
   description: string;
   url: string;
   isPartOf?: {
-    '@type': string;
+    "@type": string;
     name: string;
     url: string;
   };
@@ -55,9 +55,9 @@ export interface WebPage {
   datePublished?: string;
   dateModified?: string;
   breadcrumb?: {
-    '@type': string;
+    "@type": string;
     itemListElement: Array<{
-      '@type': string;
+      "@type": string;
       position: number;
       name: string;
       item: string;
@@ -66,19 +66,19 @@ export interface WebPage {
 }
 
 export interface SoftwareApplication {
-  '@type': string;
+  "@type": string;
   name: string;
   description: string;
   url: string;
   applicationCategory: string;
   operatingSystem: string;
   offers?: {
-    '@type': string;
+    "@type": string;
     price: string;
     priceCurrency: string;
   };
   aggregateRating?: {
-    '@type': string;
+    "@type": string;
     ratingValue: number;
     ratingCount: number;
   };
@@ -86,71 +86,70 @@ export interface SoftwareApplication {
 
 // Default organization data
 export const defaultOrganization: Organization = {
-  name: 'CodeRacer',
-  url: 'https://coderacer.codes',
-  logo: 'https://coderacer.codes/logo.png',
+  name: "CodeRacer",
+  url: "https://coderacer.codes",
+  logo: "https://coderacer.codes/logo.png",
   description:
-    'Real-time coding competition platform for improving programming skills',
+    "Real-time coding competition platform for improving programming skills",
 };
 
 // Generate organization structured data
 export function generateOrganizationStructuredData(
-  organization: Organization = defaultOrganization
+  organization: Organization = defaultOrganization,
 ) {
   return {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
+    "@context": "https://schema.org",
+    "@type": "Organization",
     name: organization.name,
     url: organization.url,
     logo: organization.logo,
     description: organization.description,
-    sameAs: ['https://github.com/Dongmoon29/code_racer'],
+    sameAs: ["https://github.com/Dongmoon29/code_racer"],
   };
 }
 
 // Generate website structured data
 export function generateWebsiteStructuredData(website: WebSite) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
     name: website.name,
     url: website.url,
     description: website.description,
-    potentialAction: website.potentialAction || {
-      '@type': 'SearchAction',
-      target: `${website.url}/search?q={search_term_string}`,
-      'query-input': 'required name=search_term_string',
-    },
   };
+
+  return website.potentialAction
+    ? { ...structuredData, potentialAction: website.potentialAction }
+    : structuredData;
 }
 
 // Generate webpage structured data
 export function generateWebPageStructuredData(page: WebPage) {
   return {
-    '@context': 'https://schema.org',
+    "@context": "https://schema.org",
     ...page,
   };
 }
 
 // Generate software application structured data
 export function generateSoftwareApplicationStructuredData(
-  app: SoftwareApplication
+  app: SoftwareApplication,
 ) {
   return {
-    '@context': 'https://schema.org',
+    "@context": "https://schema.org",
     ...app,
   };
 }
 
 // Generate breadcrumb structured data
 export function generateBreadcrumbStructuredData(
-  items: Array<{ name: string; url: string }>
+  items: Array<{ name: string; url: string }>,
 ) {
   return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
     itemListElement: items.map((item, index) => ({
-      '@type': 'ListItem',
+      "@type": "ListItem",
       position: index + 1,
       name: item.name,
       item: item.url,
@@ -160,16 +159,16 @@ export function generateBreadcrumbStructuredData(
 
 // Generate FAQ structured data
 export function generateFAQStructuredData(
-  faqs: Array<{ question: string; answer: string }>
+  faqs: Array<{ question: string; answer: string }>,
 ) {
   return {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
     mainEntity: faqs.map((faq) => ({
-      '@type': 'Question',
+      "@type": "Question",
       name: faq.question,
       acceptedAnswer: {
-        '@type': 'Answer',
+        "@type": "Answer",
         text: faq.answer,
       },
     })),

@@ -81,7 +81,9 @@ function MyApp({ Component, pageProps }: AppProps) {
       })
       .catch(() => {
         if (!cancelled) {
-          window.alert("The active game could not be updated. Please try again.");
+          window.alert(
+            "The active game could not be updated. Please try again.",
+          );
         }
       });
     return () => {
@@ -115,6 +117,13 @@ function MyApp({ Component, pageProps }: AppProps) {
     if (path.startsWith("/admin/problems")) return "CRAdmin | Problems";
     return "CRAdmin";
   }, [router.pathname]);
+  const shouldNoIndex =
+    layoutConfig.layoutType === "admin" ||
+    ["/login", "/register", "/dashboard", "/settings"].includes(
+      router.pathname,
+    ) ||
+    router.pathname.startsWith("/auth/") ||
+    router.pathname.startsWith("/game/");
 
   return (
     <NextThemeProvider attribute="class" defaultTheme="dark" enableSystem>
@@ -123,9 +132,16 @@ function MyApp({ Component, pageProps }: AppProps) {
           <FullscreenProvider>
             <LofiPlayerProvider>
               <ToastProvider>
-                {layoutConfig.layoutType === "admin" && (
+                {(layoutConfig.layoutType === "admin" || shouldNoIndex) && (
                   <Head>
-                    <title>{adminTitle}</title>
+                    {layoutConfig.layoutType === "admin" && (
+                      <title>{adminTitle}</title>
+                    )}
+                    <meta
+                      name="robots"
+                      content="noindex, nofollow"
+                      key="robots"
+                    />
                   </Head>
                 )}
                 <AppLayout

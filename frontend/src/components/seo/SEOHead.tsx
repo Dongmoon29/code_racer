@@ -1,4 +1,4 @@
-import Head from 'next/head';
+import Head from "next/head";
 
 interface SEOHeadProps {
   title?: string;
@@ -11,18 +11,19 @@ interface SEOHeadProps {
   publishedTime?: string;
   modifiedTime?: string;
   structuredData?: object | object[];
+  robots?: string;
 }
 
 const defaultSEO = {
-  title: 'CodeRacer - Real-time Coding Competitions',
+  title: "CodeRacer - Real-Time Algorithm Coding Races",
   description:
-    'Improve your coding skills by competing with friends in real-time. Join thousands of coders in fun, competitive coding challenges.',
+    "Race developers in real time, solve algorithm challenges, and improve your competitive programming skills with instant judging.",
   keywords:
-    'coding, programming, algorithm, competition, race, real-time, coding challenge, programming practice, coding skills',
-  image: '/code_racer_hero.webp',
-  url: 'https://coderacer.codes',
-  type: 'website',
-  author: 'CodeRacer Team',
+    "coding, programming, algorithm, competition, race, real-time, coding challenge, programming practice, coding skills",
+  image: "/code_racer_hero2.webp",
+  url: "https://coderacer.codes",
+  type: "website",
+  author: "CodeRacer Team",
 };
 
 export default function SEOHead({
@@ -36,14 +37,15 @@ export default function SEOHead({
   publishedTime,
   modifiedTime,
   structuredData,
+  robots = "index, follow",
 }: SEOHeadProps) {
-  const fullTitle = title.includes('CodeRacer')
+  const fullTitle = title.includes("CodeRacer")
     ? title
     : `${title} | CodeRacer`;
-  const fullImageUrl = image.startsWith('http')
+  const fullImageUrl = image.startsWith("http")
     ? image
     : `${defaultSEO.url}${image}`;
-  const fullUrl = url.startsWith('http') ? url : `${defaultSEO.url}${url}`;
+  const fullUrl = url.startsWith("http") ? url : `${defaultSEO.url}${url}`;
 
   return (
     <Head>
@@ -53,9 +55,7 @@ export default function SEOHead({
       <meta name="keywords" content={keywords} />
       <meta name="author" content={author} />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <meta name="robots" content="index, follow" />
-      <meta name="language" content="English" />
-      <meta name="revisit-after" content="7 days" />
+      <meta name="robots" content={robots} key="robots" />
 
       {/* Canonical URL */}
       <link rel="canonical" href={fullUrl} />
@@ -74,8 +74,6 @@ export default function SEOHead({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={fullImageUrl} />
-      <meta name="twitter:site" content="@coderacer" />
-      <meta name="twitter:creator" content="@coderacer" />
 
       {/* Additional Meta Tags */}
       {publishedTime && (
@@ -114,11 +112,6 @@ export default function SEOHead({
           )}
         </>
       )}
-
-      {/* Preload Critical Resources */}
-      <link rel="preload" as="image" href="/code_racer_hero.webp" />
-      <link rel="preload" as="image" href="/logo.png" />
-      <link rel="preload" as="image" href="/track.webp" />
     </Head>
   );
 }
