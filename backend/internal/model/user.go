@@ -29,11 +29,11 @@ type User struct {
 	Name          string        `gorm:"type:varchar(255);not null" json:"name"`
 	ProfileImage  string        `gorm:"type:varchar(255)" json:"profile_image"`
 	Role          Role          `gorm:"type:varchar(20);default:'user'" json:"role"`
-	OAuthProvider string        `gorm:"column:oauth_provider;type:varchar(20)" json:"oauth_provider,omitempty"`
-	OAuthID       string        `gorm:"column:oauth_id;type:varchar(255)" json:"oauth_id,omitempty"`
+	OAuthProvider string        `gorm:"column:o_auth_provider;type:varchar(20)" json:"oauth_provider,omitempty"`
+	OAuthID       string        `gorm:"column:o_auth_id;type:varchar(255)" json:"oauth_id,omitempty"`
 	Homepage      string        `gorm:"type:varchar(255)" json:"homepage"`
-	LinkedIn      string        `gorm:"column:linkedin;type:varchar(255)" json:"linkedin"`
-	GitHub        string        `gorm:"column:github;type:varchar(255)" json:"github"`
+	LinkedIn      string        `gorm:"column:linked_in;type:varchar(255)" json:"linkedin"`
+	GitHub        string        `gorm:"column:git_hub;type:varchar(255)" json:"github"`
 	Company       string        `gorm:"type:varchar(255)" json:"company"`
 	JobTitle      string        `gorm:"type:varchar(255)" json:"job_title"`
 	FavLanguage   string        `gorm:"type:varchar(50)" json:"fav_language"`

@@ -49,7 +49,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   const [queryClient] = useState(() => new QueryClient());
 
   useEffect(() => {
-    initializeAuth();
+    initializeAuth({ skipRefresh: router.pathname === "/auth/callback" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -94,22 +94,22 @@ func (r *userRepository) Deactivate(id uuid.UUID, deactivatedAt time.Time) error
 		}
 
 		updates := map[string]interface{}{
-			"email":          "deleted+" + id.String() + "@coderacer.invalid",
-			"password":       "",
-			"name":           "Deleted User",
-			"profile_image":  "",
-			"role":           model.RoleUser,
-			"oauth_provider": "",
-			"oauth_id":       "",
-			"homepage":       "",
-			"linkedin":       "",
-			"github":         "",
-			"company":        "",
-			"job_title":      "",
-			"fav_language":   "",
-			"last_login_at":  nil,
-			"account_status": model.AccountStatusDeactivated,
-			"deactivated_at": deactivatedAt,
+			"email":           "deleted+" + id.String() + "@coderacer.invalid",
+			"password":        "",
+			"name":            "Deleted User",
+			"profile_image":   "",
+			"role":            model.RoleUser,
+			"o_auth_provider": "",
+			"o_auth_id":       "",
+			"homepage":        "",
+			"linked_in":       "",
+			"git_hub":         "",
+			"company":         "",
+			"job_title":       "",
+			"fav_language":    "",
+			"last_login_at":   nil,
+			"account_status":  model.AccountStatusDeactivated,
+			"deactivated_at":  deactivatedAt,
 		}
 		if err := tx.Model(&user).Updates(updates).Error; err != nil {
 			return err

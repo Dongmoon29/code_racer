@@ -27,7 +27,7 @@ interface AuthState {
   isLoading: boolean;
   login: (user: User) => void;
   logout: () => Promise<void>;
-  initializeAuth: () => Promise<void>;
+  initializeAuth: (options?: { skipRefresh?: boolean }) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -35,7 +35,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoggedIn: false,
   isLoading: true, // Start as true to prevent premature redirects
   login: (user: User) => {
-    set({ user, isLoggedIn: true });
+    set({ user, isLoggedIn: true, isLoading: false });
   },
   logout: async () => {
     try {
@@ -54,12 +54,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       window.location.href = "/login";
     }
   },
-  initializeAuth: async () => {
+  initializeAuth: async (options) => {
     try {
       set({ isLoading: true });
 
       // Remove credentials left by the previous sessionStorage-based scheme.
       sessionStorage.removeItem("authToken");
+      // The OAuth callback exchanges a one-time authorization code and creates
+      // the session itself. Refreshing before that exchange only produces an
+      // expected 401 for users who are signing in for the first time.
+      if (options?.skipRefresh) {
+        set({ isLoading: false });
+        return;
+      }
       const response = await authApi.refresh();
       if (response.success) {
         // Refresh only returns the compact authentication user. Hydrate the
