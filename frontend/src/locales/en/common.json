@@ -179,7 +179,10 @@
     "description": "Customize your CodeRacer experience",
     "theme": "Theme",
     "themeDescription": "Switch between light and dark mode.",
-    "appearance": "Appearance"
+    "appearance": "Appearance",
+    "language": "Language",
+    "languageDescription": "Choose the language used across CodeRacer.",
+    "displayLanguage": "Display language"
   },
   "leaderboard": {
     "title": "LEADERBOARD",

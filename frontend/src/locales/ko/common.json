@@ -179,7 +179,10 @@
     "description": "CodeRacer 사용 환경을 설정하세요",
     "theme": "테마",
     "themeDescription": "라이트 모드와 다크 모드를 전환하세요.",
-    "appearance": "화면 모드"
+    "appearance": "화면 모드",
+    "language": "언어",
+    "languageDescription": "CodeRacer에서 사용할 언어를 선택하세요.",
+    "displayLanguage": "표시 언어"
   },
   "leaderboard": {
     "title": "리더보드",
